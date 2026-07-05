@@ -1,9 +1,3 @@
-/* =========================================================
-   InterviewAI — Global Stylesheet
-   Matches components: Navbar, Footer, Button, Card, Input,
-   Sidebar, Layouts, Home
-   ========================================================= */
-
 :root{
   --color-primary: #2b2fe0;
   --color-primary-dark: #1c1fb8;
@@ -44,12 +38,13 @@ h1, h2, h3, h4{
   margin: 0;
   letter-spacing: -0.5px;
   font-weight: 800;
+  color: var(--color-ink);
 }
 
 p{ margin: 0; }
 
 .container{
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 0 40px;
 }
@@ -57,10 +52,6 @@ p{ margin: 0; }
 @media (max-width: 720px){
   .container{ padding: 0 20px; }
 }
-
-/* =========================================================
-   Navbar
-   ========================================================= */
 
 .navbar{
   display: flex;
@@ -120,10 +111,6 @@ p{ margin: 0; }
   .navbar__links{ display: none; }
 }
 
-/* =========================================================
-   Buttons
-   ========================================================= */
-
 .btn{
   display: inline-flex;
   align-items: center;
@@ -171,10 +158,6 @@ p{ margin: 0; }
   width: 100%;
 }
 
-/* =========================================================
-   Hero
-   ========================================================= */
-
 .hero{
   display: grid;
   grid-template-columns: 1.1fr 1fr;
@@ -207,6 +190,10 @@ p{ margin: 0; }
   color: var(--color-primary);
 }
 
+.hero h1 .hero-title-main{
+  color: var(--color-ink);
+}
+
 .hero .lead{
   font-size: 17px;
   line-height: 1.65;
@@ -225,10 +212,6 @@ p{ margin: 0; }
   .hero{ grid-template-columns: 1fr; padding: 48px 20px; }
   .hero h1{ font-size: 34px; }
 }
-
-/* =========================================================
-   Mock code window
-   ========================================================= */
 
 .mock-window{
   background: #16171c;
@@ -266,10 +249,6 @@ p{ margin: 0; }
   white-space: pre-wrap;
 }
 
-/* =========================================================
-   Sections
-   ========================================================= */
-
 .section{
   padding: 56px 40px;
   border-top: 1px solid var(--color-border);
@@ -279,6 +258,10 @@ p{ margin: 0; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 64px;
+}
+
+.section-grid h2{
+  color: var(--color-ink);
 }
 
 @media (max-width: 900px){
@@ -319,7 +302,6 @@ p{ margin: 0; }
   max-width: 380px;
 }
 
-/* Check rows */
 
 .check-row{
   display: flex;
@@ -336,8 +318,6 @@ p{ margin: 0; }
   flex-shrink: 0;
   margin-top: 2px;
 }
-
-/* Stats row */
 
 .stats-row{
   display: flex;
@@ -357,10 +337,6 @@ p{ margin: 0; }
   font-size: 26px;
   font-weight: 800;
 }
-
-/* =========================================================
-   Cards
-   ========================================================= */
 
 .card{
   background: var(--color-bg);
@@ -387,7 +363,6 @@ p{ margin: 0; }
   border: none;
 }
 
-/* Badges */
 
 .badge{
   display: inline-flex;
@@ -410,8 +385,6 @@ p{ margin: 0; }
   color: var(--color-ink-soft);
 }
 
-/* Progress bar */
-
 .progress-bar{
   width: 100%;
   height: 8px;
@@ -426,9 +399,6 @@ p{ margin: 0; }
   transition: width 0.3s ease;
 }
 
-/* =========================================================
-   Testimonials
-   ========================================================= */
 
 .testimonial-grid{
   display: grid;
@@ -480,8 +450,6 @@ p{ margin: 0; }
   .testimonial-grid{ grid-template-columns: 1fr; }
 }
 
-/* CTA panel */
-
 .cta-panel{
   background: var(--color-dark);
   color: #fff;
@@ -514,10 +482,6 @@ p{ margin: 0; }
   background: rgba(255,255,255,0.08);
 }
 
-/* =========================================================
-   Footer
-   ========================================================= */
-
 .footer{
   display: flex;
   align-items: center;
@@ -545,10 +509,6 @@ p{ margin: 0; }
 @media (max-width: 700px){
   .footer{ flex-direction: column; gap: 14px; text-align: center; padding: 24px 20px; }
 }
-
-/* =========================================================
-   Form fields / Input
-   ========================================================= */
 
 .field{
   margin-bottom: 18px;
@@ -616,9 +576,6 @@ p{ margin: 0; }
   margin-top: 6px;
 }
 
-/* =========================================================
-   Sidebar / App shell
-   ========================================================= */
 
 .app-shell{
   display: flex;
@@ -687,10 +644,6 @@ p{ margin: 0; }
 @media (max-width: 900px){
   .sidebar{ display: none; }
 }
-
-/* =========================================================
-   Layout wrappers
-   ========================================================= */
 
 .page-with-navbar{
   display: flex;

@@ -14,7 +14,8 @@ export default function Home() {
             <Zap size={13} /> SYSTEM DESIGN MOCKS LIVE
           </span>
           <h1>
-            Master the Art of the <span className="accent">Technical Interview</span>
+            <span className="hero-title-main">Master the Art of the</span>{' '}
+            <span className="accent">Technical Interview</span>
           </h1>
           <p className="lead">
             Experience high-fidelity AI coaching that simulates real engineering interviews. Get
