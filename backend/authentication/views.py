@@ -1,20 +1,30 @@
-from django.shortcuts import render
-from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
+
+@api_view(["POST"])
 def register(request):
-    return JsonResponse({"message": "Register endpoint working"})
+    return Response({"message": "Registration endpoint is working"})
 
+@api_view(["POST"])
 def login(request):
-    return JsonResponse({"message": "Login endpoint working"})
+    return Response({"message": "Login endpoint is working"})
 
+@api_view(["POST"])
 def logout(request):
-    return JsonResponse({"message": "Logout endpoint working"})
+    return Response({"message": "Logout endpoint is working"})
 
+@api_view(["POST"])
 def forgot_password(request):
-    return JsonResponse({"message": "Forgot Password endpoint working"})
+    return Response({"message": "Forgot password endpoint is working"})
 
+@api_view(["POST"])
 def reset_password(request):
-    return JsonResponse({"message": "Reset Password endpoint working"})
+    return Response({"message": "Reset password endpoint is working"})
 
+@api_view(["GET", "PUT"])
 def profile(request):
-    return JsonResponse({"message": "Profile endpoint working"})
+    if (request.method == "GET"):
+        return Response({"message": "Profile retrieved successfully"})
+    if (request.method == "PUT"):
+        return Response({"message": "Profile updated successfully"})
