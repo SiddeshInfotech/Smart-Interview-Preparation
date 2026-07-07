@@ -1,3 +1,144 @@
+from django.utils import timezone
+from django.contrib.auth.hashers import make_password
+
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+from .models import User
+from django.contrib.auth.hashers import check_password
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .serializers import RegisterSerializer
+from .serializers import LoginSerializer
+from .serializers import LogoutSerializer
+from .serializers import ForgotPasswordSerializer
+
+from django.utils import timezone
+from datetime import timedelta
+
+from .models import OtpVerification
+from .utils import generate_otp, send_otp_email
+
+
+@api_view(["POST"])
+def register(request):
+    serializer = RegisterSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data = serializer.validated_data
+
+    user = User.objects.create(
+        full_name=data["full_name"],
+        email=data["email"],
+        password_hash=make_password(data["password"]),
+        role="Candidate",
+        phone_number=data.get("phone_number"),
+        is_active=True,
+        is_email_verified=False,
+        created_at=timezone.now(),
+        updated_at=timezone.now(),
+    )
+
+    return Response(
+        {"message": "Registration successful.", "user_id": user.user_id},
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@api_view(["POST"])
+def login(request):
+    serializer = LoginSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    email = serializer.validated_data["email"]
+    password = serializer.validated_data["password"]
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response(
+            {"message": "Invalid email or password."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    if not check_password(password, user.password_hash):
+        return Response(
+            {"message": "Invalid email or password."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    refresh = RefreshToken()
+
+    refresh["user_id"] = user.user_id
+    refresh["email"] = user.email
+    refresh["role"] = user.role
+
+    return Response(
+        {
+            "message": "Login successful.",
+            "access_token": str(refresh.access_token),
+            "refresh_token": str(refresh),
+            "user": {
+                "user_id": user.user_id,
+                "full_name": user.full_name,
+                "email": user.email,
+                "role": user.role,
+            },
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST"])
+def logout(request):
+    serializer = LogoutSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({"message": "Logout successful."}, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+def forgot_password(request):
+    serializer = ForgotPasswordSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    email = serializer.validated_data["email"]
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response(
+            {"message": "User with this email does not exist."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    otp = generate_otp()
+
+    OtpVerification.objects.create(
+        user=user,
+        otp_code=otp,
+        purpose="password_reset",
+        is_verified=False,
+        attempts=0,
+        expires_at=timezone.now() + timedelta(minutes=10),
+        created_at=timezone.now(),
+    )
+
+    send_otp_email(user.email, otp, "Forgot Password")
+
+    return Response({"message": "OTP sent successfully."}, status=status.HTTP_200_OK)
+
+
+"""
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -28,3 +169,4 @@ def profile(request):
         return Response({"message": "Profile retrieved successfully"})
     if (request.method == "PUT"):
         return Response({"message": "Profile updated successfully"})
+"""
