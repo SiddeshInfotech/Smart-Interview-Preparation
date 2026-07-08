@@ -1,175 +1,286 @@
-import React from "react";
+import React, { useState } from "react";
 import "../styles/CandidateProfile.css";
 
-export default function CandidateProfile() {
-  const coreTech = ["React.js", "TypeScript", "Node.js", "PostgreSQL"];
-  const infra = ["AWS", "Docker", "Kubernetes"];
+/* ---- Inline SVG Icons (no emoji, no external deps) ---- */
+const IconUser = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+  </svg>
+);
+const IconCap = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 3l10 5-10 5L2 8l10-5z" />
+    <path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5" />
+  </svg>
+);
+const IconBriefcase = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="7" width="18" height="13" rx="2" />
+    <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+  </svg>
+);
+const IconTarget = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="5" />
+    <circle cx="12" cy="12" r="1" />
+  </svg>
+);
+const IconCalendar = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="5" width="18" height="16" rx="2" />
+    <path d="M16 3v4M8 3v4M3 10h18" />
+  </svg>
+);
+const IconBell = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.7 21a2 2 0 01-3.4 0" />
+  </svg>
+);
+const IconSettings = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1 1.55V21a2 2 0 01-4 0v-.09a1.7 1.7 0 00-1-1.55 1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.7 1.7 0 00.34-1.87 1.7 1.7 0 00-1.55-1H3a2 2 0 010-4h.09a1.7 1.7 0 001.55-1 1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06a1.7 1.7 0 001.87.34H9a1.7 1.7 0 001-1.55V3a2 2 0 014 0v.09a1.7 1.7 0 001 1.55 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06a1.7 1.7 0 00-.34 1.87V9a1.7 1.7 0 001.55 1H21a2 2 0 010 4h-.09a1.7 1.7 0 00-1.55 1z" />
+  </svg>
+);
+const IconPin = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z" />
+    <circle cx="12" cy="10" r="2.5" />
+  </svg>
+);
+const IconGlobe = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3c2.5 2.5 2.5 15.5 0 18M12 3c-2.5 2.5-2.5 15.5 0 18" />
+  </svg>
+);
+const IconLink = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M9 17H7a5 5 0 010-10h2M15 7h2a5 5 0 010 10h-2M8 12h8" />
+  </svg>
+);
+const IconArrowLeft = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M19 12H5M11 18l-6-6 6-6" />
+  </svg>
+);
+const IconIdCard = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <circle cx="8" cy="12" r="2" />
+    <path d="M13 10h5M13 14h5" />
+  </svg>
+);
 
-  const timeline = [
-    {
-      role: "Senior Frontend Architect",
-      company: "TechFlow Solutions Inc.",
-      period: "2021 — Present (3.2y)",
-      bullets: [
-        "Architected micro-frontend architecture using React and Module Federation.",
-        "Led a team of 8 developers across 3 time zones.",
-      ],
-      current: true,
-    },
-    {
-      role: "Full Stack Developer",
-      company: "Innovate Systems",
-      period: "2018 — 2021 (3.0y)",
-      bullets: [
-        "Developed core API infrastructure handling 2M+ requests daily.",
-        "Implemented CI/CD pipelines reducing deployment time by 40%.",
-      ],
-      current: false,
-    },
-    {
-      role: "Junior Web Developer",
-      company: "Startup Labs",
-      period: "2016 — 2018 (2.3y)",
-      bullets: [],
-      current: false,
-    },
+export default function CandidateProfile() {
+  const [skills, setSkills] = useState(["React", "Python", "Node.js"]);
+  const [skillInput, setSkillInput] = useState("");
+
+  const addSkill = (e) => {
+    if (e.key === "Enter" && skillInput.trim() !== "") {
+      setSkills([...skills, skillInput.trim()]);
+      setSkillInput("");
+    }
+  };
+
+  const removeSkill = (index) => {
+    setSkills(skills.filter((_, i) => i !== index));
+  };
+
+  const navItems = [
+    { label: "Profile Setup", icon: <IconUser />, active: true },
+    { label: "Education", icon: <IconCap />, active: false },
+    { label: "Experience", icon: <IconBriefcase />, active: false },
+    { label: "Skills", icon: <IconTarget />, active: false },
+    { label: "Availability", icon: <IconCalendar />, active: false },
   ];
 
   return (
-    <div className="candidate-profile-page">
+    <div className="cp-app">
+      {/* Top Navbar */}
       <header className="cp-navbar">
-        <div className="cp-navbar__brand">InterviewAI</div>
-        <nav className="cp-navbar__links">
-          <a href="/dashboard">Dashboard</a>
-          <a href="/practice">Practice</a>
-          <a href="/candidates" className="active">Candidates</a>
-          <a href="/insights">Insights</a>
+        <div className="cp-logo">PrepMaster AI</div>
+        <nav className="cp-nav-links">
+          <a href="#dashboard">Dashboard</a>
+          <a href="#practice">Practice</a>
+          <a href="#sessions">Sessions</a>
+          <a href="#insights">Insights</a>
         </nav>
-        <div className="cp-navbar__actions">
-          <button className="btn btn--primary">New Interview</button>
-          <div className="avatar">SC</div>
+        <div className="cp-nav-icons">
+          <span className="cp-icon"><IconBell /></span>
+          <span className="cp-icon"><IconSettings /></span>
+          <div className="cp-avatar">JD</div>
         </div>
       </header>
 
-      <main className="cp-main">
-        <div className="cp-header">
-          <h1>Resume Intelligence Dashboard</h1>
-          <p>
-            Transform raw resumes into actionable insights. Our AI parses
-            technical skills, experience depth, and career trajectory in
-            seconds.
-          </p>
-        </div>
-
-        <div className="cp-top-grid">
-          <div className="card upload-card">
-            <div className="upload-card__icon">📄</div>
-            <h3>Upload Resume</h3>
-            <p>Drag and drop your PDF or DOCX file to begin AI analysis.</p>
-            <button className="btn btn--primary">Browse Files</button>
-            <span className="upload-card__hint">Max size: 10MB</span>
-
-            <div className="candidate-mini">
-              <div className="candidate-mini__avatar">SC</div>
-              <div>
-                <p className="candidate-mini__name">Sarah Chen</p>
-                <p className="candidate-mini__role">Senior Software Engineer</p>
-                <div className="candidate-mini__tags">
-                  <span className="badge badge--green">Top 5% Match</span>
-                  <span className="badge badge--blue">8.5 Yrs Exp</span>
-                </div>
-              </div>
+      <div className="cp-body">
+        {/* Sidebar */}
+        <aside className="cp-sidebar">
+          <div className="cp-sidebar-header">
+            <h3>Profile Completion</h3>
+            <p>Step 1 of 5</p>
+            <div className="cp-progress-track">
+              <div className="cp-progress-fill" />
             </div>
           </div>
 
-          <div className="card skills-card">
-            <div className="skills-card__header">
-              <h3>🎯 Skill Extraction</h3>
-              <span className="badge badge--green">98% Confidence</span>
-            </div>
-
-            <p className="skills-card__group-label">
-              Core Technologies <span>Expert</span>
-            </p>
-            <div className="chip-row">
-              {coreTech.map((t) => (
-                <span className="chip" key={t}>{t}</span>
-              ))}
-            </div>
-
-            <p className="skills-card__group-label">
-              Infrastructure <span>Advanced</span>
-            </p>
-            <div className="chip-row">
-              {infra.map((t) => (
-                <span className="chip" key={t}>{t}</span>
-              ))}
-            </div>
-
-            <p className="skills-card__insight">
-              <strong>AI Insight:</strong> Strong focus on Fullstack
-              Architecture with distributed systems experience.
-            </p>
-          </div>
-
-          <div className="card exp-card">
-            <h3>📊 Exp. Calibration</h3>
-            <div className="exp-row">
-              <span>Total Professional Experience</span>
-              <strong>8.5 Years</strong>
-            </div>
-            <div className="progress-bar">
-              <div style={{ width: "90%" }} />
-            </div>
-
-            <div className="exp-row exp-row--spaced">
-              <span>Leadership & Management</span>
-              <strong>2.0 Years</strong>
-            </div>
-            <div className="progress-bar">
-              <div style={{ width: "25%" }} />
-            </div>
-
-            <div className="exp-stats">
-              <div>
-                <p className="exp-stats__value">2.8y</p>
-                <p className="exp-stats__label">AVG TENURE</p>
-              </div>
-              <div>
-                <p className="exp-stats__value">High</p>
-                <p className="exp-stats__label">JOB STABILITY</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card timeline-card">
-          <h3>📈 Parsed Career Timeline</h3>
-          <div className="timeline">
-            {timeline.map((job) => (
-              <div className="timeline-item" key={job.role}>
-                <span
-                  className={`timeline-dot ${job.current ? "timeline-dot--current" : ""}`}
-                />
-                <div className="timeline-content">
-                  <div className="timeline-content__header">
-                    <h4>{job.role}</h4>
-                    <span>{job.period}</span>
-                  </div>
-                  <p className="timeline-content__company">{job.company}</p>
-                  {job.bullets.length > 0 && (
-                    <ul>
-                      {job.bullets.map((b) => (
-                        <li key={b}>{b}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
+          <ul className="cp-nav-list">
+            {navItems.map((item) => (
+              <li
+                key={item.label}
+                className={`cp-nav-item ${item.active ? "active" : ""}`}
+              >
+                <span className="cp-nav-icon">{item.icon}</span>
+                {item.label}
+              </li>
             ))}
+          </ul>
+
+          <button className="cp-save-btn">Save Progress</button>
+        </aside>
+
+        {/* Main content */}
+        <main className="cp-main">
+          <div className="cp-main-header">
+            <div>
+              <h1>Build Your Professional Identity</h1>
+              <p className="cp-subtitle">
+                Provide details to help our AI personalize your experience.
+              </p>
+            </div>
+            <div className="cp-candidate-meta">
+              <div className="cp-candidate-id">
+                <IconIdCard /> Candidate ID: <strong>CAND-8832</strong>
+              </div>
+              <p className="cp-meta-dates">
+                Created: Oct 24, 2024 â€¢ Updated: Just now
+              </p>
+            </div>
           </div>
-        </div>
-      </main>
+
+          {/* Personal Information */}
+          <section className="cp-section">
+            <h2><IconUser /> Personal Information</h2>
+            <hr />
+            <div className="cp-grid-2">
+              <div className="cp-field">
+                <label>Full Name</label>
+                <input type="text" defaultValue="John Doe" />
+              </div>
+              <div className="cp-field">
+                <label>Date of Birth</label>
+                <input type="date" placeholder="mm/dd/yyyy" />
+              </div>
+              <div className="cp-field">
+                <label>Gender</label>
+                <select defaultValue="">
+                  <option value="" disabled>
+                    Select Gender
+                  </option>
+                  <option>Male</option>
+                  <option>Female</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div className="cp-field">
+                <label>Location</label>
+                <div className="cp-icon-input">
+                  <IconPin />
+                  <input type="text" placeholder="City, Country" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Education & Experience */}
+          <section className="cp-section">
+            <h2><IconCap /> Education &amp; Experience</h2>
+            <hr />
+            <div className="cp-grid-2">
+              <div className="cp-field">
+                <label>Highest Degree</label>
+                <input type="text" placeholder="e.g. MS in Computer Science" />
+              </div>
+              <div className="cp-field">
+                <label>Institution</label>
+                <input type="text" placeholder="e.g. Stanford University" />
+              </div>
+            </div>
+
+            <div className="cp-field cp-years-field">
+              <label>Years of Professional Experience</label>
+              <div className="cp-years-input">
+                <input type="text" placeholder="e.g. 5" />
+                <span>Years</span>
+              </div>
+            </div>
+
+            <div className="cp-field">
+              <label>Technical Skills</label>
+              <div className="cp-skills-box">
+                {skills.map((skill, i) => (
+                  <span className="cp-skill-chip" key={i}>
+                    {skill}
+                    <button onClick={() => removeSkill(i)}>Ã—</button>
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  placeholder="Type a skill and press Enter..."
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyDown={addSkill}
+                />
+              </div>
+              <p className="cp-suggested">
+                Suggested: Docker, AWS, System Design, TypeScript
+              </p>
+            </div>
+          </section>
+
+          {/* Digital Presence */}
+          <section className="cp-section">
+            <h2><IconLink /> Digital Presence</h2>
+            <hr />
+            <div className="cp-field">
+              <label>LinkedIn Profile URL</label>
+              <div className="cp-prefixed-input">
+                <span>linkedin.com/in/</span>
+                <input type="text" placeholder="username" />
+              </div>
+            </div>
+            <div className="cp-field">
+              <label>GitHub URL</label>
+              <div className="cp-prefixed-input">
+                <span>github.com/</span>
+                <input type="text" placeholder="username" />
+              </div>
+            </div>
+            <div className="cp-field">
+              <label>Portfolio URL</label>
+              <div className="cp-icon-input">
+                <IconGlobe />
+                <input type="text" placeholder="https://yourportfolio.com" />
+              </div>
+            </div>
+          </section>
+
+          <hr className="cp-footer-divider" />
+
+          <div className="cp-footer">
+            <a href="#back" className="cp-back-link">
+              <IconArrowLeft /> Back to Dashboard
+            </a>
+            <div className="cp-footer-actions">
+              <button className="cp-btn-cancel">Cancel</button>
+              <button className="cp-btn-complete">Complete Profile</button>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

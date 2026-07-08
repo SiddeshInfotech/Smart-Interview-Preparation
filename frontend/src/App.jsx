@@ -1,21 +1,34 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CandidateProfile from "./pages/CandidateProfile";
 import ResumeUpload from "./pages/ResumeUpload";
+import Otp from "./pages/Otp";
+import RoleSelection from "./pages/RoleSelection";
+import InterviewerProfile from "./pages/InterviewerProfile";
+import ForgotPassword from "./pages/ForgotPassword";
+import AuthPage from "./pages/AuthPage";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Existing Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} /> 
-        <Route path="/dashboard" element={<Dashboard />} /> 
+        <Route path="/register" element={<Register />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/resume-upload" element={<ResumeUpload />} />
+        <Route path="/otp" element={<Otp />} />
+        <Route path="/role-selection" element={<RoleSelection />} />
         <Route path="/candidate-profile" element={<CandidateProfile />} />
-        <Route path="/resume-upload" element={<ResumeUpload />} /> 
+        <Route path="/interviewer-profile" element={<InterviewerProfile />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/Auth-page" element={<AuthPage />} />
       </Routes>
     </BrowserRouter>
   );
