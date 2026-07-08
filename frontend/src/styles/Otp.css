@@ -1,0 +1,173 @@
+.otp-screen {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f5fb;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+    sans-serif;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.otp-card {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 45px rgba(76, 63, 214, 0.12),
+    0 2px 8px rgba(17, 17, 34, 0.04);
+  padding: 48px 40px 40px;
+  text-align: center;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+.otp-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #4f46e5, #6366f1, #818cf8);
+}
+
+.otp-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: #eeeafe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4f46e5;
+}
+
+.otp-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.otp-title {
+  margin: 0 0 12px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #16162c;
+  letter-spacing: -0.02em;
+}
+
+.otp-subtitle {
+  margin: 0 0 32px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #64647d;
+}
+
+.otp-inputs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.otp-box {
+  width: 48px;
+  height: 56px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e2ee;
+  background: #fafafe;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: #16162c;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background 0.15s ease;
+  box-sizing: border-box;
+}
+
+.otp-box:focus {
+  border-color: #4f46e5;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+}
+
+.otp-box.filled {
+  border-color: #6366f1;
+  background: #ffffff;
+}
+
+.otp-dash {
+  color: #c7c7d9;
+  font-size: 18px;
+  padding: 0 2px;
+}
+
+.otp-verify-btn {
+  width: 100%;
+  padding: 15px 0;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #4f46e5, #6366f1);
+  color: #ffffff;
+  font-size: 15.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.28);
+}
+
+.otp-verify-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.34);
+}
+
+.otp-verify-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.otp-resend {
+  margin: 22px 0 0;
+  font-size: 13.5px;
+  color: #7c7c93;
+}
+
+.otp-resend-disabled {
+  color: #9b9bb0;
+}
+
+.otp-resend-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #4f46e5;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.otp-resend-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 420px) {
+  .otp-card {
+    padding: 36px 20px 32px;
+  }
+  .otp-box {
+    width: 40px;
+    height: 50px;
+    font-size: 19px;
+  }
+  .otp-inputs {
+    gap: 6px;
+  }
+}
