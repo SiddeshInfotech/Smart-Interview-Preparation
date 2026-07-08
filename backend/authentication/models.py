@@ -1,41 +1,67 @@
 from django.db import models
+from .managers import UserManager
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    PermissionsMixin,
+    Group,
+    Permission,
+)
 
 
-class User(models.Model):
+class User(AbstractBaseUser, PermissionsMixin):
     user_id = models.AutoField(primary_key=True)
     full_name = models.CharField(max_length=150)
-    email = models.EmailField(unique=True, max_length=150)
-    password_hash = models.CharField(max_length=255)
-    role = models.CharField(max_length=11)
-    phone_number = models.CharField(
-        unique=True,
-        max_length=20,
-        blank=True,
-        null=True
-    )
+    email = models.EmailField(unique=True)
+    phone_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    role = models.CharField(max_length=20)
+
     is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    groups = models.ManyToManyField(
+        Group,
+        blank=True,
+        related_name="authentication_users",
+    )
+
+    user_permissions = models.ManyToManyField(
+        Permission,
+        blank=True,
+        related_name="authentication_users",
+    )
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["full_name"]
+
+    objects = UserManager()
 
     class Meta:
-        managed = False
         db_table = "Users"
 
     def __str__(self):
-        return self.full_name
+        return self.email
 
 
 class OtpVerification(models.Model):
     otp_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.DO_NOTHING)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_column="user_id")
     otp_code = models.CharField(max_length=10)
-    purpose = models.CharField(max_length=18)
-    is_verified = models.IntegerField()
-    attempts = models.IntegerField()
+    PURPOSE_CHOICES = [
+        ("registration", "Registration"),
+        ("login", "Login"),
+        ("password_reset", "Password Reset"),
+        ("email_verification", "Email Verification"),
+    ]
+
+    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES)
+    is_verified = models.BooleanField(default=False)
+    attempts = models.IntegerField(default=0)
     expires_at = models.DateTimeField()
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        managed = False
         db_table = "OTP_Verification"
