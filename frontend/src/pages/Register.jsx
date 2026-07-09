@@ -1,33 +1,145 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ShieldCheck, User, Briefcase, Mail, Lock, UserRound } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, User, Briefcase, KeyRound, Mail, Lock, UserRound, Phone } from "lucide-react";
 import "../styles/Register.css";
+import { register, sendRegistrationOTP, verifyRegistrationOTP } from "../api/authAPI";
 
 export default function Register() {
   const navigate = useNavigate();
   const [role, setRole] = useState("candidate");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone_number: "",
+    password: "",
+    confirmPassword: "",
+    otp: "",
+  });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const handleSendOTP = async () => {
+    if (!form.email) {
+      setError("Email is required.");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+
+    try {
+      await sendRegistrationOTP(form.email);
+      setOtpSent(true);
+      setError("");
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to send OTP.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!form.otp) {
+      setError("OTP is required.");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+
+    try {
+      await verifyRegistrationOTP(form.email, form.otp);
+      setOtpVerified(true);
+      setError("");
+    } catch (err) {
+      const msg = err.response?.data?.message || "Invalid OTP.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    const payload = {
+      full_name: form.name,
+      email: form.email,
+      password: form.password,
+      confirm_password: form.confirmPassword,
+      phone_number: form.phone_number || "",
+      role,
+    };
+
+    console.log("register payload:", payload);
+
+    try {
+      const response = await register(payload);
+      console.log("register success:", response.data);
+      navigate("/login");
+    } catch (err) {
+      console.log("register error:", err.response?.data || err.message);
+
+      const serverData = err.response?.data;
+
+      const formatErrors = (errors) => {
+        if (!errors) return "Something went wrong.";
+
+        if (typeof errors === "string") return errors;
+
+        const messages = new Set();
+
+        Object.values(errors).forEach((value) => {
+          if (Array.isArray(value)) {
+            value.forEach((msg) => {
+              if (msg === "Ensure this field has at least 8 characters.") {
+                msg = "Ensure password has at least 8 characters.";
+              }
+
+              messages.add(msg);
+            });
+          } else {
+            messages.add(value);
+          }
+        });
+
+        return [...messages].join("\n");
+      };
+
+      setError(formatErrors(serverData));
+
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!otpVerified) {
+      setError("Please verify your email with OTP first.");
+      return;
+    }
+
     if (!agreed) {
       setError("Please agree to the Terms of Service and Privacy Policy.");
       return;
     }
+
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setError("");
     setLoading(true);
+
     try {
-      // TODO: replace with your real API call
-      await new Promise((r) => setTimeout(r, 700));
-      navigate("/login");
-    } catch {
-      setError("Something went wrong. Please try again.");
+      await handleRegister();
     } finally {
       setLoading(false);
     }
@@ -74,16 +186,93 @@ export default function Register() {
           </div>
 
           <label className="field-label">Professional Email</label>
+
           <div className="field-control">
             <Mail size={16} className="field-icon" />
+
             <input
-              className="input"
+              className="input otp-input"
               type="email"
               name="email"
               placeholder="john@company.com"
               value={form.email}
               onChange={handleChange}
+              disabled={otpVerified}
               required
+            />
+
+            {!otpVerified && (
+              <button
+                type="button"
+                className="otp-btn"
+                onClick={handleSendOTP}
+                disabled={loading || otpSent}
+              >
+                {loading && !otpSent ? "..." : "Send OTP"}
+              </button>
+            )}
+          </div>
+
+          {otpSent && !otpVerified && (
+            <>
+              <label className="field-label">Verification Code</label>
+
+              <div className="field-control">
+                <KeyRound size={16} className="field-icon" />
+                <input
+                  className="input"
+                  type="text"
+                  name="otp"
+                  placeholder="Enter 6-digit OTP"
+                  value={form.otp}
+                  onChange={handleChange}
+                  maxLength={6}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "10px",
+                  marginBottom: "20px",
+                }}
+              >
+                <button
+                  type="button"
+                  className="outline-btn"
+                  onClick={() => {
+                    setOtpSent(false);
+                    setForm({ ...form, otp: "" });
+                    setError("");
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  Change Email
+                </button>
+
+                <button
+                  type="button"
+                  className="primary-btn"
+                  onClick={handleVerifyOTP}
+                  disabled={loading}
+                  style={{ flex: 1 }}
+                >
+                  {loading ? "Verifying..." : "Verify OTP"}
+                </button>
+              </div>
+            </>
+          )}
+
+          <label className="field-label">Phone Number</label>
+          <div className="field-control">
+            <Phone size={16} className="field-icon" />
+            <input
+              className="input"
+              type="text"
+              name="phone_number"
+              value={form.phone_number}
+              onChange={handleChange}
             />
           </div>
 
@@ -108,6 +297,29 @@ export default function Register() {
             </button>
           </div>
 
+          <label className="field-label">Confirm Password</label>
+          <div className="field-control">
+            <Lock size={16} className="field-icon" />
+
+            <input
+              className="input"
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="••••••••"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              required
+            />
+
+            <button
+              type="button"
+              className="eye-btn"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
+
           <label className="checkbox-row">
             <input
               type="checkbox"
@@ -120,7 +332,11 @@ export default function Register() {
             </span>
           </label>
 
-          {error && <span className="field-error">{error}</span>}
+          {error && (
+            <div className="field-error" style={{ whiteSpace: "pre-line" }}>
+              {error}
+            </div>
+          )}
 
           <button className="primary-btn" type="submit" disabled={loading}>
             {loading ? "Creating Account…" : "Start My Journey"}

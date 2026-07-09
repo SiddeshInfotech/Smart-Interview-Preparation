@@ -171,3 +171,38 @@
   color: #9a9aa2;
   margin-top: 18px;
 }
+
+.otp-input{
+    padding-right:120px;
+}
+
+.otp-btn{
+    position:absolute;
+    right:6px;
+    top:6px;
+    bottom:6px;
+
+    width:105px;
+
+    border:none;
+    border-radius:8px;
+
+    background:#4338ca;
+    color:white;
+
+    font-size:13px;
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.otp-btn:hover{
+    background:#3730a3;
+}
+
+.otp-btn:disabled{
+    opacity:.7;
+    cursor:not-allowed;
+}

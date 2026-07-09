@@ -12,12 +12,12 @@ import RoleSelection from "./pages/RoleSelection";
 import InterviewerProfile from "./pages/InterviewerProfile";
 import ForgotPassword from "./pages/ForgotPassword";
 import AuthPage from "./pages/AuthPage";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Existing Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -29,6 +29,7 @@ function App() {
         <Route path="/interviewer-profile" element={<InterviewerProfile />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/Auth-page" element={<AuthPage />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   );

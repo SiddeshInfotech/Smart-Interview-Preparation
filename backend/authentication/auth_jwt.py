@@ -5,7 +5,6 @@ from .models import User
 
 
 class CustomJWTAuthentication(JWTAuthentication):
-
     def get_user(self, validated_token):
         try:
             user_id = validated_token["user_id"]
