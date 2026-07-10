@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ShieldCheck, User, Briefcase, KeyRound, Mail, Lock, UserRound, Phone } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, User, Briefcase, KeyRound, Mail, Lock, UserRound, Phone, CheckCircle } from "lucide-react";
 import "../styles/Register.css";
 import { register, sendRegistrationOTP, verifyRegistrationOTP } from "../api/authAPI";
 
@@ -24,6 +24,8 @@ export default function Register() {
   const [otpVerified, setOtpVerified] = useState(false);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const [otpSuccess, setOtpSuccess] = useState("");
+
 
   const handleSendOTP = async () => {
     if (!form.email) {
@@ -59,6 +61,8 @@ export default function Register() {
       await verifyRegistrationOTP(form.email, form.otp);
       setOtpVerified(true);
       setError("");
+      setOtpVerified(true);
+      setOtpSuccess("Email verified successfully!");
     } catch (err) {
       const msg = err.response?.data?.message || "Invalid OTP.";
       setError(msg);
@@ -211,6 +215,15 @@ export default function Register() {
                 {loading && !otpSent ? "..." : "Send OTP"}
               </button>
             )}
+
+            {
+              otpVerified && (
+                <div className="field-success">
+                  <CheckCircle size={16} />
+                  {otpSuccess}
+                </div>
+              )
+            }
           </div>
 
           {otpSent && !otpVerified && (
@@ -273,6 +286,7 @@ export default function Register() {
               name="phone_number"
               value={form.phone_number}
               onChange={handleChange}
+              required
             />
           </div>
 

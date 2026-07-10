@@ -1,13 +1,13 @@
 import logging
 from django.utils import timezone
+from django.core.cache import cache
+from .models import User, OtpVerification
 
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
-
-from .models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 
 logger = logging.getLogger(__name__)
@@ -21,78 +21,58 @@ from .serializers import ResetPasswordSerializer
 from .serializers import ProfileSerializer
 
 from datetime import timedelta
-from .models import OtpVerification
 from .utils import generate_otp, send_otp_email
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def send_registration_otp(request):
-    """Send OTP to email for registration."""
     email = request.data.get("email")
-
     if not email:
-        return Response(
-            {"message": "Email is required."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    # Check if email already registered
+        return Response({"message": "Email is required."}, status=400)
     if User.objects.filter(email=email).exists():
-        return Response(
-            {"message": "Email already registered."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({"message": "Email already registered."}, status=400)
 
-    # Generate and send OTP
     otp = generate_otp()
+    cache.set(
+        f"reg_otp_{email}",
+        {"otp": otp, "expires": timezone.now() + timedelta(minutes=10)},
+        timeout=600,
+    )
 
     try:
         send_otp_email(email, otp, "Registration")
-        return Response(
-            {"message": "OTP sent to your email."},
-            status=status.HTTP_200_OK,
-        )
+        return Response({"message": "OTP sent to your email."}, status=200)
     except Exception as e:
         logger.exception("Failed to send registration OTP")
         return Response(
-            {"message": "Failed to send OTP. Please try again."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            {"message": "Failed to send OTP. Please try again."}, status=500
         )
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def verify_registration_otp(request):
-    """Verify OTP for registration (stores verification in cache/session)."""
     email = request.data.get("email")
     otp = request.data.get("otp")
-
     if not email or not otp:
-        return Response(
-            {"message": "Email and OTP are required."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    # In production, you'd verify against a cache/session store.
-    # For now, we'll accept any 6-digit OTP and trust the frontend to only show
-    # this endpoint after email verification. A real implementation would:
-    # - Store OTP in cache with email as key
-    # - Verify OTP matches and hasn't expired
-    # - Mark email as verified in cache before returning the final register call
-
-    # Simple check: OTP should be 6 digits
+        return Response({"message": "Email and OTP are required."}, status=400)
     if not otp.isdigit() or len(otp) != 6:
-        return Response(
-            {"message": "Invalid OTP format."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({"message": "Invalid OTP format."}, status=400)
 
-    # TODO: Verify against cache/session in production
-    # For now, return success and frontend will proceed with registration
+    cached = cache.get(f"reg_otp_{email}")
+    if not cached:
+        return Response({"message": "OTP expired or not found."}, status=400)
+    if cached["otp"] != otp:
+        return Response({"message": "Invalid OTP."}, status=400)
+    if cached["expires"] < timezone.now():
+        cache.delete(f"reg_otp_{email}")
+        return Response({"message": "OTP expired."}, status=400)
+
+    cache.set(f"reg_verified_{email}", True, timeout=300)
+    cache.delete(f"reg_otp_{email}")
     return Response(
-        {"message": "OTP verified successfully.", "verified_email": email},
-        status=status.HTTP_200_OK,
+        {"message": "OTP verified successfully.", "verified_email": email}, status=200
     )
 
 
@@ -106,17 +86,26 @@ def register(request):
 
     data = serializer.validated_data
 
+    verified = cache.get(f"reg_verified_{data['email']}")
+
+    if not verified:
+        return Response(
+            {"message": "Please verify your email first."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     user = User(
         full_name=data["full_name"],
         email=data["email"],
         role=data["role"],
         phone_number=data.get("phone_number"),
         is_active=True,
-        is_email_verified=True,  # Mark as verified since they verified OTP during signup
+        is_email_verified=True,
     )
 
     user.set_password(data["password"])
     user.save()
+    cache.delete(f"reg_verified_{data['email']}")
 
     return Response(
         {"message": "Registration successful.", "user_id": user.user_id},
@@ -131,7 +120,6 @@ def login(request):
 
     if not serializer.is_valid():
         logger.warning("Login validation failed: %s", serializer.errors)
-        # Return user-friendly serializer errors (email not verified, account inactive, etc.)
         errors = serializer.errors
         if "message" in errors:
             return Response(
@@ -144,20 +132,14 @@ def login(request):
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-        # If no specific message, use generic error
         return Response(
             {"message": "Invalid email or password."},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
     try:
-        # The serializer validates credentials and attaches `user`
         user = serializer.validated_data.get("user")
-
-        # Create tokens for the authenticated user
         refresh = RefreshToken.for_user(user)
-
-        # attach some custom claims
         refresh["user_id"] = user.user_id
         refresh["email"] = user.email
         refresh["role"] = user.role
@@ -177,7 +159,6 @@ def login(request):
             status=status.HTTP_200_OK,
         )
     except Exception as exc:
-        # Internal error during login should not leak stack traces to the client.
         logger.exception("Unexpected login failure")
         return Response(
             {"message": "Invalid email or password."},
@@ -212,6 +193,7 @@ def forgot_password(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
+    OtpVerification.objects.filter(user=user, purpose="password_reset").delete()
     otp = generate_otp()
 
     OtpVerification.objects.create(
@@ -248,7 +230,6 @@ def verify_otp(request):
     email = serializer.validated_data["email"]
     otp = serializer.validated_data["otp"]
 
-    # Check user
     try:
         user = User.objects.get(email=email)
     except User.DoesNotExist:
@@ -256,7 +237,6 @@ def verify_otp(request):
             {"message": "Email not registered."}, status=status.HTTP_404_NOT_FOUND
         )
 
-    # Get latest unverified OTP for password reset
     otp_record = (
         OtpVerification.objects.filter(
             user=user, purpose="password_reset", is_verified=False
@@ -268,20 +248,24 @@ def verify_otp(request):
     if otp_record is None:
         return Response({"message": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Check expiry
     if otp_record.expires_at < timezone.now():
+        otp_record.delete()
         return Response(
             {"message": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Check OTP
+    if otp_record.attempts >= 5:
+        return Response(
+            {"message": "Too many invalid attempts."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     if otp_record.otp_code != otp:
         otp_record.attempts += 1
         otp_record.save(update_fields=["attempts"])
 
         return Response({"message": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # OTP verified
     otp_record.is_verified = True
     otp_record.save()
 
@@ -301,7 +285,6 @@ def reset_password(request):
     email = serializer.validated_data["email"]
     new_password = serializer.validated_data["new_password"]
 
-    # Check user
     try:
         user = User.objects.get(email=email)
     except User.DoesNotExist:
@@ -310,7 +293,6 @@ def reset_password(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    # Check if OTP has been verified
     otp_record = (
         OtpVerification.objects.filter(
             user=user,
@@ -327,13 +309,12 @@ def reset_password(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Update password
     user.set_password(new_password)
     user.save()
 
-    # Prevent OTP reuse
     otp_record.is_verified = False
     otp_record.save(update_fields=["is_verified"])
+    otp_record.delete()
 
     return Response(
         {"message": "Password reset successful."},

@@ -2,8 +2,6 @@ from rest_framework import serializers
 from .models import User
 from django.contrib.auth.password_validation import validate_password
 
-from django.contrib.auth.password_validation import validate_password
-
 class RegisterSerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=150)
     email = serializers.EmailField()
@@ -65,26 +63,6 @@ class LoginSerializer(serializers.Serializer):
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
-
-class VerifyOTPSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    otp = serializers.CharField(max_length=10)
-
-
-class ResetPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    otp = serializers.CharField(max_length=10)
-    new_password = serializers.CharField(min_length=8, write_only=True)
-    confirm_password = serializers.CharField(min_length=8, write_only=True)
-
-    def validate(self, data):
-        if data["new_password"] != data["confirm_password"]:
-            raise serializers.ValidationError(
-                {"confirm_password": "Passwords do not match."}
-            )
-        return data
-
-
 class UpdateProfileSerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=150)
     phone_number = serializers.CharField(
@@ -95,14 +73,9 @@ class UpdateProfileSerializer(serializers.Serializer):
 class LogoutSerializer(serializers.Serializer):
     refresh_token = serializers.CharField(required=False)
 
-
-from rest_framework import serializers
-
-
 class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6, min_length=6)
-
 
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -112,12 +85,9 @@ class ResetPasswordSerializer(serializers.Serializer):
     def validate(self, data):
         if data["new_password"] != data["confirm_password"]:
             raise serializers.ValidationError({"message": "Passwords do not match."})
-
         validate_password(data["new_password"])
-
         return data
-
-
+        
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

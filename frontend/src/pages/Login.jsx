@@ -24,25 +24,25 @@ export default function Login() {
       return true;
     } catch (err) {
       console.log("Login error:", err);
-    
+
       const extractMessage = (data) => {
         if (!data) return "Invalid email or password.";
-        
-            if (data.message && typeof data.message === "string") {
+
+        if (data.message && typeof data.message === "string") {
           return data.message;
         }
-        
-            if (typeof data === "string") {
+
+        if (typeof data === "string") {
           return data;
         }
-        
-            if (data.error && typeof data.error === "string") return data.error;
+
+        if (data.error && typeof data.error === "string") return data.error;
         if (data.detail && typeof data.detail === "string") return data.detail;
-        
+
 
         if (typeof data === "object") {
           const messages = new Set();
-          
+
           Object.values(data).forEach((value) => {
             if (Array.isArray(value)) {
               value.forEach((msg) => {
@@ -54,15 +54,15 @@ export default function Login() {
               messages.add(value);
             }
           });
-          
+
           if (messages.size > 0) {
             return [...messages].join("\n");
           }
         }
-        
+
         return "Invalid email or password.";
       };
-      
+
       setError(extractMessage(err.response?.data));
       setLoading(false);
       return false;
@@ -208,24 +208,24 @@ export default function Login() {
             </button>
           </div>
 
+          {(fieldErrors.email || fieldErrors.password) && (
+            <div className="field-error" style={{ whiteSpace: "pre-line" }} role="alert">
+              {fieldErrors.email}
+              {fieldErrors.email && fieldErrors.password ? "\n" : ""}
+              {fieldErrors.password}
+            </div>
+          )}
+
+          {error && (
+            <div className="field-error" style={{ whiteSpace: "pre-line" }} role="alert">
+              {error}
+            </div>
+          )}
+
           <button type="submit" className="primary-btn">
             {loading ? "Signing in..." : `Sign in as ${role === "interviewer" ? "Interviewer" : "Interviewee"}`}
           </button>
         </form>
-
-        {(fieldErrors.email || fieldErrors.password) && (
-          <div className="field-error" style={{ whiteSpace: "pre-line" }} role="alert">
-            {fieldErrors.email}
-            {fieldErrors.email && fieldErrors.password ? "\n" : ""}
-            {fieldErrors.password}
-          </div>
-        )}
-
-        {error && (
-          <div className="field-error" style={{ whiteSpace: "pre-line" }} role="alert">
-            {error}
-          </div>
-        )}
 
         <p className="auth-footer">
           Don't have an account?{" "}
