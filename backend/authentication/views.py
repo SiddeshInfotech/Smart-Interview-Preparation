@@ -26,58 +26,6 @@ from .utils import generate_otp, send_otp_email
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
-def send_registration_otp(request):
-    email = request.data.get("email")
-    if not email:
-        return Response({"message": "Email is required."}, status=400)
-    if User.objects.filter(email=email).exists():
-        return Response({"message": "Email already registered."}, status=400)
-
-    otp = generate_otp()
-    cache.set(
-        f"reg_otp_{email}",
-        {"otp": otp, "expires": timezone.now() + timedelta(minutes=10)},
-        timeout=600,
-    )
-
-    try:
-        send_otp_email(email, otp, "Registration")
-        return Response({"message": "OTP sent to your email."}, status=200)
-    except Exception as e:
-        logger.exception("Failed to send registration OTP")
-        return Response(
-            {"message": "Failed to send OTP. Please try again."}, status=500
-        )
-
-
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def verify_registration_otp(request):
-    email = request.data.get("email")
-    otp = request.data.get("otp")
-    if not email or not otp:
-        return Response({"message": "Email and OTP are required."}, status=400)
-    if not otp.isdigit() or len(otp) != 6:
-        return Response({"message": "Invalid OTP format."}, status=400)
-
-    cached = cache.get(f"reg_otp_{email}")
-    if not cached:
-        return Response({"message": "OTP expired or not found."}, status=400)
-    if cached["otp"] != otp:
-        return Response({"message": "Invalid OTP."}, status=400)
-    if cached["expires"] < timezone.now():
-        cache.delete(f"reg_otp_{email}")
-        return Response({"message": "OTP expired."}, status=400)
-
-    cache.set(f"reg_verified_{email}", True, timeout=300)
-    cache.delete(f"reg_otp_{email}")
-    return Response(
-        {"message": "OTP verified successfully.", "verified_email": email}, status=200
-    )
-
-
-@api_view(["POST"])
-@permission_classes([AllowAny])
 def register(request):
     serializer = RegisterSerializer(data=request.data)
 
@@ -319,6 +267,58 @@ def reset_password(request):
     return Response(
         {"message": "Password reset successful."},
         status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def send_registration_otp(request):
+    email = request.data.get("email")
+    if not email:
+        return Response({"message": "Email is required."}, status=400)
+    if User.objects.filter(email=email).exists():
+        return Response({"message": "Email already registered."}, status=400)
+
+    otp = generate_otp()
+    cache.set(
+        f"reg_otp_{email}",
+        {"otp": otp, "expires": timezone.now() + timedelta(minutes=10)},
+        timeout=600,
+    )
+
+    try:
+        send_otp_email(email, otp, "Registration")
+        return Response({"message": "OTP sent to your email."}, status=200)
+    except Exception as e:
+        logger.exception("Failed to send registration OTP")
+        return Response(
+            {"message": "Failed to send OTP. Please try again."}, status=500
+        )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def verify_registration_otp(request):
+    email = request.data.get("email")
+    otp = request.data.get("otp")
+    if not email or not otp:
+        return Response({"message": "Email and OTP are required."}, status=400)
+    if not otp.isdigit() or len(otp) != 6:
+        return Response({"message": "Invalid OTP format."}, status=400)
+
+    cached = cache.get(f"reg_otp_{email}")
+    if not cached:
+        return Response({"message": "OTP expired or not found."}, status=400)
+    if cached["otp"] != otp:
+        return Response({"message": "Invalid OTP."}, status=400)
+    if cached["expires"] < timezone.now():
+        cache.delete(f"reg_otp_{email}")
+        return Response({"message": "OTP expired."}, status=400)
+
+    cache.set(f"reg_verified_{email}", True, timeout=300)
+    cache.delete(f"reg_otp_{email}")
+    return Response(
+        {"message": "OTP verified successfully.", "verified_email": email}, status=200
     )
 
 

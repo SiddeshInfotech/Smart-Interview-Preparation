@@ -1,7 +1,190 @@
 import React, { useState } from "react";
 import "../styles/CandidateProfile.css";
 
-/* ---- Inline SVG Icons (no emoji, no external deps) ---- */
+const skillSuggestions = [
+  // Programming Languages
+  "C",
+  "C++",
+  "C#",
+  "Java",
+  "Python",
+  "JavaScript",
+  "TypeScript",
+  "Go",
+  "Rust",
+  "Kotlin",
+  "Swift",
+  "PHP",
+  "Ruby",
+  "R",
+  "Dart",
+  "Scala",
+  "Perl",
+
+  // Frontend
+  "HTML",
+  "CSS",
+  "SASS",
+  "Bootstrap",
+  "Tailwind CSS",
+  "Material UI",
+  "React",
+  "Next.js",
+  "Angular",
+  "Vue.js",
+  "Nuxt.js",
+  "Redux",
+  "jQuery",
+
+  // Backend
+  "Node.js",
+  "Express.js",
+  "NestJS",
+  "Django",
+  "Flask",
+  "FastAPI",
+  "Spring Boot",
+  "ASP.NET Core",
+  ".NET",
+  "Laravel",
+  "Ruby on Rails",
+
+  // Mobile Development
+  "Android",
+  "iOS",
+  "React Native",
+  "Flutter",
+  "Xamarin",
+
+  // Databases
+  "MySQL",
+  "PostgreSQL",
+  "SQLite",
+  "MongoDB",
+  "MariaDB",
+  "Oracle Database",
+  "Microsoft SQL Server",
+  "Firebase",
+  "Redis",
+  "Cassandra",
+  "DynamoDB",
+
+  // Cloud
+  "AWS",
+  "Microsoft Azure",
+  "Google Cloud Platform",
+  "DigitalOcean",
+  "Heroku",
+  "Vercel",
+  "Netlify",
+
+  // DevOps
+  "Git",
+  "GitHub",
+  "GitLab",
+  "Bitbucket",
+  "Docker",
+  "Kubernetes",
+  "Jenkins",
+  "GitHub Actions",
+  "Terraform",
+  "Ansible",
+  "Nginx",
+  "Apache",
+
+  // APIs
+  "REST API",
+  "GraphQL",
+  "gRPC",
+  "WebSocket",
+
+  // Testing
+  "JUnit",
+  "PyTest",
+  "Jest",
+  "Mocha",
+  "Cypress",
+  "Selenium",
+  "Playwright",
+  "Postman",
+
+  // AI / ML / Data Science
+  "Machine Learning",
+  "Deep Learning",
+  "Artificial Intelligence",
+  "Natural Language Processing",
+  "Computer Vision",
+  "TensorFlow",
+  "PyTorch",
+  "Scikit-learn",
+  "Keras",
+  "Pandas",
+  "NumPy",
+  "OpenCV",
+  "LangChain",
+  "OpenAI API",
+  "Gemini API",
+
+  // Data Engineering
+  "Apache Spark",
+  "Apache Kafka",
+  "Hadoop",
+  "Airflow",
+
+  // Cybersecurity
+  "Network Security",
+  "Ethical Hacking",
+  "Penetration Testing",
+  "OWASP",
+  "Kali Linux",
+  "Wireshark",
+  "Burp Suite",
+
+  // Operating Systems
+  "Linux",
+  "Ubuntu",
+  "Windows Server",
+
+  // Software Engineering
+  "Object-Oriented Programming",
+  "Data Structures",
+  "Algorithms",
+  "System Design",
+  "Microservices",
+  "Design Patterns",
+  "Agile",
+  "Scrum",
+  "CI/CD",
+
+  // Game Development
+  "Unity",
+  "Unreal Engine",
+  "Godot",
+  "Blender",
+  "Aseprite",
+
+  // Embedded / IoT
+  "Arduino",
+  "Raspberry Pi",
+  "Embedded C",
+
+  // Version Control & Collaboration
+  "Git Flow",
+  "Jira",
+  "Confluence",
+  "Trello",
+  "Slack",
+
+  // Miscellaneous
+  "Socket Programming",
+  "Multithreading",
+  "Operating Systems",
+  "Computer Networks",
+  "Database Management Systems",
+  "Compiler Design",
+  "Cloud Computing"
+];
+
 const IconUser = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="12" cy="8" r="4" />
@@ -195,46 +378,81 @@ export default function CandidateProfile() {
             </div>
           </section>
 
-          {/* Education & Experience */}
+          {/* Education */}
           <section className="cp-section">
-            <h2><IconCap /> Education &amp; Experience</h2>
+            <h2><IconCap /> Education</h2>
             <hr />
+
             <div className="cp-grid-2">
               <div className="cp-field">
                 <label>Highest Degree</label>
-                <input type="text" placeholder="e.g. MS in Computer Science" />
+                <input
+                  type="text"
+                  placeholder="e.g. Bachelor of Computer Engineering"
+                />
               </div>
+
               <div className="cp-field">
                 <label>Institution</label>
-                <input type="text" placeholder="e.g. Stanford University" />
+                <input
+                  type="text"
+                  placeholder="e.g. ABC University"
+                />
               </div>
             </div>
+          </section>
 
+          {/* Experience */}
+          <section className="cp-section">
+            <h2><IconBriefcase /> Experience</h2>
+            <hr />
+
+            {/* Years of Experience */}
             <div className="cp-field cp-years-field">
               <label>Years of Professional Experience</label>
+
               <div className="cp-years-input">
-                <input type="text" placeholder="e.g. 5" />
+                <input
+                  type="number"
+                  placeholder="0"
+                />
                 <span>Years</span>
               </div>
             </div>
 
+            {/* Technical Skills */}
             <div className="cp-field">
               <label>Technical Skills</label>
+
               <div className="cp-skills-box">
-                {skills.map((skill, i) => (
-                  <span className="cp-skill-chip" key={i}>
+                {skills.map((skill, index) => (
+                  <span className="cp-skill-chip" key={index}>
                     {skill}
-                    <button onClick={() => removeSkill(i)}>Ã—</button>
+                    <button
+                      type="button"
+                      onClick={() => removeSkill(index)}
+                    >
+                      &times;
+                    </button>
                   </span>
                 ))}
+
                 <input
                   type="text"
+                  list="skills-list"
                   placeholder="Type a skill and press Enter..."
                   value={skillInput}
                   onChange={(e) => setSkillInput(e.target.value)}
                   onKeyDown={addSkill}
                 />
+
+                <datalist id="skills-list">
+                  {skillSuggestions.map((skill) => (
+                    <option key={skill} value={skill} />
+                  ))}
+                </datalist>
               </div>
+
               <p className="cp-suggested">
                 Suggested: Docker, AWS, System Design, TypeScript
               </p>

@@ -10,8 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+from datetime import timedelta
 from dotenv import load_dotenv
 from django.utils import timezone
 
@@ -78,6 +79,11 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher"
+]
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
@@ -89,8 +95,6 @@ REST_FRAMEWORK = {
 }
 
 AUTH_USER_MODEL = "authentication.User"
-
-from datetime import timedelta
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
