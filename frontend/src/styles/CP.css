@@ -1,4 +1,185 @@
-* {
+/* Dashboard Styles */
+.cp-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.cp-dashboard-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e8e8ee;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.cp-dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.cp-dashboard-card-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.cp-dashboard-card h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #1a1a2e;
+}
+
+.cp-dashboard-card p {
+  color: #666;
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+.cp-dashboard-stat {
+  font-weight: 600;
+  color: #4f3cf0 !important;
+  font-size: 20px !important;
+}
+
+.cp-dashboard-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.cp-dashboard-progress-bar {
+  height: 8px;
+  background: #4f3cf0;
+  border-radius: 4px;
+  flex: 1;
+}
+
+.cp-dashboard-progress span {
+  font-weight: 600;
+  color: #4f3cf0;
+}
+
+.cp-dashboard-btn {
+  background: #4f3cf0;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+  width: 100%;
+  transition: background 0.2s;
+}
+
+.cp-dashboard-btn:hover {
+  background: #3a2bc7;
+}
+
+/* Resume Upload Styles */
+.cp-resume-upload-box {
+  background: #f8f9ff;
+  border: 2px dashed #4f3cf0;
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  margin-bottom: 32px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cp-resume-upload-box:hover {
+  background: #f0f1ff;
+}
+
+.cp-resume-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.cp-resume-upload-box h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #1a1a2e;
+}
+
+.cp-resume-upload-box p {
+  color: #666;
+  margin: 4px 0;
+}
+
+.cp-resume-formats {
+  font-size: 13px;
+  color: #999 !important;
+  margin-top: 8px !important;
+}
+
+.cp-resume-upload-btn {
+  background: #4f3cf0;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: background 0.2s;
+}
+
+.cp-resume-upload-btn:hover {
+  background: #3a2bc7;
+}
+
+.cp-resume-info {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8e8ee;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.cp-resume-info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f4;
+}
+
+.cp-resume-info-item:last-child {
+  border-bottom: none;
+}
+
+.cp-resume-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.cp-resume-value {
+  color: #1a1a2e;
+  font-weight: 500;
+}
+
+/* Full width main when sidebar is hidden */
+.cp-main-full {
+  margin-left: 0 !important;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .cp-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .cp-resume-upload-box {
+    padding: 32px 16px;
+  }
+}* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;

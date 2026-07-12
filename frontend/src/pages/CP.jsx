@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import "../styles/CandidateProfile.css";
+import "../styles/CP.css";
 import {
   LayoutDashboard,
   Brain,

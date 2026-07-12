@@ -9,10 +9,11 @@ import ResumeUpload from "./pages/ResumeUpload";
 import Otp from "./pages/Otp";
 import RoleSelection from "./pages/RoleSelection";
 import InterviewerProfile from "./pages/InterviewerProfile";
-import CandidateProfile from "./pages/CandidateProfile";
+import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import AuthPage from "./pages/AuthPage";
 import ResetPassword from "./pages/ResetPassword";
+import CP from "./pages/CP";
 
 function App() {
   return (
@@ -25,11 +26,12 @@ function App() {
         <Route path="/resume-upload" element={<ResumeUpload />} />
         <Route path="/otp" element={<Otp />} />
         <Route path="/role-selection" element={<RoleSelection />} />
-        <Route path="/candidate-profile" element={<CandidateProfile />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/interviewer-profile" element={<InterviewerProfile />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/Auth-page" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+         <Route path="/CP" element={<CP />} />
       </Routes>
     </BrowserRouter>
   );
