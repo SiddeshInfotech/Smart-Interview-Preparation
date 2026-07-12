@@ -14,6 +14,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import AuthPage from "./pages/AuthPage";
 import ResetPassword from "./pages/ResetPassword";
 import CP from "./pages/CP";
+import Quiz from "./pages/Quiz";
+
 
 function App() {
   return (
@@ -31,7 +33,8 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/Auth-page" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-         <Route path="/CP" element={<CP />} />
+        <Route path="/CP" element={<CP />} />
+        <Route path="/quiz" element={<Quiz/>} />
       </Routes>
     </BrowserRouter>
   );
