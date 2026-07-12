@@ -33,8 +33,8 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Email configuration - Gmail SMTP
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     # Project apps
     "authentication",
     "candidate",
+    "common",
     "interviewer",
     "interview",
     "resume",

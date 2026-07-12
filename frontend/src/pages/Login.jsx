@@ -83,7 +83,7 @@ export default function Login() {
 
     try {
       const success = await handleLogin();
-      if (success) navigate("/dashboard");
+      if (success) navigate("/candidate-profile");
     } catch (err) {
       console.log("login submit error:", err);
       setError("Invalid email or password.");
