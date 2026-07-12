@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Skill   
+from .models import Skill
 
 class SkillSerializer(serializers.ModelSerializer):
     class Meta:
