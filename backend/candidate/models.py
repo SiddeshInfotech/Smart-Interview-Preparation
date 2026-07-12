@@ -1,7 +1,6 @@
 from django.db import models
 from authentication.models import User
 
-
 class Candidate_Profile(models.Model):
     candidate_id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, db_column="user_id")

@@ -564,7 +564,7 @@ const CandidateProfile = () => {
                 </div>
               </div>
             </div>
-
+            
             {/* Digital Presence */}
             <div className="digital-presence" ref={digitalPresenceRef}>
               <h3>Digital Presence</h3>
