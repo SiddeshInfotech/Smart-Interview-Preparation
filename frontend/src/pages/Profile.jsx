@@ -1,4 +1,4 @@
-// Profile.jsx - Pure Static Design (No API calls)
+
 import React, { useState } from "react";
 import {
   LayoutDashboard,
