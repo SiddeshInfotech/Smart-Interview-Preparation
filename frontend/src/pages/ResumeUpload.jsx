@@ -1,180 +1,323 @@
-import React, { useState, useRef } from "react";
+
+import React, { useState, useRef, useEffect } from 'react';
 import "../styles/ResumeUpload.css";
 
-const MAX_SIZE_MB = 10;
-const ACCEPTED_TYPES = [
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
+const App = () => {
+  const [file, setFile] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState('');
+  const [isAddedToProfile, setIsAddedToProfile] = useState(false);
+  const fileInputRef = useRef(null);
 
-export default function ResumeUpload() {
-  const [resumes, setResumes] = useState([]);
-  const [dragActive, setDragActive] = useState(false);
-  const [error, setError] = useState("");
-  const inputRef = useRef(null);
+  // Handle file selection
+  const handleFileSelect = (selectedFile) => {
+    if (!selectedFile) return;
 
-  const formatSize = (bytes) => {
-    const mb = bytes / (1024 * 1024);
-    return mb < 0.1 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${mb.toFixed(2)} MB`;
-  };
+    // Validate file type
+    const validTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    const validExtensions = ['pdf', 'docx'];
+    const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
 
-  const validateFile = (file) => {
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      return "Only PDF or DOCX files are supported.";
-    }
-    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      return `File is too large. Max size is ${MAX_SIZE_MB}MB.`;
-    }
-    return "";
-  };
-
-  const addFile = (file) => {
-    const validationError = validateFile(file);
-    if (validationError) {
-      setError(validationError);
+    if (!validTypes.includes(selectedFile.type) && !validExtensions.includes(fileExtension)) {
+      setUploadStatus('❌ Please upload a PDF or DOCX file');
       return;
     }
-    setError("");
-    const newResume = {
-      id: Date.now().toString(),
-      name: file.name,
-      size: file.size,
-      uploadedAt: new Date(),
-      active: resumes.length === 0,
-    };
-    setResumes((prev) => [newResume, ...prev]);
+
+    // Validate file size (5MB)
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      setUploadStatus('❌ File size must be less than 5MB');
+      return;
+    }
+
+    setFile(selectedFile);
+    setUploadStatus('✅ Selected Successfully');
+    setAnalysisResult(null);
+    setIsAddedToProfile(false);
   };
 
-  const handleFiles = (fileList) => {
-    const file = fileList?.[0];
-    if (file) addFile(file);
+  // Drag and drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
-    setDragActive(false);
-    handleFiles(e.dataTransfer.files);
+    e.stopPropagation();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files[0];
+    handleFileSelect(droppedFile);
   };
 
-  const setActive = (id) => {
-    setResumes((prev) => prev.map((r) => ({ ...r, active: r.id === id })));
+  // Browse file handler
+  const handleBrowseClick = () => {
+    fileInputRef.current.click();
   };
 
-  const removeResume = (id) => {
-    setResumes((prev) => {
-      const filtered = prev.filter((r) => r.id !== id);
-      if (filtered.length > 0 && !filtered.some((r) => r.active)) {
-        filtered[0].active = true;
-      }
-      return filtered;
-    });
+  const handleFileInputChange = (e) => {
+    const selectedFile = e.target.files[0];
+    handleFileSelect(selectedFile);
   };
 
-  const formatDate = (date) =>
-    date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  // Remove file handler
+  const handleRemoveFile = () => {
+    setFile(null);
+    setUploadStatus('');
+    setAnalysisResult(null);
+    setIsAddedToProfile(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Reset/Clear handler
+  const handleReset = () => {
+    setFile(null);
+    setUploadStatus('');
+    setAnalysisResult(null);
+    setIsLoading(false);
+    setIsAddedToProfile(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Analyze Resume handler
+  const handleAnalyze = () => {
+    if (!file) {
+      setUploadStatus('⚠️ Please select a file first');
+      return;
+    }
+
+    setIsLoading(true);
+    setAnalysisResult(null);
+
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoading(false);
+      setAnalysisResult({
+        score: 85,
+        strengths: [
+          'Strong professional summary',
+          'Relevant work experience',
+          'Quantifiable achievements',
+          'Good keyword optimization'
+        ],
+        improvements: [
+          'Add more specific metrics',
+          'Include relevant certifications',
+          'Expand technical skills section'
+        ],
+        recommendations: [
+          'Tailor your resume for each job application',
+          'Use action verbs to describe achievements',
+          'Keep the format consistent and professional'
+        ]
+      });
+      setUploadStatus('✅ Analysis Complete!');
+    }, 3000);
+  };
+
+  // Add to Profile handler
+  const handleAddToProfile = () => {
+    if (!file) {
+      setUploadStatus('⚠️ No resume to add to profile');
+      return;
+    }
+    setIsAddedToProfile(true);
+    setUploadStatus('✅ Resume added to profile successfully!');
+    
+    // You can add API call here to save to profile
+    console.log('Adding resume to profile:', file.name);
+  };
 
   return (
-    <div className="resume-page">
-      <div className="resume-container">
-        <h1 className="resume-title">Resume Manager</h1>
-        <p className="resume-subtitle">
-          Upload the resume you want your AI interviewer to reference. It's used
-          to tailor questions to your real experience.
-        </p>
-
-        <div
-          className={`upload-box ${dragActive ? "drag-active" : ""}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={() => setDragActive(false)}
-          onDrop={handleDrop}
-          onClick={() => inputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-        >
-          <svg className="upload-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinejoin="round"
-            />
-            <path d="M14 3v6h6" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-            <path d="M12 12v6M9 15l3-3 3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <p className="upload-title">Upload resume</p>
-          <p className="upload-hint">Drag and drop your PDF or DOCX file here to begin</p>
-
-          <button
-            type="button"
-            className="browse-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              inputRef.current?.click();
-            }}
-          >
-            Browse files
-          </button>
-
-          <p className="upload-limit">Max size: {MAX_SIZE_MB}MB &middot; PDF or DOCX</p>
-
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".pdf,.docx"
-            hidden
-            onChange={(e) => handleFiles(e.target.files)}
-          />
+    <div className="app-container">
+      <div className="main-content">
+        {/* Header Section */}
+        <div className="header-section">
+          <div className="header-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#6366f1" strokeWidth="2" strokeLinejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="#6366f1" strokeWidth="2" strokeLinejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="#6366f1" strokeWidth="2" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <h1 className="header-title">Resume Analysis</h1>
+          <p className="header-subtitle">
+            Upload your resume to receive AI-powered feedback and personalized interview preparation.
+          </p>
         </div>
 
-        {error && <p className="upload-error">{error}</p>}
+        {/* Upload Section */}
+        <div className="upload-section">
+          <div 
+            className={`drop-zone ${isDragging ? 'dragging' : ''}`}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            <div className="drop-zone-content">
+              <div className="upload-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 16V4M12 4L8 8M12 4L16 8" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M4 16L4 17C4 18.6569 5.34315 20 7 20L17 20C18.6569 20 20 18.6569 20 17L20 16" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <p className="drop-text">Drag and drop your resume here</p>
+              <p className="drop-or">or</p>
+              <button className="browse-btn" onClick={handleBrowseClick}>
+                Browse Files
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileInputChange}
+                accept=".pdf,.docx"
+                style={{ display: 'none' }}
+              />
+              <div className="file-requirements">
+                <span className="req-item">📄 PDF (.pdf)</span>
+                <span className="req-item">📂 DOCX (.docx)</span>
+                <span className="req-item">📦 Max: 5 MB</span>
+              </div>
+            </div>
+          </div>
 
-        {resumes.length > 0 && (
-          <div className="resume-list">
-            <h2 className="resume-list-title">Your resumes</h2>
-            {resumes.map((r) => (
-              <div key={r.id} className={`resume-item ${r.active ? "active" : ""}`}>
-                <div className="resume-item-icon">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinejoin="round"
-                    />
-                    <path d="M14 3v6h6" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          {/* Selected File Details */}
+          {file && (
+            <div className="file-details-card">
+              <div className="file-details-header">
+                <div className="file-icon-wrapper">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M14 2V8H20" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <div className="resume-item-info">
-                  <p className="resume-item-name">{r.name}</p>
-                  <p className="resume-item-meta">
-                    {formatSize(r.size)} &middot; Uploaded {formatDate(r.uploadedAt)}
-                  </p>
+                <div className="file-info">
+                  <p className="file-name">{file.name}</p>
+                  <div className="file-meta">
+                    <span className="file-size">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                    <span className="file-type">{file.type.includes('pdf') ? 'PDF' : 'DOCX'}</span>
+                    <span className={`file-status ${uploadStatus.includes('Success') ? 'success' : ''}`}>
+                      {uploadStatus}
+                    </span>
+                  </div>
                 </div>
-                {r.active ? (
-                  <span className="active-badge">In use</span>
-                ) : (
-                  <button type="button" className="text-link small" onClick={() => setActive(r.id)}>
-                    Use this
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="remove-btn"
-                  aria-label="Remove resume"
-                  onClick={() => removeResume(r.id)}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <button className="remove-file-btn" onClick={handleRemoveFile}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="action-buttons">
+            <button className="btn btn-secondary" onClick={handleBrowseClick}>
+              Browse File
+            </button>
+            <button className="btn btn-primary" onClick={handleAnalyze} disabled={!file || isLoading}>
+              {isLoading ? (
+                <>
+                  <span className="spinner"></span>
+                  Analyzing...
+                </>
+              ) : (
+                'Analyze Resume'
+              )}
+            </button>
+            <button className="btn btn-profile" onClick={handleAddToProfile} disabled={!file || isLoading}>
+              {isAddedToProfile ? '✅ Added to Profile' : 'Add to Profile'}
+            </button>
+            <button className="btn btn-outline" onClick={handleReset}>
+              Reset
+            </button>
           </div>
-        )}
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="loading-container">
+              <div className="progress-bar">
+                <div className="progress-fill"></div>
+              </div>
+              <p className="loading-text">Analyzing Resume... Please wait.</p>
+            </div>
+          )}
+
+          {/* Analysis Results */}
+          {analysisResult && (
+            <div className="results-container">
+              <div className="score-card">
+                <div className="score-circle">
+                  <div className="score-number">{analysisResult.score}</div>
+                  <div className="score-label">/100</div>
+                </div>
+                <h3 className="score-title">Resume Score</h3>
+              </div>
+
+              <div className="result-grid">
+                <div className="result-card strengths">
+                  <div className="result-header">
+                    <span className="result-icon">💪</span>
+                    <h4>Strengths</h4>
+                  </div>
+                  <ul className="result-list">
+                    {analysisResult.strengths.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="result-card improvements">
+                  <div className="result-header">
+                    <span className="result-icon">📈</span>
+                    <h4>Areas for Improvement</h4>
+                  </div>
+                  <ul className="result-list">
+                    {analysisResult.improvements.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="result-card recommendations full-width">
+                  <div className="result-header">
+                    <span className="result-icon">🎯</span>
+                    <h4>Recommendations</h4>
+                  </div>
+                  <ul className="result-list">
+                    {analysisResult.recommendations.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default App;
