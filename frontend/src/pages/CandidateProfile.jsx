@@ -19,11 +19,13 @@ import {
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import api from "../api/authAPI";   // <-- IMPORT THE AXIOS INSTANCE
+import api from "../api/authAPI";
 
 const CandidateProfile = () => {
   const [activeSection, setActiveSection] = useState("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isProgrammaticScroll, setIsProgrammaticScroll] = useState(false);
+  const scrollTimeoutRef = useRef(null);
 
   // --- Profile form state ---
   const [profile, setProfile] = useState({
@@ -139,10 +141,73 @@ const CandidateProfile = () => {
     return () => clearTimeout(delayDebounce);
   }, [newSkill]);
 
+  // --- Auto-highlight sidebar on scroll using getBoundingClientRect + RAF ---
+  useEffect(() => {
+    const sections = [
+      { ref: profileRef, name: "profile" },
+      { ref: educationRef, name: "education" },
+      { ref: skillsExperienceRef, name: "skillsExperience" },
+      { ref: digitalPresenceRef, name: "digitalPresence" },
+    ];
+
+    let rafId = null;
+
+    const updateActiveSection = () => {
+      if (isProgrammaticScroll) return;
+
+      const scrollY = window.scrollY + 120; // offset for sticky header
+      let newActive = "profile";
+      let minDistance = Infinity;
+
+      sections.forEach(({ ref, name }) => {
+        const el = ref.current;
+        if (!el) return;
+
+        const rect = el.getBoundingClientRect();
+        const top = rect.top + window.scrollY;
+        const bottom = rect.bottom + window.scrollY;
+
+        // If the section is currently visible in the viewport
+        if (scrollY >= top && scrollY < bottom) {
+          // Choose the one where the scroll position is closest to the top
+          const distance = Math.abs(scrollY - top);
+          if (distance < minDistance) {
+            minDistance = distance;
+            newActive = name;
+          }
+        }
+      });
+
+      setActiveSection((prev) => (prev !== newActive ? newActive : prev));
+    };
+
+    const handleScroll = () => {
+      if (scrollTimeoutRef.current) {
+        cancelAnimationFrame(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = requestAnimationFrame(updateActiveSection);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    // Set initial state
+    updateActiveSection();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollTimeoutRef.current) {
+        cancelAnimationFrame(scrollTimeoutRef.current);
+      }
+    };
+  }, [isProgrammaticScroll]);
+
   // --- Navigation functions ---
   const scrollToSection = (ref) => {
     if (ref.current) {
+      setIsProgrammaticScroll(true);
       ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => {
+        setIsProgrammaticScroll(false);
+      }, 700);
     }
   };
 
@@ -334,26 +399,21 @@ const CandidateProfile = () => {
 
         {/* Content */}
         <main className="content">
-          <div ref={profileRef} className="profile-section" id="profile">
+          <div className="profile-section" id="profile">
             <div className="section-header">
               <h2>Profile Setup</h2>
             </div>
 
             {/* Personal Information */}
-            <div className="personal-info">
+            <div className="personal-info" ref={profileRef}>
               <h3>Personal Information</h3>
               <div className="info-grid-vertical">
-                {/* Profile Picture – centered with conditional label */}
                 <div className="form-group profile-picture-group">
                   <label>Profile Picture</label>
                   <div className="profile-picture-upload">
                     <div className="profile-pic-wrapper">
                       {profilePicture ? (
-                        <img
-                          src={profilePicture}
-                          alt="Profile"
-                          className="profile-pic-img"
-                        />
+                        <img src={profilePicture} alt="Profile" className="profile-pic-img" />
                       ) : (
                         <UserCircle size={56} className="default-avatar" />
                       )}
@@ -372,7 +432,6 @@ const CandidateProfile = () => {
                   </div>
                 </div>
 
-                {/* Date of Birth */}
                 <div className="form-group">
                   <label>Date of Birth</label>
                   <div className="date-input-wrapper">
@@ -394,7 +453,6 @@ const CandidateProfile = () => {
                   </div>
                 </div>
 
-                {/* Gender */}
                 <div className="form-group">
                   <label>Gender</label>
                   <select
@@ -408,7 +466,6 @@ const CandidateProfile = () => {
                   </select>
                 </div>
 
-                {/* Location */}
                 <div className="form-group">
                   <label>Location</label>
                   <input
@@ -422,7 +479,7 @@ const CandidateProfile = () => {
             </div>
 
             {/* Education & Experience */}
-            <div ref={educationRef} className="education-section">
+            <div className="education-section" ref={educationRef}>
               <h3>Education & Experience</h3>
               <div className="form-row">
                 <div className="form-group">
@@ -450,8 +507,8 @@ const CandidateProfile = () => {
               </div>
             </div>
 
-            {/* Skills – with autocomplete */}
-            <div ref={skillsExperienceRef} className="skills-experience-section">
+            {/* Skills */}
+            <div className="skills-experience-section" ref={skillsExperienceRef}>
               <h3>Skills</h3>
               <div className="skills-container">
                 <label>Technical Skills</label>
@@ -509,7 +566,7 @@ const CandidateProfile = () => {
             </div>
 
             {/* Digital Presence */}
-            <div ref={digitalPresenceRef} className="digital-presence">
+            <div className="digital-presence" ref={digitalPresenceRef}>
               <h3>Digital Presence</h3>
               <div className="form-group full-width">
                 <label>LinkedIn Profile URL</label>
