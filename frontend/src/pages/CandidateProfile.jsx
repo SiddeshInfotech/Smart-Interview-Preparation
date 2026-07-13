@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import "../styles/CP.css";
+import "../styles/CandidateProfile.css";
 import {
   LayoutDashboard,
   Brain,
@@ -167,9 +167,7 @@ const CandidateProfile = () => {
         const top = rect.top + window.scrollY;
         const bottom = rect.bottom + window.scrollY;
 
-        // If the section is currently visible in the viewport
         if (scrollY >= top && scrollY < bottom) {
-          // Choose the one where the scroll position is closest to the top
           const distance = Math.abs(scrollY - top);
           if (distance < minDistance) {
             minDistance = distance;
@@ -189,7 +187,6 @@ const CandidateProfile = () => {
     };
 
     window.addEventListener("scroll", handleScroll);
-    // Set initial state
     updateActiveSection();
 
     return () => {
@@ -227,7 +224,7 @@ const CandidateProfile = () => {
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  // --- Skill suggestions API (using axios) ---
+  // --- Skill suggestions API ---
   const fetchSkillSuggestions = async (query) => {
     setLoadingSuggestions(true);
     try {
@@ -329,47 +326,22 @@ const CandidateProfile = () => {
 
   return (
     <div className="candidate-profile">
-      {/* Header */}
-      <header className="header">
-        <div className="header-left">
-          <button className="menu-toggle" onClick={toggleSidebar} aria-label="Toggle sidebar">
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-          <div className="logo">
-            <Brain size={28} />
-            <span>PrepMaster AI</span>
-          </div>
-        </div>
-        <nav className="nav-menu">
-          <a className="nav-link active">
-            <LayoutDashboard size={18} /> Dashboard
-          </a>
-          <a className="nav-link">
-            <Brain size={18} /> Practice
-          </a>
-          <a className="nav-link">
-            <CalendarDays size={18} /> Sessions
-          </a>
-          <a className="nav-link">
-            <BarChart3 size={18} /> Insights
-          </a>
-        </nav>
-        <div className="header-right">
-          <button className="header-icon"><Bell size={19} /></button>
-          <button className="header-icon"><Settings size={19} /></button>
-          <div className="profile-avatar">
-            <UserCircle size={22} />
-            <span>John</span>
-          </div>
-        </div>
-      </header>
+      {/* Header – REMOVED – no top navbar */}
 
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
 
-      <div className="main-container">
+      <div className="main-container" style={{ paddingTop: 0 }}>
         {/* Sidebar */}
         <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
           <div className="profile-nav">
+            <div
+              className="nav-item"
+              onClick={() => (window.location.href = "/dashboard")}
+              style={{ color: "var(--color-primary)", fontWeight: "600" }}
+            >
+              <LayoutDashboard size={18} /> <span>Back to Dashboard</span>
+            </div>
+            <div style={{ margin: "4px 0", borderBottom: "1px solid var(--color-border)" }} />
             <div
               className={`nav-item ${activeSection === "profile" ? "active" : ""}`}
               onClick={() => handleNavClick("profile")}
@@ -564,7 +536,7 @@ const CandidateProfile = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Digital Presence */}
             <div className="digital-presence" ref={digitalPresenceRef}>
               <h3>Digital Presence</h3>
@@ -599,11 +571,12 @@ const CandidateProfile = () => {
 
             {/* Action Buttons */}
             <div className="action-buttons">
-              <button className="btn-back" onClick={() => (window.location.href = "/dashboard")}>
-                Back to Dashboard
-              </button>
-              <button className="btn-cancel" onClick={() => window.location.reload()}>
-                Cancel
+              {/* Skip button – replaces Back to Dashboard */}
+              <button
+                className="btn-skip"
+                onClick={() => (window.location.href = "/dashboard")}
+              >
+                Skip
               </button>
               <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
                 <Save size={17} />

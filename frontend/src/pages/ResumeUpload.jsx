@@ -1,185 +1,157 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from "react";
+import { LayoutDashboard, ClipboardList, FileText } from "lucide-react";
+import PageNavbar from "../components/PageNavbar.jsx";
 import "../styles/ResumeUpload.css";
 
-const App = () => {
+const ResumeUpload = () => {
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState('');
+  const [uploadStatus, setUploadStatus] = useState("");
   const [isAddedToProfile, setIsAddedToProfile] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Handle file selection
+  useEffect(() => {
+    return () => {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    };
+  }, []);
+
   const handleFileSelect = (selectedFile) => {
     if (!selectedFile) return;
 
-    // Validate file type
     const validTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
-    const validExtensions = ['pdf', 'docx'];
-    const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
+    const validExtensions = ["pdf", "docx"];
+    const fileExtension = selectedFile.name.split(".").pop().toLowerCase();
 
     if (!validTypes.includes(selectedFile.type) && !validExtensions.includes(fileExtension)) {
-      setUploadStatus('❌ Please upload a PDF or DOCX file');
+      setUploadStatus("Please upload a PDF or DOCX file");
       return;
     }
 
-    // Validate file size (5MB)
     if (selectedFile.size > 5 * 1024 * 1024) {
-      setUploadStatus('❌ File size must be less than 5MB');
+      setUploadStatus("File size must be less than 5MB");
       return;
     }
 
     setFile(selectedFile);
-    setUploadStatus('✅ Selected Successfully');
+    setUploadStatus("Selected Successfully");
     setAnalysisResult(null);
     setIsAddedToProfile(false);
   };
 
-  // Drag and drop handlers
-  const handleDragEnter = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDragEnter = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     setIsDragging(true);
   };
 
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     setIsDragging(false);
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     setIsDragging(false);
-    const droppedFile = e.dataTransfer.files[0];
-    handleFileSelect(droppedFile);
+    handleFileSelect(event.dataTransfer.files[0]);
   };
 
-  // Browse file handler
   const handleBrowseClick = () => {
-    fileInputRef.current.click();
+    fileInputRef.current?.click();
   };
 
-  const handleFileInputChange = (e) => {
-    const selectedFile = e.target.files[0];
-    handleFileSelect(selectedFile);
+  const handleFileInputChange = (event) => {
+    handleFileSelect(event.target.files[0]);
   };
 
-  // Remove file handler
   const handleRemoveFile = () => {
     setFile(null);
-    setUploadStatus('');
+    setUploadStatus("");
     setAnalysisResult(null);
     setIsAddedToProfile(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Reset/Clear handler
   const handleReset = () => {
     setFile(null);
-    setUploadStatus('');
+    setUploadStatus("");
     setAnalysisResult(null);
     setIsLoading(false);
     setIsAddedToProfile(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Analyze Resume handler
   const handleAnalyze = () => {
     if (!file) {
-      setUploadStatus('⚠️ Please select a file first');
+      setUploadStatus("Please select a file first");
       return;
     }
 
     setIsLoading(true);
     setAnalysisResult(null);
-
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
+      setUploadStatus("Resume ready for analysis");
       setAnalysisResult({
-        score: 85,
-        strengths: [
-          'Strong professional summary',
-          'Relevant work experience',
-          'Quantifiable achievements',
-          'Good keyword optimization'
-        ],
-        improvements: [
-          'Add more specific metrics',
-          'Include relevant certifications',
-          'Expand technical skills section'
-        ],
-        recommendations: [
-          'Tailor your resume for each job application',
-          'Use action verbs to describe achievements',
-          'Keep the format consistent and professional'
-        ]
+        title: file.name,
+        summary: "",
+        score: null,
+        recommendations: [],
       });
-      setUploadStatus('✅ Analysis Complete!');
-    }, 3000);
+    }, 900);
   };
 
-  // Add to Profile handler
   const handleAddToProfile = () => {
     if (!file) {
-      setUploadStatus('⚠️ No resume to add to profile');
+      setUploadStatus("No resume to add to profile");
       return;
     }
+
     setIsAddedToProfile(true);
-    setUploadStatus('✅ Resume added to profile successfully!');
-    
-    // You can add API call here to save to profile
-    console.log('Adding resume to profile:', file.name);
+    setUploadStatus("Resume added to profile successfully!");
   };
 
   return (
-    <div className="app-container">
-      <div className="main-content">
-        {/* Header Section */}
-        <div className="header-section">
-          <div className="header-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#6366f1" strokeWidth="2" strokeLinejoin="round"/>
-              <path d="M2 17L12 22L22 17" stroke="#6366f1" strokeWidth="2" strokeLinejoin="round"/>
-              <path d="M2 12L12 17L22 12" stroke="#6366f1" strokeWidth="2" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <h1 className="header-title">Resume Analysis</h1>
-          <p className="header-subtitle">
-            Upload your resume to receive AI-powered feedback and personalized interview preparation.
-          </p>
-        </div>
+    <div className="resume-page-wrapper">
+      <PageNavbar
+        activePath="/resume-upload"
+        navItems={[
+          { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
+          { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
+          { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
+        ]}
+        brandLabel="PrepMaster AI"
+        brandHref="/dashboard"
+      />
 
-        {/* Upload Section */}
-        <div className="upload-section">
-          <div 
-            className={`drop-zone ${isDragging ? 'dragging' : ''}`}
+      <main className="resume-main-shell">
+        <section className="resume-card">
+          <div
+            className={`drop-zone ${isDragging ? "dragging" : ""} ${file ? "has-file" : ""}`}
             onDragEnter={handleDragEnter}
             onDragLeave={handleDragLeave}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
           >
             <div className="drop-zone-content">
-              <div className="upload-icon">
+              <div className="upload-icon" aria-hidden="true">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 16V4M12 4L8 8M12 4L16 8" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M4 16L4 17C4 18.6569 5.34315 20 7 20L17 20C18.6569 20 20 18.6569 20 17L20 16" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 16V4M12 4L8 8M12 4L16 8" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M4 16L4 17C4 18.6569 5.34315 20 7 20L17 20C18.6569 20 20 18.6569 20 17L20 16" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
               <p className="drop-text">Drag and drop your resume here</p>
@@ -192,50 +164,45 @@ const App = () => {
                 ref={fileInputRef}
                 onChange={handleFileInputChange}
                 accept=".pdf,.docx"
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
               />
               <div className="file-requirements">
-                <span className="req-item">📄 PDF (.pdf)</span>
-                <span className="req-item">📂 DOCX (.docx)</span>
-                <span className="req-item">📦 Max: 5 MB</span>
+                <span className="req-item">PDF (.pdf)</span>
+                <span className="req-item">DOCX (.docx)</span>
+                <span className="req-item">Max: 5 MB</span>
               </div>
             </div>
           </div>
 
-          {/* Selected File Details */}
           {file && (
             <div className="file-details-card">
               <div className="file-details-header">
                 <div className="file-icon-wrapper">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M14 2V8H20" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M14 2V8H20" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
                 <div className="file-info">
                   <p className="file-name">{file.name}</p>
                   <div className="file-meta">
                     <span className="file-size">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                    <span className="file-type">{file.type.includes('pdf') ? 'PDF' : 'DOCX'}</span>
-                    <span className={`file-status ${uploadStatus.includes('Success') ? 'success' : ''}`}>
+                    <span className="file-type">{file.type.includes("pdf") ? "PDF" : "DOCX"}</span>
+                    <span className={`file-status ${uploadStatus.includes("Success") ? "success" : ""}`}>
                       {uploadStatus}
                     </span>
                   </div>
                 </div>
                 <button className="remove-file-btn" onClick={handleRemoveFile}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
               </div>
             </div>
           )}
 
-          {/* Action Buttons */}
           <div className="action-buttons">
-            <button className="btn btn-secondary" onClick={handleBrowseClick}>
-              Browse File
-            </button>
             <button className="btn btn-primary" onClick={handleAnalyze} disabled={!file || isLoading}>
               {isLoading ? (
                 <>
@@ -243,18 +210,17 @@ const App = () => {
                   Analyzing...
                 </>
               ) : (
-                'Analyze Resume'
+                "Analyze Resume"
               )}
             </button>
             <button className="btn btn-profile" onClick={handleAddToProfile} disabled={!file || isLoading}>
-              {isAddedToProfile ? '✅ Added to Profile' : 'Add to Profile'}
+              {isAddedToProfile ? "✅ Added to Profile" : "Add to Profile"}
             </button>
             <button className="btn btn-outline" onClick={handleReset}>
               Reset
             </button>
           </div>
 
-          {/* Loading State */}
           {isLoading && (
             <div className="loading-container">
               <div className="progress-bar">
@@ -264,60 +230,103 @@ const App = () => {
             </div>
           )}
 
-          {/* Analysis Results */}
-          {analysisResult && (
+          {analysisResult ? (
             <div className="results-container">
-              <div className="score-card">
-                <div className="score-circle">
-                  <div className="score-number">{analysisResult.score}</div>
-                  <div className="score-label">/100</div>
-                </div>
-                <h3 className="score-title">Resume Score</h3>
+              <div className="analysis-section-title">
+                <h3>Resume Insights</h3>
+                <p>Ready to map backend output from resume, profile, and skills data.</p>
               </div>
 
               <div className="result-grid">
-                <div className="result-card strengths">
-                  <div className="result-header">
-                    <span className="result-icon">💪</span>
-                    <h4>Strengths</h4>
+                <section className="result-card result-card--summary">
+                  <div className="result-header result-header--left">
+                    <span className="result-icon">📄</span>
+                    <h4>Resume Summary</h4>
                   </div>
-                  <ul className="result-list">
-                    {analysisResult.strengths.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="result-card improvements">
-                  <div className="result-header">
-                    <span className="result-icon">📈</span>
-                    <h4>Areas for Improvement</h4>
+                  <div className="result-body">
+                    <div className="analysis-row">
+                      <div className="analysis-field">
+                        <span className="analysis-field__label">Title</span>
+                        <span className="analysis-field__value">{analysisResult.title || "—"}</span>
+                      </div>
+                      <div className="analysis-field analysis-field--grow">
+                        <span className="analysis-field__label">Summary</span>
+                        <span className="analysis-field__value">{analysisResult.summary || "—"}</span>
+                      </div>
+                      <div className="analysis-field analysis-field--narrow">
+                        <span className="analysis-field__label">Score</span>
+                        <span className="analysis-field__value">{analysisResult.score ?? "—"}</span>
+                      </div>
+                    </div>
                   </div>
-                  <ul className="result-list">
-                    {analysisResult.improvements.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
+                </section>
 
-                <div className="result-card recommendations full-width">
-                  <div className="result-header">
+                <section className="result-card result-card--profile">
+                  <div className="result-header result-header--left">
+                    <span className="result-icon">👤</span>
+                    <h4>Candidate Profile</h4>
+                    <span className="result-header-note">with social platform urls</span>
+                  </div>
+                  <div className="result-body">
+                    <div className="analysis-row analysis-row--wrap">
+                      {["Name", "Email", "Role", "Location", "Education", "Experience", "LinkedIn", "GitHub", "Portfolio"].map(
+                        (label) => (
+                          <div className="analysis-field analysis-field--profile" key={label}>
+                            <span className="analysis-field__label">{label}</span>
+                            <span className="analysis-field__value">—</span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="result-card result-card--skills">
+                  <div className="result-header result-header--left">
+                    <span className="result-icon">✨</span>
+                    <h4>Education, Experience and Skill</h4>
+                  </div>
+                  <div className="result-body">
+                    <div className="analysis-row analysis-row--wrap">
+                      {["Education", "Experience", "Matched skills", "Missing skills", "Suggested next skills", "Skill category"].map((label) => (
+                        <div className="analysis-field analysis-field--skill" key={label}>
+                          <span className="analysis-field__label">{label}</span>
+                          <span className="analysis-field__value">—</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="result-card result-card--recommendations">
+                  <div className="result-header result-header--left">
                     <span className="result-icon">🎯</span>
-                    <h4>Recommendations</h4>
+                    <h4>Recommendation and Suggestions</h4>
                   </div>
-                  <ul className="result-list">
-                    {analysisResult.recommendations.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
+                  <div className="result-body">
+                    <div className="analysis-row analysis-row--wrap">
+                      <div className="analysis-field analysis-field--recommendation">
+                        <span className="analysis-field__label">Suggestion 1</span>
+                        <span className="analysis-field__value">Will appear after analysis.</span>
+                      </div>
+                      <div className="analysis-field analysis-field--recommendation">
+                        <span className="analysis-field__label">Suggestion 2</span>
+                        <span className="analysis-field__value">Will appear after analysis.</span>
+                      </div>
+                      <div className="analysis-field analysis-field--recommendation">
+                        <span className="analysis-field__label">Suggestion 3</span>
+                        <span className="analysis-field__value">Will appear after analysis.</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
               </div>
             </div>
-          )}
-        </div>
-      </div>
+          ) : null}
+        </section>
+      </main>
     </div>
   );
 };
 
-export default App;
+export default ResumeUpload;

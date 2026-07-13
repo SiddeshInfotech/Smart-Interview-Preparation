@@ -38,7 +38,7 @@ export default function Home() {
 }
 
 >> AI Feedback: Consider a greedy
-   heuristic for space.`}</pre>
+  heuristic for space.`}</pre>
         </div>
       </section>
 

@@ -1,11 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  ClipboardList,
+  FileText,
+  Plus
+} from 'lucide-react';
+import api from '../api/authAPI';
 import '../styles/Quiz.css';
+import PageNavbar from "../components/PageNavbar.jsx";
 
 const Quiz = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState('setup');
-  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedTopics, setSelectedTopics] = useState([]);
+  const [newTopic, setNewTopic] = useState('');
+  const [topicSuggestions, setTopicSuggestions] = useState([]);
+  const [showTopicSuggestions, setShowTopicSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const suggestionRef = useRef(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
   const [selectedQuestionType, setSelectedQuestionType] = useState('');
+  const [promptText, setPromptText] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]);
   const [timer, setTimer] = useState(900);
@@ -14,16 +30,79 @@ const Quiz = () => {
   const [timeTaken, setTimeTaken] = useState(0);
   const [quizQuestions, setQuizQuestions] = useState([]);
 
-  const subjects = [
-    { id: 'c', name: 'C' },
-    { id: 'cpp', name: 'C++' },
-    { id: 'java', name: 'Java' },
-    { id: 'python', name: 'Python' },
-    { id: 'html', name: 'HTML' }
-  ];
+  // --- Close dropdowns when clicking outside ---
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (suggestionRef.current && !suggestionRef.current.contains(event.target)) {
+        setShowTopicSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // --- Debounced topic suggestions ---
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (newTopic.trim().length >= 1) {
+        fetchTopicSuggestions(newTopic.trim());
+      } else {
+        setTopicSuggestions([]);
+        setShowTopicSuggestions(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [newTopic]);
+
+  const fetchTopicSuggestions = async (query) => {
+    setLoadingSuggestions(true);
+    try {
+      const response = await api.get(`/common/skills/?search=${encodeURIComponent(query)}`);
+      setTopicSuggestions(response.data);
+      setShowTopicSuggestions(response.data.length > 0);
+    } catch (error) {
+      console.error("Error fetching topics:", error);
+      setTopicSuggestions([]);
+      setShowTopicSuggestions(false);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const addTopicFromSuggestion = (topic) => {
+    if (!selectedTopics.some((t) => t.skill_name?.toLowerCase() === topic.skill_name?.toLowerCase() || t.name?.toLowerCase() === topic.skill_name?.toLowerCase())) {
+      setSelectedTopics([...selectedTopics, { id: topic.id, name: topic.skill_name }]);
+    }
+    setNewTopic("");
+    setShowTopicSuggestions(false);
+  };
+
+  const handleAddTopic = (e) => {
+    if (e.key === 'Enter' && newTopic.trim()) {
+      const trimmed = newTopic.trim();
+      const matched = topicSuggestions.find(
+        (t) => t.skill_name.toLowerCase() === trimmed.toLowerCase()
+      );
+      
+      if (matched) {
+        addTopicFromSuggestion(matched);
+      } else {
+        if (!selectedTopics.some(t => t.name.toLowerCase() === trimmed.toLowerCase())) {
+          setSelectedTopics([...selectedTopics, { id: Date.now().toString(), name: trimmed }]);
+        }
+        setNewTopic('');
+        setShowTopicSuggestions(false);
+      }
+    }
+  };
+
+  const removeTopic = (id) => {
+    setSelectedTopics(selectedTopics.filter(t => t.id !== id));
+  };
 
   const difficulties = ['Easy', 'Medium', 'Hard'];
-  const questionTypes = ['MCQ', 'True False', 'Coding'];
+  const questionTypes = ['MCQ', 'Coding Challenge', 'Mock Interview'];
 
   const questionBank = {
     'c': {
@@ -405,12 +484,16 @@ const Quiz = () => {
   }, [quizStarted, timer]);
 
   const getQuestions = () => {
-    if (selectedSubject && selectedDifficulty && selectedQuestionType) {
-      const questions = questionBank[selectedSubject]?.[selectedDifficulty]?.[selectedQuestionType] || [];
+    if (selectedTopics.length > 0 && selectedDifficulty && selectedQuestionType) {
+      let questions = [];
+      selectedTopics.forEach(topic => {
+        const q = questionBank[topic.id]?.[selectedDifficulty]?.[selectedQuestionType] || [];
+        questions = questions.concat(q);
+      });
       return questions.length > 0 ? questions : [
         {
           id: 1,
-          text: `No questions available for ${selectedSubject} - ${selectedDifficulty} - ${selectedQuestionType}`,
+          text: `No questions available for selected combinations.`,
           options: ['Please select different options'],
           correct: 0,
           explanation: 'Try selecting different combinations.'
@@ -494,15 +577,68 @@ const Quiz = () => {
 
       <div className="setup-card">
         <div className="setup-section">
-          <h3>📚 Select Subject</h3>
-          <div className="subject-grid">
-            {subjects.map(subject => (
+          <h3>📚 Select Topics</h3>
+          <div className="skills-container">
+            {selectedTopics.length > 0 && (
+              <div className="skill-tags">
+                {selectedTopics.map((topic) => (
+                  <span key={topic.id} className="skill-tag">
+                    {topic.name}
+                    <button
+                      type="button"
+                      className="skill-remove"
+                      onClick={() => removeTopic(topic.id)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="skill-input-wrapper" ref={suggestionRef}>
+              <input
+                type="text"
+                placeholder="Type a topic and press Enter..."
+                value={newTopic}
+                onChange={(e) => setNewTopic(e.target.value)}
+                onKeyDown={handleAddTopic}
+                onFocus={() => setShowTopicSuggestions(true)}
+              />
+              <Plus size={18} className="skill-input-icon" />
+              {showTopicSuggestions && (
+                <div className="skill-suggestions-dropdown">
+                  {loadingSuggestions ? (
+                    <div className="suggestion-loading">Loading...</div>
+                  ) : (
+                    topicSuggestions.map((topic) => (
+                      <div
+                        key={topic.id}
+                        className="suggestion-item"
+                        onClick={() => addTopicFromSuggestion(topic)}
+                      >
+                        <span className="suggestion-name">{topic.skill_name}</span>
+                        {topic.category && <span className="suggestion-category">{topic.category}</span>}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="divider"></div>
+
+        <div className="setup-section">
+          <h3>📝 Question Type</h3>
+          <div className="question-type-grid">
+            {questionTypes.map(type => (
               <div
-                key={subject.id}
-                className={`subject-item ${selectedSubject === subject.id ? 'selected' : ''}`}
-                onClick={() => setSelectedSubject(subject.id)}
+                key={type}
+                className={`question-type-item ${selectedQuestionType === type ? 'selected' : ''}`}
+                onClick={() => setSelectedQuestionType(type)}
               >
-                {subject.name}
+                {type}
               </div>
             ))}
           </div>
@@ -529,25 +665,25 @@ const Quiz = () => {
         <div className="divider"></div>
 
         <div className="setup-section">
-          <h3>📝 Question Type</h3>
-          <div className="question-type-grid">
-            {questionTypes.map(type => (
-              <div
-                key={type}
-                className={`question-type-item ${selectedQuestionType === type ? 'selected' : ''}`}
-                onClick={() => setSelectedQuestionType(type)}
-              >
-                {type}
-              </div>
-            ))}
+          <h3>💬 Custom Instructions (Optional)</h3>
+          <div className="prompt-box-wrapper">
+            <textarea
+              className="prompt-box-textarea"
+              placeholder="e.g. Focus on dynamic programming and graph algorithms..."
+              value={promptText}
+              onChange={(e) => setPromptText(e.target.value)}
+              rows="3"
+            ></textarea>
           </div>
         </div>
 
-        {(selectedSubject && selectedDifficulty && selectedQuestionType) && (
-          <button className="start-quiz-btn" onClick={handleStartQuiz}>
-            🚀 Start Quiz
-          </button>
-        )}
+        <button 
+          className="start-quiz-btn" 
+          onClick={handleStartQuiz}
+          disabled={!(selectedTopics.length > 0 && selectedDifficulty && selectedQuestionType)}
+        >
+          🚀 Start Quiz
+        </button>
       </div>
     </div>
   );
@@ -717,7 +853,7 @@ const Quiz = () => {
               <button className="practice-btn secondary">
                 🎤 Go to Mock Interview
               </button>
-              <button className="practice-btn secondary">
+              <button className="practice-btn secondary" onClick={() => navigate("/dashboard")}>
                 🏠 Return to Dashboard
               </button>
             </div>
@@ -729,27 +865,24 @@ const Quiz = () => {
 
   return (
     <div className="quiz-app">
-      <nav className="navbar">
-        <div className="nav-brand">InterviewAI</div>
-        <ul className="nav-links">
-          <li>Dashboard</li>
-          <li className="active">Practice</li>
-          <li>Candidates</li>
-          <li>Insights</li>
-        </ul>
-        <div className="nav-search">
-          <input type="text" placeholder="Search questions..." />
-        </div>
-        <div className="nav-profile">
-          <span className="profile-avatar">AR</span>
-          <span className="profile-name">Alex Rivera</span>
-        </div>
-      </nav>
+      <PageNavbar
+        activePath="/quiz"
+        navItems={[
+          { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
+          { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
+          { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
+        ]}
+      />
 
-      <div className="main-content">
-        {currentStep === 'setup' && renderSetup()}
-        {currentStep === 'quiz' && renderQuiz()}
-        {currentStep === 'results' && renderResults()}
+      {/* Main page content container */}
+      <div className="dashboard-page-container">
+        <main className="dashboard-content-wrapper">
+          <div className="quiz-content-wrapper" style={{ paddingTop: "20px" }}>
+            {currentStep === 'setup' && renderSetup()}
+            {currentStep === 'quiz' && renderQuiz()}
+            {currentStep === 'results' && renderResults()}
+          </div>
+        </main>
       </div>
     </div>
   );

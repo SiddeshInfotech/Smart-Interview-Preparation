@@ -13,7 +13,7 @@ import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import AuthPage from "./pages/AuthPage";
 import ResetPassword from "./pages/ResetPassword";
-import CP from "./pages/CP";
+import CandidateProfile from "./pages/CandidateProfile";
 import Quiz from "./pages/Quiz";
 
 
@@ -33,7 +33,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/Auth-page" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/CP" element={<CP />} />
+        <Route path="/candidate-profile" element={<CandidateProfile />} />
         <Route path="/quiz" element={<Quiz/>} />
       </Routes>
     </BrowserRouter>

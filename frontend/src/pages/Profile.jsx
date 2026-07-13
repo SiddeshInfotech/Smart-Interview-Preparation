@@ -1,12 +1,6 @@
 
 import React, { useState } from "react";
 import {
-  LayoutDashboard,
-  Brain,
-  CalendarDays,
-  BarChart3,
-  Bell,
-  Settings,
   UserCircle,
   Mail,
   MapPin,
@@ -21,8 +15,12 @@ import {
   Code,
   Clock,
   Edit,
+  LayoutDashboard,
+  ClipboardList,
+  FileText,
 } from "lucide-react";
 import "../styles/Profile.css";
+import PageNavbar from "../components/PageNavbar.jsx";
 
 // Custom GitHub Icon
 const GitHubIcon = ({ size = 20 }) => (
@@ -111,37 +109,16 @@ const Profile = () => {
 
   return (
     <div className="profile-page">
-      {/* Header */}
-      <header className="profile-header">
-        <div className="header-left">
-          <div className="logo">
-            <Brain size={28} />
-            <span>PrepMaster AI</span>
-          </div>
-        </div>
-        <nav className="nav-menu">
-          <a href="/dashboard" className="nav-link">
-            <LayoutDashboard size={18} /> Dashboard
-          </a>
-          <a href="/practice" className="nav-link">
-            <Brain size={18} /> Practice
-          </a>
-          <a href="/sessions" className="nav-link">
-            <CalendarDays size={18} /> Sessions
-          </a>
-          <a href="/insights" className="nav-link">
-            <BarChart3 size={18} /> Insights
-          </a>
-        </nav>
-        <div className="header-right">
-          <button className="header-icon"><Bell size={19} /></button>
-          <button className="header-icon"><Settings size={19} /></button>
-          <div className="profile-avatar">
-            <UserCircle size={22} />
-            <span>Rahul</span>
-          </div>
-        </div>
-      </header>
+      <PageNavbar
+        activePath="/profile"
+        navItems={[
+          { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
+          { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
+          { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
+        ]}
+        brandLabel="PrepMaster AI"
+        brandHref="/dashboard"
+      />
 
       {/* Main Content */}
       <div className="profile-main">
