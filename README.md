@@ -1,4 +1,5 @@
 # Smart-Interview-Preparation
+
 ## Tech Stack
 
 Smart Interview Preparation Portal is an AI-powered web application designed to help candidates prepare for technical interviews through resume analysis, coding assessments, interview scheduling, and performance analytics.
@@ -99,23 +100,27 @@ python manage.py runserver
 
 ---
 
+# Implemented Modules
+
+1. Authentication Module Implemented
+2. Candidate Profile Module Implemented
+
+---
+
 # Team Members
 
-- Kimaya Nitin Patil – Frontend Development
-- Sana Salim Ansari – Backend Development
+- Aditya Yuvraj Bagul – Backend Development, Integration
+- Kimaya Nitin Patil – Backend Development, Integration
+- Sana Salim Ansari – Frontend Development
 - Pathan Zoha Khan Ferozkhan – Database Design
-- Aditya Yuvraj Bagul – UI/UX Design
-- Yuvraj Parikh Suryawanshi – Integration & Documentation
+- Yuvraj Parikh Suryawanshi – Research & Documentation
 
 ---
 
 # Planned Modules
 
-- Authentication
 - Resume Analysis
 - Interview Scheduling
 - Question Bank
 - Coding Assessment
 - Performance Analytics
-
----
