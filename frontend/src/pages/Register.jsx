@@ -1,3 +1,4 @@
+import api from "../api/authAPI";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ShieldCheck, User, Briefcase, KeyRound, Mail, Lock, UserRound, Phone, CheckCircle } from "lucide-react";

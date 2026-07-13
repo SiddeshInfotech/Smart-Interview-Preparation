@@ -23,6 +23,10 @@ class Skill(models.Model):
         default="Other"
     )
 
+    def save(self, *args, **kwargs):
+        self.skill_name = " ".join(self.skill_name.split())
+        super().save(*args, **kwargs)
+
     is_active = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

@@ -33,8 +33,8 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Email configuration - Gmail SMTP
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -44,7 +44,7 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "your-email@gmail.com")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "your-app-password")
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
+GEMINI_API_KEY ="AQ.Ab8RN6KcSCU8iAWGjROK0HSI9IftdEicL8f96vhepFkXvv1j9g"
 # Application definition
 
 INSTALLED_APPS = [
@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     # Project apps
     "authentication",
     "candidate",
+    "common",
     "interviewer",
     "interview",
     "resume",
