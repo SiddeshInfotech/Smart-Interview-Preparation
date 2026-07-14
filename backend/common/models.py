@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class Skill(models.Model):
     CATEGORY_CHOICES = [
         ("Programming", "Programming"),
