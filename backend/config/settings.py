@@ -19,6 +19,7 @@ from django.utils import timezone
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 
 # Quick-start development settings - unsuitable for production
@@ -44,6 +45,8 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "your-email@gmail.com")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "your-app-password")
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+print("EMAIL:", EMAIL_HOST_USER)
+print("PASSWORD:", EMAIL_HOST_PASSWORD)
 
 # Gemini key configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -92,11 +95,14 @@ PASSWORD_HASHERS = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+
 ]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "authentication.auth_jwt.CustomJWTAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
 }
 

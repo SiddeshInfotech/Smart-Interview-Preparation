@@ -170,11 +170,13 @@ def forgot_password(request):
             status=status.HTTP_200_OK,
         )
     except Exception as e:
-        logger.exception(f"Failed to send OTP to {email}")
-        return Response(
-            {"message": "Failed to send OTP. Please try again later."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+         print("EMAIL ERROR:", str(e))
+         logger.exception(e)
+
+    return Response(
+        {"message": str(e)},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
 
 
 @api_view(["POST"])

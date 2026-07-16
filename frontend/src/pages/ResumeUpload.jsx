@@ -1,3 +1,4 @@
+import api from "../api/authAPI";
 import React, { useEffect, useRef, useState } from "react";
 import { LayoutDashboard, ClipboardList, FileText } from "lucide-react";
 import PageNavbar from "../components/PageNavbar.jsx";
@@ -8,9 +9,23 @@ const ResumeUpload = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [resumeId, setResumeId] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [isAddedToProfile, setIsAddedToProfile] = useState(false);
+
   const fileInputRef = useRef(null);
+
+  const candidateProfile = {
+  Name: analysisResult?.candidate_name || "—",
+  Email: analysisResult?.email || "—",
+  Role: analysisResult?.role || "—",
+  Location: analysisResult?.location || "—",
+  Education: analysisResult?.education || "—",
+  Experience: analysisResult?.experience || "—",
+  LinkedIn: analysisResult?.linkedin || "—",
+  GitHub: analysisResult?.github || "—",
+  Portfolio: analysisResult?.portfolio || "—",
+};
 
   useEffect(() => {
     return () => {
@@ -93,38 +108,105 @@ const ResumeUpload = () => {
     setIsLoading(false);
     setIsAddedToProfile(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    window.location.reload();
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
+
     if (!file) {
-      setUploadStatus("Please select a file first");
-      return;
+        setUploadStatus("Please select a file first");
+        return;
     }
 
     setIsLoading(true);
-    setAnalysisResult(null);
-    setTimeout(() => {
-      setIsLoading(false);
-      setUploadStatus("Resume ready for analysis");
-      setAnalysisResult({
-        title: file.name,
-        summary: "",
-        score: null,
-        recommendations: [],
-      });
-    }, 900);
-  };
 
-  const handleAddToProfile = () => {
-    if (!file) {
-      setUploadStatus("No resume to add to profile");
-      return;
+    try {
+
+        // Upload Resume
+        const formData = new FormData();
+        formData.append("resume", file);
+
+        const uploadResponse = await api.post(
+            "/resume/upload/",
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
+
+        const uploadData = uploadResponse.data;
+
+        const id = uploadData.data.resume_id;
+        setResumeId(id);
+
+        // Analyze Resume
+        const analyzeResponse = await api.post(
+            "/resume/analyze/",
+            {
+                resume_id: id,
+            }
+        );
+
+        const analyzeData = analyzeResponse.data;
+
+        console.log("Analyze Result:", analyzeData.data);
+
+        setAnalysisResult(analyzeData.data);
+        setUploadStatus("Resume analyzed successfully");
+
+    } catch (error) {
+
+        console.log("Analyze Error:", error);
+        console.log("Response:", error.response?.data);
+
+        setUploadStatus("Analysis Failed");
+
+    } finally {
+
+        setIsLoading(false);
+
+    }
+};
+
+const handleAddToProfile = async () => {
+
+    if (!resumeId) {
+        alert("Please analyze the resume first.");
+        return;
     }
 
-    setIsAddedToProfile(true);
-    setUploadStatus("Resume added to profile successfully!");
-  };
+    try {
 
+        const response = await api.post(
+            "/resume/add-to-profile/",
+            {
+                resume_id: resumeId,
+            }
+        );
+
+        console.log("Add To Profile Response:", response);
+        console.log(
+              "Add To Profile Data:",
+               JSON.stringify(response.data, null, 2)
+           );
+        if (!isAddedToProfile) {
+               setIsAddedToProfile(true);
+              alert("✅ Profile updated successfully!");
+}
+
+    } catch (error) {
+
+        console.log("Add To Profile Error:", error);
+        console.log("Response:", error.response?.data);
+
+        alert(error.response?.data?.error || "Something went wrong.");
+
+    }
+};
+
+ 
   return (
     <div className="resume-page-wrapper">
       <PageNavbar
@@ -213,7 +295,7 @@ const ResumeUpload = () => {
                 "Analyze Resume"
               )}
             </button>
-            <button className="btn btn-profile" onClick={handleAddToProfile} disabled={!file || isLoading}>
+            <button className="btn btn-profile" onClick={handleAddToProfile} disabled={!file || isLoading || isAddedToProfile}>
               {isAddedToProfile ? "✅ Added to Profile" : "Add to Profile"}
             </button>
             <button className="btn btn-outline" onClick={handleReset}>
@@ -247,7 +329,7 @@ const ResumeUpload = () => {
                     <div className="analysis-row">
                       <div className="analysis-field">
                         <span className="analysis-field__label">Title</span>
-                        <span className="analysis-field__value">{analysisResult.title || "—"}</span>
+                        <span className="analysis-field__value">{analysisResult.role || "—"}</span>
                       </div>
                       <div className="analysis-field analysis-field--grow">
                         <span className="analysis-field__label">Summary</span>
@@ -255,7 +337,7 @@ const ResumeUpload = () => {
                       </div>
                       <div className="analysis-field analysis-field--narrow">
                         <span className="analysis-field__label">Score</span>
-                        <span className="analysis-field__value">{analysisResult.score ?? "—"}</span>
+                        <span className="analysis-field__value">{analysisResult.resume_score ?? "—"}</span>
                       </div>
                     </div>
                   </div>
@@ -273,8 +355,10 @@ const ResumeUpload = () => {
                         (label) => (
                           <div className="analysis-field analysis-field--profile" key={label}>
                             <span className="analysis-field__label">{label}</span>
-                            <span className="analysis-field__value">—</span>
-                          </div>
+                             <span className="analysis-field__value">
+                                        {candidateProfile[label]}
+                                </span>
+                          </div  >
                         )
                       )}
                     </div>
@@ -291,7 +375,31 @@ const ResumeUpload = () => {
                       {["Education", "Experience", "Matched skills", "Missing skills", "Suggested next skills", "Skill category"].map((label) => (
                         <div className="analysis-field analysis-field--skill" key={label}>
                           <span className="analysis-field__label">{label}</span>
-                          <span className="analysis-field__value">—</span>
+
+                               <span className="analysis-field__value">
+                          {
+                              label === "Education"
+                                    ? analysisResult.education
+
+                              : label === "Experience"
+                                    ? analysisResult.experience
+
+                              : label === "Matched skills" 
+                                     ? analysisResult.matched_skills
+
+                              : label === "Missing skills" 
+                                     ? analysisResult.missing_skills
+
+                              : label === "Suggested next skills"
+                                     ? analysisResult.suggested_next_skills
+
+                              : label === "Skill category"
+                                     ? analysisResult.skill_category
+
+                               : "—"
+                             }
+                          </span>
+                            
                         </div>
                       ))}
                     </div>
@@ -305,28 +413,52 @@ const ResumeUpload = () => {
                   </div>
                   <div className="result-body">
                     <div className="analysis-row analysis-row--wrap">
-                      <div className="analysis-field analysis-field--recommendation">
-                        <span className="analysis-field__label">Suggestion 1</span>
-                        <span className="analysis-field__value">Will appear after analysis.</span>
-                      </div>
-                      <div className="analysis-field analysis-field--recommendation">
-                        <span className="analysis-field__label">Suggestion 2</span>
-                        <span className="analysis-field__value">Will appear after analysis.</span>
-                      </div>
-                      <div className="analysis-field analysis-field--recommendation">
-                        <span className="analysis-field__label">Suggestion 3</span>
-                        <span className="analysis-field__value">Will appear after analysis.</span>
-                      </div>
+
+                 <div className="analysis-field analysis-field--recommendation">
+                     <span className="analysis-field__label">
+                              Suggestion 1
+                    </span>
+
+                   <span className="analysis-field__value">
+                        {analysisResult.suggestion_1 || "—"}
+                   </span>
                     </div>
-                  </div>
-                </section>
-              </div>
-            </div>
-          ) : null}
-        </section>
-      </main>
-    </div>
+
+
+                  <div className="analysis-field analysis-field--recommendation">
+                       <span className="analysis-field__label">
+                           Suggestion 2
+                 </span>
+
+                  <span className="analysis-field__value">
+                        {analysisResult.suggestion_2 || "—"}
+                  </span>
+                   </div>
+
+
+                    <div className="analysis-field analysis-field--recommendation">
+                        <span className="analysis-field__label">
+                               Suggestion 3
+                      </span>
+
+                      <span className="analysis-field__value">
+                           {analysisResult.suggestion_3 || "—"}
+                      </span>
+                                        </div>
+
+                                 </div>
+                            </div>
+                     </section>
+
+                   </div>
+                </div>
+           ) : null}
+
+         </section>
+        </main>
+   </div>
   );
 };
 
 export default ResumeUpload;
+

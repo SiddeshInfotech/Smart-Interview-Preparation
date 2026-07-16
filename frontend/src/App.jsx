@@ -17,6 +17,7 @@ import CandidateProfile from "./pages/CandidateProfile";
 import Quiz from "./pages/Quiz";
 import QuizPage from "./pages/QuizPage";
 import QuizResult from "./pages/QuizResult";
+import FeedbackForm from "./pages/FeedbackForm";
 
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
         <Route path="/quiz" element={<Quiz/>} />
         <Route path="/quiz-page" element={<QuizPage/>} />
         <Route path="/quiz-result" element={<QuizResult/>} />
+        <Route path="/feedbackform" element={<FeedbackForm />} />
       </Routes>
     </BrowserRouter>
   );
