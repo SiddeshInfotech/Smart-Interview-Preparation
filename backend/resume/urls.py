@@ -7,4 +7,5 @@ urlpatterns = [
     path("analyze/", views.analyze_resume),
     path("score/", views.resume_score),
     path("suggestions/", views.resume_suggestions),
+    path("add-to-profile/", views.add_to_profile),
 ]
