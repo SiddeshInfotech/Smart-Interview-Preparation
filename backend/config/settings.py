@@ -45,6 +45,10 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "your-app-password")
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+# Gemini key configuration
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")  # changed from "gemini-3.5-flash"
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -58,6 +62,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     # Project apps
     "authentication",
     "candidate",
@@ -97,15 +102,45 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = "authentication.User"
 
+# ========== JWT SETTINGS – Extended and Secure ==========
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=2),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
-    "UPDATE_LAST_LOGIN": False,
+    # --- Lifetime settings ---
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),      # 1 hour
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),         # 7 days
+
+    # --- Rotation & blacklist (security) ---
+    "ROTATE_REFRESH_TOKENS": True,                       # issue new refresh token on refresh
+    "BLACKLIST_AFTER_ROTATION": True,                    # blacklist old refresh tokens
+    "UPDATE_LAST_LOGIN": True,                           # update last_login field
+
+    # --- Algorithm & keys ---
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "VERIFYING_KEY": None,
+    "AUDIENCE": None,
+    "ISSUER": None,
+
+    # --- Header & token identification ---
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
     "USER_ID_FIELD": "user_id",
     "USER_ID_CLAIM": "user_id",
+
+    # --- Token classes ---
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+
+    # --- JTI (JWT ID) ---
+    "JTI_CLAIM": "jti",
 }
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+]
+# ======================================================
 
 ROOT_URLCONF = "config.urls"
 

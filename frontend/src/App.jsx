@@ -15,6 +15,8 @@ import AuthPage from "./pages/AuthPage";
 import ResetPassword from "./pages/ResetPassword";
 import CandidateProfile from "./pages/CandidateProfile";
 import Quiz from "./pages/Quiz";
+import QuizPage from "./pages/QuizPage";
+import QuizResult from "./pages/QuizResult";
 
 
 function App() {
@@ -35,6 +37,8 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/candidate-profile" element={<CandidateProfile />} />
         <Route path="/quiz" element={<Quiz/>} />
+        <Route path="/quiz-page" element={<QuizPage/>} />
+        <Route path="/quiz-result" element={<QuizResult/>} />
       </Routes>
     </BrowserRouter>
   );
