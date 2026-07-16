@@ -15,7 +15,9 @@ import AuthPage from "./pages/AuthPage";
 import ResetPassword from "./pages/ResetPassword";
 import CP from "./pages/CP";
 import Quiz from "./pages/Quiz";
-
+import QuizPage from "./pages/QuizPage";
+import InterviewSchedule from "./pages/InterviewSchedule";
+import ToastNotification from "./pages/ToastNotification";
 
 function App() {
   return (
@@ -30,11 +32,14 @@ function App() {
         <Route path="/role-selection" element={<RoleSelection />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/interviewer-profile" element={<InterviewerProfile />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />        
         <Route path="/Auth-page" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/CP" element={<CP />} />
+        <Route path="/toast-notification" element={<ToastNotification />} />
         <Route path="/quiz" element={<Quiz/>} />
+        <Route path="/quiz-page" element={<QuizPage/>} />
+         <Route path="/interview-schedule" element={<InterviewSchedule/>} />
       </Routes>
     </BrowserRouter>
   );
