@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Settings, UserCircle, Brain } from "lucide-react";
+import { Settings, UserCircle, Brain } from "lucide-react";
 import api from "../api/authAPI";
+import NotificationPopup from "./NotificationPopup";
 import "../styles/Profile.css";
+import "../styles/NotificationPopup.css";
 
 export default function PageNavbar({
   activePath = "/dashboard",
@@ -99,9 +101,7 @@ export default function PageNavbar({
         </nav>
 
         <div className="navbar-actions">
-          <button className="icon-btn" type="button" aria-label="Notifications">
-            <Bell size={19} />
-          </button>
+          <NotificationPopup />
           <button className="icon-btn" type="button" aria-label="Settings">
             <Settings size={19} />
           </button>
