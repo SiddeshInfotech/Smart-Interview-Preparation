@@ -8,5 +8,7 @@ export const forgotPassword = (data) => api.post("/auth/forgot-password/", data)
 export const verifyOTP = (data) => api.post("/auth/verify-otp/", data);
 export const resetPassword = (data) => api.post("/auth/reset-password/", data);
 export const getProfile = () => api.get("/auth/profile/");
+export const submitFeedback = (data) =>
+  api.post("/feedback/", data);
 
 export default api;
