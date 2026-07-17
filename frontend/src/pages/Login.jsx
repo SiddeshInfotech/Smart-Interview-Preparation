@@ -14,60 +14,67 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const response = await login({ email, password });
-      localStorage.setItem("access_token", response.data.access_token);
-      localStorage.setItem("refresh_token", response.data.refresh_token);
-      setLoading(false);
-      return true;
-    } catch (err) {
-      console.log("Login error:", err);
+  setError("");
+  setLoading(true);
 
-      const extractMessage = (data) => {
-        if (!data) return "Invalid email or password.";
+  try {
+    const response = await login({ email, password });
 
-        if (data.message && typeof data.message === "string") {
-          return data.message;
-        }
+    console.log("Login Success:", response.data);
 
-        if (typeof data === "string") {
-          return data;
-        }
+    localStorage.setItem("access_token", response.data.access_token);
+    localStorage.setItem("refresh_token", response.data.refresh_token);
 
-        if (data.error && typeof data.error === "string") return data.error;
-        if (data.detail && typeof data.detail === "string") return data.detail;
+    setLoading(false);
+    return true;
 
+  } catch (err) {
+    console.log("Login error:", err);
+    console.log("Response:", err.response);
+    console.log("Data:", err.response?.data);
 
-        if (typeof data === "object") {
-          const messages = new Set();
+    const extractMessage = (data) => {
+      if (!data) return "Invalid email or password.";
 
-          Object.values(data).forEach((value) => {
-            if (Array.isArray(value)) {
-              value.forEach((msg) => {
-                if (msg && typeof msg === "string") {
-                  messages.add(msg);
-                }
-              });
-            } else if (value && typeof value === "string") {
-              messages.add(value);
-            }
-          });
+      if (data.message && typeof data.message === "string") {
+        return data.message;
+      }
 
-          if (messages.size > 0) {
-            return [...messages].join("\n");
+      if (typeof data === "string") {
+        return data;
+      }
+
+      if (data.error && typeof data.error === "string") return data.error;
+      if (data.detail && typeof data.detail === "string") return data.detail;
+
+      if (typeof data === "object") {
+        const messages = new Set();
+
+        Object.values(data).forEach((value) => {
+          if (Array.isArray(value)) {
+            value.forEach((msg) => {
+              if (typeof msg === "string") {
+                messages.add(msg);
+              }
+            });
+          } else if (typeof value === "string") {
+            messages.add(value);
           }
+        });
+
+        if (messages.size > 0) {
+          return [...messages].join("\n");
         }
+      }
 
-        return "Invalid email or password.";
-      };
+      return "Invalid email or password.";
+    };
 
-      setError(extractMessage(err.response?.data));
-      setLoading(false);
-      return false;
-    }
-  };
+    setError(extractMessage(err.response?.data));
+    setLoading(false);
+    return false;
+  }
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();

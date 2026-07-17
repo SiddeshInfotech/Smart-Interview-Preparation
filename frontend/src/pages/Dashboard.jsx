@@ -7,6 +7,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import "../styles/Dashboard.css";
+import PageNavbar from "../components/PageNavbar.jsx";
 
 
 export default function Dashboard() {

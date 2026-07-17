@@ -13,11 +13,13 @@ import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import AuthPage from "./pages/AuthPage";
 import ResetPassword from "./pages/ResetPassword";
-import CP from "./pages/CP";
+import CandidateProfile from "./pages/CandidateProfile";
 import Quiz from "./pages/Quiz";
 import QuizPage from "./pages/QuizPage";
-import InterviewSchedule from "./pages/InterviewSchedule";
-import ToastNotification from "./pages/ToastNotification";
+import QuizResult from "./pages/QuizResult";
+import FeedbackForm from "./pages/FeedbackForm";
+
+
 
 function App() {
   return (
@@ -35,11 +37,11 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />        
         <Route path="/Auth-page" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/CP" element={<CP />} />
-        <Route path="/toast-notification" element={<ToastNotification />} />
+        <Route path="/candidate-profile" element={<CandidateProfile />} />
         <Route path="/quiz" element={<Quiz/>} />
         <Route path="/quiz-page" element={<QuizPage/>} />
-         <Route path="/interview-schedule" element={<InterviewSchedule/>} />
+        <Route path="/quiz-result" element={<QuizResult/>} />
+        <Route path="/feedbackform" element={<FeedbackForm />} />
       </Routes>
     </BrowserRouter>
   );

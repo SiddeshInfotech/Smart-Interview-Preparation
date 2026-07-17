@@ -1,8 +1,6 @@
 from django.urls import path
-from . import views
+from .views import generate_quiz
 
 urlpatterns = [
-    path("questions/", views.questions),
-    path("submit/", views.submit),
-    path("result/", views.result),
+    path('generate/', generate_quiz, name='generate_quiz'),
 ]
