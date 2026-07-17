@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   BrainCircuit,
   LayoutGrid,
@@ -20,42 +20,36 @@ import {
   Circle,
 } from "lucide-react";
 import "../styles/InterviewSchedule.css";
+import api from "../api/authAPI";
 
 // ---- Seed data -------------------------------------------------------
 const initialInterviews = [
   {
     id: 1,
     candidate: "Rohan Mehta",
-    interviewer: "Anita Sharma",
     date: "2026-07-18",
     time: "10:30",
     type: "Technical",
-    link: "https://meet.google.com/abc-defg-hij",
     status: "Scheduled",
   },
   {
     id: 2,
     candidate: "Priya Nair",
-    interviewer: "Vikram Rao",
     date: "2026-07-16",
     time: "15:00",
     type: "HR Round",
-    link: "https://zoom.us/j/1234567890",
     status: "Completed",
   },
   {
     id: 3,
     candidate: "Karan Malhotra",
-    interviewer: "Sana Iyer",
     date: "2026-07-14",
     time: "12:00",
     type: "Managerial",
-    link: "https://meet.google.com/xyz-mnop-qrs",
     status: "Cancelled",
   },
 ];
 
-const interviewers = ["Anita Sharma", "Vikram Rao", "Sana Iyer", "Devika Kulkarni"];
 const interviewTypes = ["Technical", "HR Round", "Managerial", "Final Round"];
 
 // ---- Small helpers ----------------------------------------------------
@@ -123,77 +117,197 @@ function Navbar({ active }) {
   );
 }
 
-// ---- Schedule Interview form -------------------------------------------
+// ---- Schedule Interview form (with suggestions & profile pictures) --------
 function ScheduleForm({ onSchedule }) {
   const [form, setForm] = useState({
     candidate: "",
-    interviewer: interviewers[0],
+    candidateId: null,
     date: "",
     time: "",
     type: interviewTypes[0],
-    link: "",
   });
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef(null);
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
+  const fetchCandidates = async (query) => {
+    if (!query.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await api.get(`/candidate/search/?search=${encodeURIComponent(query)}`);
+      setSuggestions(res.data || []);
+      setShowSuggestions(true);
+    } catch (err) {
+      console.error("Error fetching candidates:", err);
+      setSuggestions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCandidateChange = (e) => {
+    const val = e.target.value;
+    setForm({ ...form, candidate: val, candidateId: null });
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (val.trim().length >= 2) {
+      debounceRef.current = setTimeout(() => fetchCandidates(val.trim()), 300);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectSuggestion = (profile) => {
+    setForm({
+      ...form,
+      candidate: profile.full_name,
+      candidateId: profile.candidate_id,
+    });
+    setShowSuggestions(false);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.candidate || !form.date || !form.time || !form.link) return;
-    onSchedule({ ...form, id: Date.now(), status: "Scheduled" });
-    setForm({ candidate: "", interviewer: interviewers[0], date: "", time: "", type: interviewTypes[0], link: "" });
+    if (!form.candidate || !form.date || !form.time) {
+      alert("Please fill all required fields.");
+      return;
+    }
+    if (!form.candidateId) {
+      alert("Please select a candidate from the suggestions (not a free‑text entry).");
+      return;
+    }
+    onSchedule({
+      candidate: form.candidate,
+      candidateId: form.candidateId,
+      date: form.date,
+      time: form.time,
+      type: form.type,
+      status: "Scheduled",
+      id: Date.now(),
+    });
+    setForm({
+      candidate: "",
+      candidateId: null,
+      date: "",
+      time: "",
+      type: interviewTypes[0],
+    });
   };
 
   return (
     <form className="card form" onSubmit={handleSubmit}>
       <div className="form__grid">
-        <label className="field">
+        <label className="field" style={{ position: "relative" }}>
           <span className="field__label">Candidate name</span>
           <input
             className="field__input"
             type="text"
-            placeholder="e.g. Rohan Mehta"
+            placeholder="Start typing a candidate name..."
             value={form.candidate}
-            onChange={update("candidate")}
+            onChange={handleCandidateChange}
+            onFocus={() => {
+              if (form.candidate.trim().length >= 2) {
+                fetchCandidates(form.candidate.trim());
+              }
+            }}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            autoComplete="off"
           />
-        </label>
-
-        <label className="field">
-          <span className="field__label">Interviewer</span>
-          <select className="field__input" value={form.interviewer} onChange={update("interviewer")}>
-            {interviewers.map((name) => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
+          {showSuggestions && (
+            <div className="suggestion-dropdown">
+              {loading && <div className="suggestion-loading">Loading...</div>}
+              {!loading && suggestions.length === 0 && (
+                <div className="suggestion-empty">No candidates found</div>
+              )}
+              {!loading &&
+                suggestions.map((profile) => (
+                  <div
+                    key={profile.candidate_id}
+                    className="suggestion-item"
+                    onMouseDown={() => selectSuggestion(profile)}
+                  >
+                    {/* Avatar – matches navbar style */}
+                    <div
+                      className="suggestion-avatar"
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        background: '#e2e8f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#475569',
+                        fontWeight: 600,
+                        fontSize: 14,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {profile.profile_picture ? (
+                        <img
+                          src={profile.profile_picture}
+                          alt={profile.full_name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentNode.textContent = profile.full_name.charAt(0).toUpperCase();
+                          }}
+                        />
+                      ) : (
+                        profile.full_name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="suggestion-info">
+                      <div className="suggestion-name">{profile.full_name}</div>
+                      <div className="suggestion-meta">
+                        {profile.education || 'No education'} • {profile.email}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </label>
 
         <label className="field">
           <span className="field__label">Date</span>
-          <input className="field__input" type="date" value={form.date} onChange={update("date")} />
+          <input
+            className="field__input"
+            type="date"
+            value={form.date}
+            onChange={update("date")}
+          />
         </label>
 
         <label className="field">
           <span className="field__label">Time</span>
-          <input className="field__input" type="time" value={form.time} onChange={update("time")} />
+          <input
+            className="field__input"
+            type="time"
+            value={form.time}
+            onChange={update("time")}
+          />
         </label>
 
         <label className="field">
           <span className="field__label">Interview type</span>
-          <select className="field__input" value={form.type} onChange={update("type")}>
+          <select
+            className="field__input"
+            value={form.type}
+            onChange={update("type")}
+          >
             {interviewTypes.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
           </select>
-        </label>
-
-        <label className="field">
-          <span className="field__label">Meeting link</span>
-          <input
-            className="field__input"
-            type="url"
-            placeholder="https://meet.google.com/..."
-            value={form.link}
-            onChange={update("link")}
-          />
         </label>
       </div>
 
@@ -238,8 +352,6 @@ function InterviewList({ interviews, onSelect }) {
               <div className="list__main">
                 <span className="list__candidate">{iv.candidate}</span>
                 <span className="list__meta">
-                  <Users size={13} /> {iv.interviewer}
-                  <span className="dot" />
                   <Calendar size={13} /> {formatDate(iv.date)}
                   <span className="dot" />
                   <Clock size={13} /> {iv.time}
@@ -279,10 +391,6 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
           <span className="details__value">{interview.candidate}</span>
         </div>
         <div className="details__item">
-          <span className="details__label"><Users size={14} /> Interviewer</span>
-          <span className="details__value">{interview.interviewer}</span>
-        </div>
-        <div className="details__item">
           <span className="details__label"><Calendar size={14} /> Date</span>
           <span className="details__value">{formatDate(interview.date)}</span>
         </div>
@@ -290,12 +398,7 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
           <span className="details__label"><Clock size={14} /> Time</span>
           <span className="details__value">{interview.time}</span>
         </div>
-        <div className="details__item details__item--wide">
-          <span className="details__label"><Link2 size={14} /> Meeting link</span>
-          <a className="details__link" href={interview.link} target="_blank" rel="noreferrer">
-            <Video size={14} /> {interview.link}
-          </a>
-        </div>
+        {/* Removed interviewer and meeting link fields */}
       </div>
 
       {interview.status === "Scheduled" && (
@@ -313,7 +416,7 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
 }
 
 // ---- Main app shell -----------------------------------------------------
-export default function InterviewSchedule() {
+export default function InterviewSchedule({ standalone = false }) {
   const [interviews, setInterviews] = useState(initialInterviews);
   const [tab, setTab] = useState("schedule"); // "schedule" | "upcoming" | "details"
   const [selected, setSelected] = useState(null);
@@ -335,10 +438,10 @@ export default function InterviewSchedule() {
   };
 
   return (
-    <div className="page">
-      <Navbar active="Interview Scheduling" />
+    <div className={standalone ? "interview-schedule-standalone" : "page"}>
+      {!standalone && <Navbar active="Interview Scheduling" />}
 
-      <main className="page__content">
+      <main className={standalone ? "" : "page__content"}>
         <div className="page__header">
           <div>
             <h1>Interview Scheduling</h1>

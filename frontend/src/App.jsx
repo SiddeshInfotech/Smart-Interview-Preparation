@@ -18,7 +18,7 @@ import Quiz from "./pages/Quiz";
 import QuizPage from "./pages/QuizPage";
 import QuizResult from "./pages/QuizResult";
 import FeedbackForm from "./pages/FeedbackForm";
-
+import Interview from "./pages/Interview";
 
 
 function App() {
@@ -42,6 +42,7 @@ function App() {
         <Route path="/quiz-page" element={<QuizPage/>} />
         <Route path="/quiz-result" element={<QuizResult/>} />
         <Route path="/feedbackform" element={<FeedbackForm />} />
+        <Route path="/interview" element={<Interview />} />
       </Routes>
     </BrowserRouter>
   );

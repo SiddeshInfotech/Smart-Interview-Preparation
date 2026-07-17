@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, UserCircle, Brain } from "lucide-react";
+import { Settings, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock } from "lucide-react";
 import api from "../api/authAPI";
 import NotificationPopup from "./NotificationPopup";
 import "../styles/Profile.css";
@@ -13,6 +13,14 @@ export default function PageNavbar({
   brandHref = "/dashboard",
   brandIcon = <Brain size={28} />,
 }) {
+  const defaultNavItems = [
+    { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
+    { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
+    { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
+    { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
+  ];
+
+  const itemsToRender = navItems && navItems.length > 0 ? navItems : defaultNavItems;
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -97,7 +105,7 @@ export default function PageNavbar({
         </button>
 
         <nav className="navbar-links" aria-label="Main Navigation">
-        {navItems.map((item) => {
+        {itemsToRender.map((item) => {
           const isActive = activePath === item.to;
           return (
             <button

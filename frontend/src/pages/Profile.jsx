@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   ClipboardList,
   FileText,
+  CalendarClock,
 } from "lucide-react";
 import "../styles/Profile.css";
 import PageNavbar from "../components/PageNavbar.jsx";
@@ -114,6 +115,7 @@ const Profile = () => {
           { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
           { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
           { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
+          { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
         ]}
         brandLabel="PrepMaster AI"
         brandHref="/dashboard"

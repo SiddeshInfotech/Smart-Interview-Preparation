@@ -791,3 +791,14 @@ body {
     font-size: 18px;
   }
 }
+
+/* Standalone / embedded mode overrides */
+.interview-standalone {
+  width: 100%;
+  position: relative;
+}
+
+.interview-standalone .interview-content {
+  padding: 0;
+  max-width: 100%;
+}

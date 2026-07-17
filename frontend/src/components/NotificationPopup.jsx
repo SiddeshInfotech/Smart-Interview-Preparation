@@ -24,7 +24,17 @@ export default function NotificationPopup() {
     const fetchNotifications = async () => {
       try {
         const res = await api.get('/notifications/');
-        setNotifications(res.data || []);
+        // ✅ FIX: Extract the array safely, handling both direct arrays and paginated responses
+        let notificationsArray = [];
+        if (Array.isArray(res.data)) {
+          notificationsArray = res.data;
+        } else if (res.data && Array.isArray(res.data.results)) {
+          notificationsArray = res.data.results;
+        } else {
+          // fallback to empty array if data is unexpected
+          notificationsArray = [];
+        }
+        setNotifications(notificationsArray);
       } catch (e) {
         console.error('Notifications fetch error', e);
         // Fallback sample data so the UI isn't empty during development.

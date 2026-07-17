@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { LayoutDashboard, ClipboardList, FileText } from "lucide-react";
+import { LayoutDashboard, ClipboardList, FileText, CalendarClock } from "lucide-react";
 import PageNavbar from "../components/PageNavbar.jsx";
 import "../styles/FeedbackForm.css";
 
@@ -40,6 +40,7 @@ const FeedbackForm = () => {
           { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
           { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
           { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
+          { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
         ]}
       />
 

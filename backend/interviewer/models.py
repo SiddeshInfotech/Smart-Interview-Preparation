@@ -1,7 +1,6 @@
 from django.db import models
 from authentication.models import User
 
-
 class Interviewer_Profile(models.Model):
     interviewer_id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, db_column="user_id")

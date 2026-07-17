@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import "../styles/InterviewPage.css";
 
-const InterviewPage = () => {
+const InterviewPage = ({ standalone = false }) => {
   const [isJoining, setIsJoining] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [isCameraFullscreen, setIsCameraFullscreen] = useState(false);
@@ -33,24 +33,26 @@ const InterviewPage = () => {
   };
 
   return (
-    <div className="interview-container">
+    <div className={standalone ? "interview-standalone" : "interview-container"}>
       <div className="interview-content">
-        {/* Header */}
-        <div className="header">
-          <div className="header-left">
-            <div className="logo">
-              <span className="logo-icon">🎯</span>
-              <span className="logo-text">InterviewConnect</span>
+        {!standalone && (
+          /* Header */
+          <div className="header">
+            <div className="header-left">
+              <div className="logo">
+                <span className="logo-icon">🎯</span>
+                <span className="logo-text">InterviewConnect</span>
+              </div>
+            </div>
+            <div className="header-right">
+              <div className="nav-links">
+                <span className="nav-link active">Dashboard</span>
+                <span className="nav-link">Interviews</span>
+                <span className="nav-link">Resources</span>
+              </div>
             </div>
           </div>
-          <div className="header-right">
-            <div className="nav-links">
-              <span className="nav-link active">Dashboard</span>
-              <span className="nav-link">Interviews</span>
-              <span className="nav-link">Resources</span>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Main Content */}
         <div className="main-grid">
@@ -175,19 +177,21 @@ const InterviewPage = () => {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className={`footer ${isCameraFullscreen ? 'hidden' : ''}`}>
-          <div className="footer-content">
-            <div className="footer-left">
-              <span>© 2024 InterviewConnect. Secure & Encrypted.</span>
-            </div>
-            <div className="footer-right">
-              <span>Privacy Policy</span>
-              <span>Terms of Service</span>
-              <span>System Status</span>
+        {!standalone && (
+          /* Footer */
+          <div className={`footer ${isCameraFullscreen ? 'hidden' : ''}`}>
+            <div className="footer-content">
+              <div className="footer-left">
+                <span>© 2024 InterviewConnect. Secure & Encrypted.</span>
+              </div>
+              <div className="footer-right">
+                <span>Privacy Policy</span>
+                <span>Terms of Service</span>
+                <span>System Status</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

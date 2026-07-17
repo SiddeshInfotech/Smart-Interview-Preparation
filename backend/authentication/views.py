@@ -170,8 +170,8 @@ def forgot_password(request):
             status=status.HTTP_200_OK,
         )
     except Exception as e:
-         print("EMAIL ERROR:", str(e))
-         logger.exception(e)
+        print("EMAIL ERROR:", str(e))
+        logger.exception(e)
 
     return Response(
         {"message": str(e)},
