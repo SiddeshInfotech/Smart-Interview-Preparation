@@ -41,7 +41,7 @@ function App() {
         <Route path="/quiz" element={<Quiz/>} />
         <Route path="/quiz-page" element={<QuizPage/>} />
         <Route path="/quiz-result" element={<QuizResult/>} />
-        <Route path="/feedbackform" element={<FeedbackForm />} />
+        <Route path="/feedback-form" element={<FeedbackForm />} />
         <Route path="/interview" element={<Interview />} />
       </Routes>
     </BrowserRouter>
