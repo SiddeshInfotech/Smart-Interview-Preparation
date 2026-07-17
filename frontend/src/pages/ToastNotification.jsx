@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle, Bell, User } from 'lucide-react';
-import '../styles/ToastNotification.css';
+import '../styles/NotificationPopup.css';
 
 // Toast Types
 export const ToastType = {
