@@ -18,6 +18,7 @@ export default function PageNavbar({
     name: "Loading...",
     email: "",
     profilePicture: null,
+    role: "candidate",
   });
 
   useEffect(() => {
@@ -25,36 +26,48 @@ export default function PageNavbar({
       let name = "User";
       let email = "";
       let profilePic = null;
+      let role = "candidate";
 
       try {
         const authRes = await api.get("/auth/profile/");
         if (authRes.data) {
           name = authRes.data.full_name || name;
           email = authRes.data.email || email;
+          role = authRes.data.role || role;
         }
       } catch (error) {
         console.error("Error fetching auth profile:", error);
       }
 
       try {
-        const candRes = await api.get("/candidate/profile/");
-        if (candRes.data && candRes.data.profile_picture) {
-          const pic = candRes.data.profile_picture;
-          profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
+        if (role === "interviewer") {
+          const intRes = await api.get("/interviewer/profile/");
+          if (intRes.data && intRes.data.profile_picture) {
+            const pic = intRes.data.profile_picture;
+            profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
+          }
+        } else {
+          const candRes = await api.get("/candidate/profile/");
+          if (candRes.data && candRes.data.profile_picture) {
+            const pic = candRes.data.profile_picture;
+            profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
+          }
         }
       } catch (error) {
-        console.error("Error fetching candidate profile:", error);
+        console.error("Error fetching profile picture:", error);
       }
 
       setUserProfile({
         name,
         email,
         profilePicture: profilePic,
+        role,
       });
     };
 
     fetchProfileData();
   }, []);
+
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -136,7 +149,11 @@ export default function PageNavbar({
                   className="dropdown-item"
                   onClick={() => {
                     setProfileMenuOpen(false);
-                    navigate("/candidate-profile");
+                    if (userProfile.role === "interviewer") {
+                      navigate("/interviewer-profile");
+                    } else {
+                      navigate("/candidate-profile");
+                    }
                   }}
                 >
                   View Profile

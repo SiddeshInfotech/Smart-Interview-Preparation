@@ -18,6 +18,7 @@ import {
   register,
   sendRegistrationOTP,
   verifyRegistrationOTP,
+  login,
 } from "../api/authAPI";
 
 export default function Register() {
@@ -119,7 +120,23 @@ export default function Register() {
     try {
       const response = await register(payload);
       console.log("register success:", response.data);
-      navigate("/login");
+      
+      // Auto-login the user
+      try {
+        const loginResponse = await login({ email: form.email, password: form.password });
+        localStorage.setItem("access_token", loginResponse.data.access_token);
+        localStorage.setItem("refresh_token", loginResponse.data.refresh_token);
+        
+        if (role === "interviewer") {
+          navigate("/interviewer-profile");
+        } else {
+          navigate("/candidate-profile");
+        }
+      } catch (loginErr) {
+        console.error("Auto-login failed:", loginErr);
+        // Fallback to login page if auto-login fails for any reason
+        navigate("/login");
+      }
     } catch (err) {
       console.log("register error:", err.response?.data || err.message);
 
