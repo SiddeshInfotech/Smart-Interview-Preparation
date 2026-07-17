@@ -15,7 +15,10 @@ import AuthPage from "./pages/AuthPage";
 import ResetPassword from "./pages/ResetPassword";
 import CandidateProfile from "./pages/CandidateProfile";
 import Quiz from "./pages/Quiz";
+import QuizPage from "./pages/QuizPage";
+import QuizResult from "./pages/QuizResult";
 import FeedbackForm from "./pages/FeedbackForm";
+
 
 
 function App() {
@@ -31,11 +34,13 @@ function App() {
         <Route path="/role-selection" element={<RoleSelection />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/interviewer-profile" element={<InterviewerProfile />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />        
         <Route path="/Auth-page" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/candidate-profile" element={<CandidateProfile />} />
         <Route path="/quiz" element={<Quiz/>} />
+        <Route path="/quiz-page" element={<QuizPage/>} />
+        <Route path="/quiz-result" element={<QuizResult/>} />
         <Route path="/feedbackform" element={<FeedbackForm />} />
       </Routes>
     </BrowserRouter>

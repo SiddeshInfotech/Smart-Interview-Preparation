@@ -1,0 +1,243 @@
+/* ===== NOTIFICATION POPUP ===== */
+.notif-wrapper {
+  position: relative;
+}
+
+.notif-bell-btn {
+  position: relative;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  border-radius: 999px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.notif-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: 360px;
+  max-height: 480px;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.14);
+  border: 1px solid #f0f2f5;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.notif-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+}
+
+.notif-panel__header h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.notif-mark-all {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  padding: 0;
+}
+
+.notif-mark-all:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.notif-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.notif-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.notif-tab:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.notif-tab--active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.notif-tab__count {
+  background: rgba(255, 255, 255, 0.9);
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 5px;
+  border-radius: 999px;
+  line-height: 15px;
+}
+
+.notif-tab:not(.notif-tab--active) .notif-tab__count {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.notif-list {
+  overflow-y: auto;
+  max-height: 360px;
+  padding: 6px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s ease;
+}
+
+.notif-item:hover {
+  background: #f8fafc;
+}
+
+.notif-item--unread {
+  background: #eff6ff;
+}
+
+.notif-item--unread:hover {
+  background: #e5efff;
+}
+
+.notif-item__icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.notif-item__icon--system {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.notif-item__icon--result {
+  background: #e6f7ed;
+  color: #16a34a;
+}
+
+.notif-item__icon--message {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.notif-item__icon--document {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.notif-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.notif-item__title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.notif-item__desc {
+  font-size: 12.5px;
+  color: #6b7280;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.notif-item__time {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.notif-item__unread-dot {
+  position: absolute;
+  top: 14px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2563eb;
+}
+
+.notif-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 16px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .notif-panel {
+    width: 300px;
+    right: -60px;
+  }
+}

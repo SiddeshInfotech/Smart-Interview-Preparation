@@ -114,14 +114,24 @@ def login(request):
         )
 
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
 @api_view(["POST"])
 def logout(request):
     serializer = LogoutSerializer(data=request.data)
-
     if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=400)
 
-    return Response({"message": "Logout successful."}, status=status.HTTP_200_OK)
+    refresh_token = request.data.get("refresh_token")
+    if refresh_token:
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except Exception:
+            pass  
+
+    return Response({"message": "Logout successful."}, status=200)
 
 
 @api_view(["POST"])

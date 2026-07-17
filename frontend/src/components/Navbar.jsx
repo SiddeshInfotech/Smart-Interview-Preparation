@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Settings, User } from 'lucide-react';
+import { Settings, User } from 'lucide-react';
 import api from '../api/authAPI';
-import '../styles/Dashboard.css'; // reuse top-navbar styles
+import '../styles/Dashboard.css';
+import NotificationPopup from './NotificationPopup';
 
 export default function Navbar() {
   const [userProfile, setUserProfile] = useState({
@@ -12,7 +13,8 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Fetch user profile info on mount
+  console.log('Navbar rendered with NotificationPopup'); // Debug log
+
   useEffect(() => {
     const fetchProfile = async () => {
       let name = 'User';
@@ -41,7 +43,6 @@ export default function Navbar() {
     fetchProfile();
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -61,12 +62,17 @@ export default function Navbar() {
   return (
     <header className="top-navbar">
       <div className="navbar-container">
-        <button className="navbar-brand" onClick={() => (window.location.href = '/')}>InterviewAI</button>
-        {/* Optional left-side navigation links can be added here */}
+        <button className="navbar-brand" onClick={() => (window.location.href = '/')}>
+          PrepMaster AI
+        </button>
+        
         <div className="navbar-icons">
-          <button className="icon-btn"><Bell size={18} /></button>
-          <button className="icon-btn"><Settings size={18} /></button>
+          <NotificationPopup />
+          <button className="icon-btn">
+            <Settings size={18} />
+          </button>
         </div>
+        
         <div className="navbar-avatar" ref={dropdownRef}>
           <button className="avatar-btn" onClick={() => setMenuOpen(!menuOpen)}>
             {userProfile.profilePicture ? (
@@ -82,8 +88,12 @@ export default function Navbar() {
                 <p className="profile-email">{userProfile.email}</p>
               </div>
               <hr />
-              <button className="profile-dropdown-item" onClick={() => (window.location.href = '/candidate-profile')}>View Profile</button>
-              <button className="profile-dropdown-item" onClick={handleLogout}>Logout</button>
+              <button className="profile-dropdown-item" onClick={() => (window.location.href = '/candidate-profile')}>
+                View Profile
+              </button>
+              <button className="profile-dropdown-item" onClick={handleLogout}>
+                Logout
+              </button>
             </div>
           )}
         </div>
