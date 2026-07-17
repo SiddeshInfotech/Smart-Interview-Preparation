@@ -20,6 +20,7 @@ import QuizResult from "./pages/QuizResult";
 import FeedbackForm from "./pages/FeedbackForm";
 
 
+
 function App() {
   return (
     <BrowserRouter>
@@ -33,7 +34,7 @@ function App() {
         <Route path="/role-selection" element={<RoleSelection />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/interviewer-profile" element={<InterviewerProfile />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />        
         <Route path="/Auth-page" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/candidate-profile" element={<CandidateProfile />} />
