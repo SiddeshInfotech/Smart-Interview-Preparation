@@ -4,9 +4,19 @@ import "../styles/Auth.css";
 import { login } from "../api/authAPI";
 import WelcomePopup from "../components/WelcomePopup"; // Correct path
 
+// Decode JWT payload without a library
+const decodeToken = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(base64));
+  } catch {
+    return {};
+  }
+};
+
 export default function Login() {
   const navigate = useNavigate();
-  const [role, setRole] = useState("interviewee");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,11 +37,16 @@ export default function Login() {
 
       console.log("Login Success:", response.data);
 
-      localStorage.setItem("access_token", response.data.access_token);
-      localStorage.setItem("refresh_token", response.data.refresh_token);
+    const accessToken = response.data.access_token;
+    localStorage.setItem("access_token", accessToken);
+    localStorage.setItem("refresh_token", response.data.refresh_token);
 
-      setLoading(false);
-      return true;
+    // Decode role from token and redirect accordingly
+    const payload = decodeToken(accessToken);
+    const role = payload.role || response.data.user?.role || "candidate";
+
+    setLoading(false);
+    return role;
 
     } catch (err) {
       console.log("Login error:", err);
@@ -94,19 +109,9 @@ export default function Login() {
     }
 
     try {
-      const success = await handleLogin();
-      if (success) {
-        // Get user name
-        try {
-          const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
-          const name = userData.full_name || email.split('@')[0] || 'User';
-          setUserName(name);
-        } catch {
-          setUserName(email.split('@')[0] || 'User');
-        }
-        
-        // Show welcome popup
-        setShowWelcome(true);
+      const role = await handleLogin();
+      if (role) {
+        navigate("/dashboard");
       }
     } catch (err) {
       console.log("login submit error:", err);
@@ -124,45 +129,6 @@ export default function Login() {
       <div className="auth-card">
         <h1 className="auth-title">Sign in</h1>
         <p className="auth-subtitle">Welcome back. Let's keep preparing.</p>
-
-        <div className="role-toggle" role="tablist" aria-label="Sign in as">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={role === "interviewee"}
-            className={`role-btn ${role === "interviewee" ? "active" : ""}`}
-            onClick={() => setRole("interviewee")}
-          >
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            As an Interviewee
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={role === "interviewer"}
-            className={`role-btn ${role === "interviewer" ? "active" : ""}`}
-            onClick={() => setRole("interviewer")}
-          >
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M9 11l2 2 4-4M12 3l7 3v5c0 4.5-3 8.2-7 9-4-.8-7-4.5-7-9V6l7-3z"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            As an Interviewer
-          </button>
-        </div>
 
         <form onSubmit={handleSubmit}>
           <label className="field-label" htmlFor="email">
@@ -251,7 +217,7 @@ export default function Login() {
           )}
 
           <button type="submit" className="primary-btn">
-            {loading ? "Signing in..." : `Sign in as ${role === "interviewer" ? "Interviewer" : "Interviewee"}`}
+            {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 

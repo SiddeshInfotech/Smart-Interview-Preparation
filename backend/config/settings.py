@@ -45,12 +45,16 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "your-email@gmail.com")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "your-app-password")
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-print("EMAIL:", EMAIL_HOST_USER)
-print("PASSWORD:", EMAIL_HOST_PASSWORD)
+
 
 # Gemini key configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")  # changed from "gemini-3.5-flash"
+
+# Livekit service configuration
+LIVEKIT_URL = os.getenv("LIVEKIT_URL")
+LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY")
+LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET")
 
 # Application definition
 
