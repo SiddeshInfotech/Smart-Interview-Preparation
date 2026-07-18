@@ -44,6 +44,7 @@ export default function Login() {
     // Decode role from token and redirect accordingly
     const payload = decodeToken(accessToken);
     const role = payload.role || response.data.user?.role || "candidate";
+    localStorage.setItem("user_role", role);
 
     setLoading(false);
     return role;

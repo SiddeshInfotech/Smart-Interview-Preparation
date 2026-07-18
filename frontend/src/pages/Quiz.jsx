@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  ClipboardList,
-  FileText,
-  CalendarClock,
   Plus,
   BookOpen,
   Gauge,
@@ -17,7 +13,6 @@ import {
 } from 'lucide-react';
 import api from '../api/authAPI';
 import '../styles/Quiz.css';
-import PageNavbar from "../components/PageNavbar.jsx";
 
 const Quiz = () => {
   const navigate = useNavigate();
@@ -82,7 +77,7 @@ const Quiz = () => {
   };
 
   const addTopicFromSuggestion = (topic) => {
-    if (!selectedTopics.some((t) => t.skill_name?.toLowerCase() === topic.skill_name?.toLowerCase() || t.name?.toLowerCase() === topic.skill_name?.toLowerCase())) {
+    if (!selectedTopics.some((t) => t.name?.toLowerCase() === topic.skill_name?.toLowerCase())) {
       setSelectedTopics([...selectedTopics, { id: topic.id, name: topic.skill_name }]);
     }
     setNewTopic("");
@@ -156,16 +151,6 @@ const Quiz = () => {
 
   return (
     <div className="quiz-app">
-      <PageNavbar
-        activePath="/quiz"
-        navItems={[
-          { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-          { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
-          { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
-          { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
-        ]}
-      />
-
       <div className="dashboard-page-container">
         <main className="dashboard-content-wrapper">
           <div className="quiz-content-wrapper" style={{ paddingTop: '20px' }}>
@@ -239,15 +224,11 @@ const Quiz = () => {
                             }}
                             onKeyDown={handleAddTopic}
                             onFocus={() => {
-                              // If input is non‑empty, always show suggestions:
-                              // - If we have suggestions, show them.
-                              // - If not, fetch immediately.
-                              if (newTopic.trim().length >= 1) {
-                                if (topicSuggestions.length > 0) {
-                                  setShowTopicSuggestions(true);
-                                } else {
-                                  fetchTopicSuggestions(newTopic.trim());
-                                }
+                              const query = newTopic.trim();
+                              if (topicSuggestions.length > 0 && query.length >= 1) {
+                                setShowTopicSuggestions(true);
+                              } else {
+                                fetchTopicSuggestions(query);
                               }
                             }}
                           />
@@ -270,6 +251,9 @@ const Quiz = () => {
                               )}
                             </div>
                           )}
+                        </div>
+                        <div className="suggestions-hint">
+                          Suggested topics: JavaScript, React, Python, SQL, Data Structures, System Design
                         </div>
                       </div>
                     </div>

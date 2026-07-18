@@ -1,0 +1,156 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--color-bg-soft);
+  overflow-x: hidden;
+}
+
+.app-shell__content {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  padding: clamp(16px, 2vw, 28px) clamp(16px, 2vw, 24px) 48px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .app-shell__content {
+    padding: 12px 12px 40px;
+  }
+}
+
+/* The shell owns the navbar. Keep page-specific styles from turning it into
+   a fixed overlay that covers the first content row. */
+.app-shell > .top-navbar {
+  width: 100%;
+  position: sticky !important;
+  top: 0;
+  z-index: 1000;
+  height: 72px;
+  min-height: 72px;
+  flex: 0 0 auto;
+}
+
+.app-shell > .top-navbar .navbar-container,
+.app-shell__content,
+.app-shell__content > * {
+  min-width: 0;
+}
+
+.app-shell .dashboard-page-container,
+.app-shell .dashboard-content-wrapper,
+.app-shell .resume-main-shell,
+.app-shell .resume-card,
+.app-shell .feedback-container,
+.app-shell .interview-tab-content,
+.app-shell .setup-card {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Active Quiz sections must let the floating topic menu escape their
+   animation wrappers. A high z-index alone cannot escape overflow clipping. */
+.app-shell .slide-section.slide-enter-active {
+  position: relative;
+  z-index: 20;
+  overflow: visible;
+}
+
+.app-shell .slide-section.slide-enter-active .slide-inner {
+  overflow: visible;
+}
+
+.app-shell .skills-container,
+.app-shell .skill-input-wrapper {
+  position: relative;
+  z-index: 21;
+}
+
+.app-shell .skill-suggestions-dropdown {
+  z-index: 1001;
+  max-width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .app-shell > .top-navbar {
+    padding-inline: 16px;
+  }
+
+  .app-shell > .top-navbar .navbar-container {
+    gap: 10px;
+  }
+
+  .app-shell > .top-navbar .navbar-links {
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .app-shell > .top-navbar .nav-link {
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell > .top-navbar {
+    height: auto;
+    min-height: 72px;
+    padding-block: 10px;
+  }
+
+  .app-shell > .top-navbar .navbar-container {
+    flex-wrap: wrap;
+  }
+
+  .app-shell > .top-navbar .navbar-links {
+    order: 3;
+    flex: 1 0 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .app-shell > .top-navbar .navbar-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-shell > .top-navbar .logo-text,
+  .app-shell > .top-navbar .avatar-btn > span:last-child {
+    display: none;
+  }
+
+  .app-shell__content {
+    padding: 16px 12px 40px;
+  }
+
+  .app-shell .setup-card,
+  .app-shell .interview-tab-content,
+  .app-shell .card,
+  .app-shell .feedback-container {
+    padding-inline: 16px;
+  }
+
+  .app-shell .form-row,
+  .app-shell .info-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 900px) {
+  .app-shell > .top-navbar .navbar-links {
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .app-shell > .top-navbar .navbar-links::-webkit-scrollbar {
+    display: none;
+  }
+}

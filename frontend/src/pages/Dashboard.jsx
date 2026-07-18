@@ -1,14 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
-  ClipboardList,
-  FileText,
   TrendingUp,
-  CalendarClock,
 } from "lucide-react";
 import "../styles/Dashboard.css";
-import PageNavbar from "../components/PageNavbar.jsx";
 
 
 export default function Dashboard() {
@@ -53,17 +48,8 @@ export default function Dashboard() {
     { title: "System Design Adv.", status: "Locked", locked: true },
   ];
 
-  const navItems = [
-    { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-    { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
-    { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
-    { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
-  ];
-
   return (
     <div className="candidate-dashboard">
-      <PageNavbar activePath="/dashboard" navItems={navItems} />
-
       {/* Main page content container */}
       <div className="dashboard-page-container">
         <main className="dashboard-content-wrapper">

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Settings, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock } from "lucide-react";
 import api from "../api/authAPI";
 import NotificationPopup from "./NotificationPopup";
-import "../styles/Profile.css";
 import "../styles/NotificationPopup.css";
 
 export default function PageNavbar({
@@ -93,6 +92,7 @@ export default function PageNavbar({
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_role");
     navigate("/login");
   };
 

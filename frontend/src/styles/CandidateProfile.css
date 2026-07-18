@@ -761,3 +761,52 @@ body {
     padding: 14px 12px;
   }
 }
+
+/* Keep the profile form usable at narrow widths and allow skill suggestions
+   to layer above the following cards. */
+.candidate-profile .content {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.candidate-profile .skill-input-wrapper {
+  position: relative;
+  z-index: 20;
+}
+
+.candidate-profile .skill-suggestions-dropdown {
+  z-index: 1001;
+}
+
+@media (max-width: 900px) {
+  .candidate-profile .content {
+    padding-inline: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .candidate-profile .main-container {
+    display: block;
+  }
+
+  .candidate-profile .content {
+    padding: 24px 16px 48px;
+  }
+
+  .candidate-profile .profile-section {
+    width: 100%;
+  }
+
+  .candidate-profile .form-row,
+  .candidate-profile .info-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .candidate-profile .personal-info,
+  .candidate-profile .education-section,
+  .candidate-profile .skills-experience-section,
+  .candidate-profile .digital-presence {
+    padding: 20px 16px;
+  }
+}

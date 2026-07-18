@@ -19,6 +19,8 @@ import QuizPage from "./pages/QuizPage";
 import QuizResult from "./pages/QuizResult";
 import FeedbackForm from "./pages/FeedbackForm";
 import Interview from "./pages/Interview";
+import AppShell from "./components/AppShell";
+import RequireRole from "./components/RequireRole";
 
 
 function App() {
@@ -28,21 +30,27 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/resume-upload" element={<ResumeUpload />} />
         <Route path="/otp" element={<Otp />} />
         <Route path="/role-selection" element={<RoleSelection />} />
-        <Route path="/profile" element={<Profile />} />
         <Route path="/interviewer-profile" element={<InterviewerProfile />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />        
         <Route path="/Auth-page" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/candidate-profile" element={<CandidateProfile />} />
-        <Route path="/quiz" element={<Quiz/>} />
-        <Route path="/quiz-page" element={<QuizPage/>} />
-        <Route path="/quiz-result" element={<QuizResult/>} />
-        <Route path="/feedback-form" element={<FeedbackForm />} />
-        <Route path="/interview" element={<Interview />} />
+        <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>
+          <Route path="/quiz-page" element={<QuizPage />} />
+          <Route path="/quiz-result" element={<QuizResult />} />
+        </Route>
+        <Route element={<AppShell />}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="resume-upload" element={<ResumeUpload />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="feedback-form" element={<FeedbackForm />} />
+          <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>
+            <Route path="quiz" element={<Quiz />} />
+            <Route path="interview" element={<Interview />} />
+          </Route>
+        </Route>
       </Routes>
     </BrowserRouter>
   );

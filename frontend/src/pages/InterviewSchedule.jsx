@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import {
   BrainCircuit,
   LayoutGrid,
@@ -11,10 +11,7 @@ import {
   ArrowLeft,
   Calendar,
   Clock,
-  Video,
   User,
-  Users,
-  Link2,
   CheckCircle2,
   XCircle,
   Circle,
@@ -22,11 +19,10 @@ import {
 import "../styles/InterviewSchedule.css";
 import api from "../api/authAPI";
 
-// ---- Seed data -------------------------------------------------------
 const initialInterviews = [
   {
     id: 1,
-    candidate: "Rohan Mehta",
+    interviewer: "Asha Patel",
     date: "2026-07-18",
     time: "10:30",
     type: "Technical",
@@ -34,7 +30,7 @@ const initialInterviews = [
   },
   {
     id: 2,
-    candidate: "Priya Nair",
+    interviewer: "Rahul Verma",
     date: "2026-07-16",
     time: "15:00",
     type: "HR Round",
@@ -42,7 +38,7 @@ const initialInterviews = [
   },
   {
     id: 3,
-    candidate: "Karan Malhotra",
+    interviewer: "Neha Singh",
     date: "2026-07-14",
     time: "12:00",
     type: "Managerial",
@@ -52,7 +48,6 @@ const initialInterviews = [
 
 const interviewTypes = ["Technical", "HR Round", "Managerial", "Final Round"];
 
-// ---- Small helpers ----------------------------------------------------
 function StatusBadge({ status }) {
   const map = {
     Scheduled: { icon: Circle, className: "badge badge--scheduled" },
@@ -69,11 +64,14 @@ function StatusBadge({ status }) {
 }
 
 function formatDate(dateStr) {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-// ---- Navbar (matches existing PrepMaster AI design) --------------------
 function Navbar({ active }) {
   const navItems = [
     { label: "Dashboard", icon: LayoutGrid },
@@ -94,6 +92,7 @@ function Navbar({ active }) {
           <button
             key={label}
             className={`navbar__link ${label === active ? "navbar__link--active" : ""}`}
+            type="button"
           >
             <Icon size={16} strokeWidth={2} />
             {label}
@@ -102,10 +101,10 @@ function Navbar({ active }) {
       </nav>
 
       <div className="navbar__actions">
-        <button className="navbar__iconBtn" aria-label="Notifications">
+        <button className="navbar__iconBtn" aria-label="Notifications" type="button">
           <Bell size={18} strokeWidth={2} />
         </button>
-        <button className="navbar__iconBtn" aria-label="Settings">
+        <button className="navbar__iconBtn" aria-label="Settings" type="button">
           <Settings size={18} strokeWidth={2} />
         </button>
         <div className="navbar__profile">
@@ -117,11 +116,10 @@ function Navbar({ active }) {
   );
 }
 
-// ---- Schedule Interview form (with suggestions & profile pictures) --------
 function ScheduleForm({ onSchedule }) {
   const [form, setForm] = useState({
-    candidate: "",
-    candidateId: null,
+    interviewer: "",
+    interviewerId: null,
     date: "",
     time: "",
     type: interviewTypes[0],
@@ -133,31 +131,33 @@ function ScheduleForm({ onSchedule }) {
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
-  const fetchCandidates = async (query) => {
+  const fetchInterviewers = async (query) => {
     if (!query.trim()) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
+
     setLoading(true);
     try {
-      const res = await api.get(`/candidate/search/?search=${encodeURIComponent(query)}`);
+      const res = await api.get(`/interviewer/search/?search=${encodeURIComponent(query)}`);
       setSuggestions(res.data || []);
       setShowSuggestions(true);
-    } catch (err) {
-      console.error("Error fetching candidates:", err);
+    } catch (error) {
+      console.error("Error fetching interviewers:", error);
       setSuggestions([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCandidateChange = (e) => {
+  const handleInterviewerChange = (e) => {
     const val = e.target.value;
-    setForm({ ...form, candidate: val, candidateId: null });
+    setForm({ ...form, interviewer: val, interviewerId: null });
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (val.trim().length >= 2) {
-      debounceRef.current = setTimeout(() => fetchCandidates(val.trim()), 300);
+      debounceRef.current = setTimeout(() => fetchInterviewers(val.trim()), 300);
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -167,34 +167,38 @@ function ScheduleForm({ onSchedule }) {
   const selectSuggestion = (profile) => {
     setForm({
       ...form,
-      candidate: profile.full_name,
-      candidateId: profile.candidate_id,
+      interviewer: profile.full_name,
+      interviewerId: profile.interviewer_id,
     });
     setShowSuggestions(false);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.candidate || !form.date || !form.time) {
+
+    if (!form.interviewer || !form.date || !form.time) {
       alert("Please fill all required fields.");
       return;
     }
-    if (!form.candidateId) {
-      alert("Please select a candidate from the suggestions (not a free‑text entry).");
+
+    if (!form.interviewerId) {
+      alert("Please select an interviewer from the suggestions (not a free-text entry).");
       return;
     }
+
     onSchedule({
-      candidate: form.candidate,
-      candidateId: form.candidateId,
+      interviewer: form.interviewer,
+      interviewerId: form.interviewerId,
       date: form.date,
       time: form.time,
       type: form.type,
       status: "Scheduled",
       id: Date.now(),
     });
+
     setForm({
-      candidate: "",
-      candidateId: null,
+      interviewer: "",
+      interviewerId: null,
       date: "",
       time: "",
       type: interviewTypes[0],
@@ -205,60 +209,44 @@ function ScheduleForm({ onSchedule }) {
     <form className="card form" onSubmit={handleSubmit}>
       <div className="form__grid">
         <label className="field" style={{ position: "relative" }}>
-          <span className="field__label">Candidate name</span>
+          <span className="field__label">Interviewer</span>
           <input
             className="field__input"
             type="text"
-            placeholder="Start typing a candidate name..."
-            value={form.candidate}
-            onChange={handleCandidateChange}
+            placeholder="Start typing an interviewer name..."
+            value={form.interviewer}
+            onChange={handleInterviewerChange}
             onFocus={() => {
-              if (form.candidate.trim().length >= 2) {
-                fetchCandidates(form.candidate.trim());
+              if (form.interviewer.trim().length >= 2) {
+                fetchInterviewers(form.interviewer.trim());
               }
             }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             autoComplete="off"
           />
+
           {showSuggestions && (
             <div className="suggestion-dropdown">
               {loading && <div className="suggestion-loading">Loading...</div>}
               {!loading && suggestions.length === 0 && (
-                <div className="suggestion-empty">No candidates found</div>
+                <div className="suggestion-empty">No interviewers found</div>
               )}
               {!loading &&
                 suggestions.map((profile) => (
                   <div
-                    key={profile.candidate_id}
+                    key={profile.interviewer_id}
                     className="suggestion-item"
                     onMouseDown={() => selectSuggestion(profile)}
                   >
-                    {/* Avatar – matches navbar style */}
-                    <div
-                      className="suggestion-avatar"
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        overflow: 'hidden',
-                        background: '#e2e8f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#475569',
-                        fontWeight: 600,
-                        fontSize: 14,
-                        flexShrink: 0,
-                      }}
-                    >
+                    <div className="suggestion-avatar">
                       {profile.profile_picture ? (
                         <img
                           src={profile.profile_picture}
                           alt={profile.full_name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentNode.textContent = profile.full_name.charAt(0).toUpperCase();
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none";
+                            const parent = event.currentTarget.parentElement;
+                            if (parent) parent.textContent = profile.full_name.charAt(0).toUpperCase();
                           }}
                         />
                       ) : (
@@ -268,7 +256,7 @@ function ScheduleForm({ onSchedule }) {
                     <div className="suggestion-info">
                       <div className="suggestion-name">{profile.full_name}</div>
                       <div className="suggestion-meta">
-                        {profile.education || 'No education'} • {profile.email}
+                        {profile.designation || profile.department || "Interviewer"} • {profile.email}
                       </div>
                     </div>
                   </div>
@@ -279,33 +267,21 @@ function ScheduleForm({ onSchedule }) {
 
         <label className="field">
           <span className="field__label">Date</span>
-          <input
-            className="field__input"
-            type="date"
-            value={form.date}
-            onChange={update("date")}
-          />
+          <input className="field__input" type="date" value={form.date} onChange={update("date")} />
         </label>
 
         <label className="field">
           <span className="field__label">Time</span>
-          <input
-            className="field__input"
-            type="time"
-            value={form.time}
-            onChange={update("time")}
-          />
+          <input className="field__input" type="time" value={form.time} onChange={update("time")} />
         </label>
 
         <label className="field">
           <span className="field__label">Interview type</span>
-          <select
-            className="field__input"
-            value={form.type}
-            onChange={update("type")}
-          >
-            {interviewTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
+          <select className="field__input" value={form.type} onChange={update("type")}>
+            {interviewTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
             ))}
           </select>
         </label>
@@ -321,24 +297,23 @@ function ScheduleForm({ onSchedule }) {
   );
 }
 
-// ---- Upcoming Interviews list -------------------------------------------
 function InterviewList({ interviews, onSelect }) {
   const [filter, setFilter] = useState("All");
   const filters = ["All", "Scheduled", "Completed", "Cancelled"];
 
-  const filtered =
-    filter === "All" ? interviews : interviews.filter((i) => i.status === filter);
+  const filtered = filter === "All" ? interviews : interviews.filter((i) => i.status === filter);
 
   return (
     <div className="card">
       <div className="list__filters">
-        {filters.map((f) => (
+        {filters.map((filterName) => (
           <button
-            key={f}
-            className={`pill ${filter === f ? "pill--active" : ""}`}
-            onClick={() => setFilter(f)}
+            key={filterName}
+            className={`pill ${filter === filterName ? "pill--active" : ""}`}
+            onClick={() => setFilter(filterName)}
+            type="button"
           >
-            {f}
+            {filterName}
           </button>
         ))}
       </div>
@@ -348,9 +323,9 @@ function InterviewList({ interviews, onSelect }) {
       ) : (
         <div className="list">
           {filtered.map((iv) => (
-            <button key={iv.id} className="list__row" onClick={() => onSelect(iv)}>
+            <button key={iv.id} className="list__row" onClick={() => onSelect(iv)} type="button">
               <div className="list__main">
-                <span className="list__candidate">{iv.candidate}</span>
+                <span className="list__candidate">{iv.interviewer}</span>
                 <span className="list__meta">
                   <Calendar size={13} /> {formatDate(iv.date)}
                   <span className="dot" />
@@ -369,17 +344,16 @@ function InterviewList({ interviews, onSelect }) {
   );
 }
 
-// ---- Interview Details view -------------------------------------------
 function InterviewDetails({ interview, onBack, onUpdateStatus }) {
   return (
     <div className="card details">
-      <button className="back-link" onClick={onBack}>
+      <button className="back-link" onClick={onBack} type="button">
         <ArrowLeft size={16} /> Back to Upcoming Interviews
       </button>
 
       <div className="details__header">
         <div>
-          <h2>{interview.candidate}</h2>
+          <h2>{interview.interviewer}</h2>
           <span className="tag">{interview.type}</span>
         </div>
         <StatusBadge status={interview.status} />
@@ -387,26 +361,39 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
 
       <div className="details__grid">
         <div className="details__item">
-          <span className="details__label"><User size={14} /> Candidate</span>
-          <span className="details__value">{interview.candidate}</span>
+          <span className="details__label">
+            <User size={14} /> Interviewer
+          </span>
+          <span className="details__value">{interview.interviewer}</span>
         </div>
         <div className="details__item">
-          <span className="details__label"><Calendar size={14} /> Date</span>
+          <span className="details__label">
+            <Calendar size={14} /> Date
+          </span>
           <span className="details__value">{formatDate(interview.date)}</span>
         </div>
         <div className="details__item">
-          <span className="details__label"><Clock size={14} /> Time</span>
+          <span className="details__label">
+            <Clock size={14} /> Time
+          </span>
           <span className="details__value">{interview.time}</span>
         </div>
-        {/* Removed interviewer and meeting link fields */}
       </div>
 
       {interview.status === "Scheduled" && (
         <div className="details__actions">
-          <button className="btn btn--success" onClick={() => onUpdateStatus(interview.id, "Completed")}>
+          <button
+            className="btn btn--success"
+            onClick={() => onUpdateStatus(interview.id, "Completed")}
+            type="button"
+          >
             <CheckCircle2 size={16} /> Mark as Completed
           </button>
-          <button className="btn btn--danger" onClick={() => onUpdateStatus(interview.id, "Cancelled")}>
+          <button
+            className="btn btn--danger"
+            onClick={() => onUpdateStatus(interview.id, "Cancelled")}
+            type="button"
+          >
             <XCircle size={16} /> Cancel Interview
           </button>
         </div>
@@ -415,10 +402,9 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
   );
 }
 
-// ---- Main app shell -----------------------------------------------------
 export default function InterviewSchedule({ standalone = false }) {
   const [interviews, setInterviews] = useState(initialInterviews);
-  const [tab, setTab] = useState("schedule"); // "schedule" | "upcoming" | "details"
+  const [tab, setTab] = useState("schedule");
   const [selected, setSelected] = useState(null);
 
   const handleSchedule = (newInterview) => {
@@ -445,9 +431,9 @@ export default function InterviewSchedule({ standalone = false }) {
         <div className="page__header">
           <div>
             <h1>Interview Scheduling</h1>
-            <p>Schedule, track, and manage candidate interviews in one place.</p>
+            <p>Schedule, track, and manage interviews in one place.</p>
           </div>
-          <button className="btn btn--primary" onClick={() => setTab("schedule")}>
+          <button className="btn btn--primary" onClick={() => setTab("schedule")} type="button">
             <Plus size={16} strokeWidth={2.5} />
             New Interview
           </button>
@@ -457,12 +443,14 @@ export default function InterviewSchedule({ standalone = false }) {
           <button
             className={`tabs__item ${tab === "schedule" ? "tabs__item--active" : ""}`}
             onClick={() => setTab("schedule")}
+            type="button"
           >
             Schedule Interview
           </button>
           <button
             className={`tabs__item ${tab === "upcoming" || tab === "details" ? "tabs__item--active" : ""}`}
             onClick={() => setTab("upcoming")}
+            type="button"
           >
             Upcoming Interviews
           </button>

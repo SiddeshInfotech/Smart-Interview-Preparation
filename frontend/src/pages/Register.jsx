@@ -126,6 +126,7 @@ export default function Register() {
         const loginResponse = await login({ email: form.email, password: form.password });
         localStorage.setItem("access_token", loginResponse.data.access_token);
         localStorage.setItem("refresh_token", loginResponse.data.refresh_token);
+        localStorage.setItem("user_role", role);
         
         if (role === "interviewer") {
           navigate("/interviewer-profile");

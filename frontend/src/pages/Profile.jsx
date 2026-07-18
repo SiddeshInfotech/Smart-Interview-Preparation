@@ -14,13 +14,8 @@ import {
   Code,
   Clock,
   Edit,
-  LayoutDashboard,
-  ClipboardList,
-  FileText,
-  CalendarClock,
 } from "lucide-react";
 import "../styles/Profile.css";
-import PageNavbar from "../components/PageNavbar.jsx";
 
 // Custom GitHub Icon
 const GitHubIcon = ({ size = 20 }) => (
@@ -109,18 +104,6 @@ const Profile = () => {
 
   return (
     <div className="profile-page">
-      <PageNavbar
-        activePath="/profile"
-        navItems={[
-          { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-          { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
-          { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
-          { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
-        ]}
-        brandLabel="PrepMaster AI"
-        brandHref="/dashboard"
-      />
-
       {/* Main Content */}
       <div className="profile-main">
         <div className="profile-container">

@@ -1,4 +1,3 @@
-import json
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,7 +6,7 @@ from .models import Resume, ResumeAnalysis
 from .serializers import ResumeSerializer, ResumeAnalysisSerializer
 
 from .resume_parser import extract_resume_text
-from ai.gemini_services import analyze_resume_with_gemini
+from ai.resume_service import analyze_resume as analyze_resume_ai
 
 from candidate.models import Candidate_Profile
 
@@ -133,13 +132,8 @@ def analyze_resume(request):
         print("2. Resume text extracted")
 
         # Gemini
-        result = analyze_resume_with_gemini(resume_text)
+        result = analyze_resume_ai(resume_text)
         print("3. Gemini response received")
-
-        # Convert JSON
-        result = result.replace("```json", "").replace("```", "").strip()
-        result = json.loads(result)
-        print("4. JSON converted")
 
         print("GEMINI RESULT:", result)
         print("Gemini Email:", result.get("email"))

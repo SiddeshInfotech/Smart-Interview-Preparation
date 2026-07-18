@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { CalendarDays, Video } from "lucide-react";
-import PageNavbar from "../components/PageNavbar.jsx";
 import InterviewSchedule from "./InterviewSchedule.jsx";
 import InterviewPage from "./InterviewPage.jsx";
 import "../styles/Interview.css";
@@ -10,8 +9,6 @@ export default function Interview() {
 
   return (
     <div className="interview-dashboard">
-      <PageNavbar activePath="/interview" />
-
       <div className="dashboard-page-container">
         <main className="dashboard-content-wrapper">
           {/* Header */}

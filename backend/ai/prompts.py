@@ -1,21 +1,57 @@
-# ai/prompt.py
+# Prompt builders shared by the quiz and resume-analysis modules.
 
 
 def resume_analysis_prompt(resume_text):
     return f"""
-Analyze the following resume.
+    Analyze this resume.
 
-Resume:
-{resume_text}
+    Extract:
+    - candidate_name
+    - email
+    - role
+    - location
+    - education
+    - experience
+    - linkedin
+    - github
+    - portfolio
+    - skills
+    - matched_skills
+    - missing_skills
+    - suggested_next_skills
+    - skill_category
+    - resume_score
+    - summary
+    - suggestions
 
-Return JSON containing:
-- Technical Skills
-- Soft Skills
-- Strengths
-- Weaknesses
-- ATS Score
-"""
+    Resume:
+    {resume_text}
 
+    Return ONLY valid JSON.
+    Do not use markdown.
+    Do not wrap the response in ```json or ```.
+    Use exactly these keys:
+
+    {{
+      "candidate_name": "",
+      "email": "",
+      "role": "",
+      "location": "",
+      "education": "",
+      "experience": "",
+      "linkedin": "",
+      "github": "",
+      "portfolio": "",
+      "skills": [],
+      "matched_skills": [],
+      "missing_skills": [],
+      "suggested_next_skills": [],
+      "skill_category": "",
+      "resume_score": 0,
+      "summary": "",
+      "suggestions": []
+    }}
+    """
 
 def quiz_generation_prompt(topics, difficulty, count, mode, custom_instruction=""):
     """

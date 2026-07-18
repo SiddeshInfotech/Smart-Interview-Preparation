@@ -1,7 +1,5 @@
 import api from "../api/authAPI";
 import React, { useEffect, useRef, useState } from "react";
-import { LayoutDashboard, ClipboardList, FileText, CalendarClock } from "lucide-react";
-import PageNavbar from "../components/PageNavbar.jsx";
 import "../styles/ResumeUpload.css";
 
 const ResumeUpload = () => {
@@ -209,18 +207,6 @@ const handleAddToProfile = async () => {
  
   return (
     <div className="resume-page-wrapper">
-      <PageNavbar
-        activePath="/resume-upload"
-        navItems={[
-          { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-          { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
-          { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
-          { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
-        ]}
-        brandLabel="PrepMaster AI"
-        brandHref="/dashboard"
-      />
-
       <main className="resume-main-shell">
         <section className="resume-card">
           <div
