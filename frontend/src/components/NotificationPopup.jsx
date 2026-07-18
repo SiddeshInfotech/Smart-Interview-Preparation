@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCheck, FileText, Award, AlertCircle, MessageSquare } from 'lucide-react';
 import api from '../api/authAPI';
-import '../styles/NotificationPopup.css';
+import '../styles/ToastNotification.css';
 
 const TABS = ['All', 'Unread', 'Read', 'System'];
 
@@ -89,7 +89,9 @@ export default function NotificationPopup() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = Array.isArray(notifications)
+  ? notifications.filter((n) => !n.read).length
+  : 0;
 
   const filtered = notifications.filter((n) => {
     if (activeTab === 'All') return true;

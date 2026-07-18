@@ -34,7 +34,8 @@ urlpatterns = [
     path("api/quiz/", include("quiz.urls")),
     path("api/resume/", include("resume.urls")),
     path("api/analytics/", include("analytics.urls")),
-    path("api/notifications/", include("notifications.urls"))
+    path("api/notifications/", include("notifications.urls")),
+    path("api/feedback/", include("feedback.urls")),
 ]
 
 if settings.DEBUG:

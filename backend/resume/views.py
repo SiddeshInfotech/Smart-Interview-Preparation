@@ -24,25 +24,19 @@ def upload_resume(request):
     resume_file = request.FILES.get("resume")
 
     try:
-        profile = Candidate_Profile.objects.get(
-            user=request.user
-        )
+        profile = Candidate_Profile.objects.get(user=request.user)
 
         candidate_id = profile.candidate_id
 
     except Candidate_Profile.DoesNotExist:
         return Response(
-            {"error": "Candidate profile not found"},
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "Candidate profile not found"}, status=status.HTTP_404_NOT_FOUND
         )
 
     if not resume_file:
         return Response(
-            {"error": "Resume file is required"},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "Resume file is required"}, status=status.HTTP_400_BAD_REQUEST
         )
-
-   
 
     resume_folder = os.path.join(settings.MEDIA_ROOT, "resumes")
     os.makedirs(resume_folder, exist_ok=True)
@@ -58,17 +52,14 @@ def upload_resume(request):
         file_name=resume_file.name,
         file_path=file_path,
         file_size_kb=resume_file.size // 1024,
-        status="uploaded"
+        status="uploaded",
     )
 
     serializer = ResumeSerializer(resume)
 
     return Response(
-        {
-            "message": "Resume uploaded successfully",
-            "data": serializer.data
-        },
-        status=status.HTTP_201_CREATED
+        {"message": "Resume uploaded successfully", "data": serializer.data},
+        status=status.HTTP_201_CREATED,
     )
 
 
@@ -88,11 +79,8 @@ def view_resume(request):
     serializer = ResumeSerializer(resumes, many=True)
 
     return Response(
-        {
-            "message": "Resume retrieved successfully",
-            "data": serializer.data
-        },
-        status=status.HTTP_200_OK
+        {"message": "Resume retrieved successfully", "data": serializer.data},
+        status=status.HTTP_200_OK,
     )
 
 
@@ -106,18 +94,14 @@ def analyze_resume(request):
 
     if not resume_id:
         return Response(
-            {"error": "Resume ID is required"},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "Resume ID is required"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     try:
         resume = Resume.objects.get(resume_id=resume_id)
 
     except Resume.DoesNotExist:
-        return Response(
-            {"error": "Resume not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND)
 
     try:
 
@@ -140,38 +124,42 @@ def analyze_resume(request):
         print("Gemini Name:", result.get("candidate_name"))
 
         analysis, created = ResumeAnalysis.objects.update_or_create(
-
             resume=resume,
-
             defaults={
-
                 "role": result.get("role", ""),
                 "experience": result.get("experience", ""),
-
                 "candidate_name": result.get("candidate_name", ""),
                 "email": result.get("email", ""),
                 "education": result.get("education", ""),
                 "location": result.get("location", ""),
-
                 "linkedin": result.get("linkedin", ""),
                 "github": result.get("github", ""),
                 "portfolio": result.get("portfolio", ""),
-
                 "summary": result.get("summary", ""),
                 "resume_score": result.get("resume_score", 0),
-
                 "extracted_skills": ", ".join(result.get("skills", [])),
                 "matched_skills": ", ".join(result.get("matched_skills", [])),
                 "missing_skills": ", ".join(result.get("missing_skills", [])),
-                "suggested_next_skills": ", ".join(result.get("suggested_next_skills", [])),
+                "suggested_next_skills": ", ".join(
+                    result.get("suggested_next_skills", [])
+                ),
                 "skill_category": result.get("skill_category", ""),
-
-                "suggestion_1": result.get("suggestions", ["", "", ""])[0] if len(result.get("suggestions", [])) > 0 else "",
-                "suggestion_2": result.get("suggestions", ["", "", ""])[1] if len(result.get("suggestions", [])) > 1 else "",
-                "suggestion_3": result.get("suggestions", ["", "", ""])[2] if len(result.get("suggestions", [])) > 2 else "",
-
-            }
-
+                "suggestion_1": (
+                    result.get("suggestions", ["", "", ""])[0]
+                    if len(result.get("suggestions", [])) > 0
+                    else ""
+                ),
+                "suggestion_2": (
+                    result.get("suggestions", ["", "", ""])[1]
+                    if len(result.get("suggestions", [])) > 1
+                    else ""
+                ),
+                "suggestion_3": (
+                    result.get("suggestions", ["", "", ""])[2]
+                    if len(result.get("suggestions", [])) > 2
+                    else ""
+                ),
+            },
         )
 
         resume.status = "analyzed"
@@ -182,11 +170,8 @@ def analyze_resume(request):
         print("FINAL RESPONSE READY")
 
         return Response(
-            {
-                "message": "Resume analyzed successfully",
-                "data": serializer.data
-            },
-            status=status.HTTP_200_OK
+            {"message": "Resume analyzed successfully", "data": serializer.data},
+            status=status.HTTP_200_OK,
         )
 
     except Exception as e:
@@ -196,12 +181,8 @@ def analyze_resume(request):
         resume.status = "failed"
         resume.save()
 
-        return Response(
-            {
-                "error": str(e)
-            },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # ==========================
 # Resume Score API
@@ -213,24 +194,16 @@ def resume_score(request):
 
     try:
 
-        analysis = ResumeAnalysis.objects.get(
-            resume__resume_id=resume_id
-        )
+        analysis = ResumeAnalysis.objects.get(resume__resume_id=resume_id)
 
         return Response(
-            {
-                "resume_score": analysis.resume_score
-            },
-            status=status.HTTP_200_OK
+            {"resume_score": analysis.resume_score}, status=status.HTTP_200_OK
         )
 
     except ResumeAnalysis.DoesNotExist:
 
         return Response(
-            {
-                "error": "Analysis not found"
-            },
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "Analysis not found"}, status=status.HTTP_404_NOT_FOUND
         )
 
 
@@ -244,9 +217,7 @@ def resume_suggestions(request):
 
     try:
 
-        analysis = ResumeAnalysis.objects.get(
-            resume__resume_id=resume_id
-        )
+        analysis = ResumeAnalysis.objects.get(resume__resume_id=resume_id)
 
         return Response(
             {
@@ -254,16 +225,13 @@ def resume_suggestions(request):
                 "suggestion_2": analysis.suggestion_2,
                 "suggestion_3": analysis.suggestion_3,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
     except ResumeAnalysis.DoesNotExist:
 
         return Response(
-            {
-                "error": "Analysis not found"
-            },
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "Analysis not found"}, status=status.HTTP_404_NOT_FOUND
         )
 
 
@@ -280,8 +248,7 @@ def add_to_profile(request):
 
     if not resume_id:
         return Response(
-            {"error": "Resume ID is required"},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "Resume ID is required"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     try:
@@ -290,9 +257,7 @@ def add_to_profile(request):
 
         analysis = ResumeAnalysis.objects.get(resume=resume)
 
-        profile = Candidate_Profile.objects.get(
-             user=request.user
-        )
+        profile = Candidate_Profile.objects.get(user=request.user)
         print("Candidate Profile Found")
         print("Candidate ID:", profile.candidate_id)
 
@@ -301,26 +266,22 @@ def add_to_profile(request):
 
         print("Profile Email Lower:", profile.user.email.strip().lower())
         print("Resume Email Lower:", analysis.email.strip().lower())
- 
+
         # Email Validation
         if profile.user.email.strip().lower() != analysis.email.strip().lower():
-               return Response(
-                  {
-                          "error": "Resume email does not match your profile email."
-                  },
-                  status=status.HTTP_400_BAD_REQUEST
-    )
+            return Response(
+                {"error": "Resume email does not match your profile email."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-         # Name Validation
+        # Name Validation
         print("Profile Name:", profile.user.full_name)
         print("Resume Name:", analysis.candidate_name)
         if profile.user.email.strip().lower() != analysis.email.strip().lower():
             return Response(
-        {
-            "error": "Resume email does not match your profile email."
-        },
-        status=status.HTTP_400_BAD_REQUEST
-    )
+                {"error": "Resume email does not match your profile email."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         # Education
         profile.education = analysis.education
 
@@ -336,8 +297,7 @@ def add_to_profile(request):
         profile.portfolio_url = analysis.portfolio
 
         # Experience
-        
-        
+
         try:
             import re
 
@@ -345,10 +305,7 @@ def add_to_profile(request):
 
             print("Experience from Gemini:", experience_text)
 
-            match = re.search(
-                r"(\d+(\.\d+)?)\s*(year|years)",
-                experience_text.lower()
-            )
+            match = re.search(r"(\d+(\.\d+)?)\s*(year|years)", experience_text.lower())
 
             if match:
                 profile.experience_years = float(match.group(1))
@@ -369,7 +326,6 @@ def add_to_profile(request):
 
         profile.save()
         print("Profile saved successfully")
-       
 
         print("===== PROFILE SAVED =====")
         print("Education:", profile.education)
@@ -379,34 +335,20 @@ def add_to_profile(request):
         print("GitHub:", profile.github_url)
         print("Portfolio:", profile.portfolio_url)
         print("Experience:", profile.experience_years)
-  
+
         return Response(
-            {
-                "message": "Profile updated successfully"
-            },
-            status=status.HTTP_200_OK
+            {"message": "Profile updated successfully"}, status=status.HTTP_200_OK
         )
 
     except Resume.DoesNotExist:
-        return Response(
-            {
-                "error": "Resume not found"
-            },
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND)
 
     except ResumeAnalysis.DoesNotExist:
         return Response(
-            {
-                "error": "Resume is not analyzed"
-            },
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "Resume is not analyzed"}, status=status.HTTP_404_NOT_FOUND
         )
 
     except Candidate_Profile.DoesNotExist:
         return Response(
-            {
-                "error": "Candidate profile not found"
-            },
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "Candidate profile not found"}, status=status.HTTP_404_NOT_FOUND
         )

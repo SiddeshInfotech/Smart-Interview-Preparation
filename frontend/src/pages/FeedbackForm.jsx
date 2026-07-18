@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "../styles/FeedbackForm.css";
+import { submitFeedback } from "../api/feedbackAPI";
 
 const FeedbackForm = () => {
 
@@ -7,15 +8,12 @@ const FeedbackForm = () => {
     name: "",
     email: "",
     overallExperience: "",
-    resumeManager: "",
     mockInterview: "",
-    codingAssessment: "",
-    aptitudeTest: "",
-    dashboardExperience: "",
     suggestions: "",
-    comments: "",
-    recommend: ""
+    recommend: "",
+    recommendationReason: ""
   });
+
 
   const handleChange = (e) => {
     setFeedback({
@@ -24,26 +22,76 @@ const FeedbackForm = () => {
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log(feedback);
+
+  const handleSubmit = async (e) => {
+
+  e.preventDefault();
+
+  try {
+
+    const response = await submitFeedback(feedback);
+
+    console.log("Feedback Response:", response.data);
+
     alert("Thank you for your feedback!");
-  };
+
+
+    setFeedback({
+      name: "",
+      email: "",
+      overallExperience: "",
+      mockInterview: "",
+      suggestions: "",
+      recommend: "",
+      recommendationReason: ""
+    });
+
+
+  } catch (error) {
+
+    console.log(
+      "Feedback Error:",
+      error.response?.data || error.message
+    );
+
+    alert("Failed to submit feedback");
+
+  }
+
+};
 
   return (
     <div className="feedback-page">
       <div className="feedback-container">
+
         <div className="feedback-header">
-          <h1>Portal Feedback</h1>
+
+          <h1>
+            Portal Feedback
+          </h1>
+
           <p>
             Share your experience with PrepMaster AI and help us improve the platform.
           </p>
+
         </div>
 
-        <form className="feedback-form" onSubmit={handleSubmit}>
+
+        <form 
+          className="feedback-form"
+          onSubmit={handleSubmit}
+        >
+
+
           <div className="form-row">
+
+
             <div className="form-group">
-              <label>Name</label>
+
+              <label>
+                Name
+              </label>
+
               <input
                 type="text"
                 name="name"
@@ -51,10 +99,17 @@ const FeedbackForm = () => {
                 onChange={handleChange}
                 placeholder="Enter your name"
               />
+
             </div>
 
+
+
             <div className="form-group">
-              <label>Email</label>
+
+              <label>
+                Email
+              </label>
+
               <input
                 type="email"
                 name="email"
@@ -62,37 +117,60 @@ const FeedbackForm = () => {
                 onChange={handleChange}
                 placeholder="Enter your email"
               />
+
             </div>
+
+
           </div>
 
+
+
           <div className="form-group">
-            <label>Overall Experience</label>
+
+            <label>
+              Overall Experience
+            </label>
+
+
             <select
               name="overallExperience"
               value={feedback.overallExperience}
               onChange={handleChange}
             >
-              <option value="">Select Rating</option>
-              <option>Excellent</option>
-              <option>Good</option>
-              <option>Average</option>
-              <option>Poor</option>
+
+              <option value="">
+                Select Rating
+              </option>
+
+              <option>
+                Excellent
+              </option>
+
+              <option>
+                Good
+              </option>
+
+              <option>
+                Average
+              </option>
+
+              <option>
+                Poor
+              </option>
+
             </select>
+
           </div>
 
-          <div className="form-group">
-            <label>Resume Manager Experience</label>
-            <textarea
-              name="resumeManager"
-              value={feedback.resumeManager}
-              onChange={handleChange}
-              placeholder="Share your experience with Resume Manager feature"
-              rows="4"
-            />
-          </div>
+
 
           <div className="form-group">
-            <label>Mock Interview Experience</label>
+
+            <label>
+              Mock Interview Experience
+            </label>
+
+
             <textarea
               name="mockInterview"
               value={feedback.mockInterview}
@@ -100,97 +178,109 @@ const FeedbackForm = () => {
               placeholder="Share your experience with Mock Interview feature"
               rows="4"
             />
+
           </div>
+                    <div className="form-group">
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Coding Assessment Experience</label>
-              <select
-                name="codingAssessment"
-                value={feedback.codingAssessment}
-                onChange={handleChange}
-              >
-                <option value="">Select Rating</option>
-                <option>Excellent</option>
-                <option>Good</option>
-                <option>Average</option>
-                <option>Poor</option>
-              </select>
-            </div>
+            <label>
+              Suggestions for Improvement
+            </label>
 
-            <div className="form-group">
-              <label>Aptitude Test Experience</label>
-              <select
-                name="aptitudeTest"
-                value={feedback.aptitudeTest}
-                onChange={handleChange}
-              >
-                <option value="">Select Rating</option>
-                <option>Excellent</option>
-                <option>Good</option>
-                <option>Average</option>
-                <option>Poor</option>
-              </select>
-            </div>
-          </div>
 
-          <div className="form-group">
-            <label>Dashboard Experience</label>
-            <select
-              name="dashboardExperience"
-              value={feedback.dashboardExperience}
-              onChange={handleChange}
-            >
-              <option value="">Select Rating</option>
-              <option>Excellent</option>
-              <option>Good</option>
-              <option>Average</option>
-              <option>Poor</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Suggestions for Improvement</label>
             <textarea
               name="suggestions"
               value={feedback.suggestions}
               onChange={handleChange}
-              placeholder="Enter your suggestions"
+              placeholder="Enter your suggestions to improve PrepMaster AI"
               rows="4"
             />
+
           </div>
 
-          <div className="form-group">
-            <label>Additional Comments</label>
-            <textarea
-              name="comments"
-              value={feedback.comments}
-              onChange={handleChange}
-              placeholder="Enter additional comments"
-              rows="4"
-            />
-          </div>
+
 
           <div className="form-group">
-            <label>Would you recommend PrepMaster AI?</label>
+
+            <label>
+              Would you recommend PrepMaster AI?
+            </label>
+
+
             <select
               name="recommend"
               value={feedback.recommend}
               onChange={handleChange}
             >
-              <option value="">Select Option</option>
-              <option>Yes</option>
-              <option>No</option>
+
+              <option value="">
+                Select Option
+              </option>
+
+              <option>
+                Yes
+              </option>
+
+              <option>
+                No
+              </option>
+
             </select>
+
           </div>
 
-          <button type="submit" className="submit-btn">
+
+
+          {
+            feedback.recommend && (
+
+              <div className="form-group">
+
+                <label>
+                  {
+                    feedback.recommend === "Yes"
+                    ? "Why would you recommend our portal?"
+                    : "Why would you not recommend our portal?"
+                  }
+                </label>
+
+
+                <textarea
+                  name="recommendationReason"
+                  value={feedback.recommendationReason}
+                  onChange={handleChange}
+                  placeholder={
+                    feedback.recommend === "Yes"
+                    ? "Tell us the reason for recommending PrepMaster AI"
+                    : "Tell us what improvements are needed"
+                  }
+                  rows="4"
+                />
+
+              </div>
+
+            )
+          }
+
+
+
+          <button 
+            type="submit" 
+            className="submit-btn"
+          >
             Submit Feedback
           </button>
+
+
+
         </form>
+
+
       </div>
+
+
     </div>
   );
+
 };
 
 export default FeedbackForm;
