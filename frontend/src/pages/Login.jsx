@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Auth.css";
 import { login } from "../api/authAPI";
+import WelcomePopup from "../components/WelcomePopup"; // Correct path
 
 export default function Login() {
   const navigate = useNavigate();
@@ -12,18 +13,30 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+  
+  // State for welcome popup
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [userName, setUserName] = useState("");
 
   const handleLogin = async () => {
     setError("");
     setLoading(true);
+
     try {
       const response = await login({ email, password });
+
+      console.log("Login Success:", response.data);
+
       localStorage.setItem("access_token", response.data.access_token);
       localStorage.setItem("refresh_token", response.data.refresh_token);
+
       setLoading(false);
       return true;
+
     } catch (err) {
       console.log("Login error:", err);
+      console.log("Response:", err.response);
+      console.log("Data:", err.response?.data);
 
       const extractMessage = (data) => {
         if (!data) return "Invalid email or password.";
@@ -39,18 +52,17 @@ export default function Login() {
         if (data.error && typeof data.error === "string") return data.error;
         if (data.detail && typeof data.detail === "string") return data.detail;
 
-
         if (typeof data === "object") {
           const messages = new Set();
 
           Object.values(data).forEach((value) => {
             if (Array.isArray(value)) {
               value.forEach((msg) => {
-                if (msg && typeof msg === "string") {
+                if (typeof msg === "string") {
                   messages.add(msg);
                 }
               });
-            } else if (value && typeof value === "string") {
+            } else if (typeof value === "string") {
               messages.add(value);
             }
           });
@@ -83,11 +95,28 @@ export default function Login() {
 
     try {
       const success = await handleLogin();
-      if (success) navigate("/candidate-profile");
+      if (success) {
+        // Get user name
+        try {
+          const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+          const name = userData.full_name || email.split('@')[0] || 'User';
+          setUserName(name);
+        } catch {
+          setUserName(email.split('@')[0] || 'User');
+        }
+        
+        // Show welcome popup
+        setShowWelcome(true);
+      }
     } catch (err) {
       console.log("login submit error:", err);
       setError("Invalid email or password.");
     }
+  };
+
+  const handleWelcomeClose = () => {
+    setShowWelcome(false);
+    navigate("/candidate-profile");
   };
 
   return (
@@ -156,7 +185,6 @@ export default function Login() {
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
-                // live field validation
                 setFieldErrors((s) => ({ ...s, email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value) ? "" : "Enter a valid email address." }));
               }}
               required
@@ -234,6 +262,14 @@ export default function Login() {
           </button>
         </p>
       </div>
+
+      {/* Welcome Popup */}
+      {showWelcome && (
+        <WelcomePopup 
+          userName={userName} 
+          onClose={handleWelcomeClose} 
+        />
+      )}
     </div>
   );
 }

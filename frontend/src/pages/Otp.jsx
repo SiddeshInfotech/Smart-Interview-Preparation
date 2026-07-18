@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import "../styles/OTP.css";
+import "../styles/Otp.css";
 import {
   verifyOTP,
   forgotPassword,

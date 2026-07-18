@@ -16,6 +16,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  gap: 24px;
 }
 
 .header-left {
@@ -42,14 +43,18 @@
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
+  gap: 7px;
+  padding: 9px 18px;
   border-radius: 8px;
   text-decoration: none;
   color: #475569;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 500;
-  transition: 0.25s;
+  transition: background 0.2s, color 0.2s;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -57,38 +62,60 @@
   color: #2563eb;
 }
 
+.nav-link.active {
+  background: #eef4ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
 .header-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
+/* Circle icon buttons matching global .icon-btn */
 .header-icon {
   width: 40px;
   height: 40px;
   border-radius: 50%;
   border: 1px solid #dbe4ee;
-  background: white;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: 0.2s;
+  color: #475569;
+  transition: background 0.2s, color 0.2s;
 }
 
 .header-icon:hover {
   background: #eef4ff;
+  color: #2563eb;
+  border-color: #93c5fd;
 }
 
+/* Profile avatar pill matching global .avatar-btn */
 .profile-avatar {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 6px 14px 6px 6px;
   border-radius: 30px;
   background: #f8fafc;
   border: 1px solid #dbe4ee;
   cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a2332;
+  white-space: nowrap;
+}
+
+.profile-avatar:hover {
+  background: #eef4ff;
+  border-color: #93c5fd;
 }
 
 .profile-avatar svg {

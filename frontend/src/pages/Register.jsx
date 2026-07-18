@@ -1,9 +1,24 @@
-import api from "../api/authAPI";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ShieldCheck, User, Briefcase, KeyRound, Mail, Lock, UserRound, Phone, CheckCircle } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  User,
+  Briefcase,
+  KeyRound,
+  Mail,
+  Lock,
+  UserRound,
+  Phone,
+  CheckCircle,
+} from "lucide-react";
 import "../styles/Register.css";
-import { register, sendRegistrationOTP, verifyRegistrationOTP } from "../api/authAPI";
+import {
+  register,
+  sendRegistrationOTP,
+  verifyRegistrationOTP,
+} from "../api/authAPI";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -23,10 +38,28 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
-
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const [otpSuccess, setOtpSuccess] = useState("");
 
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const getPasswordStrength = (password) => {
+    if (!password) return { score: 0, text: "" };
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+
+    let text = "Weak";
+    if (score >= 4) {
+      text = "Strong";
+    } else if (score >= 2) {
+      text = "Medium";
+    }
+    return { score, text };
+  };
 
   const handleSendOTP = async () => {
     if (!form.email) {
@@ -62,7 +95,6 @@ export default function Register() {
       await verifyRegistrationOTP(form.email, form.otp);
       setOtpVerified(true);
       setError("");
-      setOtpVerified(true);
       setOtpSuccess("Email verified successfully!");
     } catch (err) {
       const msg = err.response?.data?.message || "Invalid OTP.";
@@ -95,18 +127,15 @@ export default function Register() {
 
       const formatErrors = (errors) => {
         if (!errors) return "Something went wrong.";
-
         if (typeof errors === "string") return errors;
 
         const messages = new Set();
-
         Object.values(errors).forEach((value) => {
           if (Array.isArray(value)) {
             value.forEach((msg) => {
               if (msg === "Ensure this field has at least 8 characters.") {
                 msg = "Ensure password has at least 8 characters.";
               }
-
               messages.add(msg);
             });
           } else {
@@ -118,7 +147,6 @@ export default function Register() {
       };
 
       setError(formatErrors(serverData));
-
     }
   };
 
@@ -150,6 +178,8 @@ export default function Register() {
     }
   };
 
+  const strength = getPasswordStrength(form.password);
+
   return (
     <div className="register-shell">
       <div className="register-card">
@@ -158,9 +188,11 @@ export default function Register() {
           Join over 50,000 professionals using AI-driven behavioral analysis.
         </p>
 
-        <div className="role-toggle">
+        <div className="role-toggle" role="tablist" aria-label="Registration Role">
           <button
             type="button"
+            role="tab"
+            aria-selected={role === "candidate"}
             className={`role-toggle__btn ${role === "candidate" ? "active" : ""}`}
             onClick={() => setRole("candidate")}
           >
@@ -168,6 +200,8 @@ export default function Register() {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={role === "interviewer"}
             className={`role-toggle__btn ${role === "interviewer" ? "active" : ""}`}
             onClick={() => setRole("interviewer")}
           >
@@ -176,64 +210,76 @@ export default function Register() {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <label className="field-label">Full Name</label>
-          <div className="field-control">
-            <UserRound size={16} className="field-icon" />
-            <input
-              className="input"
-              type="text"
-              name="name"
-              placeholder="John Doe"
-              value={form.name}
-              onChange={handleChange}
-              required
-            />
+          {/* Full Name */}
+          <div className="form-group">
+            <label className="field-label" htmlFor="register-name">
+              Full Name
+            </label>
+            <div className="field-control">
+              <UserRound size={16} className="field-icon" />
+              <input
+                id="register-name"
+                className="input"
+                type="text"
+                name="name"
+                placeholder="John Doe"
+                value={form.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
           </div>
 
-          <label className="field-label">Professional Email</label>
+          {/* Professional Email */}
+          <div className="form-group">
+            <label className="field-label" htmlFor="register-email">
+              Professional Email
+            </label>
+            <div className="field-control">
+              <Mail size={16} className="field-icon" />
+              <input
+                id="register-email"
+                className="input otp-input"
+                type="email"
+                name="email"
+                placeholder="john@company.com"
+                value={form.email}
+                onChange={handleChange}
+                disabled={otpVerified}
+                required
+              />
 
-          <div className="field-control">
-            <Mail size={16} className="field-icon" />
+              {!otpVerified && (
+                <button
+                  type="button"
+                  className="otp-btn"
+                  onClick={handleSendOTP}
+                  disabled={loading || otpSent}
+                  aria-label="Send verification code to email"
+                >
+                  {loading && !otpSent ? "..." : "Send OTP"}
+                </button>
+              )}
 
-            <input
-              className="input otp-input"
-              type="email"
-              name="email"
-              placeholder="john@company.com"
-              value={form.email}
-              onChange={handleChange}
-              disabled={otpVerified}
-              required
-            />
-
-            {!otpVerified && (
-              <button
-                type="button"
-                className="otp-btn"
-                onClick={handleSendOTP}
-                disabled={loading || otpSent}
-              >
-                {loading && !otpSent ? "..." : "Send OTP"}
-              </button>
-            )}
-
-            {
-              otpVerified && (
-                <div className="field-success">
+              {otpVerified && (
+                <div className="field-success" role="alert">
                   <CheckCircle size={16} />
                   {otpSuccess}
                 </div>
-              )
-            }
+              )}
+            </div>
           </div>
 
+          {/* Verification Code */}
           {otpSent && !otpVerified && (
-            <>
-              <label className="field-label">Verification Code</label>
-
+            <div className="form-group">
+              <label className="field-label" htmlFor="register-otp">
+                Verification Code
+              </label>
               <div className="field-control">
                 <KeyRound size={16} className="field-icon" />
                 <input
+                  id="register-otp"
                   className="input"
                   type="text"
                   name="otp"
@@ -254,7 +300,7 @@ export default function Register() {
               >
                 <button
                   type="button"
-                  className="outline-btn"
+                  className="btn-outline"
                   onClick={() => {
                     setOtpSent(false);
                     setForm({ ...form, otp: "" });
@@ -267,7 +313,7 @@ export default function Register() {
 
                 <button
                   type="button"
-                  className="primary-btn"
+                  className="btn-primary"
                   onClick={handleVerifyOTP}
                   disabled={loading}
                   style={{ flex: 1 }}
@@ -275,71 +321,109 @@ export default function Register() {
                   {loading ? "Verifying..." : "Verify OTP"}
                 </button>
               </div>
-            </>
+            </div>
           )}
 
-          <label className="field-label">Phone Number</label>
-          <div className="field-control">
-            <Phone size={16} className="field-icon" />
-            <input
-              className="input"
-              type="text"
-              name="phone_number"
-              value={form.phone_number}
-              onChange={handleChange}
-              required
-            />
+          {/* Phone Number */}
+          <div className="form-group">
+            <label className="field-label" htmlFor="register-phone">
+              Phone Number
+            </label>
+            <div className="field-control">
+              <Phone size={16} className="field-icon" />
+              <input
+                id="register-phone"
+                className="input"
+                type="text"
+                name="phone_number"
+                value={form.phone_number}
+                onChange={handleChange}
+                placeholder="+1 (555) 000-0000"
+                required
+              />
+            </div>
           </div>
 
-          <label className="field-label">Create Password</label>
-          <div className="field-control">
-            <Lock size={16} className="field-icon" />
-            <input
-              className="input"
-              type={showPassword ? "text" : "password"}
-              name="password"
-              placeholder="••••••••"
-              value={form.password}
-              onChange={handleChange}
-              required
-            />
-            <button
-              type="button"
-              className="eye-btn"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-            </button>
+          {/* Create Password */}
+          <div className="form-group">
+            <label className="field-label" htmlFor="register-password">
+              Create Password
+            </label>
+            <div className="field-control">
+              <Lock size={16} className="field-icon" />
+              <input
+                id="register-password"
+                className="input"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
+              <button
+                type="button"
+                className="eye-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            </div>
+
+            {/* Password Strength Indicator */}
+            {form.password && (
+              <div className="password-strength-container">
+                <div className="strength-bar-track">
+                  <div
+                    className="strength-bar-fill"
+                    style={{
+                      width: `${(strength.score / 5) * 100}%`,
+                    }}
+                  />
+                </div>
+                <span className="strength-rating-text">
+                  Password strength: <strong>{strength.text}</strong>
+                </span>
+              </div>
+            )}
           </div>
 
-          <label className="field-label">Confirm Password</label>
-          <div className="field-control">
-            <Lock size={16} className="field-icon" />
-
-            <input
-              className="input"
-              type={showConfirmPassword ? "text" : "password"}
-              name="confirmPassword"
-              placeholder="••••••••"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              required
-            />
-
-            <button
-              type="button"
-              className="eye-btn"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-            </button>
+          {/* Confirm Password */}
+          <div className="form-group">
+            <label className="field-label" htmlFor="register-confirm-password">
+              Confirm Password
+            </label>
+            <div className="field-control">
+              <Lock size={16} className="field-icon" />
+              <input
+                id="register-confirm-password"
+                className="input"
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="••••••••"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                required
+              />
+              <button
+                type="button"
+                className="eye-btn"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+              >
+                {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            </div>
           </div>
 
+          {/* Terms Checkbox */}
           <label className="checkbox-row">
             <input
               type="checkbox"
               checked={agreed}
               onChange={(e) => setAgreed(e.target.checked)}
+              aria-label="Agree to terms of service and privacy policy"
             />
             <span>
               I agree to the <Link to="/terms">Terms of Service</Link> and{" "}
@@ -347,13 +431,15 @@ export default function Register() {
             </span>
           </label>
 
+          {/* Form Level Error Message */}
           {error && (
-            <div className="field-error" style={{ whiteSpace: "pre-line" }}>
+            <div className="field-error" style={{ whiteSpace: "pre-line" }} role="alert">
               {error}
             </div>
           )}
 
-          <button className="primary-btn" type="submit" disabled={loading}>
+          {/* Submit Button */}
+          <button className="btn-primary btn-block" type="submit" disabled={loading}>
             {loading ? "Creating Account…" : "Start My Journey"}
           </button>
         </form>

@@ -21,6 +21,8 @@ import {
   CheckCircle,
   Plus,
   ChevronDown,
+  LayoutDashboard,
+  FileText,
 } from "lucide-react";
 
 export default function InterviewerProfile() {
@@ -48,28 +50,36 @@ export default function InterviewerProfile() {
 
       {/* ================= NAVBAR ================= */}
 
-      <header className="interviewer-navbar">
+      <header className="top-navbar">
+        <div className="navbar-container">
 
-        <div className="logo">
-          PrepMaster AI
-        </div>
+          <button className="navbar-brand" onClick={() => navigate("/dashboard")}>
+            <Brain size={26} />
+            <span className="logo-text">InterviewAI</span>
+          </button>
 
-        <nav className="navbar-links">
-          <a href="/">Dashboard</a>
-          <a href="/">Practice</a>
-          <a href="/">Sessions</a>
-          <a href="/">Insights</a>
-        </nav>
+          <nav className="navbar-links" aria-label="Main Navigation">
+            <button className="nav-link" onClick={() => navigate("/dashboard")}>
+              <LayoutDashboard size={16} /> Dashboard
+            </button>
+            <button className="nav-link" onClick={() => navigate("/quiz")}>
+              <ClipboardList size={16} /> Practice Mode
+            </button>
+            <button className="nav-link" onClick={() => navigate("/resume-upload")}>
+              <FileText size={16} /> Resume Analysis
+            </button>
+          </nav>
 
-        <div className="navbar-right">
-          <Bell size={20} />
-          <Settings size={20} />
-
-          <div className="profile-avatar">
-            JD
+          <div className="navbar-actions">
+            <button className="icon-btn" aria-label="Notifications"><Bell size={19} /></button>
+            <button className="icon-btn" aria-label="Settings"><Settings size={19} /></button>
+            <div className="avatar-btn" style={{ cursor: 'default' }}>
+              <span className="avatar-inner">JD</span>
+              <span>John</span>
+            </div>
           </div>
-        </div>
 
+        </div>
       </header>
 
       {/* ================= BODY ================= */}

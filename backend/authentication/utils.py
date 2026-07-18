@@ -20,6 +20,7 @@ def send_otp_email(email, otp, purpose):
     message = f"""
 Hello,
 
+
 Your OTP for {purpose} is:
 
 {otp}
