@@ -13,7 +13,7 @@ export default function Dashboard() {
     { name: "Soft Skills & Delivery", score: 95 },
     { name: "System Architecture", score: 74 },
   ];
-
+  
   const activity = [
     {
       title: "Completed Mock Interview",
