@@ -16,8 +16,10 @@ class Migration(migrations.Migration):
     operations = [
         migrations.CreateModel(
             name='Notification',
+           
+            
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+               ('notification_id', models.AutoField(primary_key=True, serialize=False)),
                 ('notification_type', models.CharField(choices=[('system', 'System'), ('resume', 'Resume'), ('interview', 'Interview'), ('assessment', 'Assessment'), ('feedback', 'Feedback')], default='system', max_length=20)),
                 ('title', models.CharField(max_length=200)),
                 ('message', models.TextField()),
@@ -25,5 +27,9 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='notifications', to=settings.AUTH_USER_MODEL)),
             ],
+             options={
+                  "db_table": "Notifications",
+                   "ordering": ["-created_at"],
+    },
         ),
     ]

@@ -51,8 +51,7 @@ Here is a summary of your feedback:
 
 Overall Experience: {feedback.overall_experience}
 Mock Interview: {feedback.mock_interview}
-Coding Assessment: {feedback.coding_assessment}
-Aptitude Test: {feedback.aptitude_test}
+
 
 Comments:
 {feedback.comments}

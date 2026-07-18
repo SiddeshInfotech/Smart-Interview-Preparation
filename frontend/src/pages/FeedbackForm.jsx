@@ -9,11 +9,11 @@ const FeedbackForm = () => {
   const [feedback, setFeedback] = useState({
     name: "",
     email: "",
-    overallExperience: "",
-    mockInterview: "",
+    overall_experience: "",
+    mock_interview: "",
     suggestions: "",
     recommend: "",
-    recommendationReason: ""
+    recommendation_reason: ""
   });
 
 
@@ -39,14 +39,14 @@ const FeedbackForm = () => {
 
 
     setFeedback({
-      name: "",
-      email: "",
-      overallExperience: "",
-      mockInterview: "",
-      suggestions: "",
-      recommend: "",
-      recommendationReason: ""
-    });
+         name: "",
+         email: "",
+         overall_experience: "",
+         mock_interview: "",
+         suggestions: "",
+         recommend: "",
+         recommendation_reason: ""
+     });
 
 
   } catch (error) {
@@ -160,9 +160,9 @@ const FeedbackForm = () => {
 
 
             <select
-              name="overallExperience"
-              value={feedback.overallExperience}
-              onChange={handleChange}
+                name="overall_experience"
+                value={feedback.overall_experience}
+                onChange={handleChange}
             >
 
               <option value="">
@@ -197,15 +197,13 @@ const FeedbackForm = () => {
               Mock Interview Experience
             </label>
 
-
-            <textarea
-              name="mockInterview"
-              value={feedback.mockInterview}
-              onChange={handleChange}
-              placeholder="Share your experience with Mock Interview feature"
-              rows="4"
-            />
-
+          <textarea
+                name="mock_interview"
+                value={feedback.mock_interview}
+                onChange={handleChange}
+                placeholder="Share your experience with Mock Interview feature"
+                rows="4"
+           />
           </div>
                     <div className="form-group">
 
@@ -272,9 +270,9 @@ const FeedbackForm = () => {
 
 
                 <textarea
-                  name="recommendationReason"
-                  value={feedback.recommendationReason}
-                  onChange={handleChange}
+                    name="recommendation_reason"
+                    value={feedback.recommendation_reason}
+                    onChange={handleChange}
                   placeholder={
                     feedback.recommend === "Yes"
                     ? "Tell us the reason for recommending PrepMaster AI"
