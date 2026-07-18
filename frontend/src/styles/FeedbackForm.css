@@ -1,0 +1,193 @@
+.feedback-page {
+    min-height: 100vh;
+    background: #f4f7fc;
+    font-family: "Poppins", sans-serif;
+}
+
+
+/* Main Container */
+
+.feedback-container {
+    width: 85%;
+    margin: 40px auto;
+    background: white;
+    padding: 35px;
+    border-radius: 18px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+
+
+/* Header */
+
+.feedback-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+
+.feedback-header h1 {
+    font-size: 32px;
+    color: #1e3a8a;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+
+.feedback-header p {
+    color: #64748b;
+    font-size: 15px;
+}
+
+
+
+/* Form */
+
+.feedback-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+
+
+/* Two column fields */
+
+.form-row {
+    display: flex;
+    gap: 20px;
+}
+
+
+.form-row .form-group {
+    flex: 1;
+}
+
+
+
+/* Input Groups */
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+
+.form-group label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 8px;
+}
+
+
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+
+    width: 100%;
+    padding: 12px 14px;
+
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+
+    font-size: 14px;
+    outline: none;
+
+    transition: 0.3s;
+    background: #ffffff;
+}
+
+
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+
+    border-color: #2563eb;
+
+    box-shadow: 
+    0 0 0 3px rgba(37,99,235,0.15);
+
+}
+
+
+
+.form-group textarea {
+
+    resize: vertical;
+}
+
+
+
+/* Submit Button */
+
+.submit-btn {
+
+    width: 220px;
+
+    margin: 20px auto 0;
+
+    padding: 13px 25px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: linear-gradient(
+        135deg,
+        #2563eb,
+        #1e40af
+    );
+
+    color: white;
+
+    font-size: 16px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+
+}
+
+
+
+.submit-btn:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+    0 8px 20px rgba(37,99,235,0.3);
+
+}
+
+
+
+/* Responsive */
+
+@media(max-width:768px){
+
+    .feedback-container{
+
+        width: 95%;
+        padding: 20px;
+
+    }
+
+
+    .form-row{
+
+        flex-direction: column;
+
+    }
+
+
+    .feedback-header h1{
+
+        font-size: 26px;
+
+    }
+
+}

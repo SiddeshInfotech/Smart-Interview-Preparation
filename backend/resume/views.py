@@ -137,9 +137,9 @@ def analyze_resume(request):
         print("3. Gemini response received")
 
         # Convert JSON
-        result = result.replace("```json", "").replace("```", "").strip()
-        result = json.loads(result)
-        print("4. JSON converted")
+        
+             # Gemini already returns dictionary
+        print("4. Gemini result processed")
 
         print("GEMINI RESULT:", result)
         print("Gemini Email:", result.get("email"))
