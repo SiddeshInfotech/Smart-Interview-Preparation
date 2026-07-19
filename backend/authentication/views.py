@@ -1,3 +1,5 @@
+from notifications.utils import create_notification
+from notifications.models import Notification
 import logging
 from django.utils import timezone
 from django.core.cache import cache
@@ -53,12 +55,21 @@ def register(request):
 
     user.set_password(data["password"])
     user.save()
-    cache.delete(f"reg_verified_{data['email']}")
+    create_notification(
+    user=user,
+    notification_type="system",
+    title="Welcome to PrepMaster AI",
+    message="Your account has been created successfully. Welcome aboard!"
+)
 
+    
     return Response(
-        {"message": "Registration successful.", "user_id": user.user_id},
-        status=status.HTTP_201_CREATED,
-    )
+      {
+          "message": "Registration successful."
+      },
+    status=status.HTTP_201_CREATED
+)
+
 
 
 @api_view(["POST"])
@@ -68,7 +79,9 @@ def login(request):
 
     if not serializer.is_valid():
         logger.warning("Login validation failed: %s", serializer.errors)
+
         errors = serializer.errors
+
         if "message" in errors:
             return Response(
                 {
@@ -80,13 +93,23 @@ def login(request):
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+
         return Response(
             {"message": "Invalid email or password."},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
     try:
-        user = serializer.validated_data.get("user")
+        user = serializer.validated_data["user"]
+
+        # Create Login Notification
+        create_notification(
+            user=user,
+            notification_type="system",
+            title="Login Successful",
+            message="Welcome back to PrepMaster AI."
+        )
+
         refresh = RefreshToken.for_user(user)
         refresh["user_id"] = user.user_id
         refresh["email"] = user.email
@@ -106,16 +129,13 @@ def login(request):
             },
             status=status.HTTP_200_OK,
         )
-    except Exception as exc:
+
+    except Exception:
         logger.exception("Unexpected login failure")
         return Response(
             {"message": "Invalid email or password."},
             status=status.HTTP_401_UNAUTHORIZED,
         )
-
-
-from rest_framework_simplejwt.tokens import RefreshToken
-
 
 @api_view(["POST"])
 def logout(request):
@@ -138,22 +158,36 @@ def logout(request):
 @permission_classes([AllowAny])
 def forgot_password(request):
     serializer = ForgotPasswordSerializer(data=request.data)
+
     if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     email = serializer.validated_data["email"]
 
     try:
         user = User.objects.get(email=email)
+
     except User.DoesNotExist:
         return Response(
-            {"message": "User with this email does not exist."},
-            status=status.HTTP_404_NOT_FOUND,
+            {
+                "message": "User with this email does not exist."
+            },
+            status=status.HTTP_404_NOT_FOUND
         )
 
-    OtpVerification.objects.filter(user=user, purpose="password_reset").delete()
+    # Delete old OTPs
+    OtpVerification.objects.filter(
+        user=user,
+        purpose="password_reset"
+    ).delete()
+
+    # Generate new OTP
     otp = generate_otp()
 
+    # Save OTP
     OtpVerification.objects.create(
         user=user,
         otp_code=otp,
@@ -164,21 +198,28 @@ def forgot_password(request):
     )
 
     try:
-        send_otp_email(user.email, otp, "Forgot Password")
-        return Response(
-            {"message": "OTP sent successfully."},
-            status=status.HTTP_200_OK,
+        send_otp_email(
+            user.email,
+            otp,
+            "Forgot Password"
         )
+
+        return Response(
+            {
+                "message": "OTP sent successfully."
+            },
+            status=status.HTTP_200_OK
+        )
+
     except Exception as e:
-         print("EMAIL ERROR:", str(e))
-         logger.exception(e)
+        logger.exception(e)
 
-    return Response(
-        {"message": str(e)},
-        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    )
-
-
+        return Response(
+            {
+                "message": str(e)
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def verify_otp(request):

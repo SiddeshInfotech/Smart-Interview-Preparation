@@ -4,9 +4,9 @@ import PageNavbar from "../components/PageNavbar.jsx";
 import "../styles/FeedbackForm.css";
 import { submitFeedback } from "../api/feedbackAPI";
 
-const FeedbackForm = () => {
+const FeedbackForm = () => { 
 
-  const [feedback, setFeedback] = useState({
+  const [feedback, setFeedback] = useState({ 
     name: "",
     email: "",
     overall_experience: "",
