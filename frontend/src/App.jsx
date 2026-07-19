@@ -22,7 +22,6 @@ import Interview from "./pages/Interview";
 import AppShell from "./components/AppShell";
 import RequireRole from "./components/RequireRole";
 
-
 function App() {
   return (
     <BrowserRouter>
@@ -37,17 +36,26 @@ function App() {
         <Route path="/Auth-page" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/candidate-profile" element={<CandidateProfile />} />
+        
+        {/* Quiz routes – candidate only */}
         <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>
           <Route path="/quiz-page" element={<QuizPage />} />
           <Route path="/quiz-result" element={<QuizResult />} />
         </Route>
+
         <Route element={<AppShell />}>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="resume-upload" element={<ResumeUpload />} />
           <Route path="profile" element={<Profile />} />
           <Route path="feedback-form" element={<FeedbackForm />} />
+          
+          {/* Quiz – candidate only */}
           <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>
             <Route path="quiz" element={<Quiz />} />
+          </Route>
+          
+          {/* Interview – both candidate and interviewer */}
+          <Route element={<RequireRole allowedRoles={["candidate", "interviewer"]} redirectTo="/dashboard" />}>
             <Route path="interview" element={<Interview />} />
           </Route>
         </Route>

@@ -5,7 +5,7 @@ import PageNavbar from "./PageNavbar.jsx";
 import useCurrentUserRole from "../hooks/useCurrentUserRole";
 import "../styles/AppShell.css";
 
-const navItems = [
+const allNavItems = [
   { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
   { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
   { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
@@ -17,10 +17,21 @@ export default function AppShell() {
   const activePath = location.pathname;
   const { role } = useCurrentUserRole();
 
-  const visibleNavItems =
-    role === "interviewer"
-      ? navItems.filter((item) => item.to !== "/quiz" && item.to !== "/interview")
-      : navItems;
+  // Always include Interview link
+  let visibleNavItems;
+  if (role === "interviewer") {
+    visibleNavItems = allNavItems.filter(
+      (item) => item.to === "/dashboard" || item.to === "/interview"
+    );
+  } else {
+    // Candidates (or unknown role) get all items
+    visibleNavItems = allNavItems;
+  }
+
+  // Fallback if role not yet loaded
+  if (!role) {
+    visibleNavItems = allNavItems;
+  }
 
   return (
     <div className="app-shell">

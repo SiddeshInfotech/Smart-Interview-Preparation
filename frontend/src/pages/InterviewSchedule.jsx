@@ -19,6 +19,7 @@ import {
 import "../styles/InterviewSchedule.css";
 import api from "../api/authAPI";
 
+// Fallback seed data (only used if no `interviews` prop is provided)
 const initialInterviews = [
   {
     id: 1,
@@ -27,6 +28,7 @@ const initialInterviews = [
     time: "10:30",
     type: "Technical",
     status: "Scheduled",
+    roomName: "demo-room-1",
   },
   {
     id: 2,
@@ -35,6 +37,7 @@ const initialInterviews = [
     time: "15:00",
     type: "HR Round",
     status: "Completed",
+    roomName: "demo-room-2",
   },
   {
     id: 3,
@@ -43,11 +46,13 @@ const initialInterviews = [
     time: "12:00",
     type: "Managerial",
     status: "Cancelled",
+    roomName: "demo-room-3",
   },
 ];
 
 const interviewTypes = ["Technical", "HR Round", "Managerial", "Final Round"];
 
+// --- Helpers ---
 function StatusBadge({ status }) {
   const map = {
     Scheduled: { icon: Circle, className: "badge badge--scheduled" },
@@ -72,6 +77,7 @@ function formatDate(dateStr) {
   });
 }
 
+// --- Navbar (unchanged) ---
 function Navbar({ active }) {
   const navItems = [
     { label: "Dashboard", icon: LayoutGrid },
@@ -116,6 +122,7 @@ function Navbar({ active }) {
   );
 }
 
+// --- ScheduleForm (UPDATED: generates roomName) ---
 function ScheduleForm({ onSchedule }) {
   const [form, setForm] = useState({
     interviewer: "",
@@ -137,7 +144,6 @@ function ScheduleForm({ onSchedule }) {
       setShowSuggestions(false);
       return;
     }
-
     setLoading(true);
     try {
       const res = await api.get(`/interviewer/search/?search=${encodeURIComponent(query)}`);
@@ -154,7 +160,6 @@ function ScheduleForm({ onSchedule }) {
   const handleInterviewerChange = (e) => {
     const val = e.target.value;
     setForm({ ...form, interviewer: val, interviewerId: null });
-
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (val.trim().length >= 2) {
       debounceRef.current = setTimeout(() => fetchInterviewers(val.trim()), 300);
@@ -180,21 +185,22 @@ function ScheduleForm({ onSchedule }) {
       alert("Please fill all required fields.");
       return;
     }
-
     if (!form.interviewerId) {
       alert("Please select an interviewer from the suggestions (not a free-text entry).");
       return;
     }
 
-    onSchedule({
-      interviewer: form.interviewer,
-      interviewerId: form.interviewerId,
-      date: form.date,
-      time: form.time,
-      type: form.type,
+    // ✅ Generate a unique room name for LiveKit
+    const roomName = `room-${Date.now()}-${crypto.randomUUID()}`;
+
+    const newInterview = {
+      ...form,
+      roomName, // <-- crucial for joining the lobby
       status: "Scheduled",
       id: Date.now(),
-    });
+    };
+
+    onSchedule(newInterview);
 
     setForm({
       interviewer: "",
@@ -224,7 +230,6 @@ function ScheduleForm({ onSchedule }) {
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             autoComplete="off"
           />
-
           {showSuggestions && (
             <div className="suggestion-dropdown">
               {loading && <div className="suggestion-loading">Loading...</div>}
@@ -279,9 +284,7 @@ function ScheduleForm({ onSchedule }) {
           <span className="field__label">Interview type</span>
           <select className="field__input" value={form.type} onChange={update("type")}>
             {interviewTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
+              <option key={type} value={type}>{type}</option>
             ))}
           </select>
         </label>
@@ -297,7 +300,8 @@ function ScheduleForm({ onSchedule }) {
   );
 }
 
-function InterviewList({ interviews, onSelect }) {
+// --- InterviewList (UPDATED: calls onSelectInterview) ---
+function InterviewList({ interviews, onSelectInterview }) {
   const [filter, setFilter] = useState("All");
   const filters = ["All", "Scheduled", "Completed", "Cancelled"];
 
@@ -323,7 +327,12 @@ function InterviewList({ interviews, onSelect }) {
       ) : (
         <div className="list">
           {filtered.map((iv) => (
-            <button key={iv.id} className="list__row" onClick={() => onSelect(iv)} type="button">
+            <button
+              key={iv.id}
+              className="list__row"
+              onClick={() => onSelectInterview(iv)} // pass whole interview to parent
+              type="button"
+            >
               <div className="list__main">
                 <span className="list__candidate">{iv.interviewer}</span>
                 <span className="list__meta">
@@ -344,6 +353,7 @@ function InterviewList({ interviews, onSelect }) {
   );
 }
 
+// --- InterviewDetails (unchanged) ---
 function InterviewDetails({ interview, onBack, onUpdateStatus }) {
   return (
     <div className="card details">
@@ -402,24 +412,45 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
   );
 }
 
-export default function InterviewSchedule({ standalone = false }) {
-  const [interviews, setInterviews] = useState(initialInterviews);
+// --- Main export (UPDATED: accepts props from parent) ---
+export default function InterviewSchedule({
+  standalone = false,
+  interviews: propInterviews,
+  onSchedule: propOnSchedule,
+  onSelectInterview: propOnSelectInterview,
+}) {
+  // Use parent-provided interviews if available; otherwise fallback to local state
+  const [localInterviews, setLocalInterviews] = useState(initialInterviews);
+  const interviews = propInterviews || localInterviews;
+
   const [tab, setTab] = useState("schedule");
   const [selected, setSelected] = useState(null);
 
+  // Handle scheduling – call parent's callback if available, else update local
   const handleSchedule = (newInterview) => {
-    setInterviews([newInterview, ...interviews]);
+    if (propOnSchedule) {
+      propOnSchedule(newInterview);
+    } else {
+      setLocalInterviews([newInterview, ...localInterviews]);
+    }
     setTab("upcoming");
   };
 
+  // Handle selecting an interview – call parent's callback if available
   const handleSelect = (iv) => {
-    setSelected(iv);
-    setTab("details");
+    if (propOnSelectInterview) {
+      propOnSelectInterview(iv); // parent will switch to lobby
+    } else {
+      setSelected(iv);
+      setTab("details");
+    }
   };
 
   const handleUpdateStatus = (id, status) => {
-    const updated = interviews.map((iv) => (iv.id === id ? { ...iv, status } : iv));
-    setInterviews(updated);
+    const updated = interviews.map((iv) =>
+      iv.id === id ? { ...iv, status } : iv
+    );
+    setLocalInterviews(updated);
     setSelected(updated.find((iv) => iv.id === id));
   };
 
@@ -457,7 +488,9 @@ export default function InterviewSchedule({ standalone = false }) {
         </div>
 
         {tab === "schedule" && <ScheduleForm onSchedule={handleSchedule} />}
-        {tab === "upcoming" && <InterviewList interviews={interviews} onSelect={handleSelect} />}
+        {tab === "upcoming" && (
+          <InterviewList interviews={interviews} onSelectInterview={handleSelect} />
+        )}
         {tab === "details" && selected && (
           <InterviewDetails
             interview={selected}
