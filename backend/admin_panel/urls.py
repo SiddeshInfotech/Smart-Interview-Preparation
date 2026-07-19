@@ -1,12 +1,9 @@
 from django.urls import path
-from . import views
+
+from .views import LanguageListView, RunCodeView, SubmissionHistoryView
 
 urlpatterns = [
-    path("get-users/", views.get_users),
-    path("update-users/<int:id>/", views.update_user),
-    path("add-questions/", views.add_question),
-    path("delete-questions/<int:id>/", views.delete_question),
-    path("get-analytics/", views.get_analytics),
-    path("get-interviews/", views.get_interviews),
-    path("delete-interviews/<int:id>/", views.delete_interview),
+    path("run/", RunCodeView.as_view(), name="compiler-run"),
+    path("languages/", LanguageListView.as_view(), name="compiler-languages"),
+    path("history/", SubmissionHistoryView.as_view(), name="compiler-history"),
 ]

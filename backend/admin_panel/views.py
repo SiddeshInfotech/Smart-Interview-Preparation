@@ -1,36 +1,72 @@
-from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-# Create your views here.
-@api_view(["GET"])
-def get_users(request):
-    return Response({"message": "Users retrieved successfully"})
+from .judge0 import Judge0Error, LANGUAGE_ID_MAP, submit_code
+from .models import Submission
+from .serializers import RunCodeRequestSerializer, SubmissionSerializer
 
-@api_view(["PUT"])
-def update_user(request, id):
-    return Response({"message": f"User {id} updated successfully"})
-
-@api_view(["POST"])
-def add_question(request):
-    return Response({"message": "Question added successfully"})
+# Judge0 status IDs 3 = Accepted (ran successfully, may still have wrong output).
+# Anything else that's terminal is treated as an error/failure state for our
+# simplified status field.
+ACCEPTED_STATUS_ID = 3
 
 
-@api_view(["DELETE"])
-def delete_question(request, id):
-    return Response({"message": f"Question {id} deleted successfully"})
+class LanguageListView(APIView):
+    """GET /api/compiler/languages/ -> languages the editor can offer."""
+
+    def get(self, request):
+        return Response(
+            [{"value": key, "label": key.capitalize()} for key in LANGUAGE_ID_MAP]
+        )
 
 
-@api_view(["GET"])
-def get_analytics(request):
-    return Response({"message": "Analytics retrieved successfully"})
+class RunCodeView(APIView):
+    """POST /api/compiler/run/ -> execute code via Judge0 and persist the result."""
+
+    def post(self, request):
+        req = RunCodeRequestSerializer(data=request.data)
+        req.is_valid(raise_exception=True)
+        data = req.validated_data
+
+        submission = Submission.objects.create(
+            language=data["language"],
+            source_code=data["source_code"],
+            stdin=data.get("stdin", ""),
+            status="running",
+        )
+
+        try:
+            result = submit_code(
+                language=data["language"],
+                source_code=data["source_code"],
+                stdin=data.get("stdin", ""),
+            )
+        except Judge0Error as exc:
+            submission.status = "error"
+            submission.stderr = str(exc)
+            submission.save()
+            return Response(
+                SubmissionSerializer(submission).data,
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        submission.judge0_token = result["token"]
+        submission.judge0_status_description = result["status_description"]
+        submission.stdout = result["stdout"]
+        submission.stderr = result["stderr"]
+        submission.compile_output = result["compile_output"]
+        submission.execution_time = result["time"] or ""
+        submission.memory_used = result["memory"]
+        submission.status = "completed" if result["status_id"] == ACCEPTED_STATUS_ID else "error"
+        submission.save()
+
+        return Response(SubmissionSerializer(submission).data, status=status.HTTP_200_OK)
 
 
-@api_view(["GET"])
-def get_interviews(request):
-    return Response({"message": "Interviews retrieved successfully"})
+class SubmissionHistoryView(APIView):
+    """GET /api/compiler/history/ -> most recent submissions."""
 
-
-@api_view(["DELETE"])
-def delete_interview(request, id):
-    return Response({"message": f"Interview {id} deleted successfully"})
+    def get(self, request):
+        submissions = Submission.objects.all()[:20]
+        return Response(SubmissionSerializer(submissions, many=True).data)
