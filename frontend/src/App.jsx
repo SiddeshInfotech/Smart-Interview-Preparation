@@ -21,6 +21,7 @@ import FeedbackForm from "./pages/FeedbackForm";
 import Interview from "./pages/Interview";
 import AppShell from "./components/AppShell";
 import RequireRole from "./components/RequireRole";
+import InterviewPage from "./pages/InterviewPage";
 
 function App() {
   return (
@@ -42,6 +43,9 @@ function App() {
           <Route path="/quiz-page" element={<QuizPage />} />
           <Route path="/quiz-result" element={<QuizResult />} />
         </Route>
+
+        {/* Interview Page - Direct Access (Testing Only) */}
+        <Route path="/interview-page" element={<InterviewPage />} />
 
         <Route element={<AppShell />}>
           <Route path="dashboard" element={<Dashboard />} />
