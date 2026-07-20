@@ -3,15 +3,16 @@ from django.core.mail import send_mail
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
+
+from notifications.utils import create_notification
 
 from .models import Feedback
 from .serializers import FeedbackSerializer
 
-
 class FeedbackAPIView(APIView):
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     # GET ALL FEEDBACK
     def get(self, request):
@@ -36,6 +37,14 @@ class FeedbackAPIView(APIView):
 
             feedback = serializer.save()
 
+            # Notification
+            create_notification(
+                user=request.user,
+                notification_type="feedback",
+                title="Feedback Submitted",
+                message="Thank you! Your feedback has been submitted successfully."
+            )
+
             # Email to User
             send_mail(
                 subject="Thank You for Your Feedback - PrepMaster AI",
@@ -51,8 +60,6 @@ Here is a summary of your feedback:
 
 Overall Experience: {feedback.overall_experience}
 Mock Interview: {feedback.mock_interview}
-Coding Assessment: {feedback.coding_assessment}
-Aptitude Test: {feedback.aptitude_test}
 
 Comments:
 {feedback.comments}

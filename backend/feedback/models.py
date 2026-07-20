@@ -38,20 +38,6 @@ class Feedback(models.Model):
 
 
 
-    coding_assessment = models.CharField(
-        max_length=20,
-        choices=EXPERIENCE_CHOICES
-    )
-
-
-
-    aptitude_test = models.CharField(
-        max_length=20,
-        choices=EXPERIENCE_CHOICES
-    )
-
-
-
     suggestions = models.TextField(
         blank=True
     )

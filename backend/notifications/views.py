@@ -1,52 +1,79 @@
-from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
 
-# Create your views here.
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+from .models import Notification
+from .serializers import NotificationSerializer
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def get_notifications(request):
 
-    notifications = [
+    notifications = Notification.objects.filter(
+        user=request.user
+    ).order_by("-created_at")
+
+    serializer = NotificationSerializer(
+        notifications,
+        many=True
+    )
+
+    return Response(
         {
-            "id": 1,
-            "type": "system",
-            "title": "Welcome",
-            "message": "Welcome to PrepMaster AI",
-            "time": "Just now",
-            "read": False,
+            "message": "Notifications fetched successfully",
+            "data": serializer.data
         },
+        status=status.HTTP_200_OK
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def mark_as_read(request, notification_id):
+
+    try:
+
+        notification = Notification.objects.get(
+            notification_id=notification_id,
+            user=request.user
+        )
+
+        notification.is_read = True
+        notification.save()
+
+        return Response(
+            {
+                "message": "Notification marked as read"
+            },
+            status=status.HTTP_200_OK
+        )
+
+    except Notification.DoesNotExist:
+
+        return Response(
+            {
+                "message": "Notification not found"
+            },
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def mark_all_as_read(request):
+
+    Notification.objects.filter(
+        user=request.user,
+        is_read=False
+    ).update(
+        is_read=True
+    )
+
+    return Response(
         {
-            "id": 2,
-            "type": "document",
-            "title": "Resume Uploaded",
-            "message": "Your resume has been uploaded successfully.",
-            "time": "5 min ago",
-            "read": False,
+            "message": "All notifications marked as read"
         },
-        {
-            "id": 3,
-            "type": "result",
-            "title": "Resume Analysis Complete",
-            "message": "Your resume analysis is ready.",
-            "time": "15 min ago",
-            "read": True,
-        },
-    ]
-
-    return Response(notifications)
-
-
-@api_view(["DELETE"])
-def delete_notification(request, id):
-
-    return Response({
-        "message": f"Notification {id} deleted successfully"
-    })
-
-@api_view(["DELETE"])
-def delete_notification(request, id):
-    return Response({"message": f"Notification {id} deleted successfully"})
+        status=status.HTTP_200_OK
+    )

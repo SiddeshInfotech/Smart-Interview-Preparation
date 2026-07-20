@@ -10,13 +10,18 @@ class FeedbackAdmin(admin.ModelAdmin):
         "name",
         "email",
         "overall_experience",
+        "mock_interview",
+        "suggestions",
+        "comments",
         "recommend",
+        "recommendation_reason",
         "submitted_at",
     )
 
     search_fields = (
         "name",
         "email",
+        "suggestions",
     )
 
     list_filter = (

@@ -8,15 +8,17 @@ class Notification(models.Model):
         ("system", "System"),
         ("resume", "Resume"),
         ("interview", "Interview"),
-        ("assessment", "Assessment"),
         ("feedback", "Feedback"),
+        ("assessment", "Assessment"),
     )
 
+    notification_id = models.AutoField(primary_key=True)
+
     user = models.ForeignKey(
-    settings.AUTH_USER_MODEL,
-    on_delete=models.CASCADE,
-    related_name="notifications"
-)
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notifications"
+    )
 
     notification_type = models.CharField(
         max_length=20,
@@ -28,14 +30,13 @@ class Notification(models.Model):
 
     message = models.TextField()
 
-    is_read = models.BooleanField(
-        default=False
-    )
+    is_read = models.BooleanField(default=False)
 
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = "notifications"
+        ordering = ["-created_at"]
 
     def __str__(self):
-        return self.title
+        return f"{self.user.email} - {self.title}"
