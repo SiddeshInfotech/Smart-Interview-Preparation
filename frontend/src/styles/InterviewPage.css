@@ -1,7 +1,4 @@
-/* ======================================== */
 /*            INTERVIEW PAGE CSS             */
-/* ======================================== */
-
 * {
   margin: 0;
   padding: 0;
@@ -368,22 +365,44 @@ body {
   background: #dc2626;
 }
 
-/* Interview Info Overlay */
+/* ======================================== */
+/*           FOOTER BAR (New layout)         */
+/* ======================================== */
+
+/* The main container for the footer bar */
 .interview-info-overlay {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.05);
+  padding: 12px 24px;
+  background: rgba(15, 23, 42, 0.85);  /* darker, so white text is visible */
   border-radius: 12px;
   margin-top: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.info-item {
-  color: rgba(255, 255, 255, 0.8);
+/* Left: Duration text */
+.footer-duration {
+  color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
   font-weight: 500;
+  flex: 0 0 auto;
+}
+
+/* Center: Controls with spacing */
+.footer-controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+/* Right: Secure connection text */
+.footer-secure {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 400;
+  flex: 0 0 auto;
 }
 
 /* ======================================== */
@@ -629,7 +648,7 @@ body {
 }
 
 /* ======================================== */
-/*              FOOTER                       */
+/*              FOOTER (legacy)              */
 /* ======================================== */
 
 .footer {
@@ -730,10 +749,22 @@ body {
     font-size: 12px;
   }
 
+  /* Responsive footer bar */
   .interview-info-overlay {
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 12px;
     justify-content: center;
+    text-align: center;
+    padding: 12px;
+  }
+
+  .footer-controls {
+    gap: 10px;
+  }
+
+  .footer-duration,
+  .footer-secure {
+    flex: 1 1 100%;
     text-align: center;
   }
 
@@ -783,5 +814,14 @@ body {
 
   .lobby-preview {
     height: 150px;
+  }
+
+  .footer-controls {
+    gap: 8px;
+  }
+
+  .control-btn {
+    padding: 4px 10px;
+    font-size: 11px;
   }
 }
