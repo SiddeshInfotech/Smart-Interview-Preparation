@@ -9,15 +9,15 @@ api.interceptors.request.use((config) => {
     const token = localStorage.getItem("access_token");
 
     const publicEndpoints = [
-    "/auth/register/",
-    "/auth/login/",
-    "/auth/send-registration-otp/",
-    "/auth/verify-registration-otp/",
-    "/auth/forgot-password/",
-    "/auth/verify-otp/",
-    "/auth/reset-password/",
-    "/feedback/"
-  ];
+        "/auth/register/",
+        "/auth/login/",
+        "/auth/send-registration-otp/",
+        "/auth/verify-registration-otp/",
+        "/auth/forgot-password/",
+        "/auth/verify-otp/",
+        "/auth/reset-password/",
+        "/feedback/"
+    ];
     const isPublicEndpoint = publicEndpoints.some((endpoint) => config.url.includes(endpoint));
 
     if (token && !isPublicEndpoint) {
