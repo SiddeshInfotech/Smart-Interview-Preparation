@@ -16,7 +16,6 @@ api.interceptors.request.use((config) => {
         "/auth/forgot-password/",
         "/auth/verify-otp/",
         "/auth/reset-password/",
-        "/feedback/"
     ];
     const isPublicEndpoint = publicEndpoints.some((endpoint) => config.url.includes(endpoint));
 
