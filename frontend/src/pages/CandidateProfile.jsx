@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import api from "../api/authAPI";
+import api from "../api/axios";
 
 const CandidateProfile = () => {
   const [activeSection, setActiveSection] = useState("profile");

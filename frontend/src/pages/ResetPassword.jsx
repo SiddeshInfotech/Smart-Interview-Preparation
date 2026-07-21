@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, CheckCircle } from "lucide-react";
 import "../styles/Auth.css";
-import { resetPassword } from "../api/authAPI";
+import { resetPassword } from "../api/axios";
 
 export default function ResetPassword() {
     const navigate = useNavigate();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Settings, User } from 'lucide-react';
-import api from '../api/authAPI';
+import api from '../api/axios';
 import '../styles/Dashboard.css';
 import NotificationPopup from './NotificationPopup';
 

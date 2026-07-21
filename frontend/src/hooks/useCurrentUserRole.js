@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../api/authAPI";
+import api from "../api/axios";
 
 const readStoredRole = () => localStorage.getItem("user_role") || "";
 

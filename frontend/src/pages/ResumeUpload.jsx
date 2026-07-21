@@ -1,4 +1,4 @@
-import api from "../api/authAPI";
+import api from "../api/axios";
 import React, { useEffect, useRef, useState } from "react";
 import "../styles/ResumeUpload.css";
 

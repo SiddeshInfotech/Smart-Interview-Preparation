@@ -7,7 +7,7 @@ import {
   AlertCircle,
   MessageSquare,
 } from "lucide-react";
-import api from "../api/authAPI";
+import api from "../api/axios";
 import "../styles/ToastNotification.css";
 
 const TABS = ["All", "Unread", "Read", "System"];

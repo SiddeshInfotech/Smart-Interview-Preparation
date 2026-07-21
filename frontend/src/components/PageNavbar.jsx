@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock } from "lucide-react";
-import api from "../api/authAPI";
+import api from "../api/axios";
 import NotificationPopup from "./NotificationPopup";
 import "../styles/NotificationPopup.css";
 

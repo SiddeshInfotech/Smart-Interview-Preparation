@@ -23,7 +23,7 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/InterviewSchedule.css";
-import api from "../api/authAPI";
+import api from "../api/axios";
 
 // Fallback seed data (only used if no `interviews` prop is provided)
 const initialInterviews = [

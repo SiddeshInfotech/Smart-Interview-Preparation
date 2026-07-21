@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Auth.css";
-import { login } from "../api/authAPI";
+import { login } from "../api/axios";
 import WelcomePopup from "../components/WelcomePopup"; // Correct path
 
 // Decode JWT payload without a library

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Auth.css";
-import { forgotPassword } from "../api/authAPI";
+import { forgotPassword } from "../api/axios";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();

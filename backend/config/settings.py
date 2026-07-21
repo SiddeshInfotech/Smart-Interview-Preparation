@@ -18,17 +18,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me-in-production')
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-change-me-in-production")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 # Render host + local development
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.onrender.com,localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get(
+    "ALLOWED_HOSTS", ".onrender.com,localhost,127.0.0.1"
+).split(",")
 
 # CORS – allow your frontend only (set via environment variable)
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+CORS_ALLOWED_ORIGINS = [
+    os.environ.get(
+        "CORS_ALLOWED_ORIGINS", ".onrender.com,localhost,127.0.0.1"
+    ).split(","),
+    "https://your-frontend.onrender.com",
+]
 
 # ========== DATABASE (MySQL) ==========
 # Using individual environment variables (DB_NAME, DB_USER, etc.)
@@ -54,27 +61,29 @@ DATABASES = {
 }
 
 # ========== STATIC & MEDIA FILES ==========
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 print(f"Current dir: {BASE_DIR}")
 print(f".env exists: {(BASE_DIR / '.env').exists()}")
 
 # ========== EMAIL (console backend – works on Render free tier) ==========
-EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@example.com')
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@example.com")
 
 # ========== API KEYS & LIVEKIT ==========
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 print(f"GEMINI_API_KEY is {'SET' if GEMINI_API_KEY else 'NOT SET'}")
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
-LIVEKIT_URL = os.environ.get('LIVEKIT_URL')
-LIVEKIT_API_KEY = os.environ.get('LIVEKIT_API_KEY')
-LIVEKIT_API_SECRET = os.environ.get('LIVEKIT_API_SECRET')
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
+LIVEKIT_URL = os.environ.get("LIVEKIT_URL")
+LIVEKIT_API_KEY = os.environ.get("LIVEKIT_API_KEY")
+LIVEKIT_API_SECRET = os.environ.get("LIVEKIT_API_SECRET")
 
 # ========== APPLICATION DEFINITION ==========
 INSTALLED_APPS = [
@@ -104,7 +113,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",   # required for static files
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # required for static files
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -136,7 +145,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 AUTH_USER_MODEL = "authentication.User"
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "authentication.validators.StrongPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},

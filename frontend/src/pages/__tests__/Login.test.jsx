@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import Login from '../Login';
-import * as authAPI from '../../api/authAPI';
+import * as axios from '../../api/axios';
 import { MemoryRouter } from 'react-router-dom';
 
 describe('Login page', () => {
@@ -34,7 +34,7 @@ describe('Login page', () => {
   });
 
   test('shows server error when login fails', async () => {
-    vi.spyOn(authAPI, 'login').mockRejectedValue({ response: { data: { message: 'Invalid email or password.' } } });
+    vi.spyOn(axios, 'login').mockRejectedValue({ response: { data: { message: 'Invalid email or password.' } } });
 
     render(
       <MemoryRouter>
@@ -56,7 +56,7 @@ describe('Login page', () => {
   });
 
   test('stores tokens on successful login', async () => {
-    vi.spyOn(authAPI, 'login').mockResolvedValue({ data: { access_token: 'a', refresh_token: 'r' } });
+    vi.spyOn(axios, 'login').mockResolvedValue({ data: { access_token: 'a', refresh_token: 'r' } });
 
     render(
       <MemoryRouter>

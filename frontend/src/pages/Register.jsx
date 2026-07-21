@@ -19,7 +19,7 @@ import {
   sendRegistrationOTP,
   verifyRegistrationOTP,
   login,
-} from "../api/authAPI";
+} from "../api/axios";
 
 export default function Register() {
   const navigate = useNavigate();

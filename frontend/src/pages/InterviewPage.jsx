@@ -9,7 +9,7 @@ import {
 import { Track } from 'livekit-client';
 import '@livekit/components-styles';
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import api from '../api/authAPI';
+import api from '../api/axios';
 import '../styles/InterviewPage.css';
 
 // ---- Child component that uses LiveKit hooks and displays video ----

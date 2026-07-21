@@ -6,7 +6,7 @@ import {
   forgotPassword,
   verifyRegistrationOTP,
   sendRegistrationOTP,
-} from "../api/authAPI";
+} from "../api/axios";
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 119;

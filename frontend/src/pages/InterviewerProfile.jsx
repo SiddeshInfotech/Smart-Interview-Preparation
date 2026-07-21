@@ -13,7 +13,7 @@ import {
   ChevronDown,
   CheckCircle,
 } from "lucide-react";
-import api from "../api/authAPI";
+import api from "../api/axios";
 
 const InterviewerProfile = () => {
   const [activeSection, setActiveSection] = useState("profile");
