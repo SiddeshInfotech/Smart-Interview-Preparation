@@ -31,7 +31,7 @@ ALLOWED_HOSTS = os.environ.get(
 # CORS – allow your frontend only (set via environment variable)
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ALLOWED_ORIGINS", ".onrender.com,localhost,127.0.0.1"
+    "CORS_ALLOWED_ORIGINS", "http://127.0.0.1:8000, localhost,127.0.0.1"
 ).split(",")
 
 
