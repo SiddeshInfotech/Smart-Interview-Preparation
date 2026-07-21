@@ -31,9 +31,8 @@ ALLOWED_HOSTS = os.environ.get(
 # CORS – allow your frontend only (set via environment variable)
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ALLOWED_ORIGINS", "http://127.0.0.1:8000, localhost,127.0.0.1"
+    "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
 ).split(",")
-
 
 # ========== DATABASE (MySQL) ==========
 # Using individual environment variables (DB_NAME, DB_USER, etc.)
