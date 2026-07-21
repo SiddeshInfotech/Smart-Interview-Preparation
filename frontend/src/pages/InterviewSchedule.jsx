@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BrainCircuit,
   LayoutGrid,
@@ -15,7 +15,13 @@ import {
   CheckCircle2,
   XCircle,
   Circle,
+  Calendar as CalendarIcon,
+  Clock as ClockIcon,
+  Hourglass,
+  CalendarPlus,
 } from "lucide-react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import "../styles/InterviewSchedule.css";
 import api from "../api/authAPI";
 
@@ -49,8 +55,6 @@ const initialInterviews = [
     roomName: "demo-room-3",
   },
 ];
-
-const interviewTypes = ["Technical", "HR Round", "Managerial", "Final Round"];
 
 // --- Helpers ---
 function StatusBadge({ status }) {
@@ -122,185 +126,259 @@ function Navbar({ active }) {
   );
 }
 
-// --- ScheduleForm (UPDATED: generates roomName) ---
+// --- Helper to generate time options (00:00 – 23:30) ---
+const generateTimeOptions = () => {
+  const times = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const hour = String(h).padStart(2, "0");
+      const min = String(m).padStart(2, "0");
+      times.push(`${hour}:${min}`);
+    }
+  }
+  return times;
+};
+
+const TIME_OPTIONS = generateTimeOptions();
+
+// --- ScheduleForm with Search Interviewers button ---
 function ScheduleForm({ onSchedule }) {
-  const [form, setForm] = useState({
-    interviewer: "",
-    interviewerId: null,
-    date: "",
-    time: "",
-    type: interviewTypes[0],
-  });
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const debounceRef = useRef(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [slots, setSlots] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedTime, setSelectedTime] = useState("");
+  const [durationFilter, setDurationFilter] = useState("any");
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  // Reset slots when date changes
+  useEffect(() => {
+    setSlots([]);
+    setSelectedSlot(null);
+    setHasSearched(false);
+  }, [selectedDate]);
 
-  const fetchInterviewers = async (query) => {
-    if (!query.trim()) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-    setLoading(true);
+  // Search for interviewers
+  const handleSearch = async () => {
+    if (!selectedDate) return;
+    const dateStr = selectedDate.toISOString().split("T")[0];
+    setLoadingSlots(true);
+    setHasSearched(true);
     try {
-      const res = await api.get(`/interviewer/search/?search=${encodeURIComponent(query)}`);
-      setSuggestions(res.data || []);
-      setShowSuggestions(true);
-    } catch (error) {
-      console.error("Error fetching interviewers:", error);
-      setSuggestions([]);
+      const res = await api.get(`/interviewer/available-slots/?date=${dateStr}`);
+      setSlots(res.data);
+      setSelectedSlot(null);
+    } catch (err) {
+      console.error("Failed to fetch slots", err);
+      setSlots([]);
     } finally {
-      setLoading(false);
+      setLoadingSlots(false);
     }
   };
 
-  const handleInterviewerChange = (e) => {
-    const val = e.target.value;
-    setForm({ ...form, interviewer: val, interviewerId: null });
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (val.trim().length >= 2) {
-      debounceRef.current = setTimeout(() => fetchInterviewers(val.trim()), 300);
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
+  // Filter slots locally (by time and duration)
+  const filteredSlots = slots.filter((slot) => {
+    const start = new Date(slot.start_time);
+    const slotStartMinutes = start.getHours() * 60 + start.getMinutes();
 
-  const selectSuggestion = (profile) => {
-    setForm({
-      ...form,
-      interviewer: profile.full_name,
-      interviewerId: profile.interviewer_id,
-    });
-    setShowSuggestions(false);
-  };
+    if (selectedTime) {
+      const [h, m] = selectedTime.split(":").map(Number);
+      const filterMinutes = h * 60 + m;
+      if (slotStartMinutes < filterMinutes) return false;
+    }
+
+    if (durationFilter !== "any") {
+      const duration = (new Date(slot.end_time) - start) / 60000;
+      const target = parseInt(durationFilter);
+      if (duration !== target) return false;
+    }
+    return true;
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (!form.interviewer || !form.date || !form.time) {
-      alert("Please fill all required fields.");
+    if (!selectedSlot) {
+      alert("Please select a time slot.");
       return;
     }
-    if (!form.interviewerId) {
-      alert("Please select an interviewer from the suggestions (not a free-text entry).");
-      return;
-    }
+    onSchedule({ availability_id: selectedSlot.availability_id });
+    // Reset
+    setSelectedDate(null);
+    setSlots([]);
+    setSelectedSlot(null);
+    setSelectedTime("");
+    setDurationFilter("any");
+    setHasSearched(false);
+  };
 
-    // ✅ Generate a unique room name for LiveKit
-    const roomName = `room-${Date.now()}-${crypto.randomUUID()}`;
+  // Determine if search button should be enabled
+  const isSearchEnabled = selectedDate && selectedTime !== "" && durationFilter !== "any";
 
-    const newInterview = {
-      ...form,
-      roomName, // <-- crucial for joining the lobby
-      status: "Scheduled",
-      id: Date.now(),
-    };
-
-    onSchedule(newInterview);
-
-    setForm({
-      interviewer: "",
-      interviewerId: null,
-      date: "",
-      time: "",
-      type: interviewTypes[0],
-    });
+  const datePickerStyles = {
+    wrapper: "custom-datepicker-wrapper",
+    input: "field__input",
+    calendar: "custom-datepicker-calendar",
   };
 
   return (
     <form className="card form" onSubmit={handleSubmit}>
       <div className="form__grid">
-        <label className="field" style={{ position: "relative" }}>
-          <span className="field__label">Interviewer</span>
-          <input
+        {/* Date Picker */}
+        <label className="field">
+          <span className="field__label">
+            <CalendarIcon size={14} className="field__icon" /> Select Date
+          </span>
+          <div className={datePickerStyles.wrapper}>
+            <DatePicker
+              selected={selectedDate}
+              onChange={(date) => setSelectedDate(date)}
+              minDate={new Date()}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Choose a date..."
+              className={datePickerStyles.input}
+              calendarClassName={datePickerStyles.calendar}
+              isClearable
+              showPopperArrow={false}
+              showMonthDropdown
+              showYearDropdown
+              dropdownMode="select"
+            />
+          </div>
+        </label>
+
+        {/* Time dropdown */}
+        <label className="field">
+          <span className="field__label">
+            <ClockIcon size={14} className="field__icon" /> Start at or after
+          </span>
+          <select
             className="field__input"
-            type="text"
-            placeholder="Start typing an interviewer name..."
-            value={form.interviewer}
-            onChange={handleInterviewerChange}
-            onFocus={() => {
-              if (form.interviewer.trim().length >= 2) {
-                fetchInterviewers(form.interviewer.trim());
-              }
-            }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            autoComplete="off"
-          />
-          {showSuggestions && (
-            <div className="suggestion-dropdown">
-              {loading && <div className="suggestion-loading">Loading...</div>}
-              {!loading && suggestions.length === 0 && (
-                <div className="suggestion-empty">No interviewers found</div>
-              )}
-              {!loading &&
-                suggestions.map((profile) => (
-                  <div
-                    key={profile.interviewer_id}
-                    className="suggestion-item"
-                    onMouseDown={() => selectSuggestion(profile)}
-                  >
-                    <div className="suggestion-avatar">
-                      {profile.profile_picture ? (
-                        <img
-                          src={profile.profile_picture}
-                          alt={profile.full_name}
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                            const parent = event.currentTarget.parentElement;
-                            if (parent) parent.textContent = profile.full_name.charAt(0).toUpperCase();
-                          }}
-                        />
-                      ) : (
-                        profile.full_name.charAt(0).toUpperCase()
-                      )}
-                    </div>
-                    <div className="suggestion-info">
-                      <div className="suggestion-name">{profile.full_name}</div>
-                      <div className="suggestion-meta">
-                        {profile.designation || profile.department || "Interviewer"} • {profile.email}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
-        </label>
-
-        <label className="field">
-          <span className="field__label">Date</span>
-          <input className="field__input" type="date" value={form.date} onChange={update("date")} />
-        </label>
-
-        <label className="field">
-          <span className="field__label">Time</span>
-          <input className="field__input" type="time" value={form.time} onChange={update("time")} />
-        </label>
-
-        <label className="field">
-          <span className="field__label">Interview type</span>
-          <select className="field__input" value={form.type} onChange={update("type")}>
-            {interviewTypes.map((type) => (
-              <option key={type} value={type}>{type}</option>
+            value={selectedTime}
+            onChange={(e) => setSelectedTime(e.target.value)}
+          >
+            <option value="">Select time</option>
+            {TIME_OPTIONS.map((time) => (
+              <option key={time} value={time}>
+                {time}
+              </option>
             ))}
           </select>
         </label>
-      </div>
 
-      <div className="form__footer">
-        <button type="submit" className="btn btn--primary">
-          <Plus size={16} strokeWidth={2.5} />
-          Schedule Interview
-        </button>
+        {/* Duration dropdown */}
+        <label className="field">
+          <span className="field__label">
+            <Hourglass size={14} className="field__icon" /> Duration
+          </span>
+          <select
+            className="field__input"
+            value={durationFilter}
+            onChange={(e) => setDurationFilter(e.target.value)}
+          >
+            <option value="any">Any</option>
+            <option value="30">30 min</option>
+            <option value="60">60 min</option>
+            <option value="90">90 min</option>
+          </select>
+        </label>
+
+        {/* Search button – spans full width */}
+        <div className="field" style={{ gridColumn: "1 / -1" }}>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={handleSearch}
+            disabled={!isSearchEnabled || loadingSlots}
+            style={{ width: "100%", justifyContent: "center" }}
+          >
+            {loadingSlots ? "Searching..." : "🔍 Search Interviewers"}
+          </button>
+        </div>
+
+        {/* Slot list – only shown after search */}
+        {hasSearched && (
+          <div className="field slots-section" style={{ gridColumn: "1 / -1" }}>
+            <span className="field__label">
+              <CalendarClock size={14} className="field__icon" /> Available Slots
+              {filteredSlots.length !== slots.length && slots.length > 0 && (
+                <span style={{ fontSize: "0.8rem", color: "#6b7280", marginLeft: "8px" }}>
+                  ({filteredSlots.length} of {slots.length})
+                </span>
+              )}
+            </span>
+            {loadingSlots ? (
+              <div>Loading slots...</div>
+            ) : filteredSlots.length === 0 ? (
+              <div className="empty-slots">
+                {slots.length === 0
+                  ? "No interviewers available on this date with the selected criteria."
+                  : "No slots match your filters."}
+              </div>
+            ) : (
+              <div
+                className="slots-grid"
+                style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}
+              >
+                {filteredSlots.map((slot) => (
+                  <div
+                    key={slot.availability_id}
+                    className={`slot-card ${
+                      selectedSlot?.availability_id === slot.availability_id ? "selected" : ""
+                    }`}
+                    onClick={() => setSelectedSlot(slot)}
+                    style={{
+                      padding: "12px 16px",
+                      border: "2px solid #e2e8f0",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      background:
+                        selectedSlot?.availability_id === slot.availability_id
+                          ? "#e0f2fe"
+                          : "white",
+                      flex: "1 0 200px",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <div style={{ fontWeight: "600" }}>
+                      {slot.interviewer_name || "Interviewer"}
+                    </div>
+                    <div style={{ fontSize: "0.9rem", color: "#475569" }}>
+                      {slot.interviewer_designation || ""}
+                    </div>
+                    <div style={{ fontSize: "0.9rem", color: "#475569" }}>
+                      {new Date(slot.start_time).toLocaleDateString()}
+                    </div>
+                    <div style={{ fontSize: "0.9rem", color: "#475569" }}>
+                      {new Date(slot.start_time).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                      {" – "}
+                      {new Date(slot.end_time).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {filteredSlots.length > 0 && (
+              <div className="form__footer" style={{ marginTop: "16px" }}>
+                <button type="submit" className="btn btn--primary" disabled={!selectedSlot}>
+                  <CalendarPlus size={16} strokeWidth={2.5} />
+                  Schedule Interview
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </form>
   );
 }
 
-// --- InterviewList (UPDATED: calls onSelectInterview) ---
+// --- InterviewList (unchanged) ---
 function InterviewList({ interviews, onSelectInterview }) {
   const [filter, setFilter] = useState("All");
   const filters = ["All", "Scheduled", "Completed", "Cancelled"];
@@ -330,7 +408,7 @@ function InterviewList({ interviews, onSelectInterview }) {
             <button
               key={iv.id}
               className="list__row"
-              onClick={() => onSelectInterview(iv)} // pass whole interview to parent
+              onClick={() => onSelectInterview(iv)}
               type="button"
             >
               <div className="list__main">
@@ -412,21 +490,19 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
   );
 }
 
-// --- Main export (UPDATED: accepts props from parent) ---
+// --- Main export (unchanged) ---
 export default function InterviewSchedule({
   standalone = false,
   interviews: propInterviews,
   onSchedule: propOnSchedule,
   onSelectInterview: propOnSelectInterview,
 }) {
-  // Use parent-provided interviews if available; otherwise fallback to local state
   const [localInterviews, setLocalInterviews] = useState(initialInterviews);
   const interviews = propInterviews || localInterviews;
 
   const [tab, setTab] = useState("schedule");
   const [selected, setSelected] = useState(null);
 
-  // Handle scheduling – call parent's callback if available, else update local
   const handleSchedule = (newInterview) => {
     if (propOnSchedule) {
       propOnSchedule(newInterview);
@@ -436,10 +512,9 @@ export default function InterviewSchedule({
     setTab("upcoming");
   };
 
-  // Handle selecting an interview – call parent's callback if available
   const handleSelect = (iv) => {
     if (propOnSelectInterview) {
-      propOnSelectInterview(iv); // parent will switch to lobby
+      propOnSelectInterview(iv);
     } else {
       setSelected(iv);
       setTab("details");

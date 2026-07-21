@@ -1,38 +1,15 @@
 from django.db.models import Q
-from rest_framework import generics, permissions, serializers as drf_serializers
-from .models import Interviewer_Profile
-from .serializers import InterviewerProfileSerializer
+from rest_framework import generics, permissions, viewsets
+from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
+from datetime import datetime
 
-
-class InterviewerSearchSerializer(drf_serializers.ModelSerializer):
-    full_name = drf_serializers.CharField(source="user.full_name", read_only=True)
-    email = drf_serializers.EmailField(source="user.email", read_only=True)
-    profile_picture = drf_serializers.SerializerMethodField()
-
-    class Meta:
-        model = Interviewer_Profile
-        fields = [
-            "interviewer_id",
-            "full_name",
-            "email",
-            "profile_picture",
-            "department",
-            "designation",
-            "expertise_area",
-            "years_of_experience",
-            "is_available",
-        ]
-        read_only_fields = fields
-
-    def get_profile_picture(self, obj):
-        if not obj.profile_picture:
-            return None
-
-        request = self.context.get("request")
-        picture_url = obj.profile_picture.url
-        if request is not None:
-            return request.build_absolute_uri(picture_url)
-        return picture_url
+from .models import Interviewer_Profile, InterviewerAvailability
+from .serializers import (
+    InterviewerProfileSerializer,
+    InterviewerSearchSerializer,
+    InterviewerAvailabilitySerializer,
+)
 
 
 class InterviewerSearchListView(generics.ListAPIView):
@@ -62,5 +39,54 @@ class InterviewerProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        profile, created = Interviewer_Profile.objects.get_or_create(user=self.request.user)
+        profile, created = Interviewer_Profile.objects.get_or_create(
+            user=self.request.user
+        )
         return profile
+
+
+class InterviewerAvailabilityViewSet(viewsets.ModelViewSet):
+    serializer_class = InterviewerAvailabilitySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        interviewer_profile = self.request.user.interviewer_profile
+        return InterviewerAvailability.objects.filter(interviewer=interviewer_profile)
+
+    def perform_create(self, serializer):
+        serializer.save(interviewer=self.request.user.interviewer_profile)
+
+
+class AvailableSlotsListView(generics.ListAPIView):
+    """Available slots for a specific interviewer."""
+    serializer_class = InterviewerAvailabilitySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        interviewer_id = self.kwargs["interviewer_id"]
+        return InterviewerAvailability.objects.filter(
+            interviewer_id=interviewer_id,
+            status="available",
+            start_time__gt=timezone.now(),
+        ).order_by("start_time")
+
+
+class AvailableSlotsAllView(generics.ListAPIView):
+    """Available slots from ALL interviewers, optionally filtered by date."""
+    serializer_class = InterviewerAvailabilitySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        qs = InterviewerAvailability.objects.filter(
+            status='available',
+            start_time__gt=timezone.now()
+        ).order_by('start_time')
+
+        date_param = self.request.query_params.get('date')
+        if date_param:
+            try:
+                target_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+                qs = qs.filter(start_time__date=target_date)
+            except ValueError:
+                pass
+        return qs

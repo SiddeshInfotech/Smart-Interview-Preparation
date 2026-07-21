@@ -11,7 +11,7 @@
   color: #111827;
 }
 
-/* ============ Navbar (matches existing PrepMaster AI design) ============ */
+/* ============ Navbar ============ */
 .navbar {
   width: 100%;
   height: 64px;
@@ -249,25 +249,94 @@
 }
 
 .field__label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
   font-weight: 600;
   color: #374151;
 }
 
-.field__input {
+.field__icon {
+  color: #6b7280;
+}
+
+/* ========== UNIFIED FORM FIELD STYLES ========== */
+/* Base style for all input, select, and date picker inputs */
+.field__input,
+.custom-datepicker-wrapper .react-datepicker__input-container input,
+select.field__input {
+  height: 44px;
+  padding: 0 12px;
   border: 1px solid #d1d5db;
   border-radius: 9px;
-  padding: 10px 12px;
   font-size: 14px;
+  font-family: inherit;
   color: #111827;
+  background-color: #ffffff;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  line-height: normal;  /* Prevent extra vertical space */
+}
+
+/* Focus state for all form fields */
+.field__input:focus,
+.custom-datepicker-wrapper .react-datepicker__input-container input:focus,
+select.field__input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Custom down arrow for select elements */
+select.field__input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+/* Ensure DatePicker input container fills width and matches height */
+.custom-datepicker-wrapper {
+  width: 100%;
+}
+
+.custom-datepicker-wrapper .react-datepicker__input-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Extra specificity to ensure the input inside datepicker respects the rules */
+.custom-datepicker-wrapper .react-datepicker__input-container input {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  font-size: 14px;
+  font-family: inherit;
   background: #ffffff;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+  line-height: normal;
 }
 
-.field__input:focus {
+.custom-datepicker-wrapper .react-datepicker__input-container input:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Placeholder styling */
+.field__input::placeholder,
+.custom-datepicker-wrapper .react-datepicker__input-container input::placeholder {
+  color: #9ca3af;
 }
 
 .form__footer {
@@ -504,12 +573,15 @@
   .navbar__links {
     display: none;
   }
+
   .form__grid {
     grid-template-columns: 1fr;
   }
+
   .details__grid {
     grid-template-columns: 1fr;
   }
+
   .details__item--wide {
     grid-column: span 1;
   }
@@ -519,13 +591,16 @@
   .page__content {
     padding: 20px 16px 36px;
   }
+
   .page__header {
     flex-direction: column;
   }
+
   .list__row {
     flex-direction: column;
     align-items: flex-start;
   }
+
   .list__side {
     width: 100%;
     justify-content: space-between;
@@ -623,4 +698,53 @@
     width: 32px;
     height: 32px;
   }
+}
+
+/* ========== React DatePicker Overrides ========== */
+.react-datepicker {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  background-color: white;
+}
+
+.react-datepicker__header {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.react-datepicker__current-month {
+  font-weight: 600;
+  color: #111827;
+}
+
+.react-datepicker__day-name {
+  color: #6b7280;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #2563eb;
+  color: white;
+  border-radius: 50%;
+}
+
+.react-datepicker__day--selected:hover,
+.react-datepicker__day--keyboard-selected:hover {
+  background-color: #1d4ed8;
+}
+
+.react-datepicker__day:hover {
+  background-color: #eff6ff;
+}
+
+.react-datepicker__day--disabled {
+  color: #d1d5db;
+}
+
+.react-datepicker__navigation {
+  top: 12px;
 }
