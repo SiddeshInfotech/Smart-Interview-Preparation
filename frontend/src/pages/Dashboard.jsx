@@ -1,182 +1,677 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  TrendingUp,
-} from "lucide-react";
+import React from "react";
 import "../styles/Dashboard.css";
 
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 
-export default function Dashboard() {
-  const navigate = useNavigate();
 
-  const stats = [
-    { label: "Sessions Completed", value: "24", change: "+12%" },
-    { label: "Average Score", value: "88.4%", change: "+4.5" },
-    { label: "Upcoming Mock", value: "Google Prep", change: "Next: 2h 40m" },
-  ];
+const Dashboard = () => {
 
-  const skills = [
-    { name: "Technical Knowledge", score: 88 },
-    { name: "Soft Skills & Delivery", score: 95 },
-    { name: "System Architecture", score: 74 },
-  ];
 
-  const activity = [
+  const user = {
+    username: "Kimaya",
+    overallPerformance: 92,
+  };
+
+
+
+  const performanceData = [
+
     {
-      title: "Completed Mock Interview",
-      desc: "Tech Lead Role - Google Prep",
-      time: "2 hours ago",
-      color: "blue",
+      month:"Jan",
+      quiz:45,
+      coding:35,
+      interview:25,
     },
+
     {
-      title: "Feedback Received",
-      desc: "New insights available for 'STAR Method' session.",
-      time: "Yesterday",
-      color: "green",
+      month:"Feb",
+      quiz:58,
+      coding:44,
+      interview:33,
     },
+
     {
-      title: "Module Started",
-      desc: "Dynamic Programming Deep Dive",
-      time: "2 days ago",
-      color: "gray",
+      month:"Mar",
+      quiz:69,
+      coding:53,
+      interview:40,
     },
+
+    {
+      month:"Apr",
+      quiz:77,
+      coding:64,
+      interview:55,
+    },
+
+    {
+      month:"May",
+      quiz:88,
+      coding:76,
+      interview:70,
+    },
+
+    {
+      month:"Jun",
+      quiz:97,
+      coding:89,
+      interview:83,
+    },
+
   ];
 
-  const modules = [
-    { title: "Behavioral Basics", status: "Completed", locked: false },
-    { title: "Data Structures", status: "75% In Progress", locked: false },
-    { title: "System Design Adv.", status: "Locked", locked: true },
-  ];
+
+
 
   return (
-    <div className="candidate-dashboard">
-      {/* Main page content container */}
-      <div className="dashboard-page-container">
-        <main className="dashboard-content-wrapper">
-          {/* Header */}
-          <header className="content-header-simple">
-            <h2>Candidate Dashboard</h2>
-            <p className="welcome-text">Welcome back, Alex Rivera</p>
-          </header>
 
-          {/* Stats Cards Row */}
-          <div className="stat-row">
-            {stats.map((s) => (
-              <div className="stat-card" key={s.label}>
-                <div className="stat-card__header">
-                  <span className="stat-card__label">{s.label}</span>
-                  <span className="stat-card__change">
-                    <TrendingUp size={12} style={{ marginRight: 2 }} />
-                    {s.change}
-                  </span>
-                </div>
-                <div className="stat-card__value">{s.value}</div>
-              </div>
-            ))}
-          </div>
+    <div className="dashboard-container">
 
-          {/* Grid Area */}
-          <div className="dashboard-grid">
-            {/* Interview Readiness Card */}
-            <div className="card readiness-card">
-              <div className="readiness-card__header">
-                <h3>Interview Readiness</h3>
-                <span className="readiness-card__score">92%</span>
-              </div>
-              <p className="readiness-card__sub">
-                Based on recent performance across 8 metrics
-              </p>
 
-              <div className="skills-list">
-                {skills.map((skill) => (
-                  <div className="skill-row" key={skill.name}>
-                    <div className="skill-row__labels">
-                      <span className="skill-name">{skill.name}</span>
-                      <span className="skill-score">{skill.score}/100</span>
-                    </div>
-                    <div className="progress-bar" role="progressbar" aria-valuenow={skill.score} aria-valuemin="0" aria-valuemax="100">
-                      <div
-                        className="progress-fill"
-                        style={{ width: `${skill.score}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
 
-              <div className="ai-suggestion">
-                <strong>✦ AI Coach Suggestion</strong>
-                <p>
-                  Alex is showing exceptional confidence in soft skills.
-                  Focusing the next 3 sessions on "Scalable Architectures"
-                  will push readiness to 98%.
-                </p>
-              </div>
-            </div>
+      {/* Dashboard Header */}
 
-            {/* Activity Log Card */}
-            <div className="card activity-card">
-              <div className="activity-card__header">
-                <h3>Activity Log</h3>
-                <button className="btn-link" onClick={() => navigate("/quiz")}>
-                  View All
-                </button>
-              </div>
-              <div className="activity-list">
-                {activity.map((a, idx) => (
-                  <div className="activity-item" key={idx}>
-                    <span className={`activity-dot dot--${a.color}`} />
-                    <div className="activity-item-content">
-                      <p className="activity-item__title">{a.title}</p>
-                      <p className="activity-item__desc">{a.desc}</p>
-                      <p className="activity-item__time">{a.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
-          {/* Bottom Grid */}
-          <div className="dashboard-grid dashboard-grid--bottom">
-            {/* Course Modules Card */}
-            <div className="card modules-card">
-              <h3>Course Modules</h3>
-              <div className="modules-row">
-                {modules.map((m) => (
-                  <div
-                    className={`module-tile ${m.locked ? "module-tile--locked" : ""}`}
-                    key={m.title}
-                  >
-                    <span className="module-tile__icon">
-                      {m.locked ? "🔒" : "✅"}
-                    </span>
-                    <p className="module-tile__title">{m.title}</p>
-                    <p className="module-tile__status">{m.status}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+      <div className="dashboard-header">
 
-            {/* Priority Call-to-Action Card */}
-            <div className="card priority-card">
-              <div className="priority-card-badge">High Priority</div>
-              <h3>Meta Design Mock</h3>
-              <p>
-                Senior Product Designer Track - Focus on Product Sense &
-                Strategy.
-              </p>
-              <p className="priority-card__time">🎙 Tomorrow, 10:00 AM</p>
-              <button
-                className="btn-primary btn-block"
-                onClick={() => navigate("/quiz")}
-              >
-                Prepare Now
-              </button>
-            </div>
-          </div>
-        </main>
+
+        <h1>
+
+          Welcome Back,
+
+          <span className="username">
+            {" "}
+            {user.username}
+          </span>
+
+
+        </h1>
+
+
+
+        <h2>
+          PrepMaster AI Dashboard
+        </h2>
+
+
+
+        <p>
+          Track your learning progress,
+          interview readiness and skill development.
+        </p>
+
+
       </div>
+
+
+
+
+
+      {/* Analytics Section */}
+
+
+      <div className="overview-section">
+
+
+
+        {/* Performance Analytics */}
+
+
+        <div className="graph-card">
+
+
+          <div className="card-header">
+
+
+            <h3>
+              Performance Analytics
+            </h3>
+
+
+          </div>
+
+
+
+
+          <ResponsiveContainer
+            width="100%"
+            height={350}
+          >
+
+
+            <AreaChart
+              data={performanceData}
+            >
+
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+              />
+
+
+              <XAxis
+                dataKey="month"
+              />
+
+
+              <YAxis />
+
+
+              <Tooltip />
+
+
+              <Legend />
+                            <Area
+                type="monotone"
+                dataKey="quiz"
+                stroke="#2563EB"
+                strokeWidth={3}
+                fill="#2563EB"
+                fillOpacity={0.20}
+                name="Quiz"
+              />
+
+              <Area
+                type="monotone"
+                dataKey="coding"
+                stroke="#10B981"
+                strokeWidth={3}
+                fill="#10B981"
+                fillOpacity={0.20}
+                name="Coding"
+              />
+
+              <Area
+                type="monotone"
+                dataKey="interview"
+                stroke="#7C3AED"
+                strokeWidth={3}
+                fill="#7C3AED"
+                fillOpacity={0.20}
+                name="Interview"
+              />
+
+            </AreaChart>
+
+          </ResponsiveContainer>
+
+        </div>
+
+
+
+
+
+        {/* ==========================
+            AI Profile Intelligence
+        =========================== */}
+
+        <div className="overall-card">
+
+          <div className="ai-profile-header">
+
+            <h3>
+              🤖 AI Profile Intelligence
+            </h3>
+
+            <p>
+              Smart Candidate Analysis
+            </p>
+
+          </div>
+
+
+
+
+
+          <div className="main-readiness-score">
+
+            <h1>
+              {user.overallPerformance}%
+            </h1>
+
+            <span>
+              Overall Readiness
+            </span>
+
+          </div>
+
+
+
+
+
+          <div className="ai-status-box">
+
+            <div className="status-card">
+
+              <strong>
+                Strong
+              </strong>
+
+              <span>
+                Skills
+              </span>
+
+            </div>
+
+
+
+
+
+            <div className="status-card">
+
+              <strong>
+                Ready
+              </strong>
+
+              <span>
+                Status
+              </span>
+
+            </div>
+
+          </div>
+
+
+
+
+
+          <div className="ai-metrics">
+
+            <div className="metric-row">
+
+              <span>
+                Resume Quality
+              </span>
+
+              <strong>
+                95%
+              </strong>
+
+            </div>
+
+
+
+
+
+            <div className="metric-row">
+
+              <span>
+                Coding Ability
+              </span>
+
+              <strong>
+                90%
+              </strong>
+
+            </div>
+
+
+
+
+
+            <div className="metric-row">
+
+              <span>
+                Interview Skill
+              </span>
+
+              <strong>
+                90%
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      {/* ==========================
+          Performance Cards
+      =========================== */}
+
+      <div className="performance-section">
+                {/* ==========================
+            Quiz Performance
+        =========================== */}
+
+        <div className="performance-card">
+
+          <div className="performance-title">
+
+            <div className="category-badge quiz-badge">
+              Q
+            </div>
+
+            <h3>
+              Quiz Performance
+            </h3>
+
+          </div>
+
+
+
+
+          <div className="performance-content">
+
+            <div className="performance-row">
+
+              <span>
+                Total Quizzes
+              </span>
+
+              <strong>
+                28
+              </strong>
+
+            </div>
+
+
+
+            <div className="performance-row">
+
+              <span>
+                Minimum Score
+              </span>
+
+              <strong>
+                48%
+              </strong>
+
+            </div>
+
+
+
+            <div className="performance-row">
+
+              <span>
+                Maximum Score
+              </span>
+
+              <strong>
+                97%
+              </strong>
+
+            </div>
+
+
+
+            <div className="performance-row">
+
+              <span>
+                Average Score
+              </span>
+
+              <strong>
+                91%
+              </strong>
+
+            </div>
+
+
+
+            <hr className="performance-divider" />
+
+
+
+            <div className="performance-row total-performance">
+
+              <span>
+                Overall Quiz Performance
+              </span>
+
+              <strong className="performance-score">
+                91%
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+
+
+
+
+        {/* ==========================
+            Coding Performance
+        =========================== */}
+
+        <div className="performance-card">
+
+          <div className="performance-title">
+
+            <div className="category-badge coding-badge">
+              C
+            </div>
+
+            <h3>
+              Coding Performance
+            </h3>
+
+          </div>
+
+
+
+
+          <div className="performance-content">
+
+            <div className="performance-row">
+
+              <span>
+                Logical Thinking
+              </span>
+
+              <strong>
+                94%
+              </strong>
+
+            </div>
+
+
+
+            <div className="performance-row">
+
+              <span>
+                Code Efficiency
+              </span>
+
+              <strong>
+                89%
+              </strong>
+
+            </div>
+
+
+
+            <div className="performance-row">
+
+              <span>
+                Language Skills
+              </span>
+
+              <strong>
+                86%
+              </strong>
+
+            </div>
+
+
+
+            <div className="performance-row">
+
+              <span>
+                Problem Solving
+              </span>
+
+              <strong>
+                91%
+              </strong>
+
+            </div>
+
+
+
+            <hr className="performance-divider" />
+
+
+
+            <div className="performance-row total-performance">
+
+              <span>
+                Overall Coding Performance
+              </span>
+
+              <strong className="performance-score">
+                90%
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+                {/* ==========================
+            Interview Performance
+        =========================== */}
+
+        <div className="performance-card">
+
+          <div className="performance-title">
+
+            <div className="category-badge interview-badge">
+              I
+            </div>
+
+            <h3>
+              Interview Performance
+            </h3>
+
+          </div>
+
+
+
+
+
+          <div className="performance-content">
+
+            <div className="performance-row">
+
+              <span>
+                Confidence
+              </span>
+
+              <strong>
+                92%
+              </strong>
+
+            </div>
+
+
+
+
+
+            <div className="performance-row">
+
+              <span>
+                Communication Skills
+              </span>
+
+              <strong>
+                89%
+              </strong>
+
+            </div>
+
+
+
+
+
+            <div className="performance-row">
+
+              <span>
+                Decision Making
+              </span>
+
+              <strong>
+                87%
+              </strong>
+
+            </div>
+
+
+
+
+
+            <div className="performance-row">
+
+              <span>
+                Problem Solving
+              </span>
+
+              <strong>
+                90%
+              </strong>
+
+            </div>
+
+
+
+
+
+            <hr className="performance-divider" />
+
+
+
+
+
+            <div className="performance-row total-performance">
+
+              <span>
+                Overall Interview Performance
+              </span>
+
+              <strong className="performance-score">
+                90%
+              </strong>
+
+            </div>
+
+
+
+          </div>
+
+
+
+        </div>
+
+
+
+      </div>
+
+
+
     </div>
+
+
+
   );
-}
+
+};
+
+
+export default Dashboard;
