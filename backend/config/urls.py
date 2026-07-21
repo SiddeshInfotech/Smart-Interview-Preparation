@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 
 
 urlpatterns = [
+    path('', RedirectView.as_view(url='/admin/', permanent=False)),  # Redirect root to admin
     path("admin/", admin.site.urls),
     path("api/admin_panel/", include("admin_panel.urls")),
     path("api/auth/", include("authentication.urls")),
