@@ -36,6 +36,7 @@ Smart-Interview-Preparation-Portal/
 - React Hook Form
 - Chart.js
 - React Chart.js 2
+- Monaco Editor (Code Editor)
 
 ### Backend
 - Python
@@ -47,13 +48,15 @@ Smart-Interview-Preparation-Portal/
 - Django Email Framework
 - Django CORS Headers
 - python-dotenv
+- LiveKit Server/Hosting (Video Conferencing)
 
 ### Database
-- MySQL
+- Aiven Cloud MySQL Service
 - MySQL Client for Django
 
 ### AI Integration
-- Google Gemini API
+- Google Gemini API (Quiz Generation & Resume Analysis)
+- MediaPipe (Face Detection, Eye Tracking, & Tab-Switching Prevention)
 
 ### Development Tools
 - Git
