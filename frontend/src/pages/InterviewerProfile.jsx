@@ -3,15 +3,13 @@ import "../styles/CandidateProfile.css";
 import {
   LayoutDashboard,
   Brain,
-  CalendarDays,
   UserCircle,
   User,
   Briefcase,
   Save,
   Plus,
-  Settings,
-  ChevronDown,
-  CheckCircle,
+  Clock,
+  X,
 } from "lucide-react";
 import api from "../api/axios";
 
@@ -26,7 +24,6 @@ const InterviewerProfile = () => {
     department: "",
     designation: "",
     years_of_experience: 0.0,
-    is_available: true,
   });
 
   // --- Profile picture state ---
@@ -39,6 +36,14 @@ const InterviewerProfile = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
+  // --- Time slots state ---
+  const [slots, setSlots] = useState([]);
+  const [newSlotStart, setNewSlotStart] = useState("");
+  const [newSlotEnd, setNewSlotEnd] = useState("");
+  const [addingSlot, setAddingSlot] = useState(false);
+  const [deletingSlotId, setDeletingSlotId] = useState(null);
+  const [loadingSlots, setLoadingSlots] = useState(true);
+
   // --- UI state ---
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,6 +52,7 @@ const InterviewerProfile = () => {
   const profileRef = useRef(null);
   const experienceRef = useRef(null);
   const expertiseRef = useRef(null);
+  const slotsRef = useRef(null);
   const suggestionRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -61,7 +67,6 @@ const InterviewerProfile = () => {
           department: data.department || "",
           designation: data.designation || "",
           years_of_experience: data.years_of_experience ? parseFloat(data.years_of_experience) : 0.0,
-          is_available: data.is_available !== undefined ? data.is_available : true,
         });
 
         setProfilePicture(data.profile_picture || null);
@@ -88,6 +93,21 @@ const InterviewerProfile = () => {
     };
 
     fetchProfile();
+  }, []);
+
+  // --- Fetch time slots on mount ---
+  useEffect(() => {
+    const fetchSlots = async () => {
+      try {
+        const response = await api.get("/interviewer/availability/");
+        setSlots(response.data);
+      } catch (error) {
+        console.error("Error fetching slots:", error);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    fetchSlots();
   }, []);
 
   // --- Resize handler for sidebar ---
@@ -122,29 +142,27 @@ const InterviewerProfile = () => {
         setShowSuggestions(false);
       }
     }, 300);
-
     return () => clearTimeout(delayDebounce);
   }, [newArea]);
 
-  // --- Auto-highlight sidebar on scroll using getBoundingClientRect + RAF ---
+  // --- Auto-highlight sidebar on scroll ---
   useEffect(() => {
     const sections = [
       { ref: profileRef, name: "profile" },
       { ref: experienceRef, name: "experience" },
       { ref: expertiseRef, name: "expertise" },
+      { ref: slotsRef, name: "slots" },
     ];
 
     const updateActiveSection = () => {
       if (isProgrammaticScroll) return;
-
-      const scrollY = window.scrollY + 120; // offset for sticky header
+      const scrollY = window.scrollY + 120;
       let newActive = "profile";
       let minDistance = Infinity;
 
       sections.forEach(({ ref, name }) => {
         const el = ref.current;
         if (!el) return;
-
         const rect = el.getBoundingClientRect();
         const top = rect.top + window.scrollY;
         const bottom = rect.bottom + window.scrollY;
@@ -157,7 +175,6 @@ const InterviewerProfile = () => {
           }
         }
       });
-
       setActiveSection((prev) => (prev !== newActive ? newActive : prev));
     };
 
@@ -196,6 +213,7 @@ const InterviewerProfile = () => {
       profile: profileRef,
       experience: experienceRef,
       expertise: expertiseRef,
+      slots: slotsRef,
     };
     scrollToSection(refs[section]);
     if (window.innerWidth <= 768) {
@@ -249,6 +267,72 @@ const InterviewerProfile = () => {
     setExpertise(expertise.filter((s) => s.id !== id));
   };
 
+  // --- Helper: format date/time for display ---
+  const formatSlotDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatSlotTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // --- Time slots functions ---
+  const handleAddSlot = async () => {
+    if (!newSlotStart || !newSlotEnd) {
+      alert("Please select both start and end times.");
+      return;
+    }
+    const start = new Date(newSlotStart);
+    const end = new Date(newSlotEnd);
+    if (end <= start) {
+      alert("End time must be after start time.");
+      return;
+    }
+
+    setAddingSlot(true);
+    try {
+      const response = await api.post("/interviewer/availability/", {
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        status: "available",
+      });
+      setSlots([...slots, response.data]);
+      setNewSlotStart("");
+      setNewSlotEnd("");
+      // Scroll to slots section after adding
+      setTimeout(() => slotsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+    } catch (error) {
+      console.error("Error adding slot:", error);
+      alert("Failed to add slot. Please try again.");
+    } finally {
+      setAddingSlot(false);
+    }
+  };
+
+  const handleDeleteSlot = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this slot?")) return;
+    setDeletingSlotId(id);
+    try {
+      await api.delete(`/interviewer/availability/${id}/`);
+      setSlots(slots.filter((slot) => slot.availability_id !== id));
+    } catch (error) {
+      console.error("Error deleting slot:", error);
+      alert("Failed to delete slot. Please try again.");
+    } finally {
+      setDeletingSlotId(null);
+    }
+  };
+
   // --- Handle file selection (preview) ---
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -260,14 +344,13 @@ const InterviewerProfile = () => {
     }
   };
 
-  // --- Save profile (using axios) ---
+  // --- Save profile ---
   const handleSaveProfile = async () => {
     setSaving(true);
     const formData = new FormData();
     formData.append("department", profile.department);
     formData.append("designation", profile.designation);
     formData.append("years_of_experience", profile.years_of_experience);
-    formData.append("is_available", profile.is_available);
     formData.append("expertise_area", expertise.map((s) => s.skill_name).join(","));
 
     if (fileInputRef.current && fileInputRef.current.files && fileInputRef.current.files[0]) {
@@ -326,14 +409,21 @@ const InterviewerProfile = () => {
               className={`nav-item ${activeSection === "experience" ? "active" : ""}`}
               onClick={() => handleNavClick("experience")}
             >
-              <Briefcase size={18} /> <span>Experience & Status</span>
+              <Briefcase size={18} /> <span>Experience</span>
             </div>
-            
+
             <div
               className={`nav-item ${activeSection === "expertise" ? "active" : ""}`}
               onClick={() => handleNavClick("expertise")}
             >
-              <Brain size={18} /> <span>Areas of Expertise</span>
+              <Brain size={18} /> <span>Expertise</span>
+            </div>
+
+            <div
+              className={`nav-item ${activeSection === "slots" ? "active" : ""}`}
+              onClick={() => handleNavClick("slots")}
+            >
+              <Clock size={18} /> <span>Time Slots</span>
             </div>
           </div>
         </aside>
@@ -401,9 +491,9 @@ const InterviewerProfile = () => {
               </div>
             </div>
 
-            {/* Experience & Status */}
+            {/* Experience */}
             <div className="education-section" ref={experienceRef}>
-              <h3>Experience & Availability</h3>
+              <h3>Experience</h3>
               <div className="form-row">
                 <div className="form-group">
                   <label>Years of Experience</label>
@@ -417,18 +507,6 @@ const InterviewerProfile = () => {
                     }
                     placeholder="e.g., 5.0"
                   />
-                </div>
-                <div className="form-group">
-                  <label>Availability Status</label>
-                  <select
-                    value={profile.is_available ? "true" : "false"}
-                    onChange={(e) =>
-                      setProfile({ ...profile, is_available: e.target.value === "true" })
-                    }
-                  >
-                    <option value="true">Available for Interviews</option>
-                    <option value="false">Not Available</option>
-                  </select>
                 </div>
               </div>
             </div>
@@ -489,6 +567,77 @@ const InterviewerProfile = () => {
                   Suggested: System Design, Backend, AI / ML, Cloud, Frontend, Cyber Security
                 </div>
               </div>
+            </div>
+
+            {/* Time Slots */}
+            <div className="education-section" ref={slotsRef}>
+              <h3>Your Availability Slots</h3>
+              <p className="sub-text">Add time slots when you are available for interviews.</p>
+
+              {/* Add slot form */}
+              <div className="slot-add-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Start</label>
+                    <input
+                      type="datetime-local"
+                      value={newSlotStart}
+                      onChange={(e) => setNewSlotStart(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>End</label>
+                    <input
+                      type="datetime-local"
+                      value={newSlotEnd}
+                      onChange={(e) => setNewSlotEnd(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group slot-add-btn-wrapper">
+                    <button
+                      className="btn-add-slot"
+                      onClick={handleAddSlot}
+                      disabled={addingSlot || !newSlotStart || !newSlotEnd}
+                    >
+                      <Plus size={16} />
+                      {addingSlot ? "Adding..." : "Add Slot"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Existing slots list */}
+              {loadingSlots ? (
+                <div className="slots-loading">Loading slots...</div>
+              ) : slots.length > 0 ? (
+                <div className="slots-list">
+                  {slots.map((slot) => {
+                    const isDeleting = deletingSlotId === slot.availability_id;
+                    return (
+                      <div key={slot.availability_id} className="slot-item">
+                        <div className="slot-info">
+                          <span className="slot-date">
+                            {formatSlotDate(slot.start_time)}
+                          </span>
+                          <span className="slot-time-range">
+                            {formatSlotTime(slot.start_time)} – {formatSlotTime(slot.end_time)}
+                          </span>
+                          <span className="slot-status available">Available</span>
+                        </div>
+                        <button
+                          className="slot-delete"
+                          onClick={() => handleDeleteSlot(slot.availability_id)}
+                          disabled={isDeleting}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="empty-slots">No slots added yet.</div>
+              )}
             </div>
 
             {/* Action Buttons */}
