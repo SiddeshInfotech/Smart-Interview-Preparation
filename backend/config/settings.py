@@ -12,6 +12,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 from datetime import timedelta
+import sendgrid_backend
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -78,7 +79,6 @@ SENDGRID_SANDBOX_MODE_IN_DEBUG = False
 
 # ========== API KEYS & LIVEKIT ==========
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-print(f"GEMINI_API_KEY is {'SET' if GEMINI_API_KEY else 'NOT SET'}")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
 LIVEKIT_URL = os.environ.get("LIVEKIT_URL")
 LIVEKIT_API_KEY = os.environ.get("LIVEKIT_API_KEY")
