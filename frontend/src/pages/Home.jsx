@@ -83,8 +83,8 @@ export default function Home() {
                 <div className="stat-card__label">Success Rate</div>
               </Card>
               <Card variant="dark" style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 700 }}>10k+</div>
-                <div className="stat-card__label" style={{ color: 'rgba(255,255,255,0.6)' }}>Users</div>
+                <div style={{ fontSize: 28, fontWeight: 700 ,color:'var(--color-primary)'}}>10k+</div>
+                <div className="stat-card__label" style={{ color: 'rgba(21, 20, 20, 0.6)' }}>Users</div>
               </Card>
             </div>
           </div>
