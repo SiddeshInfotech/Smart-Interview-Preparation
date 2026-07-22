@@ -13,46 +13,88 @@ from .models import InterviewSchedule
 from .serializers import InterviewScheduleSerializer   # ✅ import from serializers.py
 
 # ---------- Scheduling View ----------
-class InterviewScheduleCreateView(generics.CreateAPIView):
-    serializer_class = InterviewScheduleSerializer
-    permission_classes = [IsAuthenticated]
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_interview_schedule(request):
+    """
+    Candidate sends an interview request.
+    Bypasses DRF serializer validation to avoid choice/field validation issues.
+    Creates the InterviewSchedule row directly via ORM and notifies the interviewer.
+    """
+    from rest_framework.exceptions import ValidationError as DRFValidationError
+    from interviewer.models import Interviewer_Profile
 
-    def perform_create(self, serializer):
-        from rest_framework.exceptions import ValidationError as DRFValidationError
+    # Only candidates can send requests
+    if not hasattr(request.user, 'candidate_profile'):
+        return Response({"detail": "Only candidates can send interview requests."}, status=403)
 
-        # Ensure caller is a candidate
-        if not hasattr(self.request.user, 'candidate_profile'):
-            raise DRFValidationError({"detail": "Only candidates can send interview requests."})
+    interviewer_id  = request.data.get('interviewer')
+    scheduled_date  = request.data.get('scheduled_date')
+    scheduled_time  = request.data.get('scheduled_time')
+    duration_minutes = request.data.get('duration_minutes')
 
-        room_name = f"room-{uuid.uuid4().hex[:8]}"
-        candidate_profile = self.request.user.candidate_profile
+    # Basic validation
+    errors = {}
+    if not interviewer_id:
+        errors['interviewer'] = 'This field is required.'
+    if not scheduled_date:
+        errors['scheduled_date'] = 'This field is required.'
+    if not scheduled_time:
+        errors['scheduled_time'] = 'This field is required.'
+    if not duration_minutes:
+        errors['duration_minutes'] = 'This field is required.'
+    if errors:
+        return Response(errors, status=400)
 
-        try:
-            # Use 'Scheduled' as the initial DB-safe status.
-            # meeting_link='' means the request is awaiting interviewer approval.
-            # When accepted: meeting_link is set to room_name (non-empty = confirmed).
-            # When declined: status becomes 'Cancelled'.
-            schedule = serializer.save(
-                candidate=candidate_profile,
-                room_name=room_name,
-                status='Scheduled',
-                meeting_link=''     # empty = pending approval
+    # Resolve foreign keys
+    try:
+        interviewer_profile = Interviewer_Profile.objects.get(pk=interviewer_id)
+    except Interviewer_Profile.DoesNotExist:
+        return Response({"interviewer": f"No interviewer found with id={interviewer_id}."}, status=400)
+
+    candidate_profile = request.user.candidate_profile
+    room_name = f"room-{uuid.uuid4().hex[:8]}"
+
+    # Create the schedule row directly (no serializer involved)
+    try:
+        schedule = InterviewSchedule.objects.create(
+            candidate=candidate_profile,
+            interviewer=interviewer_profile,
+            scheduled_date=scheduled_date,
+            scheduled_time=scheduled_time,
+            duration_minutes=int(duration_minutes),
+            status='Scheduled',       # DB-safe default value
+            meeting_link='',          # empty = awaiting interviewer approval
+            room_name=room_name,
+        )
+    except Exception as db_err:
+        return Response({"detail": f"Database error: {str(db_err)}"}, status=400)
+
+    # Notify the interviewer
+    try:
+        from notifications.utils import create_notification
+        create_notification(
+            user=schedule.interviewer.user,
+            notification_type="interview",
+            title="New Interview Request",
+            message=(
+                f"Candidate {request.user.full_name} has requested an interview "
+                f"on {schedule.scheduled_date} at {schedule.scheduled_time}. "
+                f"Schedule ID: {schedule.schedule_id}"
             )
-        except Exception as db_err:
-            # Surface the DB-level error so we can diagnose it
-            raise DRFValidationError({"detail": f"Could not save schedule: {str(db_err)}"})
+        )
+    except Exception as e:
+        print("Failed to send notification:", e)
 
-        # Notify the interviewer
-        try:
-            from notifications.utils import create_notification
-            create_notification(
-                user=schedule.interviewer.user,
-                notification_type="interview",
-                title="New Interview Request",
-                message=f"Candidate {self.request.user.full_name} has requested an interview on {schedule.scheduled_date} at {schedule.scheduled_time}. Schedule ID: {schedule.schedule_id}"
-            )
-        except Exception as e:
-            print("Failed to send notification:", e)
+    return Response({
+        "schedule_id": schedule.schedule_id,
+        "room_name":   schedule.room_name,
+        "status":      schedule.status,
+        "meeting_link": schedule.meeting_link,
+        "scheduled_date": str(schedule.scheduled_date),
+        "scheduled_time": str(schedule.scheduled_time),
+        "duration_minutes": schedule.duration_minutes,
+    }, status=201)
 
 
 # ---------- LiveKit Token Endpoint ----------
