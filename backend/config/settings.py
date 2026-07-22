@@ -69,10 +69,12 @@ print(f"Current dir: {BASE_DIR}")
 print(f".env exists: {(BASE_DIR / '.env').exists()}")
 
 # ========== EMAIL (console backend – works on Render free tier) ==========
-EMAIL_BACKEND = os.environ.get(
-    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
-)
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@example.com")
+EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@yourdomain.com")
+
+# Optional: disable sandbox mode in production
+SENDGRID_SANDBOX_MODE_IN_DEBUG = False
 
 # ========== API KEYS & LIVEKIT ==========
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
