@@ -5,6 +5,7 @@ import {
   useLocalParticipant,
   useTracks,
   VideoTrack,
+  useParticipants,
 } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import '@livekit/components-styles';
@@ -15,7 +16,7 @@ import '../styles/InterviewPage.css';
 // ---- Child component that uses LiveKit hooks and displays video ----
 const LiveVideo = ({
   videoRef,
-  stream,               // local media stream
+  stream,
   isCameraOn,
   isMicOn,
   timer,
@@ -24,10 +25,21 @@ const LiveVideo = ({
   handleEndInterview,
 }) => {
   const localParticipant = useLocalParticipant();
+  const participants = useParticipants();
   const tracks = useTracks(
     [Track.Source.Camera, Track.Source.Microphone],
     { updateOnlyOn: ['participantJoined', 'trackSubscribed'] }
   );
+
+  // Filter for remote video tracks
+  const remoteVideoTracks = tracks.filter(
+    (track) =>
+      track.participant.identity !== localParticipant?.localParticipant?.identity &&
+      track.source === Track.Source.Camera
+  );
+
+  const hasRemoteVideo = remoteVideoTracks.length > 0;
+  const hasRemoteParticipant = participants.length > 1;
 
   // Attach the local stream to the video element when it becomes available
   useEffect(() => {
@@ -48,14 +60,17 @@ const LiveVideo = ({
       <div className="video-grid">
         {/* Interviewer video (remote) */}
         <div className="video-box interviewer-video">
-          {tracks
-            .filter(
-              (track) =>
-                track.participant.identity !== localParticipant?.localParticipant?.identity
-            )
-            .map((track) => (
+          {hasRemoteVideo ? (
+            remoteVideoTracks.map((track) => (
               <VideoTrack key={track.sid} trackRef={track} />
-            ))}
+            ))
+          ) : (
+            <div className="video-placeholder">
+              {hasRemoteParticipant
+                ? '🔄 Connecting to interviewer...'
+                : '⏳ Waiting for interviewer to join...'}
+            </div>
+          )}
           <div className="video-label">👤 Interviewer</div>
           <div className="video-status online">🟢 Online</div>
         </div>
@@ -371,7 +386,10 @@ const InterviewPage = ({
     setTimer(0);
     setEyeOffScreenCount(0);
     setShowEyeWarning(false);
-    document.exitFullscreen?.();
+    // Only exit fullscreen if actually in fullscreen
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(console.warn);
+    }
     alert('Interview ended.');
   };
 
