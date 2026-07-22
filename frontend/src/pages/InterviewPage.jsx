@@ -38,15 +38,13 @@ const LiveVideo = ({
       track.source === Track.Source.Camera
   );
 
-  // Remote participants (excluding local)
+  const hasRemoteVideo = remoteVideoTracks.length > 0;
   const remoteParticipants = participants.filter(
     (p) => p.identity !== localParticipant?.localParticipant?.identity
   );
-
-  const hasRemoteVideo = remoteVideoTracks.length > 0;
   const hasRemoteParticipant = remoteParticipants.length > 0;
 
-  // ---- Debug logs (remove in production) ----
+  // Debug logs (remove in production)
   console.log('🔍 LiveVideo Debug:');
   console.log('  Local identity:', localParticipant?.localParticipant?.identity);
   console.log('  All participants:', participants.map(p => p.identity));
@@ -86,9 +84,7 @@ const LiveVideo = ({
               <VideoTrack key={track.sid} trackRef={track} />
             ))
           ) : (
-            <div className="video-placeholder">
-              {placeholderMessage}
-            </div>
+            <div className="video-placeholder">{placeholderMessage}</div>
           )}
           <div className="video-label">👤 Interviewer</div>
           <div className="video-status online">🟢 Online</div>
@@ -174,6 +170,8 @@ const InterviewPage = ({
   const videoRef = useRef(null);
   const localStreamRef = useRef(null);
   const detectionFrameRef = useRef(null);
+  const isEndingRef = useRef(false); // to prevent multiple alerts
+  const isDetectionReady = useRef(false); // cooldown flag
 
   // ---- Start camera for preview & detection ----
   const startLocalCamera = async () => {
@@ -223,8 +221,20 @@ const InterviewPage = ({
   // ---- Face detection loop ----
   const detectFaceAndEyes = useCallback(
     async (landmarker) => {
-      if (!videoRef.current || !landmarker || !isInInterview) return;
+      // Only run if interview is active and not ending
+      if (!isInInterview || isEndingRef.current) return;
+
       const video = videoRef.current;
+      if (!video || !video.srcObject || video.paused || video.ended) {
+        // If video is not ready, just continue the loop
+        if (isInInterview && !isEndingRef.current) {
+          detectionFrameRef.current = requestAnimationFrame(() =>
+            detectFaceAndEyes(landmarker)
+          );
+        }
+        return;
+      }
+
       try {
         const result = landmarker.detectForVideo(video, performance.now());
         if (result.faceLandmarks && result.faceLandmarks.length > 0) {
@@ -245,41 +255,49 @@ const InterviewPage = ({
 
           const isLookingAway = direction === 'away' || direction === 'left' || direction === 'right';
           if (isLookingAway) {
-            setEyeOffScreenCount((prev) => {
-              const newCount = prev + 1;
-              if (newCount >= MAX_EYE_OFF && !showEyeWarning) {
-                setShowEyeWarning(true);
-                alert(`⚠️ You looked away! (${newCount}/${MAX_EYE_OFF})`);
-                if (newCount >= MAX_EYE_OFF + 2) {
-                  alert('🚫 Interview terminated for looking away.');
-                  handleEndInterview();
+            // Only increment if detection is ready (cooldown passed) and not ending
+            if (isDetectionReady.current && !isEndingRef.current) {
+              setEyeOffScreenCount((prev) => {
+                const newCount = prev + 1;
+                if (newCount >= MAX_EYE_OFF && !showEyeWarning && isInInterview && !isEndingRef.current) {
+                  setShowEyeWarning(true);
+                  alert(`⚠️ You looked away! (${newCount}/${MAX_EYE_OFF})`);
+                  if (newCount >= MAX_EYE_OFF + 2) {
+                    alert('🚫 Interview terminated for looking away.');
+                    handleEndInterview();
+                  }
                 }
-              }
-              return newCount;
-            });
+                return newCount;
+              });
+            }
           } else {
             setEyeOffScreenCount(0);
             setShowEyeWarning(false);
           }
         } else {
-          setIsFaceVisible(false);
-          setEyeOffScreenCount((prev) => {
-            const newCount = prev + 1;
-            if (newCount >= MAX_EYE_OFF && !showEyeWarning) {
-              setShowEyeWarning(true);
-              alert(`⚠️ Face not detected! (${newCount}/${MAX_EYE_OFF})`);
-              if (newCount >= MAX_EYE_OFF + 2) {
-                alert('🚫 Interview terminated: face missing.');
-                handleEndInterview();
+          // No face – similar logic with cooldown
+          if (isDetectionReady.current && !isEndingRef.current) {
+            setIsFaceVisible(false);
+            setEyeOffScreenCount((prev) => {
+              const newCount = prev + 1;
+              if (newCount >= MAX_EYE_OFF && !showEyeWarning && isInInterview && !isEndingRef.current) {
+                setShowEyeWarning(true);
+                alert(`⚠️ Face not detected! (${newCount}/${MAX_EYE_OFF})`);
+                if (newCount >= MAX_EYE_OFF + 2) {
+                  alert('🚫 Interview terminated: face missing.');
+                  handleEndInterview();
+                }
               }
-            }
-            return newCount;
-          });
+              return newCount;
+            });
+          }
         }
       } catch (err) {
         console.error('Detection error:', err);
       }
-      if (isInInterview && faceLandmarker) {
+
+      // Continue loop if still active
+      if (isInInterview && !isEndingRef.current && faceLandmarker) {
         detectionFrameRef.current = requestAnimationFrame(() =>
           detectFaceAndEyes(faceLandmarker)
         );
@@ -302,7 +320,7 @@ const InterviewPage = ({
   useEffect(() => {
     if (!isInInterview) return;
     const handleVisibilityChange = () => {
-      if (document.hidden) {
+      if (document.hidden && isInInterview && !isEndingRef.current) {
         setTabSwitchCount((prev) => {
           const newCount = prev + 1;
           setShowWarning(true);
@@ -343,7 +361,7 @@ const InterviewPage = ({
     }
     setIsJoining(true);
     try {
-      // 1. Start local camera (stream stored in localStreamRef)
+      // 1. Start local camera
       const stream = await startLocalCamera();
       if (!stream) {
         setIsJoining(false);
@@ -368,6 +386,17 @@ const InterviewPage = ({
       setIsConnected(true);
       setIsInInterview(true);
       setTimer(0);
+      // Reset counters
+      setEyeOffScreenCount(0);
+      setShowEyeWarning(false);
+      setTabSwitchCount(0);
+      setShowWarning(false);
+      isEndingRef.current = false;
+      // Set detection ready after a cooldown (2 seconds) to avoid false triggers
+      isDetectionReady.current = false;
+      setTimeout(() => {
+        isDetectionReady.current = true;
+      }, 3000);
       alert('✅ You have joined the interview!');
 
       // 4. Start detection loop after video element is ready
@@ -375,7 +404,7 @@ const InterviewPage = ({
         if (videoRef.current && landmarker) {
           detectFaceAndEyes(landmarker);
         }
-      }, 1000);
+      }, 1500);
     } catch (err) {
       console.error('Join error:', err);
       alert('Could not join the interview. Please try again.');
@@ -386,7 +415,12 @@ const InterviewPage = ({
 
   // ---- End interview ----
   const handleEndInterview = () => {
-    if (!window.confirm('Are you sure you want to end the interview?')) return;
+    if (isEndingRef.current) return; // prevent double execution
+    isEndingRef.current = true;
+    if (!window.confirm('Are you sure you want to end the interview?')) {
+      isEndingRef.current = false;
+      return;
+    }
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
@@ -405,14 +439,13 @@ const InterviewPage = ({
     setTimer(0);
     setEyeOffScreenCount(0);
     setShowEyeWarning(false);
-    // Only exit fullscreen if actually in fullscreen
     if (document.fullscreenElement) {
       document.exitFullscreen?.().catch(console.warn);
     }
     alert('Interview ended.');
   };
 
-  // ---- Toggle camera (affects preview and LiveKit) ----
+  // ---- Toggle camera ----
   const toggleCamera = () => {
     setIsCameraOn(!isCameraOn);
     if (localStreamRef.current) {
@@ -423,7 +456,6 @@ const InterviewPage = ({
 
   const toggleMic = () => {
     setIsMicOn(!isMicOn);
-    // The child component will handle the LiveKit track
   };
 
   const formatTime = (seconds) => {
@@ -558,7 +590,9 @@ const InterviewPage = ({
             audio={true}
             onDisconnected={() => {
               setIsConnected(false);
-              if (isInInterview) handleEndInterview();
+              if (isInInterview && !isEndingRef.current) {
+                handleEndInterview();
+              }
             }}
             className="livekit-room-container"
           >
