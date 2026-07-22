@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import InterviewSchedule
 
+
 class InterviewScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterviewSchedule
@@ -17,4 +18,13 @@ class InterviewScheduleSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['schedule_id', 'candidate', 'room_name', 'created_at', 'updated_at', 'status']
+        # These fields are set by the server; clients must NOT send them
+        read_only_fields = [
+            'schedule_id',
+            'candidate',
+            'status',
+            'room_name',
+            'meeting_link',
+            'created_at',
+            'updated_at',
+        ]

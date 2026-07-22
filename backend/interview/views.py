@@ -18,13 +18,25 @@ class InterviewScheduleCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+
+        # Ensure caller is a candidate
+        if not hasattr(self.request.user, 'candidate_profile'):
+            raise DRFValidationError({"detail": "Only candidates can send interview requests."})
+
         room_name = f"room-{uuid.uuid4().hex[:8]}"
         candidate_profile = self.request.user.candidate_profile
-        schedule = serializer.save(
-            candidate=candidate_profile,
-            room_name=room_name,
-            status='Pending'
-        )
+
+        try:
+            schedule = serializer.save(
+                candidate=candidate_profile,
+                room_name=room_name,
+                status='Pending'
+            )
+        except Exception as db_err:
+            # Surface the DB-level error so we can diagnose it
+            raise DRFValidationError({"detail": f"Could not save schedule: {str(db_err)}"})
+
         # Notify the interviewer
         try:
             from notifications.utils import create_notification
