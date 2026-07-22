@@ -28,10 +28,15 @@ class InterviewScheduleCreateView(generics.CreateAPIView):
         candidate_profile = self.request.user.candidate_profile
 
         try:
+            # Use 'Scheduled' as the initial DB-safe status.
+            # meeting_link='' means the request is awaiting interviewer approval.
+            # When accepted: meeting_link is set to room_name (non-empty = confirmed).
+            # When declined: status becomes 'Cancelled'.
             schedule = serializer.save(
                 candidate=candidate_profile,
                 room_name=room_name,
-                status='Pending'
+                status='Scheduled',
+                meeting_link=''     # empty = pending approval
             )
         except Exception as db_err:
             # Surface the DB-level error so we can diagnose it
@@ -82,9 +87,12 @@ def get_livekit_token(request):
     try:
         schedule = InterviewSchedule.objects.filter(room_name=room_name).first()
         if schedule:
-            # Ensure status is Scheduled
-            if schedule.status != 'Scheduled':
-                return Response({'error': f'Interview status is {schedule.status} (must be Scheduled to join).'}, status=400)
+            # meeting_link is empty string = awaiting approval, non-empty = accepted
+            if not schedule.meeting_link:
+                return Response({'error': 'The interviewer has not yet accepted this request.'}, status=400)
+
+            if schedule.status == 'Cancelled':
+                return Response({'error': 'This interview has been cancelled.'}, status=400)
 
             # Check if user is candidate or interviewer for this schedule
             if request.user.role == 'candidate':
@@ -155,7 +163,9 @@ def accept_interview(request, pk):
     if schedule.interviewer.user != request.user:
         return Response({'error': 'You are not the interviewer for this session.'}, status=403)
 
+    # Mark as confirmed: meeting_link = room_name (non-empty = accepted)
     schedule.status = 'Scheduled'
+    schedule.meeting_link = schedule.room_name
     schedule.save()
 
     try:
