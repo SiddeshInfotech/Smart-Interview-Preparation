@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CalendarDays, Video } from "lucide-react";
 import InterviewSchedule from "./InterviewSchedule.jsx";
 import InterviewPage from "./InterviewPage.jsx";
+import api from "../api/axios";
 import "../styles/Interview.css";
 
 const getCurrentUser = () => {
@@ -21,11 +22,32 @@ export default function Interview() {
   const [interviews, setInterviews] = useState([]);
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
-    // Optionally fetch interviews from API here
+    const fetchUser = async () => {
+      let currentUser = getCurrentUser();
+      // If user exists but missing user_id, fetch fresh profile from backend
+      if (currentUser && !currentUser.user_id) {
+        try {
+          const res = await api.get("/auth/profile/");
+          const userData = res.data;
+          if (userData && userData.user_id) {
+            localStorage.setItem("user", JSON.stringify(userData));
+            setUser(userData);
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.error("Failed to fetch user profile:", err);
+        }
+      }
+      // If no user found or fetch failed, use the stored user (or null)
+      setUser(currentUser);
+      setLoading(false);
+    };
+
+    fetchUser();
   }, []);
 
   const handleSchedule = (newInterview) => {
@@ -37,6 +59,10 @@ export default function Interview() {
     setSelectedInterview(interview);
     setActiveTab("lobby");
   };
+
+  if (loading) {
+    return <div className="loading-spinner">Loading profile...</div>;
+  }
 
   // Unique identity for LiveKit – must be unique per user
   const identity = user?.user_id || user?.email || "guest";
@@ -84,10 +110,9 @@ export default function Interview() {
             ) : (
               <InterviewPage
                 standalone={true}
-                // When you have real scheduling, use selectedInterview?.roomName
-                roomName={"room_101"}
-                identity={identity}               // ✅ unique ID
-                participantName={participantName} // display name
+                roomName={"room_101"} // or selectedInterview?.roomName
+                identity={identity}
+                participantName={participantName}
                 role={role}
               />
             )}

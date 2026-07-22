@@ -38,10 +38,21 @@ const LiveVideo = ({
       track.source === Track.Source.Camera
   );
 
-  const hasRemoteVideo = remoteVideoTracks.length > 0;
-  const hasRemoteParticipant = participants.length > 1;
+  // Remote participants (excluding local)
+  const remoteParticipants = participants.filter(
+    (p) => p.identity !== localParticipant?.localParticipant?.identity
+  );
 
-  // Attach the local stream to the video element when it becomes available
+  const hasRemoteVideo = remoteVideoTracks.length > 0;
+  const hasRemoteParticipant = remoteParticipants.length > 0;
+
+  // ---- Debug logs (remove in production) ----
+  console.log('🔍 LiveVideo Debug:');
+  console.log('  Local identity:', localParticipant?.localParticipant?.identity);
+  console.log('  All participants:', participants.map(p => p.identity));
+  console.log('  Remote participants:', remoteParticipants.map(p => p.identity));
+  console.log('  Remote video tracks count:', remoteVideoTracks.length);
+
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
@@ -55,6 +66,16 @@ const LiveVideo = ({
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  // Determine the placeholder message
+  let placeholderMessage = '';
+  if (!hasRemoteParticipant) {
+    placeholderMessage = '⏳ Waiting for other participant to join...';
+  } else if (hasRemoteParticipant && !hasRemoteVideo) {
+    placeholderMessage = '🔄 Connecting to video...';
+  } else {
+    placeholderMessage = '';
+  }
+
   return (
     <div className="video-call-container">
       <div className="video-grid">
@@ -66,16 +87,14 @@ const LiveVideo = ({
             ))
           ) : (
             <div className="video-placeholder">
-              {hasRemoteParticipant
-                ? '🔄 Connecting to interviewer...'
-                : '⏳ Waiting for interviewer to join...'}
+              {placeholderMessage}
             </div>
           )}
           <div className="video-label">👤 Interviewer</div>
           <div className="video-status online">🟢 Online</div>
         </div>
 
-        {/* Candidate video (local preview from manual stream) */}
+        {/* Candidate video (local preview) */}
         <div className="video-box candidate-video">
           <video
             ref={videoRef}
