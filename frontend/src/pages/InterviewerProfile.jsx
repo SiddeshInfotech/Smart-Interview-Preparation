@@ -13,6 +13,13 @@ import {
 } from "lucide-react";
 import api from "../api/axios";
 
+// --- Helper to get the correct local time format for datetime-local ---
+const getLocalCurrentTime = () => {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16);
+};
+
 const InterviewerProfile = () => {
   const [activeSection, setActiveSection] = useState("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -43,6 +50,9 @@ const InterviewerProfile = () => {
   const [addingSlot, setAddingSlot] = useState(false);
   const [deletingSlotId, setDeletingSlotId] = useState(null);
   const [loadingSlots, setLoadingSlots] = useState(true);
+
+  // --- Stable Min DateTime (Fix for unselectable slots) ---
+  const [minDateTime] = useState(getLocalCurrentTime());
 
   // --- UI state ---
   const [loading, setLoading] = useState(true);
@@ -415,14 +425,14 @@ const InterviewerProfile = () => {
               <LayoutDashboard size={18} /> <span>Back to Dashboard</span>
             </div>
             <div style={{ margin: "4px 0", borderBottom: "1px solid var(--color-border)" }} />
-            
+
             <div
               className={`nav-item ${activeSection === "profile" ? "active" : ""}`}
               onClick={() => handleNavClick("profile")}
             >
               <User size={18} /> <span>Personal Info</span>
             </div>
-            
+
             <div
               className={`nav-item ${activeSection === "experience" ? "active" : ""}`}
               onClick={() => handleNavClick("experience")}
@@ -600,7 +610,7 @@ const InterviewerProfile = () => {
                     <input
                       type="datetime-local"
                       value={newSlotStart}
-                      min={new Date().toISOString().slice(0, 16)}
+                      min={minDateTime}
                       onChange={(e) => setNewSlotStart(e.target.value)}
                     />
                   </div>
@@ -609,7 +619,7 @@ const InterviewerProfile = () => {
                     <input
                       type="datetime-local"
                       value={newSlotEnd}
-                      min={newSlotStart || new Date().toISOString().slice(0, 16)}
+                      min={newSlotStart || minDateTime}
                       onChange={(e) => setNewSlotEnd(e.target.value)}
                     />
                   </div>
