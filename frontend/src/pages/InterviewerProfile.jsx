@@ -13,12 +13,23 @@ import {
 } from "lucide-react";
 import api from "../api/axios";
 
-// --- Helper to get the correct local time format for datetime-local ---
-const getLocalCurrentTime = () => {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 16);
+// --- Helper to generate 30‑min interval time options ---
+const generateTimeOptions = () => {
+  const times = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const hour = String(h).padStart(2, "0");
+      const min = String(m).padStart(2, "0");
+      const ampm = h < 12 ? "AM" : "PM";
+      const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      const label = `${String(displayHour).padStart(2, "0")}:${min} ${ampm}`;
+      times.push({ value: `${hour}:${min}`, label });
+    }
+  }
+  return times;
 };
+
+const TIME_OPTIONS = generateTimeOptions();
 
 const InterviewerProfile = () => {
   const [activeSection, setActiveSection] = useState("profile");
@@ -45,14 +56,12 @@ const InterviewerProfile = () => {
 
   // --- Time slots state ---
   const [slots, setSlots] = useState([]);
-  const [newSlotStart, setNewSlotStart] = useState("");
-  const [newSlotEnd, setNewSlotEnd] = useState("");
+  const [slotStartTime, setSlotStartTime] = useState("");
+  const [slotEndTime, setSlotEndTime] = useState("");
+  const [slotError, setSlotError] = useState("");
   const [addingSlot, setAddingSlot] = useState(false);
   const [deletingSlotId, setDeletingSlotId] = useState(null);
   const [loadingSlots, setLoadingSlots] = useState(true);
-
-  // --- Stable Min DateTime (Fix for unselectable slots) ---
-  const [minDateTime] = useState(getLocalCurrentTime());
 
   // --- UI state ---
   const [loading, setLoading] = useState(true);
@@ -277,16 +286,7 @@ const InterviewerProfile = () => {
     setExpertise(expertise.filter((s) => s.id !== id));
   };
 
-  // --- Helper: format date/time for display ---
-  const formatSlotDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
+  // --- Helper: format time for display ---
   const formatSlotTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString("en-US", {
@@ -296,52 +296,56 @@ const InterviewerProfile = () => {
     });
   };
 
-  // Group slots by date for premium visual grouping
-  const groupSlotsByDate = (slotsList) => {
-    const grouped = {};
-    const sorted = [...slotsList].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-    sorted.forEach((slot) => {
-      const dateKey = formatSlotDate(slot.start_time);
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
-      }
-      grouped[dateKey].push(slot);
-    });
-    return grouped;
-  };
-
   // --- Time slots functions ---
   const handleAddSlot = async () => {
-    if (!newSlotStart || !newSlotEnd) {
-      alert("Please select both start and end times.");
+    setSlotError("");
+
+    if (!slotStartTime || !slotEndTime) {
+      setSlotError("Please select both start and end times.");
       return;
     }
-    const start = new Date(newSlotStart);
-    const end = new Date(newSlotEnd);
-    if (end <= start) {
-      alert("End time must be after start time.");
+
+    // Convert JavaScript day to Django day (Monday=0)
+    let day_of_week = new Date().getDay(); // 0=Sunday, 6=Saturday
+    if (day_of_week === 0) {
+      day_of_week = 6; // Sunday -> 6
+    } else {
+      day_of_week = day_of_week - 1; // shift
+    }
+
+    // Validate that end time is after start time (basic check)
+    const startParts = slotStartTime.split(":").map(Number);
+    const endParts = slotEndTime.split(":").map(Number);
+    const startMinutes = startParts[0] * 60 + startParts[1];
+    const endMinutes = endParts[0] * 60 + endParts[1];
+    if (endMinutes <= startMinutes) {
+      setSlotError("End time must be after start time.");
       return;
     }
 
     setAddingSlot(true);
     try {
       const response = await api.post("/interviewer/availability/", {
-        start_time: start.toISOString(),
-        end_time: end.toISOString(),
+        day_of_week: day_of_week,
+        start_time: slotStartTime,      // "HH:MM"
+        end_time: slotEndTime,
         status: "available",
       });
       setSlots([...slots, response.data]);
-      setNewSlotStart("");
-      setNewSlotEnd("");
-      // Scroll to slots section after adding
+      setSlotStartTime("");
+      setSlotEndTime("");
+      setSlotError("");
       setTimeout(() => slotsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
     } catch (error) {
       console.error("Error adding slot:", error);
-      let errorMsg = "Failed to add slot. Please try again.";
+      let errorMsg = "Failed to add slot. Please check for overlaps.";
       if (error.response?.data) {
-        errorMsg = error.response.data.non_field_errors?.[0] || error.response.data.detail || JSON.stringify(error.response.data);
+        errorMsg =
+          error.response.data.non_field_errors?.[0] ||
+          error.response.data.detail ||
+          JSON.stringify(error.response.data);
       }
-      alert(errorMsg);
+      setSlotError(errorMsg);
     } finally {
       setAddingSlot(false);
     }
@@ -597,95 +601,138 @@ const InterviewerProfile = () => {
               </div>
             </div>
 
-            {/* Time Slots */}
+            {/* Time Slots – restructured: slots tags above form */}
             <div className="education-section" ref={slotsRef}>
               <h3>Your Availability Slots</h3>
-              <p className="sub-text">Add time slots when you are available for interviews.</p>
+
+              {/* Slots tags (same style as skill tags) – shown above the form */}
+              {loadingSlots ? (
+                <div className="slots-loading">Loading slots...</div>
+              ) : slots.length > 0 ? (
+                <div className="skill-tags" style={{ marginBottom: "16px" }}>
+                  {slots.map((slot) => {
+                    const isDeleting = deletingSlotId === slot.availability_id;
+                    return (
+                      <span key={slot.availability_id} className="skill-tag">
+                        {formatSlotTime(slot.start_time)} – {formatSlotTime(slot.end_time)}
+                        <button
+                          type="button"
+                          className="skill-remove"
+                          onClick={() => handleDeleteSlot(slot.availability_id)}
+                          disabled={isDeleting}
+                          title="Delete Slot"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : null}
 
               {/* Add slot form */}
               <div className="slot-add-form">
-                <div className="form-row" style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "flex-end" }}>
-                  <div className="form-group" style={{ flex: 1, minWidth: "200px" }}>
-                    <label>Start Date & Time</label>
-                    <input
-                      type="datetime-local"
-                      value={newSlotStart}
-                      min={minDateTime}
-                      onChange={(e) => setNewSlotStart(e.target.value)}
-                    />
+                <div
+                  className="form-row"
+                  style={{
+                    display: "flex",
+                    gap: "16px",
+                    flexWrap: "wrap",
+                    alignItems: "flex-end",
+                  }}
+                >
+                  {/* Start time dropdown */}
+                  <div className="form-group" style={{ flex: "1 1 180px", minWidth: "160px" }}>
+                    <label>
+                      <Clock size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
+                      Start Time
+                    </label>
+                    <select
+                      value={slotStartTime}
+                      onChange={(e) => {
+                        setSlotStartTime(e.target.value);
+                        setSlotEndTime("");
+                        setSlotError("");
+                      }}
+                    >
+                      <option value="">Select start</option>
+                      {TIME_OPTIONS.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="form-group" style={{ flex: 1, minWidth: "200px" }}>
-                    <label>End Date & Time</label>
-                    <input
-                      type="datetime-local"
-                      value={newSlotEnd}
-                      min={newSlotStart || minDateTime}
-                      onChange={(e) => setNewSlotEnd(e.target.value)}
-                    />
+
+                  {/* End time dropdown */}
+                  <div className="form-group" style={{ flex: "1 1 180px", minWidth: "160px" }}>
+                    <label>
+                      <Clock size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
+                      End Time
+                    </label>
+                    <select
+                      value={slotEndTime}
+                      disabled={!slotStartTime}
+                      onChange={(e) => {
+                        setSlotEndTime(e.target.value);
+                        setSlotError("");
+                      }}
+                    >
+                      <option value="">
+                        {slotStartTime ? "Select end" : "Select start first"}
+                      </option>
+                      {TIME_OPTIONS.filter((t) => t.value > slotStartTime).map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
                   </div>
+
+                  {/* Add button – now using proper button classes */}
                   <div className="form-group slot-add-btn-wrapper" style={{ flex: "none" }}>
                     <button
-                      className="btn-add-slot"
+                      className="btn btn--primary btn-add-slot"
                       onClick={handleAddSlot}
-                      disabled={addingSlot || !newSlotStart || !newSlotEnd}
+                      disabled={addingSlot || !slotStartTime || !slotEndTime}
+                      type="button"
                     >
                       <Plus size={16} />
                       {addingSlot ? "Adding..." : "Add Slot"}
                     </button>
                   </div>
                 </div>
+
+                {/* Inline validation error */}
+                {slotError && (
+                  <div
+                    className="slot-error-msg"
+                    style={{
+                      marginTop: "10px",
+                      padding: "10px 14px",
+                      background: "#fef2f2",
+                      border: "1px solid #fecaca",
+                      borderRadius: "8px",
+                      color: "#dc2626",
+                      fontSize: "0.875rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <X size={15} style={{ flexShrink: 0 }} />
+                    {slotError}
+                  </div>
+                )}
               </div>
 
-              {/* Grouped Existing slots list */}
-              {loadingSlots ? (
-                <div className="slots-loading">Loading slots...</div>
-              ) : slots.length > 0 ? (
-                <div className="slots-grouped-list" style={{ marginTop: "25px" }}>
-                  {Object.entries(groupSlotsByDate(slots)).map(([dateStr, dateSlots]) => (
-                    <div key={dateStr} className="date-group" style={{ marginBottom: "25px" }}>
-                      <h4 className="date-group-title" style={{ fontSize: "1.05rem", fontWeight: "600", color: "#1e293b", borderBottom: "2px solid #f1f5f9", paddingBottom: "8px", marginBottom: "12px" }}>
-                        {dateStr}
-                      </h4>
-                      <div className="date-group-slots" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "12px" }}>
-                        {dateSlots.map((slot) => {
-                          const isDeleting = deletingSlotId === slot.availability_id;
-                          return (
-                            <div key={slot.availability_id} className="slot-item" style={{ transition: "all 0.2s" }}>
-                              <div className="slot-info">
-                                <Clock size={15} style={{ color: "#5b4cf3" }} />
-                                <span className="slot-time-range" style={{ fontWeight: "500", color: "#334155" }}>
-                                  {formatSlotTime(slot.start_time)} – {formatSlotTime(slot.end_time)}
-                                </span>
-                                <span className={`slot-status ${slot.status === 'available' ? 'available' : 'booked'}`}>
-                                  {slot.status.charAt(0).toUpperCase() + slot.status.slice(1)}
-                                </span>
-                              </div>
-                              <button
-                                className="slot-delete"
-                                onClick={() => handleDeleteSlot(slot.availability_id)}
-                                disabled={isDeleting}
-                                title="Delete Slot"
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
+              {/* Empty message – shown at the bottom when no slots exist */}
+              {!loadingSlots && slots.length === 0 && (
+                <div className="suggestions-hint empty-slots-message" style={{ marginTop: "16px" }}>
+                  No slots added yet.
                 </div>
-              ) : (
-                <div className="empty-slots">No slots added yet.</div>
               )}
             </div>
 
             {/* Action Buttons */}
             <div className="action-buttons">
-              <button
-                className="btn-skip"
-                onClick={() => (window.location.href = "/dashboard")}
-              >
+              <button className="btn-skip" onClick={() => (window.location.href = "/dashboard")}>
                 Skip
               </button>
               <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>

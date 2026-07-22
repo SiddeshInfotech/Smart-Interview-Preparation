@@ -53,45 +53,51 @@ class InterviewerAvailabilityViewSet(viewsets.ModelViewSet):
         interviewer_profile = self.request.user.interviewer_profile
         return InterviewerAvailability.objects.filter(interviewer=interviewer_profile)
 
-    def get_serializer(self, *args, **kwargs):
-        if self.action == 'create' and isinstance(kwargs.get('data'), list):
-            kwargs['many'] = True
-        return super().get_serializer(*args, **kwargs)
-
     def perform_create(self, serializer):
         serializer.save(interviewer=self.request.user.interviewer_profile)
 
 
 class AvailableSlotsListView(generics.ListAPIView):
-    """Available slots for a specific interviewer."""
+    """Available slots for a specific interviewer on a given date."""
     serializer_class = InterviewerAvailabilitySerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         interviewer_id = self.kwargs["interviewer_id"]
+        date_param = self.request.query_params.get('date')
+        if not date_param:
+            return InterviewerAvailability.objects.none()
+
+        try:
+            target_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            day_of_week = target_date.weekday()  # Monday=0, Sunday=6
+        except ValueError:
+            return InterviewerAvailability.objects.none()
+
         return InterviewerAvailability.objects.filter(
             interviewer_id=interviewer_id,
-            status="available",
-            start_time__gt=timezone.now(),
+            day_of_week=day_of_week,
+            status="available"
         ).order_by("start_time")
 
 
 class AvailableSlotsAllView(generics.ListAPIView):
-    """Available slots from ALL interviewers, optionally filtered by date."""
+    """Available slots from ALL interviewers on a given date."""
     serializer_class = InterviewerAvailabilitySerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = InterviewerAvailability.objects.filter(
-            status='available',
-            start_time__gt=timezone.now()
-        ).order_by('start_time')
-
         date_param = self.request.query_params.get('date')
-        if date_param:
-            try:
-                target_date = datetime.strptime(date_param, '%Y-%m-%d').date()
-                qs = qs.filter(start_time__date=target_date)
-            except ValueError:
-                pass
-        return qs
+        if not date_param:
+            return InterviewerAvailability.objects.none()
+
+        try:
+            target_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            day_of_week = target_date.weekday()
+        except ValueError:
+            return InterviewerAvailability.objects.none()
+
+        return InterviewerAvailability.objects.filter(
+            status='available',
+            day_of_week=day_of_week
+        ).order_by('start_time')

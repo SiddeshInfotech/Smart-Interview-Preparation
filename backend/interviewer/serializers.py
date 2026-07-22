@@ -43,9 +43,9 @@ class InterviewerSearchSerializer(serializers.ModelSerializer):
 
 
 class InterviewerAvailabilitySerializer(serializers.ModelSerializer):
-    # Add nested fields to show interviewer details
     interviewer_name = serializers.CharField(source='interviewer.user.full_name', read_only=True)
     interviewer_designation = serializers.CharField(source='interviewer.designation', read_only=True)
+    day_label = serializers.CharField(source='get_day_of_week_display', read_only=True)
 
     class Meta:
         model = InterviewerAvailability
@@ -54,6 +54,8 @@ class InterviewerAvailabilitySerializer(serializers.ModelSerializer):
             'interviewer',
             'interviewer_name',
             'interviewer_designation',
+            'day_of_week',
+            'day_label',
             'start_time',
             'end_time',
             'status',
@@ -65,27 +67,24 @@ class InterviewerAvailabilitySerializer(serializers.ModelSerializer):
     def validate(self, data):
         start_time = data.get('start_time')
         end_time = data.get('end_time')
+        day_of_week = data.get('day_of_week')
 
         if start_time and end_time:
             if end_time <= start_time:
                 raise serializers.ValidationError({"end_time": "End time must be after start time."})
-            
-            # Get interviewer profile from the request context
+
             request = self.context.get('request')
             if request and hasattr(request, 'user') and hasattr(request.user, 'interviewer_profile'):
                 interviewer = request.user.interviewer_profile
-                
-                # Check for overlapping slots
+
                 overlapping = InterviewerAvailability.objects.filter(
                     interviewer=interviewer,
+                    day_of_week=day_of_week,
                     start_time__lt=end_time,
                     end_time__gt=start_time
                 )
-                
                 if self.instance:
                     overlapping = overlapping.exclude(pk=self.instance.pk)
-                    
                 if overlapping.exists():
-                    raise serializers.ValidationError("This availability slot overlaps with an existing slot.")
-        
+                    raise serializers.ValidationError("This slot overlaps with an existing slot on the same day.")
         return data

@@ -23,21 +23,31 @@ class Interviewer_Profile(models.Model):
         return f"{self.user.email}'s Interviewer Profile"
 
 
-# ---------- NEW: Availability slots ----------
 class InterviewerAvailability(models.Model):
+    DAY_CHOICES = (
+        (0, 'Monday'),
+        (1, 'Tuesday'),
+        (2, 'Wednesday'),
+        (3, 'Thursday'),
+        (4, 'Friday'),
+        (5, 'Saturday'),
+        (6, 'Sunday'),
+    )
     STATUS_CHOICES = (
         ('available', 'Available'),
         ('booked', 'Booked'),
         ('unavailable', 'Unavailable'),
     )
+
     availability_id = models.AutoField(primary_key=True)
     interviewer = models.ForeignKey(
         Interviewer_Profile,
         on_delete=models.CASCADE,
         related_name='slots'
     )
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    day_of_week = models.SmallIntegerField(choices=DAY_CHOICES)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -45,7 +55,7 @@ class InterviewerAvailability(models.Model):
     class Meta:
         db_table = 'Interviewer_Availability'
         indexes = [
-            models.Index(fields=['interviewer', 'start_time']),
+            models.Index(fields=['interviewer', 'day_of_week', 'start_time']),
         ]
 
     def clean(self):
@@ -53,21 +63,22 @@ class InterviewerAvailability(models.Model):
         if self.start_time and self.end_time:
             if self.end_time <= self.start_time:
                 raise ValidationError("End time must be after start time.")
-            
+
             if hasattr(self, 'interviewer') and self.interviewer:
                 overlapping = InterviewerAvailability.objects.filter(
                     interviewer=self.interviewer,
+                    day_of_week=self.day_of_week,
                     start_time__lt=self.end_time,
                     end_time__gt=self.start_time
                 )
                 if self.pk:
                     overlapping = overlapping.exclude(pk=self.pk)
                 if overlapping.exists():
-                    raise ValidationError("This availability slot overlaps with an existing slot.")
+                    raise ValidationError("This slot overlaps with an existing slot on the same day.")
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.interviewer.user.email}: {self.start_time} – {self.end_time}"
+        return f"{self.interviewer.user.email} – {self.get_day_of_week_display()} {self.start_time}–{self.end_time}"
