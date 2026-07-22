@@ -48,3 +48,30 @@ def generate_quiz(request):
 
     except Exception as e:
         return Response({"error": f"AI generation failed: {str(e)}"}, status=500)
+
+        # =====================================
+# QUIZ PERFORMANCE FOR DASHBOARD
+# =====================================
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def quiz_performance(request):
+
+
+
+    data = {
+
+        "total_quizzes": 28,
+
+        "minimum_score": 48,
+
+        "maximum_score": 97,
+
+        "average_score": 91,
+
+        "overall_score": 91
+
+    }
+
+
+    return Response(data)

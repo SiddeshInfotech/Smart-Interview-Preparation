@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import "../styles/Dashboard.css";
 
 import {
@@ -14,12 +14,67 @@ import {
 
 
 const Dashboard = () => {
-
-
+  
   const user = {
     username: "Kimaya",
     overallPerformance: 92,
   };
+  const [quizPerformance, setQuizPerformance] = useState({
+
+    total_quizzes:0,
+
+    minimum_score:0,
+
+    maximum_score:0,
+
+    average_score:0,
+
+    overall_score:0
+
+});
+useEffect(() => {
+
+    
+    const token = localStorage.getItem("access_token");
+    console.log("Access Token:", token);
+
+    fetch(
+        "http://127.0.0.1:8000/api/quiz/performance/",
+        {
+            method: "GET",
+
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+        }
+    )
+
+    .then((response) => {
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch quiz performance");
+        }
+
+        return response.json();
+
+    })
+
+    .then((data) => {
+
+        console.log("Quiz Performance Data:", data);
+
+        setQuizPerformance(data);
+
+    })
+
+    .catch((error) => {
+
+        console.log("Quiz API Error:", error);
+
+    });
+
+}, []);
 
 
 
@@ -368,57 +423,52 @@ const Dashboard = () => {
 
             <div className="performance-row">
 
-              <span>
-                Total Quizzes
+             <span>
+                 Total Quizzes
               </span>
 
-              <strong>
-                28
-              </strong>
+                <strong>
+                    {quizPerformance.total_quizzes}
+                </strong>
 
             </div>
 
+           <div className="performance-row">
 
+             <span>
+                     Minimum Score
+             </span>
+
+              <strong>
+                 {quizPerformance.minimum_score}%
+                  </strong>
+
+              </div>
 
             <div className="performance-row">
 
-              <span>
-                Minimum Score
-              </span>
+             <span>
+                 Maximum Score
+             </span>
 
               <strong>
-                48%
-              </strong>
+                  {quizPerformance.maximum_score}%
+             </strong>
 
-            </div>
-
-
-
-            <div className="performance-row">
-
-              <span>
-                Maximum Score
-              </span>
-
-              <strong>
-                97%
-              </strong>
-
-            </div>
+          </div>
 
 
+         <div className="performance-row">
 
-            <div className="performance-row">
+            <span>
+               Average Score
+           </span>
 
-              <span>
-                Average Score
-              </span>
+           <strong>
+              {quizPerformance.average_score}%
+           </strong>
 
-              <strong>
-                91%
-              </strong>
-
-            </div>
+        </div>
 
 
 
@@ -428,15 +478,17 @@ const Dashboard = () => {
 
             <div className="performance-row total-performance">
 
-              <span>
+            <span>
                 Overall Quiz Performance
-              </span>
+            </span>
 
-              <strong className="performance-score">
-                91%
-              </strong>
+             <strong className="performance-score">
 
-            </div>
+                  {quizPerformance.overall_score}%
+
+             </strong>
+
+          </div>
 
           </div>
 
