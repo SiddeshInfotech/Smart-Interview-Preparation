@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from authentication.models import User
 
 class Interviewer_Profile(models.Model):
@@ -46,6 +47,27 @@ class InterviewerAvailability(models.Model):
         indexes = [
             models.Index(fields=['interviewer', 'start_time']),
         ]
+
+    def clean(self):
+        super().clean()
+        if self.start_time and self.end_time:
+            if self.end_time <= self.start_time:
+                raise ValidationError("End time must be after start time.")
+            
+            if hasattr(self, 'interviewer') and self.interviewer:
+                overlapping = InterviewerAvailability.objects.filter(
+                    interviewer=self.interviewer,
+                    start_time__lt=self.end_time,
+                    end_time__gt=self.start_time
+                )
+                if self.pk:
+                    overlapping = overlapping.exclude(pk=self.pk)
+                if overlapping.exists():
+                    raise ValidationError("This availability slot overlaps with an existing slot.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.interviewer.user.email}: {self.start_time} – {self.end_time}"

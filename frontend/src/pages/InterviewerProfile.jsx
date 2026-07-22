@@ -286,6 +286,20 @@ const InterviewerProfile = () => {
     });
   };
 
+  // Group slots by date for premium visual grouping
+  const groupSlotsByDate = (slotsList) => {
+    const grouped = {};
+    const sorted = [...slotsList].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+    sorted.forEach((slot) => {
+      const dateKey = formatSlotDate(slot.start_time);
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(slot);
+    });
+    return grouped;
+  };
+
   // --- Time slots functions ---
   const handleAddSlot = async () => {
     if (!newSlotStart || !newSlotEnd) {
@@ -313,7 +327,11 @@ const InterviewerProfile = () => {
       setTimeout(() => slotsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
     } catch (error) {
       console.error("Error adding slot:", error);
-      alert("Failed to add slot. Please try again.");
+      let errorMsg = "Failed to add slot. Please try again.";
+      if (error.response?.data) {
+        errorMsg = error.response.data.non_field_errors?.[0] || error.response.data.detail || JSON.stringify(error.response.data);
+      }
+      alert(errorMsg);
     } finally {
       setAddingSlot(false);
     }
@@ -576,24 +594,26 @@ const InterviewerProfile = () => {
 
               {/* Add slot form */}
               <div className="slot-add-form">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Start</label>
+                <div className="form-row" style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "flex-end" }}>
+                  <div className="form-group" style={{ flex: 1, minWidth: "200px" }}>
+                    <label>Start Date & Time</label>
                     <input
                       type="datetime-local"
                       value={newSlotStart}
+                      min={new Date().toISOString().slice(0, 16)}
                       onChange={(e) => setNewSlotStart(e.target.value)}
                     />
                   </div>
-                  <div className="form-group">
-                    <label>End</label>
+                  <div className="form-group" style={{ flex: 1, minWidth: "200px" }}>
+                    <label>End Date & Time</label>
                     <input
                       type="datetime-local"
                       value={newSlotEnd}
+                      min={newSlotStart || new Date().toISOString().slice(0, 16)}
                       onChange={(e) => setNewSlotEnd(e.target.value)}
                     />
                   </div>
-                  <div className="form-group slot-add-btn-wrapper">
+                  <div className="form-group slot-add-btn-wrapper" style={{ flex: "none" }}>
                     <button
                       className="btn-add-slot"
                       onClick={handleAddSlot}
@@ -606,34 +626,44 @@ const InterviewerProfile = () => {
                 </div>
               </div>
 
-              {/* Existing slots list */}
+              {/* Grouped Existing slots list */}
               {loadingSlots ? (
                 <div className="slots-loading">Loading slots...</div>
               ) : slots.length > 0 ? (
-                <div className="slots-list">
-                  {slots.map((slot) => {
-                    const isDeleting = deletingSlotId === slot.availability_id;
-                    return (
-                      <div key={slot.availability_id} className="slot-item">
-                        <div className="slot-info">
-                          <span className="slot-date">
-                            {formatSlotDate(slot.start_time)}
-                          </span>
-                          <span className="slot-time-range">
-                            {formatSlotTime(slot.start_time)} – {formatSlotTime(slot.end_time)}
-                          </span>
-                          <span className="slot-status available">Available</span>
-                        </div>
-                        <button
-                          className="slot-delete"
-                          onClick={() => handleDeleteSlot(slot.availability_id)}
-                          disabled={isDeleting}
-                        >
-                          <X size={16} />
-                        </button>
+                <div className="slots-grouped-list" style={{ marginTop: "25px" }}>
+                  {Object.entries(groupSlotsByDate(slots)).map(([dateStr, dateSlots]) => (
+                    <div key={dateStr} className="date-group" style={{ marginBottom: "25px" }}>
+                      <h4 className="date-group-title" style={{ fontSize: "1.05rem", fontWeight: "600", color: "#1e293b", borderBottom: "2px solid #f1f5f9", paddingBottom: "8px", marginBottom: "12px" }}>
+                        {dateStr}
+                      </h4>
+                      <div className="date-group-slots" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "12px" }}>
+                        {dateSlots.map((slot) => {
+                          const isDeleting = deletingSlotId === slot.availability_id;
+                          return (
+                            <div key={slot.availability_id} className="slot-item" style={{ transition: "all 0.2s" }}>
+                              <div className="slot-info">
+                                <Clock size={15} style={{ color: "#5b4cf3" }} />
+                                <span className="slot-time-range" style={{ fontWeight: "500", color: "#334155" }}>
+                                  {formatSlotTime(slot.start_time)} – {formatSlotTime(slot.end_time)}
+                                </span>
+                                <span className={`slot-status ${slot.status === 'available' ? 'available' : 'booked'}`}>
+                                  {slot.status.charAt(0).toUpperCase() + slot.status.slice(1)}
+                                </span>
+                              </div>
+                              <button
+                                className="slot-delete"
+                                onClick={() => handleDeleteSlot(slot.availability_id)}
+                                disabled={isDeleting}
+                                title="Delete Slot"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="empty-slots">No slots added yet.</div>

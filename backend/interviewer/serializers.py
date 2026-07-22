@@ -60,4 +60,32 @@ class InterviewerAvailabilitySerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['availability_id', 'created_at', 'updated_at']
+        read_only_fields = ['availability_id', 'interviewer', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+
+        if start_time and end_time:
+            if end_time <= start_time:
+                raise serializers.ValidationError({"end_time": "End time must be after start time."})
+            
+            # Get interviewer profile from the request context
+            request = self.context.get('request')
+            if request and hasattr(request, 'user') and hasattr(request.user, 'interviewer_profile'):
+                interviewer = request.user.interviewer_profile
+                
+                # Check for overlapping slots
+                overlapping = InterviewerAvailability.objects.filter(
+                    interviewer=interviewer,
+                    start_time__lt=end_time,
+                    end_time__gt=start_time
+                )
+                
+                if self.instance:
+                    overlapping = overlapping.exclude(pk=self.instance.pk)
+                    
+                if overlapping.exists():
+                    raise serializers.ValidationError("This availability slot overlaps with an existing slot.")
+        
+        return data

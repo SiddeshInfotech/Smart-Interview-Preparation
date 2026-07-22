@@ -53,6 +53,11 @@ class InterviewerAvailabilityViewSet(viewsets.ModelViewSet):
         interviewer_profile = self.request.user.interviewer_profile
         return InterviewerAvailability.objects.filter(interviewer=interviewer_profile)
 
+    def get_serializer(self, *args, **kwargs):
+        if self.action == 'create' and isinstance(kwargs.get('data'), list):
+            kwargs['many'] = True
+        return super().get_serializer(*args, **kwargs)
+
     def perform_create(self, serializer):
         serializer.save(interviewer=self.request.user.interviewer_profile)
 

@@ -23,6 +23,7 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/InterviewSchedule.css";
+import TimeSlotScheduler from "../components/TimeSlotScheduler";
 import api from "../api/axios";
 
 // Fallback seed data (only used if no `interviews` prop is provided)
@@ -306,63 +307,12 @@ function ScheduleForm({ onSchedule }) {
                 </span>
               )}
             </span>
-            {loadingSlots ? (
-              <div>Loading slots...</div>
-            ) : filteredSlots.length === 0 ? (
-              <div className="empty-slots">
-                {slots.length === 0
-                  ? "No interviewers available on this date with the selected criteria."
-                  : "No slots match your filters."}
-              </div>
-            ) : (
-              <div
-                className="slots-grid"
-                style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}
-              >
-                {filteredSlots.map((slot) => (
-                  <div
-                    key={slot.availability_id}
-                    className={`slot-card ${
-                      selectedSlot?.availability_id === slot.availability_id ? "selected" : ""
-                    }`}
-                    onClick={() => setSelectedSlot(slot)}
-                    style={{
-                      padding: "12px 16px",
-                      border: "2px solid #e2e8f0",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      background:
-                        selectedSlot?.availability_id === slot.availability_id
-                          ? "#e0f2fe"
-                          : "white",
-                      flex: "1 0 200px",
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <div style={{ fontWeight: "600" }}>
-                      {slot.interviewer_name || "Interviewer"}
-                    </div>
-                    <div style={{ fontSize: "0.9rem", color: "#475569" }}>
-                      {slot.interviewer_designation || ""}
-                    </div>
-                    <div style={{ fontSize: "0.9rem", color: "#475569" }}>
-                      {new Date(slot.start_time).toLocaleDateString()}
-                    </div>
-                    <div style={{ fontSize: "0.9rem", color: "#475569" }}>
-                      {new Date(slot.start_time).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                      {" – "}
-                      {new Date(slot.end_time).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <TimeSlotScheduler
+              slots={filteredSlots}
+              selectedSlot={selectedSlot}
+              onSelectSlot={(slot) => setSelectedSlot(slot)}
+              loading={loadingSlots}
+            />
             {filteredSlots.length > 0 && (
               <div className="form__footer" style={{ marginTop: "16px" }}>
                 <button type="submit" className="btn btn--primary" disabled={!selectedSlot}>
