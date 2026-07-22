@@ -5,6 +5,7 @@ from interviewer.models import Interviewer_Profile
 
 class InterviewSchedule(models.Model):
     STATUS_CHOICES = [
+        ('Pending', 'Pending'),
         ('Scheduled', 'Scheduled'),
         ('Completed', 'Completed'),
         ('Cancelled', 'Cancelled'),

@@ -17,4 +17,4 @@ class InterviewScheduleSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['schedule_id', 'candidate', 'room_name', 'created_at', 'updated_at']
+        read_only_fields = ['schedule_id', 'candidate', 'room_name', 'created_at', 'updated_at', 'status']
