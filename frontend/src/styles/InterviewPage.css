@@ -1,4 +1,7 @@
+/* ======================================== */
 /*            INTERVIEW PAGE CSS             */
+/* ======================================== */
+
 * {
   margin: 0;
   padding: 0;
@@ -203,7 +206,10 @@ body {
   animation: blinkWarning 1s ease-in-out infinite;
 }
 
-/* Warning Banner */
+/* ======================================== */
+/*           WARNING BANNERS                 */
+/* ======================================== */
+
 .warning-banner {
   background: #fef2f2;
   border: 1px solid #fca5a5;
@@ -263,7 +269,7 @@ body {
   background: #1e293b;
   border-radius: 12px;
   overflow: hidden;
-  position: relative;
+  position: relative;  
   border: 2px solid rgba(255, 255, 255, 0.1);
   min-height: 250px;
 }
@@ -275,6 +281,40 @@ body {
   object-fit: cover;
   background: #0f172a;
 }
+
+
+.video-box .landmark-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; 
+  z-index: 5;
+}
+
+.placeholder-video {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  color: #94a3b8;
+  background: #1e293b;
+}
+
+.placeholder-video span {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.placeholder-video p {
+  font-size: 1.1rem;
+  opacity: 0.8;
+}
+
 
 .video-label {
   position: absolute;
@@ -305,6 +345,12 @@ body {
   color: white;
 }
 
+.video-status.offline {
+  background: #f59e0b;
+  color: white;
+}
+
+
 .interviewer-video {
   grid-column: 1;
   grid-row: 1;
@@ -314,6 +360,7 @@ body {
   grid-column: 2;
   grid-row: 1;
 }
+
 
 .video-controls {
   position: absolute;
@@ -365,23 +412,18 @@ body {
   background: #dc2626;
 }
 
-/* ======================================== */
-/*           FOOTER BAR (New layout)         */
-/* ======================================== */
 
-/* The main container for the footer bar */
 .interview-info-overlay {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 24px;
-  background: rgba(15, 23, 42, 0.85);  /* darker, so white text is visible */
+  background: rgba(15, 23, 42, 0.85);
   border-radius: 12px;
   margin-top: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Left: Duration text */
 .footer-duration {
   color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
@@ -389,7 +431,6 @@ body {
   flex: 0 0 auto;
 }
 
-/* Center: Controls with spacing */
 .footer-controls {
   display: flex;
   gap: 16px;
@@ -397,7 +438,6 @@ body {
   flex: 0 0 auto;
 }
 
-/* Right: Secure connection text */
 .footer-secure {
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
@@ -405,9 +445,6 @@ body {
   flex: 0 0 auto;
 }
 
-/* ======================================== */
-/*           PRE-INTERVIEW LAYOUT            */
-/* ======================================== */
 
 .main-grid {
   display: grid;
@@ -460,6 +497,8 @@ body {
   align-items: center;
   justify-content: center;
   border: 2px dashed #dbeafe;
+  position: relative;  
+  overflow: hidden;
 }
 
 .preview-placeholder {
@@ -475,6 +514,17 @@ body {
 
 .preview-placeholder p {
   font-size: 14px;
+}
+
+/* ---- Canvas overlay in lobby preview ---- */
+.lobby-preview .landmark-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
 }
 
 .upcoming-card {
@@ -647,9 +697,6 @@ body {
   color: #64748b;
 }
 
-/* ======================================== */
-/*              FOOTER (legacy)              */
-/* ======================================== */
 
 .footer {
   background: white;
@@ -690,9 +737,6 @@ body {
   color: #2563eb;
 }
 
-/* ======================================== */
-/*           RESPONSIVE DESIGN               */
-/* ======================================== */
 
 @media (max-width: 1024px) {
   .main-grid {
@@ -749,7 +793,6 @@ body {
     font-size: 12px;
   }
 
-  /* Responsive footer bar */
   .interview-info-overlay {
     flex-wrap: wrap;
     gap: 12px;
