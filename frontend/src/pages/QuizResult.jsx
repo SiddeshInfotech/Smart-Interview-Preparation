@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
+import api from "../api/authAPI";
 import "../styles/QuizResult.css";
 
 const QuizResult = () => {
@@ -8,6 +9,43 @@ const QuizResult = () => {
   const results = location.state?.results;
 
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
+  const {
+  correct = 0,
+  wrong = 0,
+  skipped = 0,
+  score = 0,
+  percentage = 0,
+  passed = false,
+  total = 0,
+  questions = [],
+  answers = [],
+} = results || {};
+const saveCalled = useRef(false);
+useEffect(() => {
+  if (!results || saveCalled.current) return;
+
+  saveCalled.current = true;
+  console.log("SAVE RESULT EFFECT RUN");
+
+
+  const saveResult = async () => {
+    try {
+      await api.post("/quiz/save-result/", {
+        total_questions: total,
+        correct_answers: correct,
+        wrong_answers: wrong,
+        skipped_answers: skipped,
+        score: percentage,
+      });
+
+      console.log("Quiz result saved successfully.");
+    } catch (error) {
+      console.error("Error saving quiz result:", error);
+    }
+  };
+
+  saveResult();
+}, [results, total, correct, wrong, skipped, percentage]);
 
   if (!results) {
     return (
@@ -24,18 +62,6 @@ const QuizResult = () => {
       </div>
     );
   }
-
-  const {
-    correct,
-    wrong,
-    skipped,
-    score,
-    percentage,
-    passed,
-    total,
-    questions,
-    answers
-  } = results;
 
   const optionLabels = ['A', 'B', 'C', 'D'];
 
