@@ -146,29 +146,42 @@ const TIME_OPTIONS = generateTimeOptions();
 function ScheduleForm({ onSchedule }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const [slots, setSlots] = useState([]);
-  const [selectedSlot, setSelectedSlot] = useState(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedTime, setSelectedTime] = useState("");
-  const [durationFilter, setDurationFilter] = useState("any");
+  const [durationFilter, setDurationFilter] = useState("60");
   const [hasSearched, setHasSearched] = useState(false);
+  const [submittingRequestId, setSubmittingRequestId] = useState(null);
 
-  // Reset slots when date changes
+  // Reset slots when inputs change
   useEffect(() => {
     setSlots([]);
-    setSelectedSlot(null);
     setHasSearched(false);
-  }, [selectedDate]);
+  }, [selectedDate, selectedTime, durationFilter]);
+
+  // Convert time string "HH:MM" or "HH:MM:SS" to minutes since midnight
+  const timeToMinutes = (timeStr) => {
+    if (!timeStr) return 0;
+    const parts = timeStr.split(":");
+    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+  };
+
+  const getLocalDateString = (date) => {
+    if (!date) return "";
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
 
   // Search for interviewers
   const handleSearch = async () => {
     if (!selectedDate) return;
-    const dateStr = selectedDate.toISOString().split("T")[0];
+    const dateStr = getLocalDateString(selectedDate);
     setLoadingSlots(true);
     setHasSearched(true);
     try {
       const res = await api.get(`/interviewer/available-slots/?date=${dateStr}`);
       setSlots(res.data);
-      setSelectedSlot(null);
     } catch (err) {
       console.error("Failed to fetch slots", err);
       setSlots([]);
@@ -177,43 +190,56 @@ function ScheduleForm({ onSchedule }) {
     }
   };
 
-  // Filter slots locally (by time and duration)
+  // Filter slots locally (by start time and duration)
+  const durationMin = parseInt(durationFilter, 10) || 0;
+  const candStart = timeToMinutes(selectedTime);
+  const candEnd = candStart + durationMin;
+
   const filteredSlots = slots.filter((slot) => {
-    const start = new Date(slot.start_time);
-    const slotStartMinutes = start.getHours() * 60 + start.getMinutes();
-
-    if (selectedTime) {
-      const [h, m] = selectedTime.split(":").map(Number);
-      const filterMinutes = h * 60 + m;
-      if (slotStartMinutes < filterMinutes) return false;
-    }
-
-    if (durationFilter !== "any") {
-      const duration = (new Date(slot.end_time) - start) / 60000;
-      const target = parseInt(durationFilter);
-      if (duration !== target) return false;
-    }
-    return true;
+    const slotStart = timeToMinutes(slot.start_time);
+    const slotEnd = timeToMinutes(slot.end_time);
+    return candStart >= slotStart && candEnd <= slotEnd;
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!selectedSlot) {
-      alert("Please select a time slot.");
-      return;
+  // Deduplicate interviewers
+  const availableInterviewers = [];
+  const seen = new Set();
+  filteredSlots.forEach((slot) => {
+    if (!seen.has(slot.interviewer)) {
+      seen.add(slot.interviewer);
+      availableInterviewers.push({
+        id: slot.interviewer,
+        name: slot.interviewer_name,
+        designation: slot.interviewer_designation,
+        email: slot.interviewer_email,
+        profilePicture: slot.interviewer_profile_picture,
+      });
     }
-    onSchedule({ availability_id: selectedSlot.availability_id });
-    // Reset
-    setSelectedDate(null);
-    setSlots([]);
-    setSelectedSlot(null);
-    setSelectedTime("");
-    setDurationFilter("any");
-    setHasSearched(false);
+  });
+
+  const handleSendRequest = async (interviewer) => {
+    if (!selectedDate || !selectedTime || !durationFilter) return;
+    const dateStr = getLocalDateString(selectedDate);
+    setSubmittingRequestId(interviewer.id);
+    try {
+      const res = await api.post("/interview/schedule/", {
+        interviewer: interviewer.id,
+        scheduled_date: dateStr,
+        scheduled_time: selectedTime,
+        duration_minutes: durationMin,
+      });
+      alert(`Interview request sent successfully to ${interviewer.name}!`);
+      onSchedule(res.data);
+    } catch (err) {
+      console.error("Failed to send request", err);
+      alert("Failed to send interview request: " + JSON.stringify(err.response?.data || err.message));
+    } finally {
+      setSubmittingRequestId(null);
+    }
   };
 
   // Determine if search button should be enabled
-  const isSearchEnabled = selectedDate && selectedTime !== "" && durationFilter !== "any";
+  const isSearchEnabled = selectedDate && selectedTime !== "" && durationFilter !== "";
 
   const datePickerStyles = {
     wrapper: "custom-datepicker-wrapper",
@@ -222,7 +248,7 @@ function ScheduleForm({ onSchedule }) {
   };
 
   return (
-    <form className="card form" onSubmit={handleSubmit}>
+    <form className="card form" onSubmit={(e) => e.preventDefault()}>
       <div className="form__grid">
         {/* Date Picker */}
         <label className="field">
@@ -247,10 +273,10 @@ function ScheduleForm({ onSchedule }) {
           </div>
         </label>
 
-        {/* Time dropdown */}
+        {/* Time slot selection dropdown */}
         <label className="field">
           <span className="field__label">
-            <ClockIcon size={14} className="field__icon" /> Start at or after
+            <ClockIcon size={14} className="field__icon" /> Select Start Time
           </span>
           <select
             className="field__input"
@@ -276,14 +302,13 @@ function ScheduleForm({ onSchedule }) {
             value={durationFilter}
             onChange={(e) => setDurationFilter(e.target.value)}
           >
-            <option value="any">Any</option>
             <option value="30">30 min</option>
             <option value="60">60 min</option>
             <option value="90">90 min</option>
           </select>
         </label>
 
-        {/* Search button – spans full width */}
+        {/* Search button */}
         <div className="field" style={{ gridColumn: "1 / -1" }}>
           <button
             type="button"
@@ -296,29 +321,57 @@ function ScheduleForm({ onSchedule }) {
           </button>
         </div>
 
-        {/* Slot list – only shown after search */}
+        {/* Available Interviewers list – only shown after search */}
         {hasSearched && (
           <div className="field slots-section" style={{ gridColumn: "1 / -1" }}>
             <span className="field__label">
-              <CalendarClock size={14} className="field__icon" /> Available Slots
-              {filteredSlots.length !== slots.length && slots.length > 0 && (
-                <span style={{ fontSize: "0.8rem", color: "#6b7280", marginLeft: "8px" }}>
-                  ({filteredSlots.length} of {slots.length})
-                </span>
-              )}
+              <CalendarClock size={14} className="field__icon" /> Available Interviewers
             </span>
-            <TimeSlotScheduler
-              slots={filteredSlots}
-              selectedSlot={selectedSlot}
-              onSelectSlot={(slot) => setSelectedSlot(slot)}
-              loading={loadingSlots}
-            />
-            {filteredSlots.length > 0 && (
-              <div className="form__footer" style={{ marginTop: "16px" }}>
-                <button type="submit" className="btn btn--primary" disabled={!selectedSlot}>
-                  <CalendarPlus size={16} strokeWidth={2.5} />
-                  Schedule Interview
-                </button>
+            {loadingSlots ? (
+              <div style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}>
+                Finding available interviewers...
+              </div>
+            ) : availableInterviewers.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}>
+                No interviewers available for this time slot.
+              </div>
+            ) : (
+              <div className="interviewer-list">
+                {availableInterviewers.map((interviewer) => (
+                  <div key={interviewer.id} className="interviewer-row">
+                    <div className="interviewer-profile-info">
+                      <div className="interviewer-pic-container">
+                        {interviewer.profilePicture ? (
+                          <img src={interviewer.profilePicture} alt={interviewer.name} className="interviewer-pic" />
+                        ) : (
+                          <User size={30} color="#9ca3af" />
+                        )}
+                      </div>
+                      <div className="interviewer-details">
+                        <span className="interviewer-username">{interviewer.name}</span>
+                        <span className="interviewer-email">{interviewer.email}</span>
+                      </div>
+                    </div>
+                    <div className="interviewer-actions">
+                      <a
+                        href={`/interviewer-profile?interviewer_id=${interviewer.id}`}
+                        className="btn-see-details"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        See more details
+                      </a>
+                      <button
+                        type="button"
+                        className="btn-send-request"
+                        disabled={submittingRequestId === interviewer.id}
+                        onClick={() => handleSendRequest(interviewer)}
+                      >
+                        {submittingRequestId === interviewer.id ? "Sending..." : "Send request"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

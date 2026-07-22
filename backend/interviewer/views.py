@@ -101,3 +101,11 @@ class AvailableSlotsAllView(generics.ListAPIView):
             status='available',
             day_of_week=day_of_week
         ).order_by('start_time')
+
+
+class InterviewerProfileDetailView(generics.RetrieveAPIView):
+    """Retrieve an interviewer's profile by interviewer_id."""
+    queryset = Interviewer_Profile.objects.all()
+    serializer_class = InterviewerProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'interviewer_id'

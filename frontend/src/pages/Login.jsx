@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Auth.css";
 import { login } from "../api/axios";
-import WelcomePopup from "../components/WelcomePopup"; // Correct path
+import WelcomePopup from "../components/WelcomePopup";
 
 // Decode JWT payload without a library
 const decodeToken = (token) => {
@@ -34,21 +34,38 @@ export default function Login() {
 
     try {
       const response = await login({ email, password });
-
       console.log("Login Success:", response.data);
 
-    const accessToken = response.data.access_token;
-    localStorage.setItem("access_token", accessToken);
-    localStorage.setItem("refresh_token", response.data.refresh_token);
+      const accessToken = response.data.access_token;
+      localStorage.setItem("access_token", accessToken);
+      localStorage.setItem("refresh_token", response.data.refresh_token);
 
-    // Decode role from token and redirect accordingly
-    const payload = decodeToken(accessToken);
-    const role = payload.role || response.data.user?.role || "candidate";
-    localStorage.setItem("user_role", role);
+      // ✅ Store the full user object (if present)
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        setUserName(response.data.user.full_name || "User");
+      } else {
+        console.warn("Login response missing user object – falling back to token decode.");
+        // Fallback: decode role from token
+        const payload = decodeToken(accessToken);
+        const role = payload.role || "candidate";
+        // Create a minimal user object from token data
+        const user = {
+          user_id: payload.user_id || payload.sub || null,
+          full_name: payload.full_name || payload.name || "User",
+          email: payload.email || email,
+          role: role,
+        };
+        localStorage.setItem("user", JSON.stringify(user));
+        setUserName(user.full_name);
+      }
 
-    setLoading(false);
-    return role;
+      // Also store role separately (optional)
+      const role = response.data.user?.role || decodeToken(accessToken).role || "candidate";
+      localStorage.setItem("user_role", role);
 
+      setLoading(false);
+      return role;
     } catch (err) {
       console.log("Login error:", err);
       console.log("Response:", err.response);
@@ -70,7 +87,6 @@ export default function Login() {
 
         if (typeof data === "object") {
           const messages = new Set();
-
           Object.values(data).forEach((value) => {
             if (Array.isArray(value)) {
               value.forEach((msg) => {
@@ -82,7 +98,6 @@ export default function Login() {
               messages.add(value);
             }
           });
-
           if (messages.size > 0) {
             return [...messages].join("\n");
           }
@@ -112,7 +127,9 @@ export default function Login() {
     try {
       const role = await handleLogin();
       if (role) {
-        navigate("/dashboard");
+        // Optionally show welcome popup
+        setShowWelcome(true);
+        // navigate to dashboard after popup closes
       }
     } catch (err) {
       console.log("login submit error:", err);
@@ -122,7 +139,7 @@ export default function Login() {
 
   const handleWelcomeClose = () => {
     setShowWelcome(false);
-    navigate("/candidate-profile");
+    navigate("/dashboard");
   };
 
   return (
@@ -217,7 +234,7 @@ export default function Login() {
             </div>
           )}
 
-          <button type="submit" className="primary-btn">
+          <button type="submit" className="primary-btn" disabled={loading}>
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>

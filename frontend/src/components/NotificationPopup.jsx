@@ -157,6 +157,34 @@ export default function NotificationPopup() {
     }
   };
 
+  const handleAcceptRequest = async (n) => {
+    const match = n.message.match(/Schedule ID:\s*(\d+)/);
+    if (!match) return;
+    const scheduleId = match[1];
+    try {
+      await api.post(`/interview/schedule/${scheduleId}/accept/`);
+      alert("Interview request accepted and scheduled!");
+      await markAsRead(n.notification_id);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to accept request.");
+    }
+  };
+
+  const handleDeclineRequest = async (n) => {
+    const match = n.message.match(/Schedule ID:\s*(\d+)/);
+    if (!match) return;
+    const scheduleId = match[1];
+    try {
+      await api.post(`/interview/schedule/${scheduleId}/decline/`);
+      alert("Interview request declined.");
+      await markAsRead(n.notification_id);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to decline request.");
+    }
+  };
+
   return (
     <div className="notif-wrapper" ref={wrapperRef}>
       <button
@@ -261,7 +289,26 @@ export default function NotificationPopup() {
                         {n.message}
                       </span>
 
-                      <span className="notif-item__time">
+                      {n.notification_type === "interview" && n.title === "New Interview Request" && n.message.includes("Schedule ID:") && (
+                        <div className="notif-actions" style={{ display: "flex", gap: "8px", marginTop: "8px" }} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="btn btn--success btn--xs"
+                            style={{ padding: "4px 8px", fontSize: "11px", background: "#10b981", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "600" }}
+                            onClick={() => handleAcceptRequest(n)}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            className="btn btn--danger btn--xs"
+                            style={{ padding: "4px 8px", fontSize: "11px", background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "600" }}
+                            onClick={() => handleDeclineRequest(n)}
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+
+                      <span className="notif-item__time" style={{ marginTop: "6px", display: "block" }}>
                         {new Date(
                           n.created_at
                         ).toLocaleString()}

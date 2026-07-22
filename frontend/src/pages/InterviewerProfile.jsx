@@ -10,6 +10,7 @@ import {
   Plus,
   Clock,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import api from "../api/axios";
 
@@ -58,6 +59,7 @@ const InterviewerProfile = () => {
   const [slots, setSlots] = useState([]);
   const [slotStartTime, setSlotStartTime] = useState("");
   const [slotEndTime, setSlotEndTime] = useState("");
+  const [slotDayOfWeek, setSlotDayOfWeek] = useState("");
   const [slotError, setSlotError] = useState("");
   const [addingSlot, setAddingSlot] = useState(false);
   const [deletingSlotId, setDeletingSlotId] = useState(null);
@@ -75,17 +77,24 @@ const InterviewerProfile = () => {
   const suggestionRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  const searchParams = new URLSearchParams(window.location.search);
+  const interviewerId = searchParams.get("interviewer_id");
+  const isReadOnly = !!interviewerId;
+
   // --- Fetch profile on mount ---
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get("/interviewer/profile/");
+        const endpoint = interviewerId ? `/interviewer/profile/${interviewerId}/` : "/interviewer/profile/";
+        const response = await api.get(endpoint);
         const data = response.data;
 
         setProfile({
           department: data.department || "",
           designation: data.designation || "",
           years_of_experience: data.years_of_experience ? parseFloat(data.years_of_experience) : 0.0,
+          full_name: data.full_name || "",
+          email: data.email || "",
         });
 
         setProfilePicture(data.profile_picture || null);
@@ -112,13 +121,16 @@ const InterviewerProfile = () => {
     };
 
     fetchProfile();
-  }, []);
+  }, [interviewerId]);
 
   // --- Fetch time slots on mount ---
   useEffect(() => {
     const fetchSlots = async () => {
       try {
-        const response = await api.get("/interviewer/availability/");
+        const endpoint = interviewerId
+          ? `/interviewer/availability/${interviewerId}/available/`
+          : "/interviewer/availability/";
+        const response = await api.get(endpoint);
         setSlots(response.data);
       } catch (error) {
         console.error("Error fetching slots:", error);
@@ -127,7 +139,7 @@ const InterviewerProfile = () => {
       }
     };
     fetchSlots();
-  }, []);
+  }, [interviewerId]);
 
   // --- Resize handler for sidebar ---
   useEffect(() => {
@@ -300,18 +312,12 @@ const InterviewerProfile = () => {
   const handleAddSlot = async () => {
     setSlotError("");
 
-    if (!slotStartTime || !slotEndTime) {
-      setSlotError("Please select both start and end times.");
+    if (slotDayOfWeek === "" || !slotStartTime || !slotEndTime) {
+      setSlotError("Please select day of week, start time, and end time.");
       return;
     }
 
-    // Convert JavaScript day to Django day (Monday=0)
-    let day_of_week = new Date().getDay(); // 0=Sunday, 6=Saturday
-    if (day_of_week === 0) {
-      day_of_week = 6; // Sunday -> 6
-    } else {
-      day_of_week = day_of_week - 1; // shift
-    }
+    const day_val = parseInt(slotDayOfWeek, 10);
 
     // Validate that end time is after start time (basic check)
     const startParts = slotStartTime.split(":").map(Number);
@@ -326,7 +332,7 @@ const InterviewerProfile = () => {
     setAddingSlot(true);
     try {
       const response = await api.post("/interviewer/availability/", {
-        day_of_week: day_of_week,
+        day_of_week: day_val,
         start_time: slotStartTime,      // "HH:MM"
         end_time: slotEndTime,
         status: "available",
@@ -334,6 +340,7 @@ const InterviewerProfile = () => {
       setSlots([...slots, response.data]);
       setSlotStartTime("");
       setSlotEndTime("");
+      setSlotDayOfWeek("");
       setSlotError("");
       setTimeout(() => slotsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
     } catch (error) {
@@ -464,12 +471,24 @@ const InterviewerProfile = () => {
         <main className="content">
           <div className="profile-section" id="profile">
             <div className="section-header">
-              <h2>Interviewer Profile Setup</h2>
+              <h2>{isReadOnly ? "Interviewer Profile" : "Interviewer Profile Setup"}</h2>
             </div>
 
             {/* Personal Info */}
             <div className="personal-info" ref={profileRef}>
               <h3>Personal Information</h3>
+              {isReadOnly && (
+                <div className="info-grid-vertical" style={{ marginBottom: "20px", gap: "10px" }}>
+                  <div className="form-group">
+                    <label>Name</label>
+                    <input type="text" value={profile.full_name} disabled className="disabled-input" />
+                  </div>
+                  <div className="form-group">
+                    <label>Email</label>
+                    <input type="text" value={profile.email} disabled className="disabled-input" />
+                  </div>
+                </div>
+              )}
               <div className="info-grid-vertical">
                 <div className="form-group profile-picture-group">
                   <label>Profile Picture</label>
@@ -481,17 +500,21 @@ const InterviewerProfile = () => {
                         <UserCircle size={56} className="default-avatar" />
                       )}
                     </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      id="profile-pic-input"
-                      ref={fileInputRef}
-                      style={{ display: "none" }}
-                      onChange={handleFileChange}
-                    />
-                    <label htmlFor="profile-pic-input" className="profile-pic-label">
-                      {profilePicture ? "Change Picture" : "Upload Picture"}
-                    </label>
+                    {!isReadOnly && (
+                      <>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          id="profile-pic-input"
+                          ref={fileInputRef}
+                          style={{ display: "none" }}
+                          onChange={handleFileChange}
+                        />
+                        <label htmlFor="profile-pic-input" className="profile-pic-label">
+                          {profilePicture ? "Change Picture" : "Upload Picture"}
+                        </label>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -500,6 +523,7 @@ const InterviewerProfile = () => {
                   <input
                     type="text"
                     value={profile.designation}
+                    disabled={isReadOnly}
                     onChange={(e) => setProfile({ ...profile, designation: e.target.value })}
                     placeholder="e.g., Senior Software Engineer"
                   />
@@ -509,6 +533,7 @@ const InterviewerProfile = () => {
                   <label>Department</label>
                   <select
                     value={profile.department}
+                    disabled={isReadOnly}
                     onChange={(e) => setProfile({ ...profile, department: e.target.value })}
                   >
                     <option value="">Select Department</option>
@@ -534,6 +559,7 @@ const InterviewerProfile = () => {
                     step="0.1"
                     min="0"
                     value={profile.years_of_experience}
+                    disabled={isReadOnly}
                     onChange={(e) =>
                       setProfile({ ...profile, years_of_experience: parseFloat(e.target.value) || 0.0 })
                     }
@@ -553,57 +579,63 @@ const InterviewerProfile = () => {
                     {expertise.map((area) => (
                       <span key={area.id} className="skill-tag">
                         {area.skill_name}
-                        <button
-                          type="button"
-                          className="skill-remove"
-                          onClick={() => removeArea(area.id)}
-                        >
-                          ×
-                        </button>
+                        {!isReadOnly && (
+                          <button
+                            type="button"
+                            className="skill-remove"
+                            onClick={() => removeArea(area.id)}
+                          >
+                            ×
+                          </button>
+                        )}
                       </span>
                     ))}
                   </div>
                 )}
-                <div className="skill-input-wrapper" ref={suggestionRef}>
-                  <input
-                    type="text"
-                    placeholder="Type an expertise area and press Enter or select from suggestions..."
-                    value={newArea}
-                    onChange={(e) => setNewArea(e.target.value)}
-                    onKeyDown={handleAddArea}
-                    onFocus={() =>
-                      newArea.trim().length >= 1 && setShowSuggestions(areaSuggestions.length > 0)
-                    }
-                  />
-                  <Plus size={18} className="skill-input-icon" />
-                  {showSuggestions && (
-                    <div className="skill-suggestions-dropdown">
-                      {loadingSuggestions ? (
-                        <div className="suggestion-loading">Loading...</div>
-                      ) : (
-                        areaSuggestions.map((area) => (
-                          <div
-                            key={area.id}
-                            className="suggestion-item"
-                            onClick={() => addAreaFromSuggestion(area)}
-                          >
-                            <span className="suggestion-name">{area.skill_name}</span>
-                            <span className="suggestion-category">{area.category}</span>
-                          </div>
-                        ))
+                {!isReadOnly && (
+                  <>
+                    <div className="skill-input-wrapper" ref={suggestionRef}>
+                      <input
+                        type="text"
+                        placeholder="Type an expertise area and press Enter or select from suggestions..."
+                        value={newArea}
+                        onChange={(e) => setNewArea(e.target.value)}
+                        onKeyDown={handleAddArea}
+                        onFocus={() =>
+                          newArea.trim().length >= 1 && setShowSuggestions(areaSuggestions.length > 0)
+                        }
+                      />
+                      <Plus size={18} className="skill-input-icon" />
+                      {showSuggestions && (
+                        <div className="skill-suggestions-dropdown">
+                          {loadingSuggestions ? (
+                            <div className="suggestion-loading">Loading...</div>
+                          ) : (
+                            areaSuggestions.map((area) => (
+                              <div
+                                key={area.id}
+                                className="suggestion-item"
+                                onClick={() => addAreaFromSuggestion(area)}
+                              >
+                                <span className="suggestion-name">{area.skill_name}</span>
+                                <span className="suggestion-category">{area.category}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-                <div className="suggestions-hint">
-                  Suggested: System Design, Backend, AI / ML, Cloud, Frontend, Cyber Security
-                </div>
+                    <div className="suggestions-hint">
+                      Suggested: System Design, Backend, AI / ML, Cloud, Frontend, Cyber Security
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Time Slots – restructured: slots tags above form */}
             <div className="education-section" ref={slotsRef}>
-              <h3>Your Availability Slots</h3>
+              <h3>{isReadOnly ? "Interviewer Availability Slots" : "Your Availability Slots"}</h3>
 
               {/* Slots tags (same style as skill tags) – shown above the form */}
               {loadingSlots ? (
@@ -614,16 +646,18 @@ const InterviewerProfile = () => {
                     const isDeleting = deletingSlotId === slot.availability_id;
                     return (
                       <span key={slot.availability_id} className="skill-tag">
-                        {formatSlotTime(slot.start_time)} – {formatSlotTime(slot.end_time)}
-                        <button
-                          type="button"
-                          className="skill-remove"
-                          onClick={() => handleDeleteSlot(slot.availability_id)}
-                          disabled={isDeleting}
-                          title="Delete Slot"
-                        >
-                          ×
-                        </button>
+                        {slot.day_label ? `${slot.day_label}: ` : ""}{formatSlotTime(slot.start_time)} – {formatSlotTime(slot.end_time)}
+                        {!isReadOnly && (
+                          <button
+                            type="button"
+                            className="skill-remove"
+                            onClick={() => handleDeleteSlot(slot.availability_id)}
+                            disabled={isDeleting}
+                            title="Delete Slot"
+                          >
+                            ×
+                          </button>
+                        )}
                       </span>
                     );
                   })}
@@ -631,96 +665,119 @@ const InterviewerProfile = () => {
               ) : null}
 
               {/* Add slot form */}
-              <div className="slot-add-form">
-                <div
-                  className="form-row"
-                  style={{
-                    display: "flex",
-                    gap: "16px",
-                    flexWrap: "wrap",
-                    alignItems: "flex-end",
-                  }}
-                >
-                  {/* Start time dropdown */}
-                  <div className="form-group" style={{ flex: "1 1 180px", minWidth: "160px" }}>
-                    <label>
-                      <Clock size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
-                      Start Time
-                    </label>
-                    <select
-                      value={slotStartTime}
-                      onChange={(e) => {
-                        setSlotStartTime(e.target.value);
-                        setSlotEndTime("");
-                        setSlotError("");
-                      }}
-                    >
-                      <option value="">Select start</option>
-                      {TIME_OPTIONS.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* End time dropdown */}
-                  <div className="form-group" style={{ flex: "1 1 180px", minWidth: "160px" }}>
-                    <label>
-                      <Clock size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
-                      End Time
-                    </label>
-                    <select
-                      value={slotEndTime}
-                      disabled={!slotStartTime}
-                      onChange={(e) => {
-                        setSlotEndTime(e.target.value);
-                        setSlotError("");
-                      }}
-                    >
-                      <option value="">
-                        {slotStartTime ? "Select end" : "Select start first"}
-                      </option>
-                      {TIME_OPTIONS.filter((t) => t.value > slotStartTime).map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Add button – now using proper button classes */}
-                  <div className="form-group slot-add-btn-wrapper" style={{ flex: "none" }}>
-                    <button
-                      className="btn btn--primary btn-add-slot"
-                      onClick={handleAddSlot}
-                      disabled={addingSlot || !slotStartTime || !slotEndTime}
-                      type="button"
-                    >
-                      <Plus size={16} />
-                      {addingSlot ? "Adding..." : "Add Slot"}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Inline validation error */}
-                {slotError && (
+              {!isReadOnly && (
+                <div className="slot-add-form">
                   <div
-                    className="slot-error-msg"
+                    className="form-row"
                     style={{
-                      marginTop: "10px",
-                      padding: "10px 14px",
-                      background: "#fef2f2",
-                      border: "1px solid #fecaca",
-                      borderRadius: "8px",
-                      color: "#dc2626",
-                      fontSize: "0.875rem",
                       display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
+                      gap: "16px",
+                      flexWrap: "wrap",
+                      alignItems: "flex-end",
                     }}
                   >
-                    <X size={15} style={{ flexShrink: 0 }} />
-                    {slotError}
+                    {/* Day of Week dropdown */}
+                    <div className="form-group" style={{ flex: "1 1 180px", minWidth: "160px" }}>
+                      <label>
+                        <Clock size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
+                        Day of Week
+                      </label>
+                      <select
+                        value={slotDayOfWeek}
+                        onChange={(e) => {
+                          setSlotDayOfWeek(e.target.value);
+                          setSlotError("");
+                        }}
+                      >
+                        <option value="">Select day</option>
+                        <option value="0">Monday</option>
+                        <option value="1">Tuesday</option>
+                        <option value="2">Wednesday</option>
+                        <option value="3">Thursday</option>
+                        <option value="4">Friday</option>
+                        <option value="5">Saturday</option>
+                        <option value="6">Sunday</option>
+                      </select>
+                    </div>
+
+                    {/* Start time dropdown */}
+                    <div className="form-group" style={{ flex: "1 1 180px", minWidth: "160px" }}>
+                      <label>
+                        <Clock size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
+                        Start Time
+                      </label>
+                      <select
+                        value={slotStartTime}
+                        onChange={(e) => {
+                          setSlotStartTime(e.target.value);
+                          setSlotEndTime("");
+                          setSlotError("");
+                        }}
+                      >
+                        <option value="">Select start</option>
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* End time dropdown */}
+                    <div className="form-group" style={{ flex: "1 1 180px", minWidth: "160px" }}>
+                      <label>
+                        <Clock size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
+                        End Time
+                      </label>
+                      <select
+                        value={slotEndTime}
+                        onChange={(e) => {
+                          setSlotEndTime(e.target.value);
+                          setSlotError("");
+                        }}
+                      >
+                        <option value="">Select end</option>
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Add button – now using proper button classes */}
+                    <div className="form-group slot-add-btn-wrapper" style={{ flex: "none" }}>
+                      <button
+                        className="btn btn--primary btn-add-slot"
+                        onClick={handleAddSlot}
+                        disabled={addingSlot || !slotDayOfWeek || !slotStartTime || !slotEndTime}
+                        type="button"
+                      >
+                        <Plus size={16} />
+                        {addingSlot ? "Adding..." : "Add Slot"}
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {/* Inline validation error */}
+                  {slotError && (
+                    <div
+                      className="slot-error-msg"
+                      style={{
+                        marginTop: "10px",
+                        padding: "10px 14px",
+                        background: "#fef2f2",
+                        border: "1px solid #fecaca",
+                        borderRadius: "8px",
+                        color: "#dc2626",
+                        fontSize: "0.875rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <X size={15} style={{ flexShrink: 0 }} />
+                      {slotError}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Empty message – shown at the bottom when no slots exist */}
               {!loadingSlots && slots.length === 0 && (
@@ -732,13 +789,27 @@ const InterviewerProfile = () => {
 
             {/* Action Buttons */}
             <div className="action-buttons">
-              <button className="btn-skip" onClick={() => (window.location.href = "/dashboard")}>
-                Skip
-              </button>
-              <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
-                <Save size={17} />
-                {saving ? "Saving..." : "Save Profile"}
-              </button>
+              {isReadOnly ? (
+                <button
+                  className="btn btn--primary"
+                  onClick={() => (window.location.href = "/interview")}
+                  type="button"
+                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  <ArrowLeft size={16} />
+                  Back to Interview Scheduling
+                </button>
+              ) : (
+                <>
+                  <button className="btn-skip" onClick={() => (window.location.href = "/dashboard")}>
+                    Skip
+                  </button>
+                  <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
+                    <Save size={17} />
+                    {saving ? "Saving..." : "Save Profile"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </main>
