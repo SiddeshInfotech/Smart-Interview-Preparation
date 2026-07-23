@@ -129,7 +129,7 @@ const LiveVideo = ({
             {isMicOn ? '🎤 On' : '🎤 Off'}
           </button>
           <button className="control-btn end-call" onClick={handleEndInterview}>
-            📞 End Call
+            📞 End Interview
           </button>
         </div>
         <div className="footer-secure">
