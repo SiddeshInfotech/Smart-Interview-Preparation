@@ -31,6 +31,13 @@ export default function NotificationPopup() {
   // Fetch Notifications
   // ===========================
   const fetchNotifications = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -40,7 +47,6 @@ export default function NotificationPopup() {
         Array.isArray(res.data.data) ? res.data.data : []
       );
     } catch (err) {
-      console.error("Notification Fetch Error:", err);
       setNotifications([]);
     } finally {
       setLoading(false);

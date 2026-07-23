@@ -1,12 +1,25 @@
 from fastapi import FastAPI
 
-from code_executor.app.routes.home import router as home_router
-
-app = FastAPI(
-    title="PrepMaster AI Code Executor",
-    description="Service for executing coding submissions",
-    version="1.0.0"
+from app.services.executor import execute_code
+from app.schemas.execute_schema import (
+    CodeExecutionRequest,
+    CodeExecutionResponse
 )
 
-# Register Routes
-app.include_router(home_router)
+
+app = FastAPI(
+    title="PrepMaster AI Code Executor"
+)
+
+
+@app.get("/")
+def home():
+    return {
+        "message": "Code Executor Service Running"
+    }
+
+
+@app.post("/execute", response_model=CodeExecutionResponse)
+def execute(request: CodeExecutionRequest):
+
+    return execute_code(request)

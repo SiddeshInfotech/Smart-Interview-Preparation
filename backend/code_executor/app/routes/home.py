@@ -9,3 +9,10 @@ def home():
         "status": "success",
         "message": "PrepMaster AI Code Executor is Running 🚀"
     }
+
+    
+@router.get("/health")
+def health():
+    return {
+        "status": "healthy"
+    }

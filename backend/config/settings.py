@@ -81,7 +81,7 @@ INSTALLED_APPS = [
     "notifications",
     "feedback",
      "quiz",
-    
+     "coding",
 ]
 
 MIDDLEWARE = [

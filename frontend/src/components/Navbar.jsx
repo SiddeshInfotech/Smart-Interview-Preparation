@@ -17,17 +17,23 @@ export default function Navbar() {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        setUserProfile({ name: 'Guest User', email: 'guest@prepmaster.ai', profilePicture: null });
+        return;
+      }
+
       let name = 'User';
       let email = '';
       let pic = null;
       try {
         const authRes = await api.get('/auth/profile/');
         if (authRes.data) {
-          name = authRes.data.full_name || name;
+          name = authRes.data.full_name || authRes.data.username || name;
           email = authRes.data.email || email;
         }
       } catch (e) {
-        console.error('Auth profile error', e);
+        // Unauthenticated catch
       }
       try {
         const candRes = await api.get('/candidate/profile/');
@@ -36,7 +42,7 @@ export default function Navbar() {
           pic = p.startsWith('http') ? p : `http://127.0.0.1:8000${p}`;
         }
       } catch (e) {
-        console.error('Candidate profile error', e);
+        // Unauthenticated catch
       }
       setUserProfile({ name, email, profilePicture: pic });
     };
