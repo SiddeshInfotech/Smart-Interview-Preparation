@@ -2,15 +2,15 @@
 admin_panel/views.py — Custom Admin Panel API Views
 
 Provides full CRUD operations for all 11 real Django models registered in the system.
-All endpoints require superuser or staff permissions (IsAdminUser).
+All endpoints require superuser or staff permissions.
 """
 
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import BasePermission, AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 # ── Real Models ──────────────────────────────────────────────
 from authentication.models import User, OtpVerification
@@ -38,6 +38,19 @@ from admin_panel.serializers import (
 )
 
 
+class IsAdminOrSuperUser(BasePermission):
+    """
+    Custom permission to allow access only to authenticated users
+    who have is_staff=True or is_superuser=True.
+    """
+    def has_permission(self, request, view):
+        return bool(
+            request.user and
+            request.user.is_authenticated and
+            (getattr(request.user, "is_staff", False) or getattr(request.user, "is_superuser", False))
+        )
+
+
 def success(data, status_code=200):
     return Response({"success": True, "data": data}, status=status_code)
 
@@ -50,6 +63,7 @@ def error(message, status_code=400):
 # Auth — Admin Login
 # ─────────────────────────────────────────────────────────────
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def admin_login(request):
     email = request.data.get("email", "").strip()
     password = request.data.get("password", "")
@@ -57,16 +71,27 @@ def admin_login(request):
     if not email or not password:
         return error("Email and password are required.", 400)
 
-    user = authenticate(request, username=email, password=password)
-    if user is None:
-        return error("Invalid credentials.", 401)
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return error("Invalid email or password.", 401)
+
+    if not user.check_password(password):
+        return error("Invalid email or password.", 401)
+
+    if not user.is_active:
+        return error("User account is inactive.", 403)
 
     if not (user.is_staff or user.is_superuser):
-        return error("Access denied. Superuser/staff privileges required.", 403)
+        return error("Access denied. Superuser or staff privileges required.", 403)
 
     refresh = RefreshToken.for_user(user)
+    refresh["user_id"] = user.user_id
+    refresh["email"] = user.email
+    access_token = str(refresh.access_token)
+
     return success({
-        "access_token": str(refresh.access_token),
+        "access_token": access_token,
         "refresh_token": str(refresh),
         "admin": {
             "user_id": user.user_id,
@@ -82,7 +107,7 @@ def admin_login(request):
 # Dashboard Stats
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def admin_stats(request):
     try:
         data = {
@@ -162,13 +187,13 @@ def retrieve_update_delete(request, model, serializer_class, pk):
 # 1. Users
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def users_list(request):
     return list_create(request, User, UsersSerializer, "user_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def user_detail(request, pk):
     return retrieve_update_delete(request, User, UsersSerializer, pk)
 
@@ -177,13 +202,13 @@ def user_detail(request, pk):
 # 2. Candidate Profiles
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def candidates_list(request):
     return list_create(request, Candidate_Profile, CandidateProfileSerializer, "candidate_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def candidate_detail(request, pk):
     return retrieve_update_delete(request, Candidate_Profile, CandidateProfileSerializer, pk)
 
@@ -192,13 +217,13 @@ def candidate_detail(request, pk):
 # 3. Interviewer Profiles
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def interviewers_list(request):
     return list_create(request, Interviewer_Profile, InterviewerProfileSerializer, "interviewer_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def interviewer_detail(request, pk):
     return retrieve_update_delete(request, Interviewer_Profile, InterviewerProfileSerializer, pk)
 
@@ -207,13 +232,13 @@ def interviewer_detail(request, pk):
 # 4. Interviewer Availability
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def availabilities_list(request):
     return list_create(request, InterviewerAvailability, InterviewerAvailabilitySerializer, "availability_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def availability_detail(request, pk):
     return retrieve_update_delete(request, InterviewerAvailability, InterviewerAvailabilitySerializer, pk)
 
@@ -222,13 +247,13 @@ def availability_detail(request, pk):
 # 5. Interview Schedules
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def interviews_list(request):
     return list_create(request, InterviewSchedule, InterviewScheduleSerializer, "schedule_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def interview_detail(request, pk):
     return retrieve_update_delete(request, InterviewSchedule, InterviewScheduleSerializer, pk)
 
@@ -237,13 +262,13 @@ def interview_detail(request, pk):
 # 6. Feedbacks
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def feedback_list(request):
     return list_create(request, Feedback, FeedbackSerializer, "feedback_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def feedback_detail(request, pk):
     return retrieve_update_delete(request, Feedback, FeedbackSerializer, pk)
 
@@ -252,13 +277,13 @@ def feedback_detail(request, pk):
 # 7. Skills
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def skills_list(request):
     return list_create(request, Skill, SkillSerializer, "id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def skill_detail(request, pk):
     return retrieve_update_delete(request, Skill, SkillSerializer, pk)
 
@@ -267,13 +292,13 @@ def skill_detail(request, pk):
 # 8. Resumes
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def resumes_list(request):
     return list_create(request, Resume, ResumeSerializer, "resume_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def resume_detail(request, pk):
     return retrieve_update_delete(request, Resume, ResumeSerializer, pk)
 
@@ -282,13 +307,13 @@ def resume_detail(request, pk):
 # 9. Resume Analysis
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def resume_analysis_list(request):
     return list_create(request, ResumeAnalysis, ResumeAnalysisSerializer, "analysis_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def resume_analysis_detail(request, pk):
     return retrieve_update_delete(request, ResumeAnalysis, ResumeAnalysisSerializer, pk)
 
@@ -297,13 +322,13 @@ def resume_analysis_detail(request, pk):
 # 10. Notifications
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def notifications_list(request):
     return list_create(request, Notification, NotificationSerializer, "notification_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def notification_detail(request, pk):
     return retrieve_update_delete(request, Notification, NotificationSerializer, pk)
 
@@ -312,12 +337,12 @@ def notification_detail(request, pk):
 # 11. OTP Verification
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def otps_list(request):
     return list_create(request, OtpVerification, OtpVerificationSerializer, "otp_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAdminOrSuperUser])
 def otp_detail(request, pk):
     return retrieve_update_delete(request, OtpVerification, OtpVerificationSerializer, pk)

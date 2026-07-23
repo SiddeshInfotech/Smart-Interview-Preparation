@@ -15,18 +15,20 @@ adminApi.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401/403 responses automatically
+// Handle 401/403 responses automatically (except during initial login call)
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
+    const isLoginReq = error.config?.url?.includes("/admin_panel/login/");
     if (
+      !isLoginReq &&
       error.response &&
       (error.response.status === 401 || error.response.status === 403)
     ) {
+      localStorage.removeItem("admin_access_token");
+      localStorage.removeItem("admin_refresh_token");
+      localStorage.removeItem("admin_user");
       if (!window.location.pathname.includes("/my_admin_panel/login")) {
-        localStorage.removeItem("admin_access_token");
-        localStorage.removeItem("admin_refresh_token");
-        localStorage.removeItem("admin_user");
         window.location.href = "/my_admin_panel/login";
       }
     }
