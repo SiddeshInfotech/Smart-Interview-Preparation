@@ -27,7 +27,6 @@ export default function Interview() {
   useEffect(() => {
     const fetchUser = async () => {
       let currentUser = getCurrentUser();
-      // If user exists but missing user_id, fetch fresh profile from backend
       if (currentUser && !currentUser.user_id) {
         try {
           const res = await api.get("/auth/profile/");
@@ -42,7 +41,6 @@ export default function Interview() {
           console.error("Failed to fetch user profile:", err);
         }
       }
-      // If no user found or fetch failed, use the stored user (or null)
       setUser(currentUser);
       setLoading(false);
     };
@@ -51,7 +49,19 @@ export default function Interview() {
   }, []);
 
   const handleSchedule = (newInterview) => {
-    setInterviews((prev) => [newInterview, ...prev]);
+    // Transform backend response to frontend interview object
+    const transformed = {
+      id: newInterview.schedule_id,
+      // If backend returns interviewer_name, use it; otherwise set a placeholder
+      interviewer: newInterview.interviewer_name || "Interviewer",
+      date: newInterview.scheduled_date,
+      time: newInterview.scheduled_time,
+      type: "Interview", // default type; you can add a field later
+      status: newInterview.status || "Scheduled",
+      roomName: newInterview.room_name,
+      meeting_link: newInterview.meeting_link,
+    };
+    setInterviews((prev) => [transformed, ...prev]);
     setActiveTab("schedule");
   };
 
@@ -64,7 +74,6 @@ export default function Interview() {
     return <div className="loading-spinner">Loading profile...</div>;
   }
 
-  // Unique identity for LiveKit – must be unique per user
   const identity = user?.user_id || user?.email || "guest";
   const participantName = user?.full_name || "Guest";
   const role = user?.role || "candidate";
@@ -110,7 +119,7 @@ export default function Interview() {
             ) : (
               <InterviewPage
                 standalone={true}
-                roomName={"room_101"} // or selectedInterview?.roomName
+                roomName={selectedInterview?.roomName || "room_101"} // dynamic
                 identity={identity}
                 participantName={participantName}
                 role={role}

@@ -23,7 +23,6 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/InterviewSchedule.css";
-import TimeSlotScheduler from "../components/TimeSlotScheduler";
 import api from "../api/axios";
 
 // Fallback seed data (only used if no `interviews` prop is provided)
@@ -209,10 +208,10 @@ function ScheduleForm({ onSchedule }) {
       seen.add(slot.interviewer);
       availableInterviewers.push({
         id: slot.interviewer,
-        name: slot.interviewer_name,
-        designation: slot.interviewer_designation,
-        email: slot.interviewer_email,
-        profilePicture: slot.interviewer_profile_picture,
+        name: slot.interviewer_name || "Interviewer",
+        designation: slot.interviewer_designation || "",
+        email: slot.interviewer_email || "",
+        profilePicture: slot.interviewer_profile_picture || null,
       });
     }
   });
@@ -229,6 +228,7 @@ function ScheduleForm({ onSchedule }) {
         duration_minutes: durationMin,
       });
       alert(`Interview request sent successfully to ${interviewer.name}!`);
+      // Pass the raw response to the parent (which will transform it)
       onSchedule(res.data);
     } catch (err) {
       console.error("Failed to send request", err);
