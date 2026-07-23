@@ -105,20 +105,20 @@ export default function PageNavbar({
         </button>
 
         <nav className="navbar-links" aria-label="Main Navigation">
-        {itemsToRender.map((item) => {
-          const isActive = activePath === item.to;
-          return (
-            <button
-              key={item.to}
-              type="button"
-              className={`nav-link ${isActive ? "active" : ""}`}
-              onClick={() => navigate(item.to)}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          );
-        })}
+          {itemsToRender.map((item) => {
+            const isActive = activePath === item.to;
+            return (
+              <button
+                key={item.to}
+                type="button"
+                className={`nav-link ${isActive ? "active" : ""}`}
+                onClick={() => navigate(item.to)}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="navbar-actions">
@@ -128,26 +128,26 @@ export default function PageNavbar({
           </button>
 
           <div className="profile-menu-container" ref={dropdownRef}>
-          <button
-            type="button"
-            className="avatar-btn"
-            onClick={() => setProfileMenuOpen((open) => !open)}
-            aria-label="User account options"
-            aria-expanded={profileMenuOpen}
-          >
-            <span className="avatar-inner">
-              {userProfile.profilePicture ? (
-                <img src={userProfile.profilePicture} alt="Profile" />
-              ) : (
-                <UserCircle size={18} />
-              )}
-            </span>
-            <span>{userProfile.name.split(" ")[0]}</span>
-          </button>
+            <button
+              type="button"
+              className="avatar-btn"
+              onClick={() => setProfileMenuOpen((open) => !open)}
+              aria-label="User account options"
+              aria-expanded={profileMenuOpen}
+            >
+              <span className="avatar-inner">
+                {userProfile.profilePicture ? (
+                  <img src={userProfile.profilePicture} alt="Profile" />
+                ) : (
+                  <UserCircle size={18} />
+                )}
+              </span>
+              <span>{userProfile.name.split(" ")[0]}</span>
+            </button>
 
-          {profileMenuOpen && (
-            <div className="profile-dropdown-box">
-              <div className="dropdown-user-info">
+            {profileMenuOpen && (
+              <div className="profile-dropdown-box">
+                <div className="dropdown-user-info">
                   <strong>{userProfile.name}</strong>
                   <span>{userProfile.email}</span>
                 </div>
@@ -173,16 +173,16 @@ export default function PageNavbar({
                 <button
                   type="button"
                   className="dropdown-item logout"
-                onClick={() => {
-                  setProfileMenuOpen(false);
-                  handleLogout();
-                }}
-              >
-                Log Out
-              </button>
-            </div>
-          )}
-        </div>
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  Log Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
