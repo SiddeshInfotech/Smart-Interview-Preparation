@@ -5,7 +5,6 @@ import {
   useLocalParticipant,
   useTracks,
   VideoTrack,
-  useParticipants,
 } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import '@livekit/components-styles';
@@ -56,9 +55,16 @@ const LocalOnlyVideo = ({ videoRef, stream, isCameraOn, isMicOn, timer, toggleCa
 
 // ---- LiveKit video (uses hooks) ----
 const LiveKitVideo = ({ videoRef, stream, isCameraOn, isMicOn, timer, toggleCamera, toggleMic, handleEndInterview }) => {
-  const localParticipant = useLocalParticipant();
-  const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone], { updateOnlyOn: ['participantJoined', 'trackSubscribed'] });
-  const remoteTracks = tracks.filter(track => track.participant.identity !== localParticipant?.localParticipant?.identity);
+  const { localParticipant } = useLocalParticipant();
+  const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone], {
+    updateOnlyOn: ['participantJoined', 'trackSubscribed'],
+  });
+  // Exclude own tracks and keep only video tracks
+  const remoteVideoTracks = tracks.filter(
+    track =>
+      track.participant.identity !== localParticipant?.identity &&
+      track.source === Track.Source.Camera
+  );
 
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -77,8 +83,11 @@ const LiveKitVideo = ({ videoRef, stream, isCameraOn, isMicOn, timer, toggleCame
     <div className="video-call-container">
       <div className="video-grid">
         <div className="video-box interviewer-video">
-          {remoteTracks.length > 0 ? remoteTracks.map(track => <VideoTrack key={track.sid} trackRef={track} />) :
-            <div className="placeholder-video"><span>👤 Interviewer</span><p>Waiting for interviewer…</p></div>}
+          {remoteVideoTracks.length > 0 ? (
+            <VideoTrack key={remoteVideoTracks[0].sid} trackRef={remoteVideoTracks[0]} />
+          ) : (
+            <div className="placeholder-video"><span>👤 Interviewer</span><p>Waiting for interviewer…</p></div>
+          )}
           <div className="video-label">👤 Interviewer</div>
           <div className="video-status online">🟢 Online</div>
         </div>
@@ -102,7 +111,6 @@ const LiveKitVideo = ({ videoRef, stream, isCameraOn, isMicOn, timer, toggleCame
 
 // ---- Main InterviewPage ----
 const InterviewPage = ({
-  standalone = false,
   roomName: propRoomName,
   identity: propIdentity,
   participantName,
@@ -144,19 +152,31 @@ const InterviewPage = ({
   const canvasRef = useRef(null);
   const localStreamRef = useRef(null);
   const detectionFrameRef = useRef(null);
+  const isEndingRef = useRef(false);
 
+  // ---- Preview camera ----
   useEffect(() => {
     const startPreview = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
         localStreamRef.current = stream;
-        if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
-      } catch (err) { console.warn('Preview camera not available:', err); }
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+      } catch (err) {
+        console.warn('Preview camera not available:', err);
+      }
     };
     startPreview();
-    return () => { if (localStreamRef.current) localStreamRef.current.getTracks().forEach(t => t.stop()); };
+    return () => {
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
   }, []);
 
+  // ---- FaceLandmarker initialization ----
   const initializeFaceLandmarker = async () => {
     try {
       const vision = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm');
@@ -172,9 +192,13 @@ const InterviewPage = ({
       });
       setFaceLandmarker(landmarker);
       return landmarker;
-    } catch (err) { console.error('MediaPipe init error:', err); return null; }
+    } catch (err) {
+      console.error('MediaPipe init error:', err);
+      return null;
+    }
   };
 
+  // ---- Drawing helpers ----
   const drawLandmarks = (landmarks, canvas, video) => {
     if (!canvas || !video) return;
     const ctx = canvas.getContext('2d');
@@ -195,6 +219,7 @@ const InterviewPage = ({
     }
   };
 
+  // ---- Face & gaze detection (wrapped in useCallback) ----
   const detectFaceAndEyes = useCallback(async (landmarker) => {
     if (!videoRef.current || !landmarker || !isInInterview) return;
     const video = videoRef.current;
@@ -219,7 +244,10 @@ const InterviewPage = ({
         lookingAway = direction !== 'center';
       } else {
         setIsFaceVisible(false);
-        if (canvas) { const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
         lookingAway = true;
       }
 
@@ -243,19 +271,43 @@ const InterviewPage = ({
         hasWarnedForCurrentAway.current = false;
         setShowAwayWarning(false);
       }
-    } catch (err) { console.error('Detection error:', err); }
+    } catch (err) {
+      console.error('Detection error:', err);
+    }
+
+    // Schedule next frame if still in interview
     if (isInInterview && faceLandmarker) {
       detectionFrameRef.current = requestAnimationFrame(() => detectFaceAndEyes(faceLandmarker));
     }
-  }, [isInInterview, faceLandmarker]);
+  }, [isInInterview, faceLandmarker, handleEndInterview]); // handleEndInterview is now stable via useCallback
 
+  // ---- Start detection when interview begins ----
+  useEffect(() => {
+    if (isInInterview && faceLandmarker && videoRef.current) {
+      // Cancel any previous loop
+      if (detectionFrameRef.current) cancelAnimationFrame(detectionFrameRef.current);
+      // Start the loop
+      detectFaceAndEyes(faceLandmarker);
+    }
+    return () => {
+      if (detectionFrameRef.current) {
+        cancelAnimationFrame(detectionFrameRef.current);
+        detectionFrameRef.current = null;
+      }
+    };
+  }, [isInInterview, faceLandmarker, detectFaceAndEyes]);
+
+  // ---- Timer ----
   useEffect(() => {
     if (isInInterview) {
       timerInterval.current = setInterval(() => setTimer(t => t + 1), 1000);
-    } else { clearInterval(timerInterval.current); }
+    } else {
+      clearInterval(timerInterval.current);
+    }
     return () => clearInterval(timerInterval.current);
   }, [isInInterview]);
 
+  // ---- Anti-cheating: tab switches, context menu, key shortcuts ----
   useEffect(() => {
     if (!isInInterview) return;
     const handleVisibilityChange = () => {
@@ -287,19 +339,30 @@ const InterviewPage = ({
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isInInterview]);
+  }, [isInInterview, handleEndInterview]);
 
+  // ---- Join interview ----
   const handleJoinInterview = async () => {
     setIsJoining(true);
     try {
+      // Ensure camera stream is available
       if (!localStreamRef.current) {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
         localStreamRef.current = stream;
-        if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
       }
-      const landmarker = await initializeFaceLandmarker();
-      if (!landmarker) { setIsJoining(false); return; }
 
+      // Initialize MediaPipe
+      const landmarker = await initializeFaceLandmarker();
+      if (!landmarker) {
+        setIsJoining(false);
+        return;
+      }
+
+      // Request LiveKit token
       try {
         const res = await api.post('/interview/livekit-token/', { room_name: roomName, identity, name: participantName || identity, role });
         setToken(res.data.token);
@@ -309,26 +372,52 @@ const InterviewPage = ({
         console.warn('Token fetch failed, proceeding in local-only mode:', tokenError);
         setUseLiveKit(false);
       }
+
+      // Start interview state
       setIsInInterview(true);
       setTimer(0);
       setTabSwitchCount(0);
       setShowWarning(false);
+      setAwayWarningsCount(0);
+      setShowAwayWarning(false);
+      lookingAwayStartTime.current = null;
+      hasWarnedForCurrentAway.current = false;
+      isEndingRef.current = false;
+
       alert('✅ You have joined the interview!');
-      setTimeout(() => {
-        if (videoRef.current && landmarker) detectFaceAndEyes(landmarker);
-      }, 1000);
     } catch (err) {
       console.error('Join error:', err);
       alert('Could not join the interview. Please try again.');
-    } finally { setIsJoining(false); }
+    } finally {
+      setIsJoining(false);
+    }
   };
 
-  const handleEndInterview = () => {
+  // ---- End interview ----
+  const handleEndInterview = useCallback(() => {
+    if (isEndingRef.current) return;
     if (!window.confirm('Are you sure you want to end the interview?')) return;
-    if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; }
+
+    isEndingRef.current = true;
+
+    // Stop local tracks
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+    }
     if (videoRef.current) videoRef.current.srcObject = null;
-    if (detectionFrameRef.current) cancelAnimationFrame(detectionFrameRef.current);
-    if (faceLandmarker) { faceLandmarker.close(); setFaceLandmarker(null); }
+
+    // Cancel detection loop
+    if (detectionFrameRef.current) {
+      cancelAnimationFrame(detectionFrameRef.current);
+      detectionFrameRef.current = null;
+    }
+    if (faceLandmarker) {
+      faceLandmarker.close();
+      setFaceLandmarker(null);
+    }
+
+    // Reset states
     setIsInInterview(false);
     setIsConnected(false);
     setUseLiveKit(false);
@@ -340,10 +429,13 @@ const InterviewPage = ({
     setShowAwayWarning(false);
     lookingAwayStartTime.current = null;
     hasWarnedForCurrentAway.current = false;
+
     document.exitFullscreen?.();
     alert('Interview ended.');
-  };
+    isEndingRef.current = false;
+  }, [faceLandmarker]);
 
+  // ---- Toggle camera / mic ----
   const toggleCamera = () => {
     setIsCameraOn(!isCameraOn);
     if (localStreamRef.current) {
@@ -351,9 +443,15 @@ const InterviewPage = ({
       if (videoTrack) videoTrack.enabled = !isCameraOn;
     }
   };
-
   const toggleMic = () => setIsMicOn(!isMicOn);
 
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  // ---- Render ----
   return (
     <div className="interview-container">
       <div className="interview-content">
@@ -375,7 +473,9 @@ const InterviewPage = ({
             <span>{gazeDirection === 'center' ? '👁️ Looking at Screen' : `👁️ Looking ${gazeDirection}`}</span>
           </div>
         )}
+
         {!isInInterview ? (
+          // ---- LOBBY ----
           <div className="main-grid">
             <div className="left-section">
               <div className="lobby-card">
@@ -411,12 +511,42 @@ const InterviewPage = ({
             </div>
           </div>
         ) : (
-          useLiveKit && token ? (
-            <LiveKitRoom serverUrl={serverUrl} token={token} connect={isConnected} video={true} audio={true} onDisconnected={() => { setIsConnected(false); if (isInInterview) handleEndInterview(); }} className="livekit-room-container">
-              <LiveKitVideo videoRef={videoRef} stream={localStreamRef.current} isCameraOn={isCameraOn} isMicOn={isMicOn} timer={timer} toggleCamera={toggleCamera} toggleMic={toggleMic} handleEndInterview={handleEndInterview} />
+          // ---- LIVE INTERVIEW ----
+          useLiveKit && token && serverUrl ? (
+            <LiveKitRoom
+              serverUrl={serverUrl}
+              token={token}
+              connect={isConnected}
+              video={true}
+              audio={true}
+              onDisconnected={() => {
+                setIsConnected(false);
+                if (isInInterview) handleEndInterview();
+              }}
+              className="livekit-room-container"
+            >
+              <LiveKitVideo
+                videoRef={videoRef}
+                stream={localStreamRef.current}
+                isCameraOn={isCameraOn}
+                isMicOn={isMicOn}
+                timer={timer}
+                toggleCamera={toggleCamera}
+                toggleMic={toggleMic}
+                handleEndInterview={handleEndInterview}
+              />
             </LiveKitRoom>
           ) : (
-            <LocalOnlyVideo videoRef={videoRef} stream={localStreamRef.current} isCameraOn={isCameraOn} isMicOn={isMicOn} timer={timer} toggleCamera={toggleCamera} toggleMic={toggleMic} handleEndInterview={handleEndInterview} />
+            <LocalOnlyVideo
+              videoRef={videoRef}
+              stream={localStreamRef.current}
+              isCameraOn={isCameraOn}
+              isMicOn={isMicOn}
+              timer={timer}
+              toggleCamera={toggleCamera}
+              toggleMic={toggleMic}
+              handleEndInterview={handleEndInterview}
+            />
           )
         )}
       </div>

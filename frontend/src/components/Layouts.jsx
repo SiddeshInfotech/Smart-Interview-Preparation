@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Brain, Menu, X, LogIn, UserPlus } from "lucide-react";
-import "../styles/Layouts.css"; // or your global styles
+import "../styles/Layouts.css";
 
 export const PublicLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -11,7 +11,6 @@ export const PublicLayout = ({ children }) => {
 
   return (
     <div className="public-layout">
-      {/* Header – same style as CandidateProfile */}
       <header className="public-header">
         <div className="header-left">
           <button className="menu-toggle" onClick={toggleSidebar} aria-label="Toggle menu">
@@ -30,7 +29,6 @@ export const PublicLayout = ({ children }) => {
         </nav>
 
         <div className="header-right">
-          {/* 👇 Sign In button – now styled like Sign Up */}
           <button className="btn-primary-small" onClick={() => navigate("/login")}>
             <LogIn size={16} />
             <span>Sign In</span>
@@ -42,10 +40,8 @@ export const PublicLayout = ({ children }) => {
         </div>
       </header>
 
-      {/* Backdrop (mobile) */}
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Sidebar (mobile) – similar to CandidateProfile */}
       <aside className={`sidebar-mobile ${sidebarOpen ? "open" : ""}`}>
         <nav className="mobile-nav">
           <a href="#features" className="mobile-nav-link" onClick={() => setSidebarOpen(false)}>Features</a>
@@ -61,7 +57,6 @@ export const PublicLayout = ({ children }) => {
         </nav>
       </aside>
 
-      {/* Main content */}
       <main>{children}</main>
     </div>
   );

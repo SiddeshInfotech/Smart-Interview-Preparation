@@ -20,7 +20,7 @@ html {
   padding: 0;
 }
 
-/* ===== PUBLIC LAYOUT ===== */
+/* ===== PUBLIC LAYOUT – full height, flex column ===== */
 .public-layout {
   min-height: 100vh;
   background: #f5f7fa;
@@ -28,29 +28,32 @@ html {
   max-width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
+  display: flex;                 /* <-- ADD THIS */
+  flex-direction: column;        /* <-- ADD THIS */
 }
 
-/* ----- HEADER – edge‑to‑edge ----- */
+/* ----- HEADER – edge‑to‑edge, STICKY ----- */
 .public-header {
   height: 72px;
   background: #ffffff;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 !important;              /* force no padding */
+  padding: 0 !important;
   border-bottom: 1px solid #e5e7eb;
-  position: sticky;
+  position: sticky;              /* already sticky */
   top: 0;
   z-index: 100;
   width: 100% !important;
   margin: 0 !important;
+  flex-shrink: 0;                /* <-- ADD THIS – prevents shrinking */
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding-left: 24px;   /* tiny breathing space for logo */
+  padding-left: 24px;
 }
 
 .menu-toggle {
@@ -79,7 +82,6 @@ html {
   color: #2563eb;
 }
 
-/* (Nav menu – not used, kept for reference) */
 .nav-menu {
   display: flex;
   align-items: center;
@@ -106,33 +108,11 @@ html {
   color: white;
 }
 
-/* ----- RIGHT SIDE (auth buttons) ----- */
 .header-right {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding-right: 24px;  /* tiny breathing space */
-}
-
-.header-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid #dbe4ee;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: 0.2s;
-}
-.header-icon:hover {
-  background: #eef4ff;
-  color: #2563eb;
-}
-.header-icon svg {
-  width: 20px;
-  height: 20px;
+  padding-right: 24px;
 }
 
 .btn-primary-small {
@@ -158,9 +138,9 @@ html {
   height: 18px;
 }
 
-/* ----- MAIN CONTENT – full width, no padding ----- */
+/* ===== MAIN CONTENT – takes remaining space ===== */
 main {
-  flex: 1;
+  flex: 1;                       /* <-- FILLS REMAINING SPACE */
   width: 100% !important;
   max-width: 100% !important;
   padding: 0 !important;

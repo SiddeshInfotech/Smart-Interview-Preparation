@@ -119,9 +119,11 @@ const InterviewerProfile = () => {
     const fetchSlots = async () => {
       try {
         const response = await api.get("/interviewer/availability/");
-        setSlots(response.data);
+        // ✅ FIX: Ensure we always set an array
+        setSlots(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Error fetching slots:", error);
+        setSlots([]); // fallback
       } finally {
         setLoadingSlots(false);
       }
@@ -605,10 +607,10 @@ const InterviewerProfile = () => {
             <div className="education-section" ref={slotsRef}>
               <h3>Your Availability Slots</h3>
 
-              {/* Slots tags (same style as skill tags) – shown above the form */}
+              {/* ✅ FIX: Guard against non-array slots */}
               {loadingSlots ? (
                 <div className="slots-loading">Loading slots...</div>
-              ) : slots.length > 0 ? (
+              ) : Array.isArray(slots) && slots.length > 0 ? (
                 <div className="skill-tags" style={{ marginBottom: "16px" }}>
                   {slots.map((slot) => {
                     const isDeleting = deletingSlotId === slot.availability_id;
@@ -723,7 +725,7 @@ const InterviewerProfile = () => {
               </div>
 
               {/* Empty message – shown at the bottom when no slots exist */}
-              {!loadingSlots && slots.length === 0 && (
+              {!loadingSlots && Array.isArray(slots) && slots.length === 0 && (
                 <div className="suggestions-hint empty-slots-message" style={{ marginTop: "16px" }}>
                   No slots added yet.
                 </div>

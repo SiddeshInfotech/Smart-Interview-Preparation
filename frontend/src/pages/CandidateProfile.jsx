@@ -326,11 +326,9 @@ const CandidateProfile = () => {
 
   return (
     <div className="candidate-profile">
-      {/* Header – REMOVED – no top navbar */}
-
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
 
-      <div className="main-container" style={{ paddingTop: 0 }}>
+      <div className="main-container">
         {/* Sidebar */}
         <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
           <div className="profile-nav">
@@ -571,11 +569,7 @@ const CandidateProfile = () => {
 
             {/* Action Buttons */}
             <div className="action-buttons">
-              {/* Skip button – replaces Back to Dashboard */}
-              <button
-                className="btn-skip"
-                onClick={() => (window.location.href = "/dashboard")}
-              >
+              <button className="btn-skip" onClick={() => (window.location.href = "/dashboard")}>
                 Skip
               </button>
               <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>

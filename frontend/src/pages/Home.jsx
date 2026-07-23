@@ -1,8 +1,8 @@
-import React from 'react'
-import { Zap, PlayCircle, Radar, FileText, CheckCircle2 } from 'lucide-react'
-import { PublicLayout } from '../components/Layouts.jsx'
-import Button from '../components/Button.jsx'
-import { Card } from '../components/Card.jsx'
+import React from 'react';
+import { Zap, PlayCircle, Radar, FileText, CheckCircle2 } from 'lucide-react';
+import { PublicLayout } from "../components/Layouts.jsx";   // ✅ small 'l' – match file name
+import Button from '../components/Button.jsx';
+import { Card } from '../components/Card.jsx';
 import "../styles/home.css";
 
 export default function Home() {
@@ -83,8 +83,8 @@ export default function Home() {
                 <div className="stat-card__label">Success Rate</div>
               </Card>
               <Card variant="dark" style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 700 ,color:'var(--color-primary)'}}>10k+</div>
-                <div className="stat-card__label" style={{ color: 'rgba(21, 20, 20, 0.6)' }}>Users</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)' }}>10k+</div>
+                <div className="stat-card__label" style={{ color: 'rgba(21,20,20,0.6)' }}>Users</div>
               </Card>
             </div>
           </div>
@@ -130,5 +130,5 @@ export default function Home() {
         </div>
       </section>
     </PublicLayout>
-  )
+  );
 }
