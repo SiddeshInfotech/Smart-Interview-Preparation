@@ -11,6 +11,7 @@ const COLUMNS = [
   { key: "full_name",        label: "Name"     },
   { key: "email",            label: "Email"    },
   { key: "role",             label: "Role",    render: (v) => <span className={`admin-badge admin-badge--${v === "superuser" ? "error" : v === "interviewer" ? "blue" : "neutral"}`}>{v}</span> },
+  { key: "is_staff",         label: "Is Staff",render: (v) => <span className={`admin-badge ${v ? "admin-badge--success" : "admin-badge--neutral"}`}>{v ? "Yes (Admin)" : "No"}</span> },
   { key: "is_active",        label: "Active",  render: (v) => <span className={`admin-badge ${v ? "admin-badge--success" : "admin-badge--error"}`}>{v ? "Yes" : "No"}</span> },
   { key: "is_email_verified",label: "Verified",render: (v) => <span className={`admin-badge ${v ? "admin-badge--success" : "admin-badge--warning"}`}>{v ? "Yes" : "No"}</span> },
   { key: "created_at",       label: "Created", render: (v) => v ? new Date(v).toLocaleDateString() : "—" },
@@ -19,6 +20,7 @@ const COLUMNS = [
 const EMPTY_FORM = {
   full_name: "", email: "", password: "", role: "candidate",
   phone_number: "", is_active: true, is_email_verified: false,
+  is_staff: false, is_superuser: false,
 };
 
 export default function AdminUsers() {
@@ -48,7 +50,7 @@ export default function AdminUsers() {
       <div className="admin-section-header">
         <div>
           <h2>Users</h2>
-          <p>Manage all registered user accounts on the platform.</p>
+          <p>Manage all registered user accounts and admin/staff privileges.</p>
         </div>
         <button className="admin-btn-primary" onClick={openAdd} id="admin-add-user">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -110,7 +112,14 @@ export default function AdminUsers() {
                   </select>
                 </div>
                 <div className="admin-form-group">
-                  <label>Active</label>
+                  <label>Is Staff (Admin Privilege)</label>
+                  <select value={form.is_staff ? "true" : "false"} onChange={(e) => setForm({ ...form, is_staff: e.target.value === "true" })}>
+                    <option value="false">No</option>
+                    <option value="true">Yes (Admin)</option>
+                  </select>
+                </div>
+                <div className="admin-form-group">
+                  <label>Active Account</label>
                   <select value={form.is_active ? "true" : "false"} onChange={(e) => setForm({ ...form, is_active: e.target.value === "true" })}>
                     <option value="true">Yes</option>
                     <option value="false">No</option>
