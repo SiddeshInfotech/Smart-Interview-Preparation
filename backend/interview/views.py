@@ -1,7 +1,9 @@
 import os
 import logging
 import uuid
+from datetime import datetime, timedelta          # ✅ correct import
 
+from django.utils import timezone                  # ✅ moved to top
 from rest_framework import generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -10,9 +12,6 @@ from livekit import api
 
 from .models import InterviewSchedule
 from .serializers import InterviewScheduleSerializer
-
-from django.utils import timezone
-from datetime import combine, timedelta
 
 
 # ========== SCHEDULING VIEW ==========
@@ -27,7 +26,6 @@ def create_interview_schedule(request):
     from rest_framework.exceptions import ValidationError as DRFValidationError
     from interviewer.models import Interviewer_Profile
 
-    # Only candidates can send requests
     if not hasattr(request.user, 'candidate_profile'):
         return Response({"detail": "Only candidates can send interview requests."}, status=403)
 
@@ -36,7 +34,6 @@ def create_interview_schedule(request):
     scheduled_time = request.data.get('scheduled_time')
     duration_minutes = request.data.get('duration_minutes')
 
-    # Basic validation
     errors = {}
     if not interviewer_id:
         errors['interviewer'] = 'This field is required.'
@@ -49,7 +46,6 @@ def create_interview_schedule(request):
     if errors:
         return Response(errors, status=400)
 
-    # Resolve foreign keys
     try:
         interviewer_profile = Interviewer_Profile.objects.get(pk=interviewer_id)
     except Interviewer_Profile.DoesNotExist:
@@ -58,7 +54,6 @@ def create_interview_schedule(request):
     candidate_profile = request.user.candidate_profile
     room_name = f"room-{uuid.uuid4().hex[:8]}"
 
-    # Create the schedule row directly (no serializer involved)
     try:
         schedule = InterviewSchedule.objects.create(
             candidate=candidate_profile,
@@ -67,13 +62,12 @@ def create_interview_schedule(request):
             scheduled_time=scheduled_time,
             duration_minutes=int(duration_minutes),
             status='Scheduled',
-            meeting_link='',          # empty = awaiting interviewer approval
+            meeting_link='',
             room_name=room_name,
         )
     except Exception as db_err:
         return Response({"detail": f"Database error: {str(db_err)}"}, status=400)
 
-    # Notify the interviewer
     try:
         from notifications.utils import create_notification
         create_notification(
@@ -128,18 +122,15 @@ def get_livekit_token(request):
             status=400
         )
 
-    # Validate timing constraints and authorization for room sessions
     try:
         schedule = InterviewSchedule.objects.filter(room_name=room_name).first()
         if schedule:
-            # meeting_link is empty string = awaiting approval, non-empty = accepted
             if not schedule.meeting_link:
                 return Response({'error': 'The interviewer has not yet accepted this request.'}, status=400)
 
             if schedule.status == 'Cancelled':
                 return Response({'error': 'This interview has been cancelled.'}, status=400)
 
-            # Check if user is candidate or interviewer for this schedule
             if request.user.role == 'candidate':
                 if schedule.candidate.user != request.user:
                     return Response({'error': 'You are not authorized for this interview.'}, status=403)
@@ -147,8 +138,9 @@ def get_livekit_token(request):
                 if schedule.interviewer.user != request.user:
                     return Response({'error': 'You are not authorized for this interview.'}, status=403)
 
-            # Check scheduled date and time (allow joining 15 min before and 15 min after duration)
-            scheduled_start = timezone.make_aware(combine(schedule.scheduled_date, schedule.scheduled_time))
+            scheduled_start = timezone.make_aware(
+                datetime.combine(schedule.scheduled_date, schedule.scheduled_time)   # ✅ use datetime.combine
+            )
             now = timezone.now()
 
             start_window = scheduled_start - timedelta(minutes=15)
@@ -206,7 +198,6 @@ def accept_interview(request, pk):
     if schedule.interviewer.user != request.user:
         return Response({'error': 'You are not the interviewer for this session.'}, status=403)
 
-    # Mark as confirmed: meeting_link = room_name (non-empty = accepted)
     schedule.status = 'Scheduled'
     schedule.meeting_link = schedule.room_name
     schedule.save()
@@ -256,31 +247,21 @@ def decline_interview(request, pk):
 
 # ========== GET USER'S INTERVIEWS ==========
 class UserInterviewListView(generics.ListAPIView):
-    """
-    Returns all interviews where the logged-in user is either the candidate or the interviewer.
-    Used to populate the "Upcoming Interviews" list on the frontend.
-    """
     serializer_class = InterviewScheduleSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-
-        # Start with empty querysets
         qs_candidate = InterviewSchedule.objects.none()
         qs_interviewer = InterviewSchedule.objects.none()
 
-        # If user has a candidate profile, fetch their interviews
         if hasattr(user, 'candidate_profile'):
             qs_candidate = InterviewSchedule.objects.filter(
                 candidate=user.candidate_profile
             )
-
-        # If user has an interviewer profile, fetch their interviews
         if hasattr(user, 'interviewer_profile'):
             qs_interviewer = InterviewSchedule.objects.filter(
                 interviewer=user.interviewer_profile
             )
 
-        # Combine and order by date (most recent first)
         return (qs_candidate | qs_interviewer).distinct().order_by('-scheduled_date')
