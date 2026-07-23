@@ -6,4 +6,5 @@ urlpatterns = [
     path('livekit-token/', get_livekit_token, name='livekit-token'),
     path('accept/<int:pk>/', accept_interview, name='accept-interview'),
     path('decline/<int:pk>/', decline_interview, name='decline-interview'),
+    path('my-interviews/', UserInterviewListView.as_view(), name='my-interviews'),
 ]

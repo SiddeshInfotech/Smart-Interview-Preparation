@@ -10,9 +10,10 @@ from rest_framework.response import Response
 from livekit import api
 
 from .models import InterviewSchedule
-from .serializers import InterviewScheduleSerializer   # ✅ import from serializers.py
+from .serializers import InterviewScheduleSerializer
 
-# ---------- Scheduling View ----------
+
+# ========== SCHEDULING VIEW ==========
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_interview_schedule(request):
@@ -28,9 +29,9 @@ def create_interview_schedule(request):
     if not hasattr(request.user, 'candidate_profile'):
         return Response({"detail": "Only candidates can send interview requests."}, status=403)
 
-    interviewer_id  = request.data.get('interviewer')
-    scheduled_date  = request.data.get('scheduled_date')
-    scheduled_time  = request.data.get('scheduled_time')
+    interviewer_id = request.data.get('interviewer')
+    scheduled_date = request.data.get('scheduled_date')
+    scheduled_time = request.data.get('scheduled_time')
     duration_minutes = request.data.get('duration_minutes')
 
     # Basic validation
@@ -63,7 +64,7 @@ def create_interview_schedule(request):
             scheduled_date=scheduled_date,
             scheduled_time=scheduled_time,
             duration_minutes=int(duration_minutes),
-            status='Scheduled',       # DB-safe default value
+            status='Scheduled',
             meeting_link='',          # empty = awaiting interviewer approval
             room_name=room_name,
         )
@@ -88,8 +89,8 @@ def create_interview_schedule(request):
 
     return Response({
         "schedule_id": schedule.schedule_id,
-        "room_name":   schedule.room_name,
-        "status":      schedule.status,
+        "room_name": schedule.room_name,
+        "status": schedule.status,
         "meeting_link": schedule.meeting_link,
         "scheduled_date": str(schedule.scheduled_date),
         "scheduled_time": str(schedule.scheduled_time),
@@ -97,7 +98,7 @@ def create_interview_schedule(request):
     }, status=201)
 
 
-# ---------- LiveKit Token Endpoint ----------
+# ========== LIVEKIT TOKEN ENDPOINT ==========
 logger = logging.getLogger(__name__)
 LIVEKIT_API_KEY = os.environ.get('LIVEKIT_API_KEY')
 LIVEKIT_API_SECRET = os.environ.get('LIVEKIT_API_SECRET')
@@ -125,7 +126,7 @@ def get_livekit_token(request):
             status=400
         )
 
-    # Validate timing constraints for room sessions
+    # Validate timing constraints and authorization for room sessions
     try:
         schedule = InterviewSchedule.objects.filter(room_name=room_name).first()
         if schedule:
@@ -144,16 +145,16 @@ def get_livekit_token(request):
                 if schedule.interviewer.user != request.user:
                     return Response({'error': 'You are not authorized for this interview.'}, status=403)
 
-            # Check scheduled date and time
+            # Check scheduled date and time (allow joining 15 min before and 15 min after duration)
             from django.utils import timezone
             from datetime import combine, timedelta
-            
+
             scheduled_start = timezone.make_aware(combine(schedule.scheduled_date, schedule.scheduled_time))
             now = timezone.now()
-            
+
             start_window = scheduled_start - timedelta(minutes=15)
             end_window = scheduled_start + timedelta(minutes=schedule.duration_minutes + 15)
-            
+
             if not (start_window <= now <= end_window):
                 return Response({
                     'error': f'Access restricted. You can only join this room on {schedule.scheduled_date} between {start_window.strftime("%H:%M")} and {end_window.strftime("%H:%M")}.'
@@ -194,6 +195,7 @@ def get_livekit_token(request):
         )
 
 
+# ========== ACCEPT INTERVIEW ==========
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def accept_interview(request, pk):
@@ -224,6 +226,7 @@ def accept_interview(request, pk):
     return Response({'message': 'Interview request accepted and scheduled.'})
 
 
+# ========== DECLINE INTERVIEW ==========
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def decline_interview(request, pk):
@@ -250,3 +253,35 @@ def decline_interview(request, pk):
         print("Failed to notify candidate:", e)
 
     return Response({'message': 'Interview request declined.'})
+
+
+# ========== GET USER'S INTERVIEWS ==========
+class UserInterviewListView(generics.ListAPIView):
+    """
+    Returns all interviews where the logged-in user is either the candidate or the interviewer.
+    Used to populate the "Upcoming Interviews" list on the frontend.
+    """
+    serializer_class = InterviewScheduleSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Start with empty querysets
+        qs_candidate = InterviewSchedule.objects.none()
+        qs_interviewer = InterviewSchedule.objects.none()
+
+        # If user has a candidate profile, fetch their interviews
+        if hasattr(user, 'candidate_profile'):
+            qs_candidate = InterviewSchedule.objects.filter(
+                candidate=user.candidate_profile
+            )
+
+        # If user has an interviewer profile, fetch their interviews
+        if hasattr(user, 'interviewer_profile'):
+            qs_interviewer = InterviewSchedule.objects.filter(
+                interviewer=user.interviewer_profile
+            )
+
+        # Combine and order by date (most recent first)
+        return (qs_candidate | qs_interviewer).distinct().order_by('-scheduled_date')

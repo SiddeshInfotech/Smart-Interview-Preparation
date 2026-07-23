@@ -24,6 +24,7 @@ export default function Interview() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // ---- Fetch user profile ----
   useEffect(() => {
     const fetchUser = async () => {
       let currentUser = getCurrentUser();
@@ -44,19 +45,53 @@ export default function Interview() {
       setUser(currentUser);
       setLoading(false);
     };
-
     fetchUser();
   }, []);
 
+  // ---- Fetch interviews from backend ----
+  const fetchInterviews = async () => {
+    if (!user) return;
+    try {
+      const res = await api.get("/interview/my-interviews/");
+      // The endpoint might return paginated data; adjust accordingly.
+      const data = res.data.results || res.data || [];
+      const transformed = data.map((item) => ({
+        id: item.schedule_id,
+        interviewer: item.interviewer_name || "Interviewer",
+        candidate: item.candidate_name || "Candidate",
+        date: item.scheduled_date,
+        time: item.scheduled_time,
+        type: "Interview", // can be extended later
+        status: item.status || "Scheduled",
+        roomName: item.room_name,
+        meeting_link: item.meeting_link,
+        // Keep original data if needed
+        ...item,
+      }));
+      setInterviews(transformed);
+    } catch (err) {
+      console.error("Failed to fetch interviews:", err);
+    }
+  };
+
+  // ---- Poll for updates (optional, every 15 seconds) ----
+  useEffect(() => {
+    if (!user) return;
+    fetchInterviews();
+    const interval = setInterval(fetchInterviews, 15000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // ---- Handle new interview (from scheduling form) ----
   const handleSchedule = (newInterview) => {
-    // Transform backend response to frontend interview object
+    // Transform the backend response (from the form) to frontend format
     const transformed = {
       id: newInterview.schedule_id,
-      // If backend returns interviewer_name, use it; otherwise set a placeholder
       interviewer: newInterview.interviewer_name || "Interviewer",
+      candidate: user?.full_name || "Candidate",
       date: newInterview.scheduled_date,
       time: newInterview.scheduled_time,
-      type: "Interview", // default type; you can add a field later
+      type: "Interview",
       status: newInterview.status || "Scheduled",
       roomName: newInterview.room_name,
       meeting_link: newInterview.meeting_link,
@@ -65,6 +100,7 @@ export default function Interview() {
     setActiveTab("schedule");
   };
 
+  // ---- Handle selecting an interview to join ----
   const handleSelectInterview = (interview) => {
     setSelectedInterview(interview);
     setActiveTab("lobby");
@@ -74,6 +110,7 @@ export default function Interview() {
     return <div className="loading-spinner">Loading profile...</div>;
   }
 
+  // ---- LiveKit identity from user ----
   const identity = user?.user_id || user?.email || "guest";
   const participantName = user?.full_name || "Guest";
   const role = user?.role || "candidate";
@@ -119,7 +156,7 @@ export default function Interview() {
             ) : (
               <InterviewPage
                 standalone={true}
-                roomName={selectedInterview?.roomName || "room_101"} // dynamic
+                roomName={selectedInterview?.roomName || "room_101"}
                 identity={identity}
                 participantName={participantName}
                 role={role}
