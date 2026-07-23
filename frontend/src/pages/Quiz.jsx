@@ -107,15 +107,15 @@ const Quiz = () => {
   };
 
   // --- Options ---
-  const modes = ['MCQ', 'Coding Challenge', 'Mock Interview'];
+  const modes = ['MCQ', 'Coding Challenge'];
   const difficulties = ['Easy', 'Medium', 'Hard'];
   const questionCounts = [5, 10, 25];
 
   // --- Visibility toggles ---
-  const showTopics = selectedMode !== 'Mock Interview' && selectedMode !== '';
-  const showDifficulty = selectedMode !== 'Mock Interview' && selectedMode !== '';
+  const showTopics = selectedMode !== '';
+  const showDifficulty = selectedMode !== '';
   const showQuestionCount = selectedMode === 'MCQ';
-  const showCustomInstructions = selectedMode !== 'Mock Interview' && selectedMode !== '';
+  const showCustomInstructions = selectedMode !== '';
 
   // --- Generate quiz ---
   const handleGenerate = async () => {
