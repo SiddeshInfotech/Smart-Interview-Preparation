@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "./../styles/RoleSelection.css";
 
 import {
@@ -25,10 +25,10 @@ export default function RoleSelection() {
         </div>
 
         <nav className="nav-links">
-          <a href="/">Dashboard</a>
-          <a href="/">Practice</a>
-          <a href="/">Sessions</a>
-          <a href="/">Insights</a>
+          <Link to="/dashboard">Dashboard</Link>
+          <Link to="/quiz">Practice</Link>
+          <Link to="/interview">Sessions</Link>
+          <Link to="/dashboard">Insights</Link>
         </nav>
 
         <div className="nav-right">

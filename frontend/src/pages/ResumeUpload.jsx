@@ -106,7 +106,6 @@ const ResumeUpload = () => {
     setIsLoading(false);
     setIsAddedToProfile(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
-    window.location.reload();
   };
 
   const handleAnalyze = async () => {

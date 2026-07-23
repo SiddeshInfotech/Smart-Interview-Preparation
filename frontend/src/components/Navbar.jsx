@@ -1,47 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Settings, User } from 'lucide-react';
-import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 import '../styles/Dashboard.css';
 import NotificationPopup from './NotificationPopup';
 
 export default function Navbar() {
-  const [userProfile, setUserProfile] = useState({
-    name: 'Loading...',
-    email: '',
-    profilePicture: null,
-  });
+  const { userProfile, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
-
-  console.log('Navbar rendered with NotificationPopup'); // Debug log
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      let name = 'User';
-      let email = '';
-      let pic = null;
-      try {
-        const authRes = await api.get('/auth/profile/');
-        if (authRes.data) {
-          name = authRes.data.full_name || name;
-          email = authRes.data.email || email;
-        }
-      } catch (e) {
-        console.error('Auth profile error', e);
-      }
-      try {
-        const candRes = await api.get('/candidate/profile/');
-        if (candRes.data && candRes.data.profile_picture) {
-          const p = candRes.data.profile_picture;
-          pic = p.startsWith('http') ? p : `http://127.0.0.1:8000${p}`;
-        }
-      } catch (e) {
-        console.error('Candidate profile error', e);
-      }
-      setUserProfile({ name, email, profilePicture: pic });
-    };
-    fetchProfile();
-  }, []);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -54,15 +22,14 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    window.location.href = '/login';
+    logout();
+    navigate('/login');
   };
 
   return (
     <header className="top-navbar">
       <div className="navbar-container">
-        <button className="navbar-brand" onClick={() => (window.location.href = '/')}>
+        <button className="navbar-brand" onClick={() => navigate('/')}>
           PrepMaster AI
         </button>
         
@@ -88,7 +55,14 @@ export default function Navbar() {
                 <p className="profile-email">{userProfile.email}</p>
               </div>
               <hr />
-              <button className="profile-dropdown-item" onClick={() => (window.location.href = '/candidate-profile')}>
+              <button className="profile-dropdown-item" onClick={() => {
+                setMenuOpen(false);
+                if (userProfile.role === "interviewer") {
+                  navigate("/interviewer-profile");
+                } else {
+                  navigate("/candidate-profile");
+                }
+              }}>
                 View Profile
               </button>
               <button className="profile-dropdown-item" onClick={handleLogout}>

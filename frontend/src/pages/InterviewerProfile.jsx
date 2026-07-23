@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/CandidateProfile.css";
 import {
   LayoutDashboard,
@@ -113,7 +114,7 @@ const InterviewerProfile = () => {
         if (error.response?.status === 401) {
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
-          window.location.href = "/login";
+          navigate("/login");
         }
       } finally {
         setLoading(false);
@@ -407,7 +408,7 @@ const InterviewerProfile = () => {
       if (error.response?.status === 401) {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
-        window.location.href = "/login";
+        navigate("/login");
       } else {
         alert("Error: " + JSON.stringify(error.response?.data || error.message));
       }
@@ -430,7 +431,7 @@ const InterviewerProfile = () => {
           <div className="profile-nav">
             <div
               className="nav-item"
-              onClick={() => (window.location.href = "/dashboard")}
+              onClick={() => navigate("/dashboard")}
               style={{ color: "var(--color-primary)", fontWeight: "600" }}
             >
               <LayoutDashboard size={18} /> <span>Back to Dashboard</span>
@@ -792,7 +793,7 @@ const InterviewerProfile = () => {
               {isReadOnly ? (
                 <button
                   className="btn btn--primary"
-                  onClick={() => (window.location.href = "/interview")}
+                  onClick={() => navigate("/interview")}
                   type="button"
                   style={{ display: "flex", alignItems: "center", gap: "6px" }}
                 >
@@ -801,7 +802,7 @@ const InterviewerProfile = () => {
                 </button>
               ) : (
                 <>
-                  <button className="btn-skip" onClick={() => (window.location.href = "/dashboard")}>
+                  <button className="btn-skip" onClick={() => navigate("/dashboard")}>
                     Skip
                   </button>
                   <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>

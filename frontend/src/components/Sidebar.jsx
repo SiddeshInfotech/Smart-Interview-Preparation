@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import {
   LayoutDashboard, CalendarDays, Users, BookOpen, Settings, HelpCircle, LogOut, Sparkles
 } from 'lucide-react'
@@ -22,10 +23,10 @@ export default function Sidebar() {
         </div>
         <nav className="sidebar__nav">
           {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
-            <a key={to} href={to} className="sidebar__link">
+            <Link key={to} to={to} className="sidebar__link">
               <Icon size={17} />
               {label}
-            </a>
+            </Link>
           ))}
         </nav>
       </div>

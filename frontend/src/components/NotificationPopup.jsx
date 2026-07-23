@@ -10,6 +10,8 @@ import {
 import api from "../api/axios";
 import "../styles/ToastNotification.css";
 
+import { useAuth } from "../context/AuthContext";
+
 const TABS = ["All", "Unread", "Read", "System"];
 
 const TYPE_ICON = {
@@ -23,105 +25,16 @@ const TYPE_ICON = {
 export default function NotificationPopup() {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("All");
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
   const wrapperRef = useRef(null);
 
-  // ===========================
-  // Fetch Notifications
-  // ===========================
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/notifications/");
-      setNotifications(Array.isArray(res.data.data) ? res.data.data : []);
-    } catch (err) {
-      console.error("Notification Fetch Error:", err);
-      setNotifications([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial fetch and polling
-  useEffect(() => {
-    fetchNotifications();
-
-    const updateNotification = () => fetchNotifications();
-    window.addEventListener("notificationUpdate", updateNotification);
-
-    // Poll every 15 seconds (optional)
-    const interval = setInterval(fetchNotifications, 15000);
-
-    return () => {
-      window.removeEventListener("notificationUpdate", updateNotification);
-      clearInterval(interval);
-    };
-  }, []);
-
-  // ===========================
-  // Close Popup Outside Click
-  // ===========================
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // ===========================
-  // Unread Count
-  // ===========================
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-
-  // ===========================
-  // Filter Tabs
-  // ===========================
-  const filtered = notifications.filter((n) => {
-    switch (activeTab) {
-      case "Unread":
-        return !n.is_read;
-      case "Read":
-        return n.is_read;
-      case "System":
-        return n.notification_type === "system";
-      default:
-        return true;
-    }
-  });
-
-  // ===========================
-  // Mark One Notification Read
-  // ===========================
-  const markAsRead = async (id) => {
-    try {
-      await api.post(`/notifications/${id}/read/`, { notification_id: id });
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.notification_id === id ? { ...n, is_read: true } : n
-        )
-      );
-    } catch (err) {
-      console.error("Failed to mark as read:", err);
-    }
-  };
-
-  // ===========================
-  // Mark All Read
-  // ===========================
-  const markAllAsRead = async () => {
-    try {
-      await api.post("/notifications/read-all/");
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, is_read: true }))
-      );
-    } catch (err) {
-      console.error("Failed to mark all as read:", err);
-    }
-  };
+  const {
+    notifications,
+    unreadCount,
+    loadingNotifications: loading,
+    markAsRead,
+    markAllAsRead,
+    fetchNotifications,
+  } = useAuth();
 
   // ===========================
   // Accept Interview Request

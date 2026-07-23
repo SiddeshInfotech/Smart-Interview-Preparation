@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock } from "lucide-react";
-import api from "../api/axios";
 import NotificationPopup from "./NotificationPopup";
+import { useAuth } from "../context/AuthContext";
 import "../styles/NotificationPopup.css";
 
 export default function PageNavbar({
@@ -23,60 +23,7 @@ export default function PageNavbar({
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState({
-    name: "Loading...",
-    email: "",
-    profilePicture: null,
-    role: "candidate",
-  });
-
-  useEffect(() => {
-    const fetchProfileData = async () => {
-      let name = "User";
-      let email = "";
-      let profilePic = null;
-      let role = "candidate";
-
-      try {
-        const authRes = await api.get("/auth/profile/");
-        if (authRes.data) {
-          name = authRes.data.full_name || name;
-          email = authRes.data.email || email;
-          role = authRes.data.role || role;
-        }
-      } catch (error) {
-        console.error("Error fetching auth profile:", error);
-      }
-
-      try {
-        if (role === "interviewer") {
-          const intRes = await api.get("/interviewer/profile/");
-          if (intRes.data && intRes.data.profile_picture) {
-            const pic = intRes.data.profile_picture;
-            profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
-          }
-        } else {
-          const candRes = await api.get("/candidate/profile/");
-          if (candRes.data && candRes.data.profile_picture) {
-            const pic = candRes.data.profile_picture;
-            profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching profile picture:", error);
-      }
-
-      setUserProfile({
-        name,
-        email,
-        profilePicture: profilePic,
-        role,
-      });
-    };
-
-    fetchProfileData();
-  }, []);
-
+  const { userProfile, logout } = useAuth();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -90,9 +37,7 @@ export default function PageNavbar({
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_role");
+    logout();
     navigate("/login");
   };
 

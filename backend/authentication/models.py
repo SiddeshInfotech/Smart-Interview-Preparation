@@ -68,3 +68,6 @@ class OtpVerification(models.Model):
 
     class Meta:
         db_table = "OTP_Verification"
+        indexes = [
+            models.Index(fields=["user", "purpose", "is_verified"]),
+        ]

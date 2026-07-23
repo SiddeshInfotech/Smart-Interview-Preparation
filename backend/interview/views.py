@@ -273,12 +273,18 @@ class UserInterviewListView(generics.ListAPIView):
         qs_interviewer = InterviewSchedule.objects.none()
 
         if hasattr(user, 'candidate_profile'):
-            qs_candidate = InterviewSchedule.objects.filter(
+            qs_candidate = InterviewSchedule.objects.select_related(
+                'candidate__user', 'interviewer__user'
+            ).filter(
                 candidate=user.candidate_profile
             )
         if hasattr(user, 'interviewer_profile'):
-            qs_interviewer = InterviewSchedule.objects.filter(
+            qs_interviewer = InterviewSchedule.objects.select_related(
+                'candidate__user', 'interviewer__user'
+            ).filter(
                 interviewer=user.interviewer_profile
             )
 
-        return (qs_candidate | qs_interviewer).distinct().order_by('-scheduled_date')
+        return (qs_candidate | qs_interviewer).select_related(
+            'candidate__user', 'interviewer__user'
+        ).distinct().order_by('-scheduled_date')

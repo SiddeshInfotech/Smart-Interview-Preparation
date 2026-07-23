@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/CandidateProfile.css";
 import {
   LayoutDashboard,
@@ -22,6 +23,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import api from "../api/axios";
 
 const CandidateProfile = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isProgrammaticScroll, setIsProgrammaticScroll] = useState(false);
@@ -95,7 +97,7 @@ const CandidateProfile = () => {
         if (error.response?.status === 401) {
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
-          window.location.href = "/login";
+          navigate("/login");
         }
       } finally {
         setLoading(false);
@@ -310,7 +312,7 @@ const CandidateProfile = () => {
       if (error.response?.status === 401) {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
-        window.location.href = "/login";
+        navigate("/login");
       } else {
         alert("Error: " + JSON.stringify(error.response?.data || error.message));
       }
@@ -336,7 +338,7 @@ const CandidateProfile = () => {
           <div className="profile-nav">
             <div
               className="nav-item"
-              onClick={() => (window.location.href = "/dashboard")}
+              onClick={() => navigate("/dashboard")}
               style={{ color: "var(--color-primary)", fontWeight: "600" }}
             >
               <LayoutDashboard size={18} /> <span>Back to Dashboard</span>
@@ -574,7 +576,7 @@ const CandidateProfile = () => {
               {/* Skip button – replaces Back to Dashboard */}
               <button
                 className="btn-skip"
-                onClick={() => (window.location.href = "/dashboard")}
+                onClick={() => navigate("/dashboard")}
               >
                 Skip
               </button>
