@@ -73,6 +73,7 @@ function StatusBadge({ status }) {
 }
 
 function formatDate(dateStr) {
+  if (!dateStr) return "";
   const d = new Date(`${dateStr}T00:00:00`);
   return d.toLocaleDateString("en-US", {
     day: "numeric",
@@ -81,59 +82,34 @@ function formatDate(dateStr) {
   });
 }
 
-// --- Navbar (unchanged) ---
-function Navbar({ active }) {
-  const navItems = [
-    { label: "Dashboard", icon: LayoutGrid },
-    { label: "Practice Mode", icon: ClipboardList },
-    { label: "Resume Analysis", icon: FileText },
-    { label: "Interview Scheduling", icon: CalendarClock },
-  ];
-
-  return (
-    <header className="navbar">
-      <div className="navbar__brand">
-        <BrainCircuit size={26} color="#2563eb" strokeWidth={2.2} />
-        <span>PrepMaster AI</span>
-      </div>
-
-      <nav className="navbar__links">
-        {navItems.map(({ label, icon: Icon }) => (
-          <button
-            key={label}
-            className={`navbar__link ${label === active ? "navbar__link--active" : ""}`}
-            type="button"
-          >
-            <Icon size={16} strokeWidth={2} />
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      <div className="navbar__actions">
-        <button className="navbar__iconBtn" aria-label="Notifications" type="button">
-          <Bell size={18} strokeWidth={2} />
-        </button>
-        <button className="navbar__iconBtn" aria-label="Settings" type="button">
-          <Settings size={18} strokeWidth={2} />
-        </button>
-        <div className="navbar__profile">
-          <span className="navbar__avatar">S</span>
-          <span className="navbar__username">Sana</span>
-        </div>
-      </div>
-    </header>
-  );
+function formatTime12(timeStr) {
+  if (!timeStr) return "";
+  const parts = timeStr.split(":");
+  if (parts.length < 2) return timeStr;
+  let h = parseInt(parts[0], 10);
+  const m = parts[1];
+  if (isNaN(h)) return timeStr;
+  const period = h >= 12 ? "PM" : "AM";
+  h = h % 12 === 0 ? 12 : h % 12;
+  const hStr = String(h).padStart(2, "0");
+  return `${hStr}:${m} ${period}`;
 }
 
-// --- Helper to generate time options (00:00 – 23:30) ---
+// --- Helper to generate time options in 12-hour AM/PM format ---
 const generateTimeOptions = () => {
   const times = [];
   for (let h = 0; h < 24; h++) {
     for (let m = 0; m < 60; m += 30) {
-      const hour = String(h).padStart(2, "0");
+      const hour24 = String(h).padStart(2, "0");
       const min = String(m).padStart(2, "0");
-      times.push(`${hour}:${min}`);
+      const value = `${hour24}:${min}`;
+
+      const period = h >= 12 ? "PM" : "AM";
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      const hour12Str = String(h12).padStart(2, "0");
+      const label = `${hour12Str}:${min} ${period}`;
+
+      times.push({ value, label });
     }
   }
   return times;
@@ -276,7 +252,7 @@ function ScheduleForm({ onSchedule }) {
         {/* Time slot selection dropdown */}
         <label className="field">
           <span className="field__label">
-            <ClockIcon size={14} className="field__icon" /> Select Start Time
+            <ClockIcon size={14} className="field__icon" /> Select Time
           </span>
           <select
             className="field__input"
@@ -284,9 +260,9 @@ function ScheduleForm({ onSchedule }) {
             onChange={(e) => setSelectedTime(e.target.value)}
           >
             <option value="">Select time</option>
-            {TIME_OPTIONS.map((time) => (
-              <option key={time} value={time}>
-                {time}
+            {TIME_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
               </option>
             ))}
           </select>
@@ -381,12 +357,17 @@ function ScheduleForm({ onSchedule }) {
   );
 }
 
-// --- InterviewList (unchanged) ---
-function InterviewList({ interviews, onSelectInterview }) {
+import { useAuth } from "../context/AuthContext";
+
+// --- Descriptive InterviewList ---
+function InterviewList({ interviews, onSelectInterview, userRole }) {
   const [filter, setFilter] = useState("All");
   const filters = ["All", "Scheduled", "Completed", "Cancelled"];
 
-  const filtered = filter === "All" ? interviews : interviews.filter((i) => i.status === filter);
+  const safeInterviews = Array.isArray(interviews) ? interviews : [];
+  const filtered = filter === "All"
+    ? safeInterviews
+    : safeInterviews.filter((i) => i.status === filter);
 
   return (
     <div className="card">
@@ -404,37 +385,86 @@ function InterviewList({ interviews, onSelectInterview }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="empty">No interviews in this category yet.</div>
+        <div className="empty">No interviews found in this category.</div>
       ) : (
-        <div className="list">
-          {filtered.map((iv) => (
-            <button
-              key={iv.id}
-              className="list__row"
-              onClick={() => onSelectInterview(iv)}
-              type="button"
-            >
-              <div className="list__main">
-                <span className="list__candidate">{iv.interviewer}</span>
-                <span className="list__meta">
-                  <Calendar size={13} /> {formatDate(iv.date)}
-                  <span className="dot" />
-                  <Clock size={13} /> {iv.time}
-                </span>
+        <div className="descriptive-interview-list">
+          {filtered.map((iv, index) => {
+            const isMeetingReady = Boolean(iv.meeting_link);
+            const candidateUser = iv.candidate_username || iv.candidate || "candidate";
+            const interviewerUser = iv.interviewer_username || iv.interviewer || "interviewer";
+
+            return (
+              <div
+                key={iv.id || index}
+                className="descriptive-interview-card"
+                onClick={() => onSelectInterview(iv)}
+              >
+                <div className="descriptive-card__header">
+                  <div className="descriptive-card__status-wrap">
+                    <StatusBadge status={iv.status} />
+                  </div>
+                </div>
+
+                <div className="descriptive-card__body">
+                  <div className="descriptive-info-grid">
+                    <div className="descriptive-info-item">
+                      <User size={15} className="info-icon" />
+                      <div>
+                        <span className="info-label">Candidate</span>
+                        <strong className="info-value">{candidateUser}</strong>
+                      </div>
+                    </div>
+
+                    <div className="descriptive-info-item">
+                      <User size={15} className="info-icon" />
+                      <div>
+                        <span className="info-label">Interviewer</span>
+                        <strong className="info-value">{interviewerUser}</strong>
+                      </div>
+                    </div>
+
+                    <div className="descriptive-info-item">
+                      <Calendar size={15} className="info-icon" />
+                      <div>
+                        <span className="info-label">Scheduled Date</span>
+                        <strong className="info-value">{formatDate(iv.date)}</strong>
+                      </div>
+                    </div>
+
+                    <div className="descriptive-info-item">
+                      <Clock size={15} className="info-icon" />
+                      <div>
+                        <span className="info-label">Time & Duration</span>
+                        <strong className="info-value">
+                          {formatTime12(iv.time)} ({iv.duration_minutes || 60} mins)
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="descriptive-card__footer">
+                  <div className="meeting-status">
+                    {isMeetingReady ? (
+                      <span className="meeting-badge ready">🟢 Meeting Link Ready</span>
+                    ) : (
+                      <span className="meeting-badge pending">🟡 Pending Acceptance</span>
+                    )}
+                  </div>
+                  <button className="btn-join-session" type="button">
+                    View & Join Lobby →
+                  </button>
+                </div>
               </div>
-              <div className="list__side">
-                <span className="tag">{iv.type}</span>
-                <StatusBadge status={iv.status} />
-              </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-// --- InterviewDetails (unchanged) ---
+// --- InterviewDetails ---
 function InterviewDetails({ interview, onBack, onUpdateStatus }) {
   return (
     <div className="card details">
@@ -445,7 +475,7 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
       <div className="details__header">
         <div>
           <h2>{interview.interviewer}</h2>
-          <span className="tag">{interview.type}</span>
+          <span className="tag">{interview.type || "Interview"}</span>
         </div>
         <StatusBadge status={interview.status} />
       </div>
@@ -453,9 +483,15 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
       <div className="details__grid">
         <div className="details__item">
           <span className="details__label">
+            <User size={14} /> Candidate
+          </span>
+          <span className="details__value">{interview.candidate || "Candidate"}</span>
+        </div>
+        <div className="details__item">
+          <span className="details__label">
             <User size={14} /> Interviewer
           </span>
-          <span className="details__value">{interview.interviewer}</span>
+          <span className="details__value">{interview.interviewer || "Interviewer"}</span>
         </div>
         <div className="details__item">
           <span className="details__label">
@@ -467,7 +503,7 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
           <span className="details__label">
             <Clock size={14} /> Time
           </span>
-          <span className="details__value">{interview.time}</span>
+          <span className="details__value">{interview.time} ({interview.duration_minutes || 60} mins)</span>
         </div>
       </div>
 
@@ -493,18 +529,29 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
   );
 }
 
-// --- Main export (unchanged) ---
+// --- Main export ---
 export default function InterviewSchedule({
   standalone = false,
   interviews: propInterviews,
   onSchedule: propOnSchedule,
   onSelectInterview: propOnSelectInterview,
 }) {
+  const { userProfile } = useAuth();
+  const userRole = userProfile?.role || localStorage.getItem("user_role") || "candidate";
+  const isCandidate = userRole === "candidate";
+
   const [localInterviews, setLocalInterviews] = useState(initialInterviews);
   const interviews = propInterviews || localInterviews;
 
-  const [tab, setTab] = useState("schedule");
+  // Interviewers only have access to "upcoming" tab
+  const [tab, setTab] = useState(isCandidate ? "schedule" : "upcoming");
   const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    if (!isCandidate && tab === "schedule") {
+      setTab("upcoming");
+    }
+  }, [isCandidate, tab]);
 
   const handleSchedule = (newInterview) => {
     if (propOnSchedule) {
@@ -540,22 +587,24 @@ export default function InterviewSchedule({
         <div className="page__header">
           <div>
             <h1>Interview Scheduling</h1>
-            <p>Schedule, track, and manage interviews in one place.</p>
+            <p>
+              {isCandidate
+                ? "Request and track upcoming mock interview sessions."
+                : "View and manage scheduled candidate interviews."}
+            </p>
           </div>
-          <button className="btn btn--primary" onClick={() => setTab("schedule")} type="button">
-            <Plus size={16} strokeWidth={2.5} />
-            New Interview
-          </button>
         </div>
 
         <div className="tabs">
-          <button
-            className={`tabs__item ${tab === "schedule" ? "tabs__item--active" : ""}`}
-            onClick={() => setTab("schedule")}
-            type="button"
-          >
-            Schedule Interview
-          </button>
+          {isCandidate && (
+            <button
+              className={`tabs__item ${tab === "schedule" ? "tabs__item--active" : ""}`}
+              onClick={() => setTab("schedule")}
+              type="button"
+            >
+              Schedule Interview
+            </button>
+          )}
           <button
             className={`tabs__item ${tab === "upcoming" || tab === "details" ? "tabs__item--active" : ""}`}
             onClick={() => setTab("upcoming")}
@@ -565,9 +614,13 @@ export default function InterviewSchedule({
           </button>
         </div>
 
-        {tab === "schedule" && <ScheduleForm onSchedule={handleSchedule} />}
+        {isCandidate && tab === "schedule" && <ScheduleForm onSchedule={handleSchedule} />}
         {tab === "upcoming" && (
-          <InterviewList interviews={interviews} onSelectInterview={handleSelect} />
+          <InterviewList
+            interviews={interviews}
+            onSelectInterview={handleSelect}
+            userRole={userRole}
+          />
         )}
         {tab === "details" && selected && (
           <InterviewDetails

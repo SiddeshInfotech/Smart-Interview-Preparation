@@ -186,7 +186,7 @@ const Quiz = () => {
                 <div className="divider"></div>
 
                 {/* TOPICS */}
-                <div className={`slide-section ${showTopics ? 'slide-enter-active' : 'slide-exit-active'}`}>
+                <div className={`slide-section ${showTopics ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 100 }}>
                   <div className="slide-inner">
                     <div className="setup-section">
                       <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -261,7 +261,7 @@ const Quiz = () => {
                 </div>
 
                 {/* DIFFICULTY */}
-                <div className={`slide-section ${showDifficulty ? 'slide-enter-active' : 'slide-exit-active'}`}>
+                <div className={`slide-section ${showDifficulty ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 50 }}>
                   <div className="slide-inner">
                     <div className="divider"></div>
                     <div className="setup-section">
@@ -286,7 +286,7 @@ const Quiz = () => {
                 </div>
 
                 {/* QUESTION COUNT */}
-                <div className={`slide-section ${showQuestionCount ? 'slide-enter-active' : 'slide-exit-active'}`}>
+                <div className={`slide-section ${showQuestionCount ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 20 }}>
                   <div className="slide-inner">
                     <div className="divider"></div>
                     <div className="setup-section">
@@ -310,7 +310,7 @@ const Quiz = () => {
                 </div>
 
                 {/* CUSTOM INSTRUCTIONS */}
-                <div className={`slide-section ${showCustomInstructions ? 'slide-enter-active' : 'slide-exit-active'}`}>
+                <div className={`slide-section ${showCustomInstructions ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 10 }}>
                   <div className="slide-inner">
                     <div className="divider"></div>
                     <div className="setup-section">

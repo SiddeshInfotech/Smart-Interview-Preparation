@@ -57,15 +57,17 @@ export default function Interview() {
       const data = res.data.results || res.data || [];
       const transformed = data.map((item) => ({
         id: item.schedule_id,
-        interviewer: item.interviewer_name || "Interviewer",
-        candidate: item.candidate_name || "Candidate",
+        interviewer: item.interviewer_name || item.interviewer_username || "Interviewer",
+        interviewer_username: item.interviewer_username || item.interviewer_name || "interviewer",
+        candidate: item.candidate_name || item.candidate_username || "Candidate",
+        candidate_username: item.candidate_username || item.candidate_name || "candidate",
         date: item.scheduled_date,
         time: item.scheduled_time,
-        type: "Interview", // can be extended later
+        duration_minutes: item.duration_minutes || 60,
+        type: "Interview",
         status: item.status || "Scheduled",
         roomName: item.room_name,
         meeting_link: item.meeting_link,
-        // Keep original data if needed
         ...item,
       }));
       setInterviews(transformed);
@@ -111,9 +113,18 @@ export default function Interview() {
   }
 
   // ---- LiveKit identity from user ----
-  const identity = user?.user_id || user?.email || "guest";
-  const participantName = user?.full_name || "Guest";
   const role = user?.role || "candidate";
+  const identity = user?.id
+    ? `usr_${role}_${user.id}`
+    : user?.user_id
+    ? `usr_${role}_${user.user_id}`
+    : user?.username
+    ? `usr_${role}_${user.username}`
+    : user?.email
+    ? `usr_${role}_${user.email.replace(/[^a-zA-Z0-9]/g, "_")}`
+    : `${role}_${Math.floor(100000 + Math.random() * 900000)}`;
+
+  const participantName = user?.full_name || user?.username || user?.email || role;
 
   return (
     <div className="interview-dashboard">

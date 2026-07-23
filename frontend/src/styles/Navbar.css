@@ -7,10 +7,12 @@
   padding: 0 24px;
   display: flex;
   align-items: center;
-  height: 64px;
-  position: sticky;
+  height: 72px;
+  position: fixed;
   top: 0;
-  z-index: 100;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 
 .navbar-container {

@@ -28,13 +28,39 @@ export default function NotificationPopup() {
   const wrapperRef = useRef(null);
 
   const {
-    notifications,
-    unreadCount,
-    loadingNotifications: loading,
+    notifications = [],
+    unreadCount = 0,
+    loadingNotifications: loading = false,
     markAsRead,
     markAllAsRead,
     fetchNotifications,
   } = useAuth();
+
+  // Close popup on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
+
+  const filtered = safeNotifications.filter((n) => {
+    switch (activeTab) {
+      case "Unread":
+        return !n.is_read;
+      case "Read":
+        return n.is_read;
+      case "System":
+        return n.notification_type === "system";
+      default:
+        return true;
+    }
+  });
 
   // ===========================
   // Accept Interview Request

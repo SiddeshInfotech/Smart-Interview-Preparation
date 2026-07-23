@@ -298,9 +298,11 @@ code {
 .top-navbar {
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 100;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   height: 72px;
   display: flex;
   align-items: center;

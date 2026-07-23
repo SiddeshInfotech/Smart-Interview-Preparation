@@ -880,3 +880,151 @@ select.field__input {
     justify-content: space-between;
   }
 }
+
+/* ============ Descriptive Interview Card ============ */
+.descriptive-interview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.descriptive-interview-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.descriptive-interview-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+  transform: translateY(-2px);
+}
+
+.descriptive-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+.descriptive-card__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.descriptive-card__number {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563eb;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.descriptive-card__id {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.descriptive-card__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.descriptive-info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .descriptive-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 550px) {
+  .descriptive-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.descriptive-info-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.descriptive-info-item .info-icon {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.descriptive-info-item .info-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.descriptive-info-item .info-value {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.descriptive-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.meeting-badge {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.meeting-badge.ready {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.meeting-badge.pending {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.btn-join-session {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-join-session:hover {
+  background: #1d4ed8;
+}

@@ -2,13 +2,21 @@ from rest_framework import serializers
 from .models import InterviewSchedule
 
 class InterviewScheduleSerializer(serializers.ModelSerializer):
-    # Add names from the related User models
+    # Add names and usernames from the related User models
     interviewer_name = serializers.CharField(
         source='interviewer.user.full_name',
         read_only=True
     )
+    interviewer_username = serializers.CharField(
+        source='interviewer.user.username',
+        read_only=True
+    )
     candidate_name = serializers.CharField(
         source='candidate.user.full_name',
+        read_only=True
+    )
+    candidate_username = serializers.CharField(
+        source='candidate.user.username',
         read_only=True
     )
 
@@ -17,9 +25,11 @@ class InterviewScheduleSerializer(serializers.ModelSerializer):
         fields = [
             'schedule_id',
             'candidate',
-            'candidate_name',          # ✅ included
+            'candidate_name',
+            'candidate_username',
             'interviewer',
-            'interviewer_name',        # ✅ included
+            'interviewer_name',
+            'interviewer_username',
             'scheduled_date',
             'scheduled_time',
             'duration_minutes',

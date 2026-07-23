@@ -6,6 +6,7 @@ import {
   useTracks,
   VideoTrack,
   useParticipants,
+  RoomAudioRenderer,
 } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import '@livekit/components-styles';
@@ -24,23 +25,22 @@ const LiveVideo = ({
   toggleMic,
   handleEndInterview,
 }) => {
-  const localParticipant = useLocalParticipant();
+  const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
-  const tracks = useTracks(
-    [Track.Source.Camera, Track.Source.Microphone],
-    { updateOnlyOn: ['participantJoined', 'trackSubscribed'] }
-  );
+  const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone]);
+
+  const localIdentity = localParticipant?.identity;
 
   // Filter for remote video tracks
   const remoteVideoTracks = tracks.filter(
     (track) =>
-      track.participant.identity !== localParticipant?.localParticipant?.identity &&
+      track.participant.identity !== localIdentity &&
       track.source === Track.Source.Camera
   );
 
   const hasRemoteVideo = remoteVideoTracks.length > 0;
   const remoteParticipants = participants.filter(
-    (p) => p.identity !== localParticipant?.localParticipant?.identity
+    (p) => p.identity !== localIdentity
   );
   const hasRemoteParticipant = remoteParticipants.length > 0;
 
@@ -596,6 +596,7 @@ const InterviewPage = ({
             }}
             className="livekit-room-container"
           >
+            <RoomAudioRenderer />
             <LiveVideo
               videoRef={videoRef}
               stream={localStreamRef.current}
