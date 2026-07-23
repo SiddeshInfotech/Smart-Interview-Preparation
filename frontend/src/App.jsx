@@ -22,6 +22,7 @@ import Interview from "./pages/Interview";
 import AppShell from "./components/AppShell";
 import RequireRole from "./components/RequireRole";
 import InterviewPage from "./pages/InterviewPage";
+import Pricing from "./pages/Pricing";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         <Route path="/Auth-page" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/candidate-profile" element={<CandidateProfile />} />
+        <Route path="/pricing" element={<Pricing />} />
         
         {/* Quiz routes – candidate only */}
         <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>
