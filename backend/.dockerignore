@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+db_local.sqlite3
+.env
+.git
+.gitignore
+node_modules/
+media/
