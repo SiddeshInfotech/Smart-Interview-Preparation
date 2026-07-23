@@ -23,6 +23,11 @@ import AppShell from "./components/AppShell";
 import RequireRole from "./components/RequireRole";
 import InterviewPage from "./pages/InterviewPage";
 
+// ── Admin Panel ────────────────────────────────────────────
+import AdminLogin from "./pages/AdminLogin";
+import AdminPanel from "./pages/AdminPanel";
+import AdminRoute from "./components/AdminRoute";
+
 import { AuthProvider } from "./context/AuthContext";
 
 function App() {
@@ -65,6 +70,12 @@ function App() {
             <Route element={<RequireRole allowedRoles={["candidate", "interviewer"]} redirectTo="/dashboard" />}>
               <Route path="interview" element={<Interview />} />
             </Route>
+          </Route>
+
+          {/* ── Admin Panel ─────────────────────────── */}
+          <Route path="/my_admin_panel/login" element={<AdminLogin />} />
+          <Route element={<AdminRoute />}>
+            <Route path="/my_admin_panel/*" element={<AdminPanel />} />
           </Route>
         </Routes>
       </BrowserRouter>
