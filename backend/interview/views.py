@@ -1,7 +1,6 @@
 import os
 import logging
 import uuid
-from datetime import timedelta
 
 from rest_framework import generics, permissions
 from rest_framework.decorators import api_view, permission_classes
@@ -11,6 +10,9 @@ from livekit import api
 
 from .models import InterviewSchedule
 from .serializers import InterviewScheduleSerializer
+
+from django.utils import timezone
+from datetime import combine, timedelta
 
 
 # ========== SCHEDULING VIEW ==========
@@ -146,9 +148,6 @@ def get_livekit_token(request):
                     return Response({'error': 'You are not authorized for this interview.'}, status=403)
 
             # Check scheduled date and time (allow joining 15 min before and 15 min after duration)
-            from django.utils import timezone
-            from datetime import combine, timedelta
-
             scheduled_start = timezone.make_aware(combine(schedule.scheduled_date, schedule.scheduled_time))
             now = timezone.now()
 
