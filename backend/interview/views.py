@@ -1,9 +1,8 @@
 import os
 import logging
 import uuid
-from datetime import datetime, timedelta          # ✅ correct import
-
-from django.utils import timezone                  # ✅ moved to top
+from datetime import datetime, timedelta
+from django.utils import timezone
 from rest_framework import generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -12,6 +11,16 @@ from livekit import api
 
 from .models import InterviewSchedule
 from .serializers import InterviewScheduleSerializer
+
+# ---------- LOGGING ----------
+logger = logging.getLogger(__name__)
+
+# ---------- CREDENTIALS (stripped) ----------
+LIVEKIT_API_KEY = os.environ.get('LIVEKIT_API_KEY', '').strip()
+LIVEKIT_API_SECRET = os.environ.get('LIVEKIT_API_SECRET', '').strip()
+
+if not LIVEKIT_API_KEY or not LIVEKIT_API_SECRET:
+    logger.warning("LiveKit API credentials are not set in environment.")
 
 
 # ========== SCHEDULING VIEW ==========
@@ -95,14 +104,6 @@ def create_interview_schedule(request):
 
 
 # ========== LIVEKIT TOKEN ENDPOINT ==========
-logger = logging.getLogger(__name__)
-LIVEKIT_API_KEY = os.environ.get('LIVEKIT_API_KEY')
-LIVEKIT_API_SECRET = os.environ.get('LIVEKIT_API_SECRET')
-
-if not LIVEKIT_API_KEY or not LIVEKIT_API_SECRET:
-    logger.warning("LiveKit API credentials are not set in environment.")
-
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def get_livekit_token(request):
@@ -111,8 +112,14 @@ def get_livekit_token(request):
     display_name = request.data.get('name')
     role = request.data.get('role', 'participant')
 
+    # ✅ Convert identity to string (LiveKit requires string)
+    if identity is not None:
+        identity = str(identity)
+
     if not identity:
         identity = request.data.get('participant_name')
+        if identity is not None:
+            identity = str(identity)
     if not display_name:
         display_name = identity or 'Participant'
 
@@ -122,6 +129,11 @@ def get_livekit_token(request):
             status=400
         )
 
+    # ✅ Debug: log credentials and identity
+    logger.info(f"LIVEKIT_API_KEY: {LIVEKIT_API_KEY[:5]}... (length {len(LIVEKIT_API_KEY)})")
+    logger.info(f"Identity: {identity}, Room: {room_name}, Role: {role}")
+
+    # Validate timing constraints and authorization for room sessions
     try:
         schedule = InterviewSchedule.objects.filter(room_name=room_name).first()
         if schedule:
@@ -139,7 +151,7 @@ def get_livekit_token(request):
                     return Response({'error': 'You are not authorized for this interview.'}, status=403)
 
             scheduled_start = timezone.make_aware(
-                datetime.combine(schedule.scheduled_date, schedule.scheduled_time)   # ✅ use datetime.combine
+                datetime.combine(schedule.scheduled_date, schedule.scheduled_time)
             )
             now = timezone.now()
 
@@ -163,7 +175,7 @@ def get_livekit_token(request):
     try:
         token = (
             api.AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
-            .with_identity(identity)
+            .with_identity(identity)          # ✅ now a string
             .with_name(display_name)
             .with_metadata(f'{{"role":"{role}"}}')
             .with_grants(
@@ -176,7 +188,12 @@ def get_livekit_token(request):
             )
             .with_ttl(timedelta(hours=2))
         )
-        return Response({'token': token.to_jwt()})
+        jwt_token = token.to_jwt()
+
+        # ✅ Log the generated token (first 100 chars)
+        logger.info(f"Generated token: {jwt_token[:100]}...")
+
+        return Response({'token': jwt_token})
 
     except Exception as e:
         logger.exception("LiveKit token generation failed.")
