@@ -28,11 +28,35 @@ const LiveVideo = ({
   participantName,
   selectedInterview,
 }) => {
-  const { localParticipant } = useLocalParticipant();
+  const { localParticipant, setCameraEnabled, setMicrophoneEnabled } = useLocalParticipant();
   const participants = useParticipants();
   const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone]);
 
   const localIdentity = localParticipant?.identity;
+
+  const handleToggleCamera = async () => {
+    const nextState = !isCameraOn;
+    toggleCamera();
+    if (setCameraEnabled) {
+      try {
+        await setCameraEnabled(nextState);
+      } catch (err) {
+        console.warn('Set camera enabled error:', err);
+      }
+    }
+  };
+
+  const handleToggleMic = async () => {
+    const nextState = !isMicOn;
+    toggleMic();
+    if (setMicrophoneEnabled) {
+      try {
+        await setMicrophoneEnabled(nextState);
+      } catch (err) {
+        console.warn('Set mic enabled error:', err);
+      }
+    }
+  };
 
   // Filter for remote video tracks
   const remoteVideoTracks = tracks.filter(
@@ -118,13 +142,13 @@ const LiveVideo = ({
         <div className="footer-controls">
           <button
             className={`control-btn ${isCameraOn ? 'active' : 'inactive'}`}
-            onClick={toggleCamera}
+            onClick={handleToggleCamera}
           >
             {isCameraOn ? '📷 On' : '📷 Off'}
           </button>
           <button
             className={`control-btn ${isMicOn ? 'active' : 'inactive'}`}
-            onClick={toggleMic}
+            onClick={handleToggleMic}
           >
             {isMicOn ? '🎤 On' : '🎤 Off'}
           </button>
@@ -511,17 +535,27 @@ const InterviewPage = ({
     alert('Interview ended.');
   };
 
-  // ---- Toggle camera ----
+  // ---- Toggle camera & mic ----
   const toggleCamera = () => {
-    setIsCameraOn(!isCameraOn);
-    if (localStreamRef.current) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      if (videoTrack) videoTrack.enabled = !isCameraOn;
-    }
+    setIsCameraOn((prev) => {
+      const nextState = !prev;
+      if (localStreamRef.current) {
+        const videoTrack = localStreamRef.current.getVideoTracks()[0];
+        if (videoTrack) videoTrack.enabled = nextState;
+      }
+      return nextState;
+    });
   };
 
   const toggleMic = () => {
-    setIsMicOn(!isMicOn);
+    setIsMicOn((prev) => {
+      const nextState = !prev;
+      if (localStreamRef.current) {
+        const audioTrack = localStreamRef.current.getAudioTracks()[0];
+        if (audioTrack) audioTrack.enabled = nextState;
+      }
+      return nextState;
+    });
   };
 
   const formatTime = (seconds) => {
