@@ -3,6 +3,7 @@ admin_panel/views.py — Custom Admin Panel API Views
 
 Provides full CRUD operations for all 11 real Django models registered in the system.
 All endpoints require superuser or staff permissions.
+Includes cascading deletion of dependent records across all models.
 """
 
 from rest_framework import status
@@ -129,6 +130,62 @@ def admin_stats(request):
 
 
 # ─────────────────────────────────────────────────────────────
+# Cascading Delete Helpers
+# ─────────────────────────────────────────────────────────────
+def cascade_delete_candidate(cand):
+    # 1. Delete associated interview schedules
+    InterviewSchedule.objects.filter(candidate=cand).delete()
+
+    # 2. Delete associated resumes and resume analyses
+    resumes = Resume.objects.filter(candidate_id=cand.candidate_id)
+    ResumeAnalysis.objects.filter(resume__in=resumes).delete()
+    resumes.delete()
+
+    # 3. Delete candidate profile
+    cand.delete()
+
+
+def cascade_delete_interviewer(inter):
+    # 1. Delete associated availabilities
+    InterviewerAvailability.objects.filter(interviewer=inter).delete()
+
+    # 2. Delete associated interview schedules
+    InterviewSchedule.objects.filter(interviewer=inter).delete()
+
+    # 3. Delete interviewer profile
+    inter.delete()
+
+
+def cascade_delete_user(user):
+    # 1. Candidate profile & dependents
+    try:
+        cand = Candidate_Profile.objects.get(user=user)
+        cascade_delete_candidate(cand)
+    except Candidate_Profile.DoesNotExist:
+        pass
+
+    # 2. Interviewer profile & dependents
+    try:
+        inter = Interviewer_Profile.objects.get(user=user)
+        cascade_delete_interviewer(inter)
+    except Interviewer_Profile.DoesNotExist:
+        pass
+
+    # 3. Notifications & OTPs
+    Notification.objects.filter(user=user).delete()
+    OtpVerification.objects.filter(user=user).delete()
+
+    # 4. User record
+    user.delete()
+
+
+def cascade_delete_resume(resume):
+    # Delete resume analysis dependent on this resume
+    ResumeAnalysis.objects.filter(resume=resume).delete()
+    resume.delete()
+
+
+# ─────────────────────────────────────────────────────────────
 # Generic CRUD Helper Functions
 # ─────────────────────────────────────────────────────────────
 def list_create(request, model, serializer_class, pk_field="pk"):
@@ -176,8 +233,18 @@ def retrieve_update_delete(request, model, serializer_class, pk):
         except Exception as exc:
             return error(str(exc), 400)
 
+    # DELETE — with cascading deletion for dependent records
     try:
-        obj.delete()
+        if isinstance(obj, User):
+            cascade_delete_user(obj)
+        elif isinstance(obj, Candidate_Profile):
+            cascade_delete_candidate(obj)
+        elif isinstance(obj, Interviewer_Profile):
+            cascade_delete_interviewer(obj)
+        elif isinstance(obj, Resume):
+            cascade_delete_resume(obj)
+        else:
+            obj.delete()
         return success({"detail": "Deleted successfully."})
     except Exception as exc:
         return error(str(exc), 400)
