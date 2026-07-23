@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import create_interview_schedule, get_livekit_token, accept_interview, decline_interview
+from .views import create_interview_schedule, get_livekit_token, accept_interview, decline_interview, UserInterviewListView
 
 urlpatterns = [
     path('schedule/', create_interview_schedule, name='schedule-interview'),
