@@ -108,15 +108,24 @@ def admin_stats(request):
 # ─────────────────────────────────────────────────────────────
 def list_create(request, model, serializer_class, pk_field="pk"):
     if request.method == "GET":
-        qs = model.objects.all().order_by(f"-{pk_field}")
-        ser = serializer_class(qs, many=True)
-        return success(ser.data)
+        try:
+            try:
+                qs = model.objects.all().order_by(f"-{pk_field}")
+            except Exception:
+                qs = model.objects.all()
+            ser = serializer_class(qs, many=True)
+            return success(ser.data)
+        except Exception as exc:
+            return error(str(exc), 500)
 
-    ser = serializer_class(data=request.data)
-    if ser.is_valid():
-        ser.save()
-        return success(ser.data, 201)
-    return Response({"success": False, "errors": ser.errors}, status=400)
+    try:
+        ser = serializer_class(data=request.data)
+        if ser.is_valid():
+            ser.save()
+            return success(ser.data, 201)
+        return Response({"success": False, "errors": ser.errors}, status=400)
+    except Exception as exc:
+        return error(str(exc), 400)
 
 
 def retrieve_update_delete(request, model, serializer_class, pk):
@@ -126,18 +135,27 @@ def retrieve_update_delete(request, model, serializer_class, pk):
         return error("Record not found.", 404)
 
     if request.method == "GET":
-        return success(serializer_class(obj).data)
+        try:
+            return success(serializer_class(obj).data)
+        except Exception as exc:
+            return error(str(exc), 500)
 
     if request.method in ("PUT", "PATCH"):
         partial = request.method == "PATCH"
-        ser = serializer_class(obj, data=request.data, partial=partial)
-        if ser.is_valid():
-            ser.save()
-            return success(ser.data)
-        return Response({"success": False, "errors": ser.errors}, status=400)
+        try:
+            ser = serializer_class(obj, data=request.data, partial=partial)
+            if ser.is_valid():
+                ser.save()
+                return success(ser.data)
+            return Response({"success": False, "errors": ser.errors}, status=400)
+        except Exception as exc:
+            return error(str(exc), 400)
 
-    obj.delete()
-    return success({"detail": "Deleted successfully."})
+    try:
+        obj.delete()
+        return success({"detail": "Deleted successfully."})
+    except Exception as exc:
+        return error(str(exc), 400)
 
 
 # ─────────────────────────────────────────────────────────────

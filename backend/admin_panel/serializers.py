@@ -53,7 +53,10 @@ class OtpVerificationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_user_email(self, obj):
-        return obj.user.email if obj.user else None
+        try:
+            return obj.user.email
+        except Exception:
+            return None
 
 
 # ── Candidate Profile ────────────────────────────────────────
@@ -66,10 +69,16 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_user_email(self, obj):
-        return obj.user.email if obj.user else None
+        try:
+            return obj.user.email
+        except Exception:
+            return None
 
     def get_user_name(self, obj):
-        return obj.user.full_name if obj.user else None
+        try:
+            return obj.user.full_name
+        except Exception:
+            return None
 
 
 # ── Interviewer Profile ──────────────────────────────────────
@@ -82,10 +91,16 @@ class InterviewerProfileSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_user_email(self, obj):
-        return obj.user.email if obj.user else None
+        try:
+            return obj.user.email
+        except Exception:
+            return None
 
     def get_user_name(self, obj):
-        return obj.user.full_name if obj.user else None
+        try:
+            return obj.user.full_name
+        except Exception:
+            return None
 
 
 # ── Interviewer Availability ─────────────────────────────────
@@ -97,7 +112,10 @@ class InterviewerAvailabilitySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_interviewer_name(self, obj):
-        return obj.interviewer.user.full_name if obj.interviewer and obj.interviewer.user else None
+        try:
+            return obj.interviewer.user.full_name
+        except Exception:
+            return None
 
 
 # ── Interview Schedule ───────────────────────────────────────
@@ -110,10 +128,16 @@ class InterviewScheduleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_candidate_name(self, obj):
-        return obj.candidate.user.full_name if obj.candidate and obj.candidate.user else None
+        try:
+            return obj.candidate.user.full_name
+        except Exception:
+            return None
 
     def get_interviewer_name(self, obj):
-        return obj.interviewer.user.full_name if obj.interviewer and obj.interviewer.user else None
+        try:
+            return obj.interviewer.user.full_name
+        except Exception:
+            return None
 
 
 # ── Feedback ─────────────────────────────────────────────────
@@ -153,4 +177,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_user_email(self, obj):
-        return obj.user.email if obj.user else None
+        try:
+            return obj.user.email
+        except Exception:
+            return None

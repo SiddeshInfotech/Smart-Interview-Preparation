@@ -15,6 +15,25 @@ adminApi.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401/403 responses automatically
+adminApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      if (!window.location.pathname.includes("/my_admin_panel/login")) {
+        localStorage.removeItem("admin_access_token");
+        localStorage.removeItem("admin_refresh_token");
+        localStorage.removeItem("admin_user");
+        window.location.href = "/my_admin_panel/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // ── Auth & Stats ────────────────────────────────────────────
 export const adminLogin = (data) => adminApi.post("/admin_panel/login/", data);
 export const getAdminStats = () => adminApi.get("/admin_panel/stats/");

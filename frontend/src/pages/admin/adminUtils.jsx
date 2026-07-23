@@ -36,8 +36,13 @@ export function useAdminTable({ fetchFn, createFn, updateFn, deleteFn, pkField =
     try {
       const res = await fetchFn();
       setRows(res.data?.data || []);
-    } catch {
-      setError("Failed to load data. Check your connection or try again.");
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        err.message ||
+        "Failed to load data. Check your connection or try again.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
