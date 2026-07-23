@@ -2,20 +2,17 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import "../styles/AdminPanel.css";
 
-// Sub-pages
+// Sub-pages (All 11 Real Django Models)
 import AdminDashboard       from "./admin/AdminDashboard";
 import AdminUsers           from "./admin/AdminUsers";
 import AdminCandidates      from "./admin/AdminCandidates";
 import AdminInterviewers    from "./admin/AdminInterviewers";
-import AdminQuestions       from "./admin/AdminQuestions";
+import AdminAvailability    from "./admin/AdminAvailability";
 import AdminInterviews      from "./admin/AdminInterviews";
-import AdminSessions        from "./admin/AdminSessions";
 import AdminFeedback        from "./admin/AdminFeedback";
-import AdminAnalytics       from "./admin/AdminAnalytics";
+import AdminSkills          from "./admin/AdminSkills";
 import AdminResumes         from "./admin/AdminResumes";
 import AdminResumeAnalysis  from "./admin/AdminResumeAnalysis";
-import AdminSessionQuestions from "./admin/AdminSessionQuestions";
-import AdminSubmissions     from "./admin/AdminSubmissions";
 import AdminNotifications   from "./admin/AdminNotifications";
 import AdminOTPs            from "./admin/AdminOTPs";
 
@@ -33,30 +30,22 @@ const NAV = [
       { label: "Users",          path: "/my_admin_panel/users",          icon: <IconUsers /> },
       { label: "Candidates",     path: "/my_admin_panel/candidates",     icon: <IconPerson /> },
       { label: "Interviewers",   path: "/my_admin_panel/interviewers",   icon: <IconBriefcase /> },
+      { label: "Availability",   path: "/my_admin_panel/availabilities", icon: <IconClock /> },
     ],
   },
   {
-    section: "Content",
+    section: "Interviews & Feedback",
     items: [
-      { label: "Question Bank",    path: "/my_admin_panel/questions",         icon: <IconBook /> },
-      { label: "Session Questions",path: "/my_admin_panel/session-questions", icon: <IconClipboard /> },
-      { label: "Submissions",      path: "/my_admin_panel/submissions",       icon: <IconCode /> },
+      { label: "Schedules", path: "/my_admin_panel/interviews", icon: <IconCalendar /> },
+      { label: "Feedback",  path: "/my_admin_panel/feedback",   icon: <IconStar /> },
     ],
   },
   {
-    section: "Interviews",
-    items: [
-      { label: "Schedules",  path: "/my_admin_panel/interviews",  icon: <IconCalendar /> },
-      { label: "Sessions",   path: "/my_admin_panel/sessions",    icon: <IconVideo /> },
-      { label: "Feedback",   path: "/my_admin_panel/feedback",    icon: <IconStar /> },
-      { label: "Analytics",  path: "/my_admin_panel/analytics",   icon: <IconChart /> },
-    ],
-  },
-  {
-    section: "Documents",
+    section: "Resumes & Content",
     items: [
       { label: "Resumes",          path: "/my_admin_panel/resumes",         icon: <IconFile /> },
       { label: "Resume Analysis",  path: "/my_admin_panel/resume-analysis", icon: <IconSearch /> },
+      { label: "Skills",           path: "/my_admin_panel/skills",          icon: <IconBook /> },
     ],
   },
   {
@@ -70,26 +59,23 @@ const NAV = [
 
 // ── Page title map ─────────────────────────────────────────
 const PAGE_TITLES = {
-  "/my_admin_panel":                  "Dashboard",
-  "/my_admin_panel/users":            "Users",
-  "/my_admin_panel/candidates":       "Candidate Profiles",
-  "/my_admin_panel/interviewers":     "Interviewer Profiles",
-  "/my_admin_panel/questions":        "Question Bank",
-  "/my_admin_panel/session-questions":"Session Questions",
-  "/my_admin_panel/submissions":      "Coding Submissions",
-  "/my_admin_panel/interviews":       "Interview Schedules",
-  "/my_admin_panel/sessions":         "Interview Sessions",
-  "/my_admin_panel/feedback":         "Interview Feedback",
-  "/my_admin_panel/analytics":        "Performance Analytics",
-  "/my_admin_panel/resumes":          "Resumes",
-  "/my_admin_panel/resume-analysis":  "Resume Analysis",
-  "/my_admin_panel/notifications":    "Notifications",
-  "/my_admin_panel/otps":             "OTP Verification",
+  "/my_admin_panel":                 "Dashboard",
+  "/my_admin_panel/users":           "Users",
+  "/my_admin_panel/candidates":      "Candidate Profiles",
+  "/my_admin_panel/interviewers":    "Interviewer Profiles",
+  "/my_admin_panel/availabilities":  "Interviewer Availability",
+  "/my_admin_panel/interviews":      "Interview Schedules",
+  "/my_admin_panel/feedback":        "User Feedback",
+  "/my_admin_panel/resumes":         "Resumes",
+  "/my_admin_panel/resume-analysis": "Resume Analysis",
+  "/my_admin_panel/skills":          "Skills",
+  "/my_admin_panel/notifications":   "Notifications",
+  "/my_admin_panel/otps":            "OTP Verification",
 };
 
 export default function AdminPanel() {
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [admin, setAdmin] = useState(null);
 
   useEffect(() => {
@@ -106,9 +92,9 @@ export default function AdminPanel() {
     navigate("/my_admin_panel/login");
   };
 
-  const currentPath  = location.pathname.replace(/\/$/, "") || "/my_admin_panel";
-  const pageTitle    = PAGE_TITLES[currentPath] || "Admin Panel";
-  const initials     = admin?.full_name
+  const currentPath = location.pathname.replace(/\/$/, "") || "/my_admin_panel";
+  const pageTitle   = PAGE_TITLES[currentPath] || "Admin Panel";
+  const initials    = admin?.full_name
     ? admin.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
     : "A";
 
@@ -116,7 +102,6 @@ export default function AdminPanel() {
     <div className="admin-shell">
       {/* ── Sidebar ──────────────────────────── */}
       <aside className="admin-sidebar">
-        {/* Brand */}
         <div className="admin-sidebar__brand">
           <div className="admin-sidebar__logo">⚙</div>
           <div>
@@ -125,7 +110,6 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="admin-nav" aria-label="Admin navigation">
           {NAV.map((group) => (
             <div key={group.section}>
@@ -151,7 +135,6 @@ export default function AdminPanel() {
           ))}
         </nav>
 
-        {/* Footer */}
         <div className="admin-sidebar__footer">
           <div className="admin-sidebar__user">
             <div className="admin-sidebar__avatar">{initials}</div>
@@ -171,7 +154,6 @@ export default function AdminPanel() {
 
       {/* ── Main ─────────────────────────────── */}
       <div className="admin-main">
-        {/* Top bar */}
         <header className="admin-topbar">
           <div className="admin-topbar__left">
             <div className="admin-topbar__page-title">{pageTitle}</div>
@@ -190,24 +172,20 @@ export default function AdminPanel() {
           </div>
         </header>
 
-        {/* Page content */}
         <div className="admin-content">
           <Routes>
             <Route index element={<AdminDashboard />} />
-            <Route path="users"            element={<AdminUsers />} />
-            <Route path="candidates"       element={<AdminCandidates />} />
-            <Route path="interviewers"     element={<AdminInterviewers />} />
-            <Route path="questions"        element={<AdminQuestions />} />
-            <Route path="session-questions"element={<AdminSessionQuestions />} />
-            <Route path="submissions"      element={<AdminSubmissions />} />
-            <Route path="interviews"       element={<AdminInterviews />} />
-            <Route path="sessions"         element={<AdminSessions />} />
-            <Route path="feedback"         element={<AdminFeedback />} />
-            <Route path="analytics"        element={<AdminAnalytics />} />
-            <Route path="resumes"          element={<AdminResumes />} />
-            <Route path="resume-analysis"  element={<AdminResumeAnalysis />} />
-            <Route path="notifications"    element={<AdminNotifications />} />
-            <Route path="otps"             element={<AdminOTPs />} />
+            <Route path="users"           element={<AdminUsers />} />
+            <Route path="candidates"      element={<AdminCandidates />} />
+            <Route path="interviewers"    element={<AdminInterviewers />} />
+            <Route path="availabilities" element={<AdminAvailability />} />
+            <Route path="interviews"      element={<AdminInterviews />} />
+            <Route path="feedback"        element={<AdminFeedback />} />
+            <Route path="skills"          element={<AdminSkills />} />
+            <Route path="resumes"         element={<AdminResumes />} />
+            <Route path="resume-analysis" element={<AdminResumeAnalysis />} />
+            <Route path="notifications"   element={<AdminNotifications />} />
+            <Route path="otps"            element={<AdminOTPs />} />
           </Routes>
         </div>
       </div>
@@ -220,13 +198,10 @@ function IconGrid()      { return <svg viewBox="0 0 24 24" fill="none"><rect x="
 function IconUsers()     { return <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="3" stroke="currentColor" strokeWidth="1.7"/><path d="M3 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/><path d="M16 4c1.656 0 3 1.344 3 3s-1.344 3-3 3M21 20c0-3.314-1.343-6-3-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>; }
 function IconPerson()    { return <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.7"/><path d="M4 21c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>; }
 function IconBriefcase() { return <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.7"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M12 12v4M10 14h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>; }
+function IconClock()     { return <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>; }
 function IconBook()      { return <svg viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" strokeWidth="1.7"/></svg>; }
-function IconClipboard() { return <svg viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
-function IconCode()      { return <svg viewBox="0 0 24 24" fill="none"><polyline points="16 18 22 12 16 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/><polyline points="8 6 2 12 8 18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
 function IconCalendar()  { return <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.7"/><path d="M3 10h18M8 2v4M16 2v4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>; }
-function IconVideo()     { return <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.7"/><path d="M16 10l6-4v12l-6-4V10z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/></svg>; }
 function IconStar()      { return <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/></svg>; }
-function IconChart()     { return <svg viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/><path d="M7 16l4-4 4 4 4-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
 function IconFile()      { return <svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.7"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>; }
 function IconSearch()    { return <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.7"/><path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>; }
 function IconBell()      { return <svg viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>; }

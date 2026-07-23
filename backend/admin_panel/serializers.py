@@ -1,25 +1,17 @@
 from rest_framework import serializers
 
-# ── Models from their own apps ───────────────────────────────
+# ── Import real models from their Django apps ────────────────
 from authentication.models import User, OtpVerification
 from candidate.models import Candidate_Profile
-from interviewer.models import Interviewer_Profile
+from interviewer.models import Interviewer_Profile, InterviewerAvailability
 from interview.models import InterviewSchedule
+from feedback.models import Feedback
+from common.models import Skill
 from resume.models import Resume, ResumeAnalysis
 from notifications.models import Notification
 
-# ── Models housed in admin_panel (managed=False wrappers) ────
-from admin_panel.models import (
-    InterviewSession,
-    InterviewFeedback,
-    QuestionBank,
-    SessionQuestions,
-    CodingSubmissions,
-    PerformanceAnalytics,
-)
 
-
-# ── User ─────────────────────────────────────────────────────
+# ── Auth User ────────────────────────────────────────────────
 class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -32,53 +24,109 @@ class UsersSerializer(serializers.ModelSerializer):
             'password': {'write_only': True, 'required': False},
         }
 
+    def create(self, validated_data):
+        password = self.initial_data.get('password')
+        user = User(**validated_data)
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = self.initial_data.get('password')
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
+
+
+# ── OTP Verification ─────────────────────────────────────────
+class OtpVerificationSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = OtpVerification
+        fields = '__all__'
+
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else None
+
 
 # ── Candidate Profile ────────────────────────────────────────
 class CandidateProfileSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField(read_only=True)
+    user_name = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Candidate_Profile
         fields = '__all__'
 
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else None
+
+    def get_user_name(self, obj):
+        return obj.user.full_name if obj.user else None
+
 
 # ── Interviewer Profile ──────────────────────────────────────
 class InterviewerProfileSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField(read_only=True)
+    user_name = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Interviewer_Profile
         fields = '__all__'
 
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else None
 
-# ── Question Bank ────────────────────────────────────────────
-class QuestionBankSerializer(serializers.ModelSerializer):
+    def get_user_name(self, obj):
+        return obj.user.full_name if obj.user else None
+
+
+# ── Interviewer Availability ─────────────────────────────────
+class InterviewerAvailabilitySerializer(serializers.ModelSerializer):
+    interviewer_name = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
-        model = QuestionBank
+        model = InterviewerAvailability
         fields = '__all__'
+
+    def get_interviewer_name(self, obj):
+        return obj.interviewer.user.full_name if obj.interviewer and obj.interviewer.user else None
 
 
 # ── Interview Schedule ───────────────────────────────────────
 class InterviewScheduleSerializer(serializers.ModelSerializer):
+    candidate_name = serializers.SerializerMethodField(read_only=True)
+    interviewer_name = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = InterviewSchedule
         fields = '__all__'
 
+    def get_candidate_name(self, obj):
+        return obj.candidate.user.full_name if obj.candidate and obj.candidate.user else None
 
-# ── Interview Session ────────────────────────────────────────
-class InterviewSessionSerializer(serializers.ModelSerializer):
+    def get_interviewer_name(self, obj):
+        return obj.interviewer.user.full_name if obj.interviewer and obj.interviewer.user else None
+
+
+# ── Feedback ─────────────────────────────────────────────────
+class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
-        model = InterviewSession
+        model = Feedback
         fields = '__all__'
 
 
-# ── Interview Feedback ───────────────────────────────────────
-class InterviewFeedbackSerializer(serializers.ModelSerializer):
+# ── Skill ────────────────────────────────────────────────────
+class SkillSerializer(serializers.ModelSerializer):
     class Meta:
-        model = InterviewFeedback
-        fields = '__all__'
-
-
-# ── Performance Analytics ────────────────────────────────────
-class PerformanceAnalyticsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PerformanceAnalytics
+        model = Skill
         fields = '__all__'
 
 
@@ -96,29 +144,13 @@ class ResumeAnalysisSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# ── Session Questions ────────────────────────────────────────
-class SessionQuestionsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SessionQuestions
-        fields = '__all__'
-
-
-# ── Coding Submissions ───────────────────────────────────────
-class CodingSubmissionsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CodingSubmissions
-        fields = '__all__'
-
-
-# ── Notifications ────────────────────────────────────────────
+# ── Notification ─────────────────────────────────────────────
 class NotificationSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Notification
         fields = '__all__'
 
-
-# ── OTP Verification ─────────────────────────────────────────
-class OtpVerificationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OtpVerification
-        fields = '__all__'
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else None

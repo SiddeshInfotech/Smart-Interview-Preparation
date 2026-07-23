@@ -3,24 +3,30 @@ import { useNavigate } from "react-router-dom";
 import { getAdminStats } from "../../api/adminApi";
 
 const STAT_CARDS = [
-  { key: "total_users",        label: "Total Users",        emoji: "👥", accent: "blue"   },
-  { key: "total_candidates",   label: "Candidates",         emoji: "🎓", accent: "green"  },
-  { key: "total_interviewers", label: "Interviewers",       emoji: "🧑‍💼", accent: "purple" },
-  { key: "total_questions",    label: "Questions",          emoji: "📚", accent: "orange" },
-  { key: "total_interviews",   label: "Interview Schedules",emoji: "📅", accent: "blue"   },
-  { key: "total_sessions",     label: "Sessions",           emoji: "🎥", accent: "cyan"   },
-  { key: "total_resumes",      label: "Resumes",            emoji: "📄", accent: "green"  },
-  { key: "total_notifications",label: "Notifications",      emoji: "🔔", accent: "orange" },
-  { key: "total_submissions",  label: "Submissions",        emoji: "💻", accent: "red"    },
+  { key: "total_users",          label: "Total Users",         emoji: "👥", accent: "blue"   },
+  { key: "total_candidates",     label: "Candidates",          emoji: "🎓", accent: "green"  },
+  { key: "total_interviewers",   label: "Interviewers",        emoji: "🧑‍💼", accent: "purple" },
+  { key: "total_availabilities", label: "Availabilities",      emoji: "⏰", accent: "cyan"   },
+  { key: "total_interviews",     label: "Interview Schedules", emoji: "📅", accent: "blue"   },
+  { key: "total_feedbacks",      label: "Feedbacks",           emoji: "⭐", accent: "orange" },
+  { key: "total_skills",         label: "Skills",              emoji: "💡", accent: "green"  },
+  { key: "total_resumes",        label: "Resumes",             emoji: "📄", accent: "purple" },
+  { key: "total_resume_analyses",label: "Resume Analyses",     emoji: "📊", accent: "cyan"   },
+  { key: "total_notifications",  label: "Notifications",       emoji: "🔔", accent: "orange" },
+  { key: "total_otps",           label: "OTP Verifications",   emoji: "🔐", accent: "red"    },
 ];
 
 const QUICK_LINKS = [
-  { label: "Manage Users",     path: "/my_admin_panel/users",       emoji: "👥" },
-  { label: "Question Bank",    path: "/my_admin_panel/questions",   emoji: "📚" },
-  { label: "Interviews",       path: "/my_admin_panel/interviews",  emoji: "📅" },
-  { label: "Resumes",          path: "/my_admin_panel/resumes",     emoji: "📄" },
-  { label: "Analytics",        path: "/my_admin_panel/analytics",   emoji: "📊" },
-  { label: "OTP Records",      path: "/my_admin_panel/otps",        emoji: "🔐" },
+  { label: "Manage Users",     path: "/my_admin_panel/users",          emoji: "👥" },
+  { label: "Candidates",       path: "/my_admin_panel/candidates",     emoji: "🎓" },
+  { label: "Interviewers",     path: "/my_admin_panel/interviewers",   emoji: "🧑‍💼" },
+  { label: "Availability",     path: "/my_admin_panel/availabilities", emoji: "⏰" },
+  { label: "Interviews",       path: "/my_admin_panel/interviews",     emoji: "📅" },
+  { label: "Feedbacks",        path: "/my_admin_panel/feedback",       emoji: "⭐" },
+  { label: "Skills",           path: "/my_admin_panel/skills",         emoji: "💡" },
+  { label: "Resumes",          path: "/my_admin_panel/resumes",        emoji: "📄" },
+  { label: "Notifications",    path: "/my_admin_panel/notifications",  emoji: "🔔" },
+  { label: "OTP Records",      path: "/my_admin_panel/otps",           emoji: "🔐" },
 ];
 
 export default function AdminDashboard() {
@@ -42,7 +48,7 @@ export default function AdminDashboard() {
       <div className="admin-section-header" style={{ marginBottom: "24px" }}>
         <div>
           <h2 style={{ margin: 0 }}>Welcome back, Admin 👋</h2>
-          <p style={{ marginTop: "4px" }}>Here's a live overview of the platform.</p>
+          <p style={{ marginTop: "4px" }}>Live overview of all Django models registered in the system.</p>
         </div>
       </div>
 

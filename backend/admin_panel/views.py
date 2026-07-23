@@ -1,58 +1,43 @@
 """
 admin_panel/views.py — Custom Admin Panel API Views
 
-All views require is_staff or is_superuser.
-Each model gets a list/create view and a detail/update/delete view.
+Provides full CRUD operations for all 11 real Django models registered in the system.
+All endpoints require superuser or staff permissions (IsAdminUser).
 """
 
-import json
-from django.contrib.auth import authenticate
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
 
-# ── Models from their own apps ───────────────────────────────
+# ── Real Models ──────────────────────────────────────────────
 from authentication.models import User, OtpVerification
 from candidate.models import Candidate_Profile
-from interviewer.models import Interviewer_Profile
+from interviewer.models import Interviewer_Profile, InterviewerAvailability
 from interview.models import InterviewSchedule
+from feedback.models import Feedback
+from common.models import Skill
 from resume.models import Resume, ResumeAnalysis
 from notifications.models import Notification
-
-# ── Models from admin_panel (managed=False wrappers) ─────────
-from admin_panel.models import (
-    InterviewSession,
-    InterviewFeedback,
-    QuestionBank,
-    SessionQuestions,
-    CodingSubmissions,
-    PerformanceAnalytics,
-)
 
 # ── Serializers ───────────────────────────────────────────────
 from admin_panel.serializers import (
     UsersSerializer,
     CandidateProfileSerializer,
     InterviewerProfileSerializer,
-    QuestionBankSerializer,
+    InterviewerAvailabilitySerializer,
     InterviewScheduleSerializer,
-    InterviewSessionSerializer,
-    InterviewFeedbackSerializer,
-    PerformanceAnalyticsSerializer,
+    FeedbackSerializer,
+    SkillSerializer,
     ResumeSerializer,
     ResumeAnalysisSerializer,
-    SessionQuestionsSerializer,
-    CodingSubmissionsSerializer,
     NotificationSerializer,
     OtpVerificationSerializer,
 )
 
 
-# ─────────────────────────────────────────────────────────────
-# Helper
-# ─────────────────────────────────────────────────────────────
 def success(data, status_code=200):
     return Response({"success": True, "data": data}, status=status_code)
 
@@ -66,7 +51,7 @@ def error(message, status_code=400):
 # ─────────────────────────────────────────────────────────────
 @api_view(["POST"])
 def admin_login(request):
-    email    = request.data.get("email", "").strip()
+    email = request.data.get("email", "").strip()
     password = request.data.get("password", "")
 
     if not email or not password:
@@ -77,17 +62,18 @@ def admin_login(request):
         return error("Invalid credentials.", 401)
 
     if not (user.is_staff or user.is_superuser):
-        return error("You do not have admin access.", 403)
+        return error("Access denied. Superuser/staff privileges required.", 403)
 
     refresh = RefreshToken.for_user(user)
     return success({
-        "access_token":  str(refresh.access_token),
+        "access_token": str(refresh.access_token),
         "refresh_token": str(refresh),
         "admin": {
-            "user_id":      user.user_id,
-            "full_name":    user.full_name,
-            "email":        user.email,
+            "user_id": user.user_id,
+            "full_name": user.full_name,
+            "email": user.email,
             "is_superuser": user.is_superuser,
+            "is_staff": user.is_staff,
         },
     })
 
@@ -100,15 +86,17 @@ def admin_login(request):
 def admin_stats(request):
     try:
         data = {
-            "total_users":         User.objects.count(),
-            "total_candidates":    Candidate_Profile.objects.count(),
-            "total_interviewers":  Interviewer_Profile.objects.count(),
-            "total_questions":     QuestionBank.objects.count(),
-            "total_interviews":    InterviewSchedule.objects.count(),
-            "total_sessions":      InterviewSession.objects.count(),
-            "total_resumes":       Resume.objects.count(),
+            "total_users": User.objects.count(),
+            "total_candidates": Candidate_Profile.objects.count(),
+            "total_interviewers": Interviewer_Profile.objects.count(),
+            "total_availabilities": InterviewerAvailability.objects.count(),
+            "total_interviews": InterviewSchedule.objects.count(),
+            "total_feedbacks": Feedback.objects.count(),
+            "total_skills": Skill.objects.count(),
+            "total_resumes": Resume.objects.count(),
+            "total_resume_analyses": ResumeAnalysis.objects.count(),
             "total_notifications": Notification.objects.count(),
-            "total_submissions":   CodingSubmissions.objects.count(),
+            "total_otps": OtpVerification.objects.count(),
         }
         return success(data)
     except Exception as exc:
@@ -116,12 +104,12 @@ def admin_stats(request):
 
 
 # ─────────────────────────────────────────────────────────────
-# Generic CRUD factory helpers
+# Generic CRUD Helper Functions
 # ─────────────────────────────────────────────────────────────
-def list_create(request, model, serializer_class, pk_field=None):
+def list_create(request, model, serializer_class, pk_field="pk"):
     if request.method == "GET":
-        qs   = model.objects.all().order_by(f"-{pk_field}" if pk_field else "pk")
-        ser  = serializer_class(qs, many=True)
+        qs = model.objects.all().order_by(f"-{pk_field}")
+        ser = serializer_class(qs, many=True)
         return success(ser.data)
 
     ser = serializer_class(data=request.data)
@@ -135,7 +123,7 @@ def retrieve_update_delete(request, model, serializer_class, pk):
     try:
         obj = model.objects.get(pk=pk)
     except model.DoesNotExist:
-        return error("Not found.", 404)
+        return error("Record not found.", 404)
 
     if request.method == "GET":
         return success(serializer_class(obj).data)
@@ -148,13 +136,12 @@ def retrieve_update_delete(request, model, serializer_class, pk):
             return success(ser.data)
         return Response({"success": False, "errors": ser.errors}, status=400)
 
-    # DELETE
     obj.delete()
-    return success({"detail": "Deleted."})
+    return success({"detail": "Deleted successfully."})
 
 
 # ─────────────────────────────────────────────────────────────
-# Users
+# 1. Users
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
@@ -169,7 +156,7 @@ def user_detail(request, pk):
 
 
 # ─────────────────────────────────────────────────────────────
-# Candidate Profiles
+# 2. Candidate Profiles
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
@@ -184,7 +171,7 @@ def candidate_detail(request, pk):
 
 
 # ─────────────────────────────────────────────────────────────
-# Interviewer Profiles
+# 3. Interviewer Profiles
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
@@ -199,22 +186,22 @@ def interviewer_detail(request, pk):
 
 
 # ─────────────────────────────────────────────────────────────
-# Question Bank
+# 4. Interviewer Availability
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
-def questions_list(request):
-    return list_create(request, QuestionBank, QuestionBankSerializer, "question_id")
+def availabilities_list(request):
+    return list_create(request, InterviewerAvailability, InterviewerAvailabilitySerializer, "availability_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
-def question_detail(request, pk):
-    return retrieve_update_delete(request, QuestionBank, QuestionBankSerializer, pk)
+def availability_detail(request, pk):
+    return retrieve_update_delete(request, InterviewerAvailability, InterviewerAvailabilitySerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
-# Interview Schedules
+# 5. Interview Schedules
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
@@ -229,52 +216,37 @@ def interview_detail(request, pk):
 
 
 # ─────────────────────────────────────────────────────────────
-# Interview Sessions
-# ─────────────────────────────────────────────────────────────
-@api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
-def sessions_list(request):
-    return list_create(request, InterviewSession, InterviewSessionSerializer, "session_id")
-
-
-@api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
-def session_detail(request, pk):
-    return retrieve_update_delete(request, InterviewSession, InterviewSessionSerializer, pk)
-
-
-# ─────────────────────────────────────────────────────────────
-# Interview Feedback
+# 6. Feedbacks
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def feedback_list(request):
-    return list_create(request, InterviewFeedback, InterviewFeedbackSerializer, "feedback_id")
+    return list_create(request, Feedback, FeedbackSerializer, "feedback_id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def feedback_detail(request, pk):
-    return retrieve_update_delete(request, InterviewFeedback, InterviewFeedbackSerializer, pk)
+    return retrieve_update_delete(request, Feedback, FeedbackSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
-# Performance Analytics
+# 7. Skills
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
-def analytics_list(request):
-    return list_create(request, PerformanceAnalytics, PerformanceAnalyticsSerializer, "analytics_id")
+def skills_list(request):
+    return list_create(request, Skill, SkillSerializer, "id")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
-def analytics_detail(request, pk):
-    return retrieve_update_delete(request, PerformanceAnalytics, PerformanceAnalyticsSerializer, pk)
+def skill_detail(request, pk):
+    return retrieve_update_delete(request, Skill, SkillSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
-# Resumes
+# 8. Resumes
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
@@ -289,7 +261,7 @@ def resume_detail(request, pk):
 
 
 # ─────────────────────────────────────────────────────────────
-# Resume Analysis
+# 9. Resume Analysis
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
@@ -304,37 +276,7 @@ def resume_analysis_detail(request, pk):
 
 
 # ─────────────────────────────────────────────────────────────
-# Session Questions
-# ─────────────────────────────────────────────────────────────
-@api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
-def session_questions_list(request):
-    return list_create(request, SessionQuestions, SessionQuestionsSerializer, "session_question_id")
-
-
-@api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
-def session_question_detail(request, pk):
-    return retrieve_update_delete(request, SessionQuestions, SessionQuestionsSerializer, pk)
-
-
-# ─────────────────────────────────────────────────────────────
-# Coding Submissions
-# ─────────────────────────────────────────────────────────────
-@api_view(["GET", "POST"])
-@permission_classes([IsAdminUser])
-def submissions_list(request):
-    return list_create(request, CodingSubmissions, CodingSubmissionsSerializer, "submission_id")
-
-
-@api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAdminUser])
-def submission_detail(request, pk):
-    return retrieve_update_delete(request, CodingSubmissions, CodingSubmissionsSerializer, pk)
-
-
-# ─────────────────────────────────────────────────────────────
-# Notifications
+# 10. Notifications
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
@@ -349,7 +291,7 @@ def notification_detail(request, pk):
 
 
 # ─────────────────────────────────────────────────────────────
-# OTP Verification
+# 11. OTP Verification
 # ─────────────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
