@@ -24,6 +24,9 @@ const LiveVideo = ({
   toggleCamera,
   toggleMic,
   handleEndInterview,
+  role,
+  participantName,
+  selectedInterview,
 }) => {
   const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
@@ -44,12 +47,15 @@ const LiveVideo = ({
   );
   const hasRemoteParticipant = remoteParticipants.length > 0;
 
-  // Debug logs (remove in production)
-  console.log('🔍 LiveVideo Debug:');
-  console.log('  Local identity:', localParticipant?.localParticipant?.identity);
-  console.log('  All participants:', participants.map(p => p.identity));
-  console.log('  Remote participants:', remoteParticipants.map(p => p.identity));
-  console.log('  Remote video tracks count:', remoteVideoTracks.length);
+  // Opposite user username / name
+  const remoteUserObj = remoteParticipants[0];
+  const oppositeFallback =
+    role === 'candidate'
+      ? selectedInterview?.interviewer_username || selectedInterview?.interviewer_name || selectedInterview?.interviewer || 'Interviewer'
+      : selectedInterview?.candidate_username || selectedInterview?.candidate_name || selectedInterview?.candidate || 'Candidate';
+
+  const oppositeUserName =
+    remoteUserObj?.name || remoteUserObj?.identity || oppositeFallback;
 
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -77,7 +83,7 @@ const LiveVideo = ({
   return (
     <div className="video-call-container">
       <div className="video-grid">
-        {/* Interviewer video (remote) */}
+        {/* Remote participant video */}
         <div className="video-box interviewer-video">
           {hasRemoteVideo ? (
             remoteVideoTracks.map((track) => (
@@ -86,11 +92,11 @@ const LiveVideo = ({
           ) : (
             <div className="video-placeholder">{placeholderMessage}</div>
           )}
-          <div className="video-label">👤 Interviewer</div>
+          <div className="video-label">👤 {oppositeUserName}</div>
           <div className="video-status online">🟢 Online</div>
         </div>
 
-        {/* Candidate video (local preview) */}
+        {/* Local candidate/interviewer video */}
         <div className="video-box candidate-video">
           <video
             ref={videoRef}
@@ -100,7 +106,7 @@ const LiveVideo = ({
             className="video-element"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
-          <div className="video-label">👤 You</div>
+          <div className="video-label">👤 {participantName || 'You'} (You)</div>
         </div>
       </div>
 
@@ -134,6 +140,33 @@ const LiveVideo = ({
   );
 };
 
+function formatDate(dateStr) {
+  if (!dateStr) return "Today";
+  try {
+    const d = new Date(`${dateStr}T00:00:00`);
+    return d.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatTime12(timeStr) {
+  if (!timeStr) return "Scheduled Time";
+  const parts = timeStr.split(":");
+  if (parts.length < 2) return timeStr;
+  let h = parseInt(parts[0], 10);
+  const m = parts[1];
+  if (isNaN(h)) return timeStr;
+  const period = h >= 12 ? "PM" : "AM";
+  h = h % 12 === 0 ? 12 : h % 12;
+  const hStr = String(h).padStart(2, "0");
+  return `${hStr}:${m} ${period}`;
+}
+
 // ---- Main InterviewPage component ----
 const InterviewPage = ({
   standalone = false,
@@ -141,11 +174,34 @@ const InterviewPage = ({
   identity,
   participantName,
   role = 'participant',
+  selectedInterview = null,
+  onBack = null,
 }) => {
   // ---- LiveKit states ----
   const [token, setToken] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const serverUrl = import.meta.env.VITE_LIVEKIT_URL;
+
+  // ---- Device detection states ----
+  const [micDeviceName, setMicDeviceName] = useState("Default Microphone");
+  const [cameraDeviceName, setCameraDeviceName] = useState("Default Camera");
+
+  useEffect(() => {
+    const detectDevices = async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const audioInput = devices.find((d) => d.kind === "audioinput" && d.label);
+          const videoInput = devices.find((d) => d.kind === "videoinput" && d.label);
+          if (audioInput) setMicDeviceName(audioInput.label);
+          if (videoInput) setCameraDeviceName(videoInput.label);
+        }
+      } catch (err) {
+        console.warn("Could not enumerate devices:", err);
+      }
+    };
+    detectDevices();
+  }, []);
 
   // ---- UI states ----
   const [isJoining, setIsJoining] = useState(false);
@@ -319,20 +375,25 @@ const InterviewPage = ({
   // ---- Tab switch detection ----
   useEffect(() => {
     if (!isInInterview) return;
+    // Tab switching restrictions strictly apply ONLY to candidate role!
+    if (role !== 'candidate') return;
+
     const handleVisibilityChange = () => {
       if (document.hidden && isInInterview && !isEndingRef.current) {
         setTabSwitchCount((prev) => {
           const newCount = prev + 1;
-          setShowWarning(true);
-          alert(`⚠️ Tab switch! (${newCount}/${MAX_SWITCHES})`);
           if (newCount >= MAX_SWITCHES) {
-            alert('🚫 Interview terminated due to tab switches.');
+            alert(`🚫 Interview terminated immediately due to excessive tab switches (${newCount}/${MAX_SWITCHES}).`);
             handleEndInterview();
+          } else {
+            setShowWarning(true);
+            alert(`⚠️ Tab switch detected! (${newCount}/${MAX_SWITCHES}). If you switch tabs ${MAX_SWITCHES - newCount} more time(s), your interview will end immediately.`);
           }
           return newCount;
         });
       }
     };
+
     const handleContextMenu = (e) => e.preventDefault();
     const handleKeyDown = (e) => {
       if (
@@ -340,9 +401,10 @@ const InterviewPage = ({
         e.key === 'F12'
       ) {
         e.preventDefault();
-        alert('❌ Action disabled during interview.');
+        alert('❌ Action disabled during candidate interview.');
       }
     };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('keydown', handleKeyDown);
@@ -351,7 +413,7 @@ const InterviewPage = ({
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isInInterview]);
+  }, [isInInterview, role]);
 
   // ---- Join interview ----
   const handleJoinInterview = async () => {
@@ -361,6 +423,10 @@ const InterviewPage = ({
     }
     setIsJoining(true);
     try {
+      // 1. Request Browser Fullscreen Mode
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch((err) => console.warn('Fullscreen error:', err));
+      }
       // 1. Start local camera
       const stream = await startLocalCamera();
       if (!stream) {
@@ -496,7 +562,29 @@ const InterviewPage = ({
 
         {!isInInterview ? (
           // ---- LOBBY ----
-          <div className="main-grid">
+          <div>
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#2563eb',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  marginBottom: '16px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: 0,
+                }}
+              >
+                ← Back to Upcoming Interviews
+              </button>
+            )}
+            <div className="main-grid">
             <div className="left-section">
               <div className="lobby-card">
                 <div className="lobby-header">
@@ -515,23 +603,30 @@ const InterviewPage = ({
                 </div>
               </div>
               <div className="upcoming-card">
-                <h3>Upcoming Interview</h3>
+                <h3>Interview Session Details</h3>
                 <div className="interview-details">
                   <div className="detail-item">
-                    <span className="detail-label">Position</span>
-                    <span className="detail-value">Senior Product Designer</span>
+                    <span className="detail-label">Room / Session</span>
+                    <span className="detail-value">{selectedInterview?.roomName || roomName || "room_101"}</span>
                   </div>
                   <div className="detail-item">
                     <span className="detail-label">Candidate</span>
-                    <span className="detail-value">Alex Sterling</span>
+                    <span className="detail-value">
+                      {selectedInterview?.candidate_name || selectedInterview?.candidate_username || selectedInterview?.candidate || (role === 'candidate' ? participantName : "Candidate")}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Interviewer</span>
+                    <span className="detail-value">
+                      {selectedInterview?.interviewer_name || selectedInterview?.interviewer_username || selectedInterview?.interviewer || (role === 'interviewer' ? participantName : "Interviewer")}
+                    </span>
                   </div>
                   <div className="detail-item">
                     <span className="detail-label">Scheduled Time</span>
-                    <span className="detail-value">2:00 PM – 3:00 PM</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Interviewers</span>
-                    <span className="detail-value">Sarah Chen, Marcus Thorne</span>
+                    <span className="detail-value">
+                      {selectedInterview?.date ? formatDate(selectedInterview.date) : "Today"},{" "}
+                      {selectedInterview?.time ? formatTime12(selectedInterview.time) : "Live Session"} ({selectedInterview?.duration_minutes || 60} mins)
+                    </span>
                   </div>
                 </div>
               </div>
@@ -540,7 +635,7 @@ const InterviewPage = ({
               <div className="ready-card">
                 <h2>Ready to join?</h2>
                 <p className="ready-subtitle">
-                  The interviewers are currently in the room waiting for you to enter.
+                  Check your camera and microphone preview before joining the room.
                 </p>
                 <div className="device-settings">
                   <div className="device-item">
@@ -548,7 +643,7 @@ const InterviewPage = ({
                       <span className="device-icon">🎤</span>
                       <div>
                         <div className="device-name">Microphone</div>
-                        <div className="device-detail">MacBook Pro Mic</div>
+                        <div className="device-detail">{micDeviceName}</div>
                       </div>
                     </div>
                     <div className="device-status excellent">✅ Ready</div>
@@ -558,7 +653,7 @@ const InterviewPage = ({
                       <span className="device-icon">📷</span>
                       <div>
                         <div className="device-name">Camera</div>
-                        <div className="device-detail">FaceTime HD Camera</div>
+                        <div className="device-detail">{cameraDeviceName}</div>
                       </div>
                     </div>
                     <div className="device-status">✅ Ready</div>
@@ -580,34 +675,40 @@ const InterviewPage = ({
               </div>
             </div>
           </div>
+          </div>
         ) : (
-          // ---- LIVE INTERVIEW ----
-          <LiveKitRoom
-            serverUrl={serverUrl}
-            token={token}
-            connect={isConnected}
-            video={true}
-            audio={true}
-            onDisconnected={() => {
-              setIsConnected(false);
-              if (isInInterview && !isEndingRef.current) {
-                handleEndInterview();
-              }
-            }}
-            className="livekit-room-container"
-          >
-            <RoomAudioRenderer />
-            <LiveVideo
-              videoRef={videoRef}
-              stream={localStreamRef.current}
-              isCameraOn={isCameraOn}
-              isMicOn={isMicOn}
-              timer={timer}
-              toggleCamera={toggleCamera}
-              toggleMic={toggleMic}
-              handleEndInterview={handleEndInterview}
-            />
-          </LiveKitRoom>
+          // ---- LIVE INTERVIEW FULLSCREEN OVERLAY ----
+          <div className="livekit-fullscreen-overlay">
+            <LiveKitRoom
+              serverUrl={serverUrl}
+              token={token}
+              connect={isConnected}
+              video={true}
+              audio={true}
+              onDisconnected={() => {
+                setIsConnected(false);
+                if (isInInterview && !isEndingRef.current) {
+                  handleEndInterview();
+                }
+              }}
+              className="livekit-room-container"
+            >
+              <RoomAudioRenderer />
+              <LiveVideo
+                videoRef={videoRef}
+                stream={localStreamRef.current}
+                isCameraOn={isCameraOn}
+                isMicOn={isMicOn}
+                timer={timer}
+                toggleCamera={toggleCamera}
+                toggleMic={toggleMic}
+                handleEndInterview={handleEndInterview}
+                role={role}
+                participantName={participantName}
+                selectedInterview={selectedInterview}
+              />
+            </LiveKitRoom>
+          </div>
         )}
       </div>
     </div>

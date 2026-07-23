@@ -108,6 +108,11 @@ export default function Interview() {
     setActiveTab("lobby");
   };
 
+  const handleBackToUpcoming = () => {
+    setActiveTab("schedule");
+    setSelectedInterview(null);
+  };
+
   if (loading) {
     return <div className="loading-spinner">Loading profile...</div>;
   }
@@ -133,28 +138,9 @@ export default function Interview() {
           <header className="content-header-simple">
             <h2>Mock Interviews & Preparation</h2>
             <p className="welcome-text">
-              Schedule new practice sessions or join your live interview lobby.
+              Track upcoming mock interviews and enter your assigned live room.
             </p>
           </header>
-
-          <div className="interview-tabs-navigation">
-            <button
-              type="button"
-              className={`interview-tab-btn ${activeTab === "schedule" ? "active" : ""}`}
-              onClick={() => setActiveTab("schedule")}
-            >
-              <CalendarDays size={18} />
-              <span>Scheduling & Management</span>
-            </button>
-            <button
-              type="button"
-              className={`interview-tab-btn ${activeTab === "lobby" ? "active" : ""}`}
-              onClick={() => setActiveTab("lobby")}
-            >
-              <Video size={18} />
-              <span>Live Interview Lobby</span>
-            </button>
-          </div>
 
           <div className="interview-tab-content">
             {activeTab === "schedule" ? (
@@ -171,6 +157,8 @@ export default function Interview() {
                 identity={identity}
                 participantName={participantName}
                 role={role}
+                selectedInterview={selectedInterview}
+                onBack={handleBackToUpcoming}
               />
             )}
           </div>
