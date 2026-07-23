@@ -106,6 +106,7 @@ INSTALLED_APPS = [
     "analytics",
     "notifications",
     "feedback",
+    "admin_panel",
 ]
 
 MIDDLEWARE = [

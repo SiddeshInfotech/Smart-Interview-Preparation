@@ -1,30 +1,38 @@
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser, AllowAny
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
+"""
+admin_panel/views.py — Custom Admin Panel API Views
+
+All views require is_staff or is_superuser.
+Each model gets a list/create view and a detail/update/delete view.
+"""
+
+import json
 from django.contrib.auth import authenticate
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
-# Import shared models from root models.py
-from models import (
-    CandidateProfile,
-    CodingSubmissions,
-    InterviewFeedback,
-    InterviewSchedule,
+# ── Models from their own apps ───────────────────────────────
+from authentication.models import User, OtpVerification
+from candidate.models import Candidate_Profile
+from interviewer.models import Interviewer_Profile
+from interview.models import InterviewSchedule
+from resume.models import Resume, ResumeAnalysis
+from notifications.models import Notification
+
+# ── Models from admin_panel (managed=False wrappers) ─────────
+from admin_panel.models import (
     InterviewSession,
-    InterviewerProfile,
-    Notifications,
-    OtpVerification,
-    PerformanceAnalytics,
+    InterviewFeedback,
     QuestionBank,
-    Resume,
-    ResumeAnalysis,
     SessionQuestions,
-    Users,
+    CodingSubmissions,
+    PerformanceAnalytics,
 )
-from authentication.models import User
 
-from .serializers import (
+# ── Serializers ───────────────────────────────────────────────
+from admin_panel.serializers import (
     UsersSerializer,
     CandidateProfileSerializer,
     InterviewerProfileSerializer,
@@ -37,676 +45,319 @@ from .serializers import (
     ResumeAnalysisSerializer,
     SessionQuestionsSerializer,
     CodingSubmissionsSerializer,
-    NotificationsSerializer,
+    NotificationSerializer,
     OtpVerificationSerializer,
 )
 
 
 # ─────────────────────────────────────────────────────────────
-# Admin Login  (AllowAny — no token needed yet)
+# Helper
 # ─────────────────────────────────────────────────────────────
+def success(data, status_code=200):
+    return Response({"success": True, "data": data}, status=status_code)
 
+
+def error(message, status_code=400):
+    return Response({"success": False, "message": message}, status=status_code)
+
+
+# ─────────────────────────────────────────────────────────────
+# Auth — Admin Login
+# ─────────────────────────────────────────────────────────────
 @api_view(["POST"])
-@permission_classes([AllowAny])
 def admin_login(request):
-    """Authenticate a staff/superuser and return JWT tokens."""
-    email = request.data.get("email", "").strip()
-    password = request.data.get("password", "").strip()
+    email    = request.data.get("email", "").strip()
+    password = request.data.get("password", "")
 
     if not email or not password:
-        return Response(
-            {"message": "Email and password are required."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return error("Email and password are required.", 400)
 
     user = authenticate(request, username=email, password=password)
-
     if user is None:
-        return Response(
-            {"message": "Invalid credentials."},
-            status=status.HTTP_401_UNAUTHORIZED,
-        )
+        return error("Invalid credentials.", 401)
 
     if not (user.is_staff or user.is_superuser):
-        return Response(
-            {"message": "Access denied. Admin privileges required."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+        return error("You do not have admin access.", 403)
 
     refresh = RefreshToken.for_user(user)
-    return Response(
-        {
-            "message": "Admin login successful.",
-            "access_token": str(refresh.access_token),
-            "refresh_token": str(refresh),
-            "admin": {
-                "user_id": user.user_id,
-                "full_name": user.full_name,
-                "email": user.email,
-                "is_superuser": user.is_superuser,
-            },
+    return success({
+        "access_token":  str(refresh.access_token),
+        "refresh_token": str(refresh),
+        "admin": {
+            "user_id":      user.user_id,
+            "full_name":    user.full_name,
+            "email":        user.email,
+            "is_superuser": user.is_superuser,
         },
-        status=status.HTTP_200_OK,
-    )
+    })
 
 
 # ─────────────────────────────────────────────────────────────
 # Dashboard Stats
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def admin_stats(request):
-    """Return high-level counts for the admin dashboard."""
-    stats = {
-        "total_users": Users.objects.count(),
-        "total_candidates": CandidateProfile.objects.count(),
-        "total_interviewers": InterviewerProfile.objects.count(),
-        "total_questions": QuestionBank.objects.count(),
-        "total_interviews": InterviewSchedule.objects.count(),
-        "total_sessions": InterviewSession.objects.count(),
-        "total_resumes": Resume.objects.count(),
-        "total_notifications": Notifications.objects.count(),
-        "total_submissions": CodingSubmissions.objects.count(),
-    }
-    return Response({"data": stats}, status=status.HTTP_200_OK)
+    try:
+        data = {
+            "total_users":         User.objects.count(),
+            "total_candidates":    Candidate_Profile.objects.count(),
+            "total_interviewers":  Interviewer_Profile.objects.count(),
+            "total_questions":     QuestionBank.objects.count(),
+            "total_interviews":    InterviewSchedule.objects.count(),
+            "total_sessions":      InterviewSession.objects.count(),
+            "total_resumes":       Resume.objects.count(),
+            "total_notifications": Notification.objects.count(),
+            "total_submissions":   CodingSubmissions.objects.count(),
+        }
+        return success(data)
+    except Exception as exc:
+        return error(str(exc), 500)
+
+
+# ─────────────────────────────────────────────────────────────
+# Generic CRUD factory helpers
+# ─────────────────────────────────────────────────────────────
+def list_create(request, model, serializer_class, pk_field=None):
+    if request.method == "GET":
+        qs   = model.objects.all().order_by(f"-{pk_field}" if pk_field else "pk")
+        ser  = serializer_class(qs, many=True)
+        return success(ser.data)
+
+    ser = serializer_class(data=request.data)
+    if ser.is_valid():
+        ser.save()
+        return success(ser.data, 201)
+    return Response({"success": False, "errors": ser.errors}, status=400)
+
+
+def retrieve_update_delete(request, model, serializer_class, pk):
+    try:
+        obj = model.objects.get(pk=pk)
+    except model.DoesNotExist:
+        return error("Not found.", 404)
+
+    if request.method == "GET":
+        return success(serializer_class(obj).data)
+
+    if request.method in ("PUT", "PATCH"):
+        partial = request.method == "PATCH"
+        ser = serializer_class(obj, data=request.data, partial=partial)
+        if ser.is_valid():
+            ser.save()
+            return success(ser.data)
+        return Response({"success": False, "errors": ser.errors}, status=400)
+
+    # DELETE
+    obj.delete()
+    return success({"detail": "Deleted."})
 
 
 # ─────────────────────────────────────────────────────────────
 # Users
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def users_list(request):
-    if request.method == "GET":
-        users = Users.objects.all().order_by("-created_at")
-        serializer = UsersSerializer(users, many=True)
-        return Response({"data": serializer.data})
-
-    # POST – create user via the authentication.User model so password is hashed
-    data = request.data
-    if User.objects.filter(email=data.get("email", "")).exists():
-        return Response({"message": "Email already exists."}, status=400)
-
-    user = User(
-        full_name=data.get("full_name", ""),
-        email=data.get("email", ""),
-        role=data.get("role", "candidate"),
-        phone_number=data.get("phone_number") or None,
-        is_active=bool(data.get("is_active", True)),
-        is_email_verified=bool(data.get("is_email_verified", False)),
-    )
-    user.set_password(data.get("password", "changeme123"))
-    user.save()
-
-    return Response({"message": "User created.", "user_id": user.user_id}, status=201)
+    return list_create(request, User, UsersSerializer, "user_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def user_detail(request, pk):
-    try:
-        user_obj = Users.objects.get(pk=pk)
-    except Users.DoesNotExist:
-        return Response({"message": "User not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": UsersSerializer(user_obj).data})
-
-    if request.method == "PUT":
-        serializer = UsersSerializer(user_obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            # If password provided, hash it via auth model
-            new_password = request.data.get("password")
-            if new_password:
-                try:
-                    auth_user = User.objects.get(pk=pk)
-                    auth_user.set_password(new_password)
-                    auth_user.save(update_fields=["password"])
-                except User.DoesNotExist:
-                    pass
-            return Response({"message": "User updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    if request.method == "DELETE":
-        try:
-            auth_user = User.objects.get(pk=pk)
-            auth_user.delete()
-        except User.DoesNotExist:
-            user_obj.delete()
-        return Response({"message": "User deleted."}, status=204)
+    return retrieve_update_delete(request, User, UsersSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Candidate Profiles
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def candidates_list(request):
-    if request.method == "GET":
-        qs = CandidateProfile.objects.all().order_by("-created_at")
-        serializer = CandidateProfileSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = CandidateProfileSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Candidate profile created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, Candidate_Profile, CandidateProfileSerializer, "candidate_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def candidate_detail(request, pk):
-    try:
-        obj = CandidateProfile.objects.get(pk=pk)
-    except CandidateProfile.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": CandidateProfileSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = CandidateProfileSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, Candidate_Profile, CandidateProfileSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Interviewer Profiles
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def interviewers_list(request):
-    if request.method == "GET":
-        qs = InterviewerProfile.objects.all().order_by("-created_at")
-        serializer = InterviewerProfileSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = InterviewerProfileSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Interviewer profile created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, Interviewer_Profile, InterviewerProfileSerializer, "interviewer_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def interviewer_detail(request, pk):
-    try:
-        obj = InterviewerProfile.objects.get(pk=pk)
-    except InterviewerProfile.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": InterviewerProfileSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = InterviewerProfileSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, Interviewer_Profile, InterviewerProfileSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Question Bank
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def questions_list(request):
-    if request.method == "GET":
-        qs = QuestionBank.objects.all().order_by("-created_at")
-        serializer = QuestionBankSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = QuestionBankSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Question created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, QuestionBank, QuestionBankSerializer, "question_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def question_detail(request, pk):
-    try:
-        obj = QuestionBank.objects.get(pk=pk)
-    except QuestionBank.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": QuestionBankSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = QuestionBankSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, QuestionBank, QuestionBankSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Interview Schedules
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def interviews_list(request):
-    if request.method == "GET":
-        qs = InterviewSchedule.objects.all().order_by("-created_at")
-        serializer = InterviewScheduleSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = InterviewScheduleSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Interview schedule created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, InterviewSchedule, InterviewScheduleSerializer, "schedule_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def interview_detail(request, pk):
-    try:
-        obj = InterviewSchedule.objects.get(pk=pk)
-    except InterviewSchedule.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": InterviewScheduleSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = InterviewScheduleSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, InterviewSchedule, InterviewScheduleSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Interview Sessions
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def sessions_list(request):
-    if request.method == "GET":
-        qs = InterviewSession.objects.all().order_by("-created_at")
-        serializer = InterviewSessionSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = InterviewSessionSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Session created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, InterviewSession, InterviewSessionSerializer, "session_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def session_detail(request, pk):
-    try:
-        obj = InterviewSession.objects.get(pk=pk)
-    except InterviewSession.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": InterviewSessionSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = InterviewSessionSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, InterviewSession, InterviewSessionSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Interview Feedback
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def feedback_list(request):
-    if request.method == "GET":
-        qs = InterviewFeedback.objects.all().order_by("-created_at")
-        serializer = InterviewFeedbackSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = InterviewFeedbackSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Feedback created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, InterviewFeedback, InterviewFeedbackSerializer, "feedback_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def feedback_detail(request, pk):
-    try:
-        obj = InterviewFeedback.objects.get(pk=pk)
-    except InterviewFeedback.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": InterviewFeedbackSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = InterviewFeedbackSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, InterviewFeedback, InterviewFeedbackSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Performance Analytics
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def analytics_list(request):
-    if request.method == "GET":
-        qs = PerformanceAnalytics.objects.all().order_by("-generated_at")
-        serializer = PerformanceAnalyticsSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = PerformanceAnalyticsSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Analytics entry created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, PerformanceAnalytics, PerformanceAnalyticsSerializer, "analytics_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def analytics_detail(request, pk):
-    try:
-        obj = PerformanceAnalytics.objects.get(pk=pk)
-    except PerformanceAnalytics.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": PerformanceAnalyticsSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = PerformanceAnalyticsSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, PerformanceAnalytics, PerformanceAnalyticsSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Resumes
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def resumes_list(request):
-    if request.method == "GET":
-        qs = Resume.objects.all().order_by("-uploaded_at")
-        serializer = ResumeSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = ResumeSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Resume created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, Resume, ResumeSerializer, "resume_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def resume_detail(request, pk):
-    try:
-        obj = Resume.objects.get(pk=pk)
-    except Resume.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": ResumeSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = ResumeSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, Resume, ResumeSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Resume Analysis
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def resume_analysis_list(request):
-    if request.method == "GET":
-        qs = ResumeAnalysis.objects.all().order_by("-analyzed_at")
-        serializer = ResumeAnalysisSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = ResumeAnalysisSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Resume analysis created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, ResumeAnalysis, ResumeAnalysisSerializer, "analysis_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def resume_analysis_detail(request, pk):
-    try:
-        obj = ResumeAnalysis.objects.get(pk=pk)
-    except ResumeAnalysis.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": ResumeAnalysisSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = ResumeAnalysisSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, ResumeAnalysis, ResumeAnalysisSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Session Questions
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def session_questions_list(request):
-    if request.method == "GET":
-        qs = SessionQuestions.objects.all()
-        serializer = SessionQuestionsSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = SessionQuestionsSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Session question created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, SessionQuestions, SessionQuestionsSerializer, "session_question_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def session_question_detail(request, pk):
-    try:
-        obj = SessionQuestions.objects.get(pk=pk)
-    except SessionQuestions.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": SessionQuestionsSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = SessionQuestionsSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, SessionQuestions, SessionQuestionsSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Coding Submissions
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def submissions_list(request):
-    if request.method == "GET":
-        qs = CodingSubmissions.objects.all().order_by("-submitted_at")
-        serializer = CodingSubmissionsSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = CodingSubmissionsSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Submission created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, CodingSubmissions, CodingSubmissionsSerializer, "submission_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def submission_detail(request, pk):
-    try:
-        obj = CodingSubmissions.objects.get(pk=pk)
-    except CodingSubmissions.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": CodingSubmissionsSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = CodingSubmissionsSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, CodingSubmissions, CodingSubmissionsSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # Notifications
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def notifications_list(request):
-    if request.method == "GET":
-        qs = Notifications.objects.all().order_by("-created_at")
-        serializer = NotificationsSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = NotificationsSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Notification created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, Notification, NotificationSerializer, "notification_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def notification_detail(request, pk):
-    try:
-        obj = Notifications.objects.get(pk=pk)
-    except Notifications.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": NotificationsSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = NotificationsSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, Notification, NotificationSerializer, pk)
 
 
 # ─────────────────────────────────────────────────────────────
 # OTP Verification
 # ─────────────────────────────────────────────────────────────
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminUser])
 def otps_list(request):
-    if request.method == "GET":
-        qs = OtpVerification.objects.all().order_by("-created_at")
-        serializer = OtpVerificationSerializer(qs, many=True)
-        return Response({"data": serializer.data})
-
-    serializer = OtpVerificationSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "OTP record created.", "data": serializer.data}, status=201)
-    return Response(serializer.errors, status=400)
+    return list_create(request, OtpVerification, OtpVerificationSerializer, "otp_id")
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminUser])
 def otp_detail(request, pk):
-    try:
-        obj = OtpVerification.objects.get(pk=pk)
-    except OtpVerification.DoesNotExist:
-        return Response({"message": "Not found."}, status=404)
-
-    if request.method == "GET":
-        return Response({"data": OtpVerificationSerializer(obj).data})
-
-    if request.method == "PUT":
-        serializer = OtpVerificationSerializer(obj, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Updated.", "data": serializer.data})
-        return Response(serializer.errors, status=400)
-
-    obj.delete()
-    return Response({"message": "Deleted."}, status=204)
+    return retrieve_update_delete(request, OtpVerification, OtpVerificationSerializer, pk)
