@@ -21,10 +21,17 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       const res = await adminLogin({ email, password });
-      const { access_token, refresh_token, admin } = res.data;
+      const payload = res.data?.data || res.data;
+      const { access_token, refresh_token, admin } = payload;
+
+      if (!access_token) {
+        setError("Invalid response from server. Missing access token.");
+        return;
+      }
+
       localStorage.setItem("admin_access_token", access_token);
-      localStorage.setItem("admin_refresh_token", refresh_token);
-      localStorage.setItem("admin_user", JSON.stringify(admin));
+      localStorage.setItem("admin_refresh_token", refresh_token || "");
+      localStorage.setItem("admin_user", JSON.stringify(admin || {}));
       navigate("/my_admin_panel");
     } catch (err) {
       const msg =
