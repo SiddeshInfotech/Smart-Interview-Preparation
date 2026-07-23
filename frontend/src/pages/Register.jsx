@@ -41,8 +41,15 @@ export default function Register() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpSuccess, setOtpSuccess] = useState("");
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "otp") {
+      const sanitized = value.replace(/[^0-9]/g, "").slice(0, 6);
+      setForm({ ...form, otp: sanitized });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
+  };
 
   const getPasswordStrength = (password) => {
     if (!password) return { score: 0, text: "" };
@@ -333,8 +340,12 @@ export default function Register() {
                   type="button"
                   className="btn-primary"
                   onClick={handleVerifyOTP}
-                  disabled={loading}
-                  style={{ flex: 1 }}
+                  disabled={loading || !form.otp || form.otp.trim().length < 6}
+                  style={{
+                    flex: 1,
+                    opacity: (loading || !form.otp || form.otp.trim().length < 6) ? 0.55 : 1,
+                    cursor: (loading || !form.otp || form.otp.trim().length < 6) ? "not-allowed" : "pointer",
+                  }}
                 >
                   {loading ? "Verifying..." : "Verify OTP"}
                 </button>
