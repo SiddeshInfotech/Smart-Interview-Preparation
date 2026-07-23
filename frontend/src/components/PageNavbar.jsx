@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock } from "lucide-react";
+import { Settings, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock, HelpCircle } from "lucide-react";
 import NotificationPopup from "./NotificationPopup";
 import { useAuth } from "../context/AuthContext";
 import "../styles/NotificationPopup.css";
@@ -111,8 +111,18 @@ export default function PageNavbar({
                 >
                   View Profile
                 </button>
-                <button type="button" className="dropdown-item disabled" disabled>
-                  Settings
+                {/* Feedback button - icon and text aligned */}
+                <button
+                  type="button"
+                  className="dropdown-item"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    navigate("/feedback-form");
+                  }}
+                >
+                  <HelpCircle size={16} />
+                  <span>Feedback</span>
                 </button>
                 <div className="dropdown-divider" />
                 <button
