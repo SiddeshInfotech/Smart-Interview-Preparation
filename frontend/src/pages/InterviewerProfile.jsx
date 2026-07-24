@@ -14,6 +14,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
 // --- Helper to generate 30‑min interval time options ---
 const generateTimeOptions = () => {
@@ -35,6 +36,7 @@ const TIME_OPTIONS = generateTimeOptions();
 
 const InterviewerProfile = () => {
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
   const [activeSection, setActiveSection] = useState("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isProgrammaticScroll, setIsProgrammaticScroll] = useState(false);
@@ -497,18 +499,6 @@ const InterviewerProfile = () => {
             {/* Personal Info */}
             <div className="personal-info" ref={profileRef}>
               <h3>Personal Information</h3>
-              {isReadOnly && (
-                <div className="info-grid-vertical" style={{ marginBottom: "20px", gap: "10px" }}>
-                  <div className="form-group">
-                    <label>Name</label>
-                    <input type="text" value={profile.full_name} disabled className="disabled-input" />
-                  </div>
-                  <div className="form-group">
-                    <label>Email</label>
-                    <input type="text" value={profile.email} disabled className="disabled-input" />
-                  </div>
-                </div>
-              )}
               <div className="info-grid-vertical">
                 <div className="form-group profile-picture-group">
                   <label>Profile Picture</label>
@@ -536,6 +526,26 @@ const InterviewerProfile = () => {
                       </>
                     )}
                   </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Name</label>
+                  <input
+                    type="text"
+                    value={profile.full_name || userProfile?.name || ""}
+                    disabled
+                    className="disabled-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Email</label>
+                  <input
+                    type="text"
+                    value={profile.email || userProfile?.email || ""}
+                    disabled
+                    className="disabled-input"
+                  />
                 </div>
 
                 <div className="form-group">

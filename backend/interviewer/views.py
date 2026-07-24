@@ -58,27 +58,26 @@ class InterviewerAvailabilityViewSet(viewsets.ModelViewSet):
 
 
 class AvailableSlotsListView(generics.ListAPIView):
-    """Available slots for a specific interviewer on a given date."""
+    """Available slots for a specific interviewer on a given date (or all slots if date omitted)."""
     serializer_class = InterviewerAvailabilitySerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         interviewer_id = self.kwargs["interviewer_id"]
         date_param = self.request.query_params.get('date')
-        if not date_param:
-            return InterviewerAvailability.objects.none()
-
-        try:
-            target_date = datetime.strptime(date_param, '%Y-%m-%d').date()
-            day_of_week = target_date.weekday()  # Monday=0, Sunday=6
-        except ValueError:
-            return InterviewerAvailability.objects.none()
-
-        return InterviewerAvailability.objects.filter(
+        qs = InterviewerAvailability.objects.filter(
             interviewer_id=interviewer_id,
-            day_of_week=day_of_week,
             status="available"
-        ).order_by("start_time")
+        )
+        if date_param:
+            try:
+                target_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+                day_of_week = target_date.weekday()  # Monday=0, Sunday=6
+                qs = qs.filter(day_of_week=day_of_week)
+            except ValueError:
+                return InterviewerAvailability.objects.none()
+
+        return qs.order_by("day_of_week", "start_time")
 
 
 class AvailableSlotsAllView(generics.ListAPIView):

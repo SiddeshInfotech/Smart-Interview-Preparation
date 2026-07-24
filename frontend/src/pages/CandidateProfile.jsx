@@ -21,9 +21,11 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
 const CandidateProfile = () => {
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
   const [activeSection, setActiveSection] = useState("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isProgrammaticScroll, setIsProgrammaticScroll] = useState(false);
@@ -31,6 +33,8 @@ const CandidateProfile = () => {
 
   // --- Profile form state ---
   const [profile, setProfile] = useState({
+    full_name: "",
+    email: "",
     date_of_birth: null,
     gender: "",
     location: "",
@@ -72,6 +76,8 @@ const CandidateProfile = () => {
         try {
           const cachedData = JSON.parse(cachedStr);
           setProfile({
+            full_name: cachedData.full_name || "",
+            email: cachedData.email || "",
             date_of_birth: cachedData.date_of_birth ? new Date(cachedData.date_of_birth) : null,
             gender: cachedData.gender || "",
             location: cachedData.location || "",
@@ -101,6 +107,8 @@ const CandidateProfile = () => {
         localStorage.setItem("cached_candidate_profile", JSON.stringify(data));
 
         setProfile({
+          full_name: data.full_name || "",
+          email: data.email || "",
           date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : null,
           gender: data.gender || "",
           location: data.location || "",
@@ -435,6 +443,26 @@ const CandidateProfile = () => {
                       {profilePicture ? "Change Picture" : "Upload Picture"}
                     </label>
                   </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Name</label>
+                  <input
+                    type="text"
+                    value={profile.full_name || userProfile?.name || ""}
+                    disabled
+                    className="disabled-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Email</label>
+                  <input
+                    type="text"
+                    value={profile.email || userProfile?.email || ""}
+                    disabled
+                    className="disabled-input"
+                  />
                 </div>
 
                 <div className="form-group">
