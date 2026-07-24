@@ -51,3 +51,39 @@ class InterviewScheduleSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+
+
+from .models import InterviewFeedbackReview
+
+class InterviewFeedbackReviewSerializer(serializers.ModelSerializer):
+    candidate_name = serializers.CharField(
+        source='candidate.user.full_name',
+        read_only=True
+    )
+    interviewer_name = serializers.CharField(
+        source='interviewer.user.full_name',
+        read_only=True
+    )
+
+    class Meta:
+        model = InterviewFeedbackReview
+        fields = [
+            'review_id',
+            'candidate',
+            'candidate_name',
+            'interviewer',
+            'interviewer_name',
+            'schedule',
+            'technical_skills',
+            'communication_skills',
+            'problem_solving',
+            'soft_skills',
+            'code_quality',
+            'overall_rating',
+            'strengths',
+            'weaknesses',
+            'comments',
+            'recommendation',
+            'submitted_at',
+        ]
+        read_only_fields = ['review_id', 'submitted_at']

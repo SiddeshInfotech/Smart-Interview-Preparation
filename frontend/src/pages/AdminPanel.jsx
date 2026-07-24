@@ -15,6 +15,7 @@ import AdminResumes         from "./admin/AdminResumes";
 import AdminResumeAnalysis  from "./admin/AdminResumeAnalysis";
 import AdminNotifications   from "./admin/AdminNotifications";
 import AdminOTPs            from "./admin/AdminOTPs";
+import AdminInterviewFeedbackReviews from "./admin/AdminInterviewFeedbackReviews";
 
 // ── Sidebar nav config ─────────────────────────────────────
 const NAV = [
@@ -38,6 +39,7 @@ const NAV = [
     items: [
       { label: "Schedules", path: "/my_admin_panel/interviews", icon: <IconCalendar /> },
       { label: "Feedback",  path: "/my_admin_panel/feedback",   icon: <IconStar /> },
+      { label: "Assessment Reviews", path: "/my_admin_panel/interview-feedback-reviews", icon: <IconStar /> },
     ],
   },
   {
@@ -66,12 +68,14 @@ const PAGE_TITLES = {
   "/my_admin_panel/availabilities":  "Interviewer Availability",
   "/my_admin_panel/interviews":      "Interview Schedules",
   "/my_admin_panel/feedback":        "User Feedback",
+  "/my_admin_panel/interview-feedback-reviews": "Interview Feedback Reviews",
   "/my_admin_panel/resumes":         "Resumes",
   "/my_admin_panel/resume-analysis": "Resume Analysis",
   "/my_admin_panel/skills":          "Skills",
   "/my_admin_panel/notifications":   "Notifications",
   "/my_admin_panel/otps":            "OTP Verification",
 };
+
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -181,7 +185,9 @@ export default function AdminPanel() {
             <Route path="availabilities" element={<AdminAvailability />} />
             <Route path="interviews"      element={<AdminInterviews />} />
             <Route path="feedback"        element={<AdminFeedback />} />
+            <Route path="interview-feedback-reviews" element={<AdminInterviewFeedbackReviews />} />
             <Route path="skills"          element={<AdminSkills />} />
+
             <Route path="resumes"         element={<AdminResumes />} />
             <Route path="resume-analysis" element={<AdminResumeAnalysis />} />
             <Route path="notifications"   element={<AdminNotifications />} />

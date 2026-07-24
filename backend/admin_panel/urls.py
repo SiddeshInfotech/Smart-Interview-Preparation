@@ -49,4 +49,8 @@ urlpatterns = [
     # ── 11. OTP Verification ──────────────────────────────────
     path("otps/",                       views.otps_list,            name="admin_otps_list"),
     path("otps/<int:pk>/",              views.otp_detail,           name="admin_otp_detail"),
+
+    # ── 12. Interview Feedback Reviews ────────────────────────
+    path("interview-feedback-reviews/",         views.interview_feedback_reviews_list,   name="admin_interview_feedback_reviews_list"),
+    path("interview-feedback-reviews/<int:pk>/",views.interview_feedback_review_detail, name="admin_interview_feedback_review_detail"),
 ]

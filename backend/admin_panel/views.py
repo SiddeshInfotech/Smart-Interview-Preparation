@@ -17,7 +17,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from authentication.models import User, OtpVerification
 from candidate.models import Candidate_Profile
 from interviewer.models import Interviewer_Profile, InterviewerAvailability
-from interview.models import InterviewSchedule
+from interview.models import InterviewSchedule, InterviewFeedbackReview
 from feedback.models import Feedback
 from common.models import Skill
 from resume.models import Resume, ResumeAnalysis
@@ -36,7 +36,9 @@ from admin_panel.serializers import (
     ResumeAnalysisSerializer,
     NotificationSerializer,
     OtpVerificationSerializer,
+    InterviewFeedbackReviewAdminSerializer,
 )
+
 
 
 class IsAdminOrSuperUser(BasePermission):
@@ -413,3 +415,18 @@ def otps_list(request):
 @permission_classes([IsAdminOrSuperUser])
 def otp_detail(request, pk):
     return retrieve_update_delete(request, OtpVerification, OtpVerificationSerializer, pk)
+
+
+# ─────────────────────────────────────────────────────────────
+# 12. Interview Feedback Reviews
+# ─────────────────────────────────────────────────────────────
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminOrSuperUser])
+def interview_feedback_reviews_list(request):
+    return list_create(request, InterviewFeedbackReview, InterviewFeedbackReviewAdminSerializer, "review_id")
+
+
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
+@permission_classes([IsAdminOrSuperUser])
+def interview_feedback_review_detail(request, pk):
+    return retrieve_update_delete(request, InterviewFeedbackReview, InterviewFeedbackReviewAdminSerializer, pk)

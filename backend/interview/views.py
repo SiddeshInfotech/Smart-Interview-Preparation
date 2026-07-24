@@ -288,3 +288,118 @@ class UserInterviewListView(generics.ListAPIView):
         return (qs_candidate | qs_interviewer).select_related(
             'candidate__user', 'interviewer__user'
         ).distinct().order_by('-scheduled_date')
+
+
+# ========== END INTERVIEW SESSION (INTERVIEWER) ==========
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def end_interview_session(request):
+    schedule_id = request.data.get('schedule_id')
+    room_name = request.data.get('room_name')
+
+    schedule = None
+    if schedule_id:
+        schedule = InterviewSchedule.objects.filter(schedule_id=schedule_id).first()
+    elif room_name:
+        schedule = InterviewSchedule.objects.filter(room_name=room_name).first()
+
+    if not schedule:
+        return Response({'error': 'Interview schedule not found.'}, status=404)
+
+    is_interviewer = hasattr(request.user, 'interviewer_profile') and schedule.interviewer == request.user.interviewer_profile
+
+    if is_interviewer:
+        schedule.status = 'In Review'
+        schedule.save()
+        return Response({
+            'message': 'Session ended by interviewer. Assessment in progress.',
+            'status': schedule.status,
+            'interviewer_ended': True,
+            'schedule_id': schedule.schedule_id,
+        })
+    else:
+        return Response({
+            'message': 'Session ended by candidate.',
+            'status': schedule.status,
+            'interviewer_ended': schedule.status in ['In Review', 'Completed'],
+            'schedule_id': schedule.schedule_id,
+        })
+
+
+# ========== SUBMIT INTERVIEW FEEDBACK REVIEW ==========
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_interview_feedback(request):
+    from .models import InterviewFeedbackReview
+    from .serializers import InterviewFeedbackReviewSerializer
+
+    schedule_id = request.data.get('schedule_id')
+    schedule = InterviewSchedule.objects.filter(schedule_id=schedule_id).first() if schedule_id else None
+
+    candidate_id = request.data.get('candidate')
+    if not candidate_id and schedule:
+        candidate_id = schedule.candidate.pk
+
+    interviewer_id = request.data.get('interviewer')
+    if not interviewer_id and hasattr(request.user, 'interviewer_profile'):
+        interviewer_id = request.user.interviewer_profile.pk
+
+    if not candidate_id or not interviewer_id:
+        return Response({'error': 'Candidate and interviewer profiles are required.'}, status=400)
+
+    data = request.data.copy()
+    data['candidate'] = candidate_id
+    data['interviewer'] = interviewer_id
+    if schedule:
+        data['schedule'] = schedule.schedule_id
+
+    serializer = InterviewFeedbackReviewSerializer(data=data)
+    if serializer.is_valid():
+        feedback_review = serializer.save()
+
+        if schedule:
+            schedule.status = 'Completed'
+            schedule.save()
+
+        try:
+            from notifications.utils import create_notification
+            create_notification(
+                user=feedback_review.candidate.user,
+                notification_type="interview",
+                title="Interview Assessment Feedback Available",
+                message=f"Interviewer {request.user.full_name} has completed your interview assessment feedback. Click to view results."
+            )
+        except Exception as e:
+            logger.error(f"Failed to notify candidate of feedback: {e}")
+
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
+
+
+# ========== GET INTERVIEW FEEDBACK REVIEW ==========
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_interview_feedback(request, schedule_id):
+    from .models import InterviewFeedbackReview
+    from .serializers import InterviewFeedbackReviewSerializer
+
+    schedule = InterviewSchedule.objects.filter(schedule_id=schedule_id).first()
+    if not schedule:
+        return Response({'error': 'Interview schedule not found.'}, status=404)
+
+    feedback = InterviewFeedbackReview.objects.filter(schedule=schedule).order_by('-submitted_at').first()
+    if not feedback:
+        feedback = InterviewFeedbackReview.objects.filter(
+            candidate=schedule.candidate,
+            interviewer=schedule.interviewer
+        ).order_by('-submitted_at').first()
+
+    has_feedback = feedback is not None
+    feedback_data = InterviewFeedbackReviewSerializer(feedback).data if feedback else None
+
+    return Response({
+        'schedule_id': schedule.schedule_id,
+        'status': schedule.status,
+        'has_feedback': has_feedback,
+        'feedback': feedback_data
+    })

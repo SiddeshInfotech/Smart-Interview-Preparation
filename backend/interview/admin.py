@@ -35,3 +35,25 @@ class InterviewScheduleAdmin(admin.ModelAdmin):
         'updated_at',
     )
     raw_id_fields = ('candidate', 'interviewer')  # helps with performance if many users
+
+
+from .models import InterviewFeedbackReview
+
+@admin.register(InterviewFeedbackReview)
+class InterviewFeedbackReviewAdmin(admin.ModelAdmin):
+    list_display = (
+        'review_id',
+        'candidate',
+        'interviewer',
+        'overall_rating',
+        'recommendation',
+        'submitted_at',
+    )
+    list_filter = ('recommendation', 'submitted_at')
+    search_fields = (
+        'candidate__user__full_name',
+        'candidate__user__email',
+        'interviewer__user__full_name',
+        'interviewer__user__email',
+    )
+    readonly_fields = ('submitted_at',)

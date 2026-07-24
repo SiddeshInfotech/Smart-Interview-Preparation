@@ -13,6 +13,9 @@ import '@livekit/components-styles';
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import api from '../api/axios';
 import '../styles/InterviewPage.css';
+import InterviewerFeedbackModal from '../components/InterviewerFeedbackModal';
+import CandidateWaitingModal from '../components/CandidateWaitingModal';
+
 
 // ---- Child component that uses LiveKit hooks and displays video ----
 const LiveVideo = ({
@@ -260,6 +263,9 @@ const InterviewPage = ({
   const [isMicOn, setIsMicOn] = useState(true);
   const [timer, setTimer] = useState(0);
   const timerInterval = useRef(null);
+  const [showInterviewerFeedbackModal, setShowInterviewerFeedbackModal] = useState(false);
+  const [showCandidateWaitingModal, setShowCandidateWaitingModal] = useState(false);
+
 
   // ---- Tab/eye tracking ----
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
@@ -530,7 +536,7 @@ const InterviewPage = ({
   };
 
   // ---- End interview ----
-  const handleEndInterview = () => {
+  const handleEndInterview = async () => {
     if (isEndingRef.current) return; // prevent double execution
     isEndingRef.current = true;
     if (!window.confirm('Are you sure you want to end the interview?')) {
@@ -558,8 +564,24 @@ const InterviewPage = ({
     if (document.fullscreenElement) {
       document.exitFullscreen?.().catch(console.warn);
     }
-    alert('Interview ended.');
+
+    const scheduleId = selectedInterview?.id || selectedInterview?.schedule_id;
+
+    if (role === 'interviewer') {
+      try {
+        await api.post('/interview/end-session/', {
+          schedule_id: scheduleId,
+          room_name: roomName,
+        });
+      } catch (err) {
+        console.warn('Failed to notify end-session:', err);
+      }
+      setShowInterviewerFeedbackModal(true);
+    } else {
+      setShowCandidateWaitingModal(true);
+    }
   };
+
 
   // ---- Toggle camera & mic ----
   const toggleCamera = () => {
@@ -770,9 +792,32 @@ const InterviewPage = ({
             </LiveKitRoom>
           </div>
         )}
+
+        {showInterviewerFeedbackModal && (
+          <InterviewerFeedbackModal
+            schedule={selectedInterview}
+            candidateName={selectedInterview?.candidate_name || selectedInterview?.candidate}
+            onClose={() => setShowInterviewerFeedbackModal(false)}
+            onSubmitSuccess={() => {
+              setShowInterviewerFeedbackModal(false);
+              if (onBack) onBack();
+            }}
+          />
+        )}
+
+        {showCandidateWaitingModal && (
+          <CandidateWaitingModal
+            scheduleId={selectedInterview?.id || selectedInterview?.schedule_id}
+            onClose={() => {
+              setShowCandidateWaitingModal(false);
+              if (onBack) onBack();
+            }}
+          />
+        )}
       </div>
     </div>
   );
 };
+
 
 export default InterviewPage;

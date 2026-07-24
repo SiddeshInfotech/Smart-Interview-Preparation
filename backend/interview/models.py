@@ -41,3 +41,55 @@ class InterviewSchedule(models.Model):
 
     def __str__(self):
         return f"{self.candidate.user.full_name} with {self.interviewer.user.full_name} on {self.scheduled_date}"
+
+
+class InterviewFeedbackReview(models.Model):
+    RECOMMENDATION_CHOICES = [
+        ('Strongly Recommend', 'Strongly Recommend'),
+        ('Recommend', 'Recommend'),
+        ('Neutral', 'Neutral'),
+        ('Do Not Recommend', 'Do Not Recommend'),
+    ]
+
+    review_id = models.AutoField(primary_key=True)
+    candidate = models.ForeignKey(
+        Candidate_Profile,
+        on_delete=models.CASCADE,
+        related_name='feedback_reviews',
+        db_column='candidate_id'
+    )
+    interviewer = models.ForeignKey(
+        Interviewer_Profile,
+        on_delete=models.CASCADE,
+        related_name='given_feedback_reviews',
+        db_column='interviewer_id'
+    )
+    schedule = models.ForeignKey(
+        InterviewSchedule,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='feedback_reviews',
+        db_column='schedule_id'
+    )
+    technical_skills = models.IntegerField(default=3)
+    communication_skills = models.IntegerField(default=3)
+    problem_solving = models.IntegerField(default=3)
+    soft_skills = models.IntegerField(default=3)
+    code_quality = models.IntegerField(default=3)
+    overall_rating = models.DecimalField(max_digits=3, decimal_places=1, default=3.0)
+    strengths = models.TextField(blank=True, null=True)
+    weaknesses = models.TextField(blank=True, null=True)
+    comments = models.TextField(blank=True, null=True)
+    recommendation = models.CharField(
+        max_length=30,
+        choices=RECOMMENDATION_CHOICES,
+        default='Recommend'
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'Interview_Feedback_Review'
+
+    def __str__(self):
+        return f"Feedback for {self.candidate.user.full_name} by {self.interviewer.user.full_name}"

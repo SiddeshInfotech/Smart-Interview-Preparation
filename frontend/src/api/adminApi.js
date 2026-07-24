@@ -117,4 +117,12 @@ export const createOtp  = (data)    => adminApi.post("/admin_panel/otps/", data)
 export const updateOtp  = (id, data)=> adminApi.put(`/admin_panel/otps/${id}/`, data);
 export const deleteOtp  = (id)      => adminApi.delete(`/admin_panel/otps/${id}/`);
 
+// ── 12. Interview Feedback Reviews ─────────────────────────
+export const getInterviewFeedbackReviews    = ()        => adminApi.get("/admin_panel/interview-feedback-reviews/");
+export const getInterviewFeedbackReview     = (id)      => adminApi.get(`/admin_panel/interview-feedback-reviews/${id}/`);
+export const createInterviewFeedbackReview  = (data)    => adminApi.post("/admin_panel/interview-feedback-reviews/", data);
+export const updateInterviewFeedbackReview  = (id, data)=> adminApi.put(`/admin_panel/interview-feedback-reviews/${id}/`, data);
+export const deleteInterviewFeedbackReview  = (id, data)=> adminApi.delete(`/admin_panel/interview-feedback-reviews/${id}/`);
+
 export default adminApi;
+

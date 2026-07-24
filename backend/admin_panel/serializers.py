@@ -181,3 +181,28 @@ class NotificationSerializer(serializers.ModelSerializer):
             return obj.user.email
         except Exception:
             return None
+
+
+# ── Interview Feedback Review ────────────────────────────────
+from interview.models import InterviewFeedbackReview
+
+class InterviewFeedbackReviewAdminSerializer(serializers.ModelSerializer):
+    candidate_name = serializers.SerializerMethodField(read_only=True)
+    interviewer_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = InterviewFeedbackReview
+        fields = '__all__'
+
+    def get_candidate_name(self, obj):
+        try:
+            return obj.candidate.user.full_name
+        except Exception:
+            return None
+
+    def get_interviewer_name(self, obj):
+        try:
+            return obj.interviewer.user.full_name
+        except Exception:
+            return None
+
