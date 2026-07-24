@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "../styles/Dashboard.css";
-import { ClipboardList, Code, Video } from "lucide-react";
+import { BookOpen, Code, Video } from "lucide-react";
 
 import {
   ResponsiveContainer,
@@ -24,7 +24,7 @@ const Dashboard = () => {
         if (parsed.first_name && parsed.last_name) return `${parsed.first_name} ${parsed.last_name}`;
         if (parsed.first_name) return parsed.first_name;
         if (parsed.username && parsed.username !== "Candidate") return parsed.username;
-      } catch (e) {}
+      } catch (e) { }
     }
     return (
       localStorage.getItem("full_name") ||
@@ -53,7 +53,7 @@ const Dashboard = () => {
         const parsed = JSON.parse(userObjStr);
         const name = parsed.full_name || parsed.name || (parsed.first_name ? `${parsed.first_name} ${parsed.last_name || ''}`.trim() : parsed.username);
         if (name && name !== "Candidate") setFullName(name);
-      } catch (e) {}
+      } catch (e) { }
     } else {
       const name = localStorage.getItem("full_name") || localStorage.getItem("user_name");
       if (name && name !== "Candidate") setFullName(name);
@@ -195,7 +195,7 @@ const Dashboard = () => {
         <div className="performance-card">
           <div className="performance-title">
             <div className="category-badge quiz-badge">
-              <ClipboardList size={22} color="#ffffff" />
+              <BookOpen size={22} color="#ffffff" />
             </div>
             <h3>Quiz Performance</h3>
           </div>

@@ -264,10 +264,17 @@
   flex-shrink: 0;
 }
 
+/* ===== FIX: Force SVG styles for all Lucide icons in badges ===== */
 .category-badge svg {
-  display: block;
-  width: 22px;
-  height: 22px;
+  display: block !important;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px;
+  min-height: 22px;
+  stroke: #ffffff !important;
+  stroke-width: 2;
+  fill: none !important;
+  flex-shrink: 0;
 }
 
 .quiz-badge {
@@ -327,6 +334,7 @@
     opacity: 0;
     transform: translateY(-30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -340,6 +348,7 @@
   .overview-section {
     grid-template-columns: 1fr;
   }
+
   .performance-section {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -349,21 +358,27 @@
   .dashboard-container {
     padding: 20px;
   }
+
   .dashboard-header h1 {
     font-size: 28px;
   }
+
   .dashboard-header h2 {
     font-size: 20px;
   }
+
   .dashboard-header p {
     width: 100%;
   }
+
   .performance-section {
     grid-template-columns: 1fr;
   }
+
   .ai-status-box {
     grid-template-columns: 1fr;
   }
+
   .main-readiness-score h1 {
     font-size: 58px;
   }
@@ -373,17 +388,21 @@
   .dashboard-header h1 {
     font-size: 24px;
   }
+
   .dashboard-header h2 {
     font-size: 18px;
   }
+
   .card-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
+
   .performance-title {
     gap: 10px;
   }
+
   .overall-card {
     padding: 22px;
   }

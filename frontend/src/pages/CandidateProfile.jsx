@@ -66,9 +66,39 @@ const CandidateProfile = () => {
   // --- Fetch profile on mount ---
   useEffect(() => {
     const fetchProfile = async () => {
+      // Instant cache load
+      const cachedStr = localStorage.getItem("cached_candidate_profile");
+      if (cachedStr) {
+        try {
+          const cachedData = JSON.parse(cachedStr);
+          setProfile({
+            date_of_birth: cachedData.date_of_birth ? new Date(cachedData.date_of_birth) : null,
+            gender: cachedData.gender || "",
+            location: cachedData.location || "",
+            education: cachedData.education || "",
+            experience_years: cachedData.experience_years || 0,
+            linkedin_url: cachedData.linkedin_url || "",
+            github_url: cachedData.github_url || "",
+            portfolio_url: cachedData.portfolio_url || "",
+          });
+          setProfilePicture(cachedData.profile_picture || null);
+          if (cachedData.skills) {
+            const skillNames = cachedData.skills.split(",").map((s) => s.trim()).filter(Boolean);
+            setSkills(
+              skillNames.map((name, index) => ({
+                id: `existing-${index}`,
+                skill_name: name,
+              }))
+            );
+          }
+          setLoading(false);
+        } catch (e) {}
+      }
+
       try {
         const response = await api.get("/candidate/profile/");
         const data = response.data;
+        localStorage.setItem("cached_candidate_profile", JSON.stringify(data));
 
         setProfile({
           date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : null,
@@ -105,7 +135,7 @@ const CandidateProfile = () => {
     };
 
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
   // --- Resize handler for sidebar ---
   useEffect(() => {
@@ -305,6 +335,7 @@ const CandidateProfile = () => {
       const response = await api.put("/candidate/profile/", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+      localStorage.setItem("cached_candidate_profile", JSON.stringify(response.data));
       alert("Profile updated successfully!");
       setProfilePicture(response.data.profile_picture || null);
     } catch (error) {

@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Fetch complete profile details (Auth profile + Candidate/Interviewer picture)
+  // Fetch complete profile details (Auth profile + Candidate/Interviewer picture) in parallel
   const fetchProfile = useCallback(async () => {
     const currentToken = localStorage.getItem("access_token");
     if (!currentToken) {
@@ -56,41 +56,34 @@ export const AuthProvider = ({ children }) => {
     let name = userProfile.name || "User";
     let email = userProfile.email || "";
     let profilePic = userProfile.profilePicture || null;
-    let role = userProfile.role || "candidate";
+    let role = userProfile.role || localStorage.getItem(STORAGE_ROLE_KEY) || "candidate";
+
+    const roleEndpoint = role === "interviewer" ? "/interviewer/profile/" : "/candidate/profile/";
 
     try {
-      const authRes = await api.get("/auth/profile/");
-      if (authRes.data) {
-        name = authRes.data.full_name || name;
-        email = authRes.data.email || email;
-        role = authRes.data.role || role;
-      }
-    } catch (error) {
-      console.error("Error fetching auth profile:", error);
-    }
+      const [authRes, roleRes] = await Promise.allSettled([
+        api.get("/auth/profile/"),
+        api.get(roleEndpoint),
+      ]);
 
-    try {
-      if (role === "interviewer") {
-        const intRes = await api.get("/interviewer/profile/");
-        if (intRes.data && intRes.data.profile_picture) {
-          const pic = intRes.data.profile_picture;
-          profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
-        }
-      } else {
-        const candRes = await api.get("/candidate/profile/");
-        if (candRes.data && candRes.data.profile_picture) {
-          const pic = candRes.data.profile_picture;
-          profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
-        }
+      if (authRes.status === "fulfilled" && authRes.value?.data) {
+        name = authRes.value.data.full_name || name;
+        email = authRes.value.data.email || email;
+        role = authRes.value.data.role || role;
+      }
+
+      if (roleRes.status === "fulfilled" && roleRes.value?.data?.profile_picture) {
+        const pic = roleRes.value.data.profile_picture;
+        profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
       }
     } catch (error) {
-      console.error("Error fetching role profile picture:", error);
+      console.error("Error fetching profiles in parallel:", error);
     }
 
     const updated = { name, email, profilePicture: profilePic, role };
     updateCachedProfile(updated);
     setLoadingProfile(false);
-  }, []);
+  }, [userProfile.name, userProfile.email, userProfile.profilePicture, userProfile.role]);
 
   // Fetch Notifications
   const fetchNotifications = useCallback(async () => {
