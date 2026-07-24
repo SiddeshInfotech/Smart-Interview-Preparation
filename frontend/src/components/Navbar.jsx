@@ -13,7 +13,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  console.log('Navbar rendered with NotificationPopup'); // Debug log
+
 
   useEffect(() => {
     const fetchProfile = async () => {

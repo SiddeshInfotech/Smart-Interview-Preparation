@@ -54,27 +54,39 @@ export default function NotificationPopup() {
   };
 
   useEffect(() => {
+    const token = localStorage.getItem("access_token");
 
-  fetchNotifications();
+    // Only fetch notifications if the user is logged in
+    if (!token) {
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
 
-  const updateNotification = () => {
+    // Initial fetch
     fetchNotifications();
-  };
 
-  window.addEventListener(
-    "notificationUpdate",
-    updateNotification
-  );
+    // Poll every 60 seconds to refresh notification badge
+    const intervalId = setInterval(() => {
+      const t = localStorage.getItem("access_token");
+      if (t) {
+        fetchNotifications();
+      } else {
+        clearInterval(intervalId);
+      }
+    }, 60000);
 
+    const updateNotification = () => {
+      fetchNotifications();
+    };
+    window.addEventListener("notificationUpdate", updateNotification);
 
-  return () => {
-    window.removeEventListener(
-      "notificationUpdate",
-      updateNotification
-    );
-  };
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("notificationUpdate", updateNotification);
+    };
+  }, []);
 
-}, []);
 
   // ===========================
   // Close Popup Outside Click

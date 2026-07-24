@@ -1,227 +1,347 @@
 import docker
 import tempfile
 import os
+import threading
 
 from app.schemas.execute_schema import (
     CodeExecutionRequest,
     CodeExecutionResponse,
 )
 
+# ─── Limits ───────────────────────────────────────────────────────────────────
+TIMEOUT_SECONDS   = 10          # wall-clock timeout per run
+MEM_LIMIT         = "256m"
+CPU_NANO          = 1_000_000_000   # 1 CPU core
+
+# ─── Docker images ────────────────────────────────────────────────────────────
+IMAGES = {
+    "python": "python:3.13-slim",
+    "c":      "gcc:latest",
+    "cpp":    "gcc:latest",
+    "java":   "eclipse-temurin:17-alpine",
+}
+
+# ─── Compile + run shell commands inside Docker ───────────────────────────────
+# All commands redirect stdin from /code/input.txt
+# Compile errors go to /code/compile_err.txt; run errors go to stderr
+COMMANDS = {
+    "python": (
+        "python /code/main.py < /code/input.txt"
+    ),
+    "c": (
+        "gcc /code/main.c -o /code/main -lm 2>/code/compile_err.txt"
+        " && /code/main < /code/input.txt"
+        " || { echo '__COMPILE_FAILED__'; cat /code/compile_err.txt; exit 1; }"
+    ),
+    "cpp": (
+        "g++ /code/main.cpp -o /code/main -lm 2>/code/compile_err.txt"
+        " && /code/main < /code/input.txt"
+        " || { echo '__COMPILE_FAILED__'; cat /code/compile_err.txt; exit 1; }"
+    ),
+    "java": (
+        "javac /code/Main.java 2>/code/compile_err.txt"
+        " && java -cp /code Main < /code/input.txt"
+        " || { echo '__COMPILE_FAILED__'; cat /code/compile_err.txt; exit 1; }"
+    ),
+}
+
+# ─── Source file names ────────────────────────────────────────────────────────
+FILENAMES = {
+    "python": "main.py",
+    "c":      "main.c",
+    "cpp":    "main.cpp",
+    "java":   "Main.java",
+}
+
+# ─── Python stdin-safe wrapper (prepended to user code) ──────────────────────
+PYTHON_WRAPPER = """\
+import builtins as _b, sys as _sys
+
+_orig_input = _b.input
+_eof_count  = [0]
+
+def _safe_input(prompt=""):
+    if prompt:
+        _sys.stdout.write(str(prompt))
+        _sys.stdout.flush()
+    try:
+        line = _sys.stdin.readline()
+        if line == "":           # EOF
+            _eof_count[0] += 1
+            if _eof_count[0] > 3:
+                _sys.exit(0)
+            return ""
+        return line.rstrip("\\n").rstrip("\\r")
+    except EOFError:
+        return ""
+
+_b.input = _safe_input
+del _safe_input, _orig_input, _eof_count
+
+"""
+
 
 def get_docker_client():
     try:
         return docker.from_env()
-    except Exception as e:
+    except Exception:
         return None
+
+
+def _normalize_input(raw: str) -> str:
+    """
+    Normalize line endings to \\n and ensure file ends with a newline.
+    Handles Windows (\\r\\n) and old Mac (\\r) line endings.
+    Appends 50 empty lines so programs waiting for more input don't hang.
+    """
+    normalized = raw.replace("\r\n", "\n").replace("\r", "\n")
+    if normalized and not normalized.endswith("\n"):
+        normalized += "\n"
+    # Pad so sequential input() / scanf calls never hit EOF prematurely
+    normalized += "\n" * 50
+    return normalized
+
+
+def _decode(raw) -> str:
+    """Safely decode bytes to str."""
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", errors="replace")
+    return raw or ""
 
 
 def generate_solution_hint(language: str, error_text: str) -> str:
     if not error_text:
-        return "No specific error details provided. Check your code syntax and logic."
+        return ""
 
-    err_lower = error_text.lower()
-    solutions = []
+    err = error_text.lower()
+    hints = []
 
     if language == "python":
-        if "syntaxerror" in err_lower:
-            solutions.append("Check for missing closing parentheses ')', brackets ']', quotes '\"', or missing colons ':' at the end of if/def/for statements.")
-        if "indentationerror" in err_lower:
-            solutions.append("Ensure consistent block indentation (use 4 spaces per indentation level). Do not mix tabs and spaces.")
-        if "nameerror" in err_lower:
-            solutions.append("Verify that all variable and function names are spelled correctly and defined before use.")
-        if "typeerror" in err_lower:
-            solutions.append("Check data types. If accepting input via input(), wrap it with int() or float() before performing mathematical operations.")
-        if "zerodivisionerror" in err_lower:
-            solutions.append("Division by zero occurred. Add a check to ensure denominator is non-zero before dividing.")
-        if "indexerror" in err_lower:
-            solutions.append("List index out of range. Check list length using len() before accessing elements.")
-        if "eoferror" in err_lower:
-            solutions.append("EOFError: input() attempted to read input but standard input was empty. Type input values into the Standard Input box below before running.")
+        if "syntaxerror" in err:
+            hints.append("Check for missing colons ':', closing parentheses ')', or mismatched quotes.")
+        if "indentationerror" in err:
+            hints.append("Use 4 spaces per level. Never mix tabs and spaces.")
+        if "nameerror" in err:
+            hints.append("Variable or function used before definition — check spelling and scope.")
+        if "typeerror" in err:
+            hints.append("Wrap input() with int() or float() before arithmetic operations.")
+        if "zerodivisionerror" in err:
+            hints.append("Division by zero — add a check before dividing.")
+        if "indexerror" in err:
+            hints.append("Index out of range — check list size with len() before accessing.")
+        if "eoferror" in err:
+            hints.append("Program expected more input than was provided. Add all required values in the Input box.")
 
-    elif language in ["c", "cpp"]:
-        if "expected ';'" in err_lower or "expected ';' before" in err_lower:
-            solutions.append("Add a missing semicolon ';' at the end of the previous statement.")
-        if "undefined reference to `main'" in err_lower or "undefined reference to 'main'" in err_lower:
-            solutions.append("Ensure your program defines an entry function: int main() { ... return 0; }.")
-        if "was not declared in this scope" in err_lower:
-            solutions.append("Check variable spelling or include missing header libraries (e.g. #include <stdio.h>, #include <iostream>, #include <string>).")
-        if "expected '}'" in err_lower or "expected '}' at end of input" in err_lower:
-            solutions.append("Closing brace '}' missing. Ensure all opened '{' curly braces are closed.")
-        if "no such file or directory" in err_lower:
-            solutions.append("Check header name spelling in your #include directive.")
+    elif language in ("c", "cpp"):
+        if "expected ';'" in err:
+            hints.append("Missing semicolon ';' at the end of a statement.")
+        if "undefined reference" in err:
+            hints.append("Linker error — ensure all functions are defined or headers are included.")
+        if "was not declared" in err:
+            hints.append("Variable/function not declared — check includes and variable declarations.")
+        if "expected '}'" in err:
+            hints.append("Missing closing brace '}' — check all blocks are properly closed.")
+        if "no such file or directory" in err:
+            hints.append("Check the #include filename spelling.")
+        if "segmentation fault" in err:
+            hints.append("Segfault — likely a null pointer or out-of-bounds array access.")
 
     elif language == "java":
-        if "nosuchelementexception" in err_lower:
-            solutions.append("NoSuchElementException: Scanner attempted to read input (e.g. sc.nextInt() or sc.next()) but standard input was empty. Type input values into the Standard Input box below before running.")
-        if "should be declared in a file named" in err_lower:
-            solutions.append("In Java, the public class must be named Main so it matches 'Main.java'. Use: public class Main { ... }.")
-        if "cannot find symbol" in err_lower:
-            solutions.append("Cannot find symbol: Check method/variable name spelling and case sensitivity, or import required packages.")
-        if "expected" in err_lower and ";" in err_lower:
-            solutions.append("Missing semicolon ';' at the end of the statement.")
-        if "reached end of file while parsing" in err_lower:
-            solutions.append("Missing closing curly brace '}'. Check that all class and method blocks are properly closed.")
-        if "nullpointerexception" in err_lower:
-            solutions.append("NullPointerException: An object variable is null. Initialize objects before invoking methods on them.")
-        if "arrayindexoutofboundsexception" in err_lower:
-            solutions.append("ArrayIndexOutOfBoundsException: Array index is out of bounds. Verify loop conditions and array size.")
+        if "nosuchelementexception" in err:
+            hints.append("Scanner ran out of input — provide all required values in the Input box.")
+        if "should be declared in a file named" in err:
+            hints.append("Java public class must be named 'Main'. Use: public class Main { ... }")
+        if "cannot find symbol" in err:
+            hints.append("Check spelling of variable/method names and required imports.")
+        if "reached end of file" in err:
+            hints.append("Missing closing '}' — check all class and method blocks are closed.")
+        if "nullpointerexception" in err:
+            hints.append("NullPointerException — initialize objects before calling methods on them.")
+        if "arrayindexoutofboundsexception" in err:
+            hints.append("Array index out of bounds — check loop bounds and array size.")
 
-    if not solutions:
-        solutions.append("Review the error message line number and trace to locate the issue in your code.")
+    if not hints:
+        hints.append("Review the error line numbers above to locate the issue.")
 
-    return " ".join(solutions)
+    return " ".join(hints)
 
 
 def execute_code(request: CodeExecutionRequest) -> CodeExecutionResponse:
     client = get_docker_client()
     if not client:
-        err_msg = "Docker Desktop engine is not connected or not running on host machine."
         return CodeExecutionResponse(
             status="error",
             output="",
-            error=err_msg,
-            solution="Ensure Docker Desktop is installed and running on your system."
+            error="Docker Desktop is not running or not accessible.",
+            solution="Start Docker Desktop and try again.",
         )
 
+    language = request.language.lower().strip()
+
+    if language not in IMAGES:
+        return CodeExecutionResponse(
+            status="error",
+            output="",
+            error=f"Unsupported language: '{language}'.",
+            solution="Supported languages: python, c, cpp, java.",
+        )
+
+    image    = IMAGES[language]
+    filename = FILENAMES[language]
+    command  = COMMANDS[language]
+
+    container = None
+
     try:
-        with tempfile.TemporaryDirectory() as temp:
-            language = request.language.lower()
+        with tempfile.TemporaryDirectory() as temp_dir:
 
-            # -----------------------------
-            # Language Configuration
-            # -----------------------------
+            # ── Write source file ────────────────────────────────────────────
+            code_path = os.path.join(temp_dir, filename)
+
             if language == "python":
-                filename = "main.py"
-                image = "python:3.13-slim"
-                command = 'sh -c "export PYTHONPATH=/code && python /code/main.py < /code/input.txt"'
-
-            elif language == "java":
-                filename = "Main.java"
-                image = "eclipse-temurin:17-alpine"
-                command = 'sh -c "javac /code/Main.java && java -cp /code Main < /code/input.txt"'
-
-            elif language == "c":
-                filename = "main.c"
-                image = "gcc:latest"
-                command = 'sh -c "gcc /code/main.c -o /code/main && /code/main < /code/input.txt"'
-
-            elif language == "cpp":
-                filename = "main.cpp"
-                image = "gcc:latest"
-                command = 'sh -c "g++ /code/main.cpp -o /code/main && /code/main < /code/input.txt"'
-
+                source = PYTHON_WRAPPER + request.code
             else:
-                return CodeExecutionResponse(
-                    status="error",
-                    output="",
-                    error="Unsupported language.",
-                    solution="Supported languages are: python, c, cpp, java."
-                )
+                source = request.code
 
-            # -----------------------------
-            # Save Source Code & Input
-            # -----------------------------
-            code_path = os.path.join(temp, filename)
-            if language == "python":
-                wrapper = (
-                    "import builtins, sys\n"
-                    "try:\n"
-                    "    _orig_input = builtins.input\n"
-                    "    _eof_count = 0\n"
-                    "    def _safe_input(prompt=''):\n"
-                    "        global _eof_count\n"
-                    "        try:\n"
-                    "            return _orig_input(prompt)\n"
-                    "        except EOFError:\n"
-                    "            _eof_count += 1\n"
-                    "            if _eof_count > 2:\n"
-                    "                sys.exit(0)\n"
-                    "            return ''\n"
-                    "    builtins.input = _safe_input\n"
-                    "except Exception:\n"
-                    "    pass\n\n"
-                )
-                with open(code_path, "w", encoding="utf-8") as f:
-                    f.write(wrapper + request.code)
-                
-                site_path = os.path.join(temp, "sitecustomize.py")
-                with open(site_path, "w", encoding="utf-8") as f:
-                    f.write(wrapper)
-            else:
-                with open(code_path, "w", encoding="utf-8") as f:
-                    f.write(request.code)
+            with open(code_path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(source)
 
-            input_path = os.path.join(temp, "input.txt")
-            with open(input_path, "w", encoding="utf-8") as f:
-                user_in = request.input or ""
-                # Append padding newlines so sequential input() / Scanner calls never crash with EOFError
-                padded_input = user_in + "\n" + ("\n" * 500)
-                f.write(padded_input)
+            # ── Write input file ─────────────────────────────────────────────
+            input_path = os.path.join(temp_dir, "input.txt")
+            with open(input_path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(_normalize_input(request.input or ""))
 
-            # -----------------------------
-            # Run Container with Docker
-            # -----------------------------
+            # ── Run container (detached so we can enforce timeout) ───────────
             container = client.containers.run(
                 image=image,
-                command=command,
-                volumes={
-                    temp: {
-                        "bind": "/code",
-                        "mode": "rw"
-                    }
-                },
+                command=["sh", "-c", command],
+                volumes={temp_dir: {"bind": "/code", "mode": "rw"}},
                 working_dir="/code",
                 stdout=True,
                 stderr=True,
-                remove=True,
+                remove=False,      # we remove manually after reading logs
                 network_disabled=True,
-                mem_limit="256m",
-                nano_cpus=1000000000,
-                detach=False,
+                mem_limit=MEM_LIMIT,
+                nano_cpus=CPU_NANO,
+                detach=True,       # detach=True so we can apply timeout
             )
 
-            out_str = container.decode("utf-8")
+            # ── Wait with timeout ────────────────────────────────────────────
+            result = {"status_code": None, "timed_out": False}
+
+            def _wait():
+                r = container.wait()
+                result["status_code"] = r.get("StatusCode", -1)
+
+            t = threading.Thread(target=_wait, daemon=True)
+            t.start()
+            t.join(timeout=TIMEOUT_SECONDS)
+
+            if t.is_alive():
+                # TLE — kill container
+                try:
+                    container.kill()
+                except Exception:
+                    pass
+                result["timed_out"] = True
+
+            # ── Read logs ────────────────────────────────────────────────────
+            try:
+                stdout_raw = container.logs(stdout=True, stderr=False)
+                stderr_raw = container.logs(stdout=False, stderr=True)
+            except Exception:
+                stdout_raw = b""
+                stderr_raw = b""
+
+            stdout_str = _decode(stdout_raw).rstrip()
+            stderr_str = _decode(stderr_raw).rstrip()
+
+            # ── Cleanup container ────────────────────────────────────────────
+            try:
+                container.remove(force=True)
+            except Exception:
+                pass
+            container = None
+
+            # ── TLE response ─────────────────────────────────────────────────
+            if result["timed_out"]:
+                return CodeExecutionResponse(
+                    status="error",
+                    output=stdout_str,   # partial output if any
+                    error="⏱ Time Limit Exceeded (10 s)\n\nYour program ran longer than the allowed time limit.\nCheck for infinite loops or invalid input format causing loops.",
+                    solution="Ensure input values match what your program expects. If scanf/cin receives invalid input types, it can cause infinite loops.",
+                )
+
+            # ── OOM / memory limit ───────────────────────────────────────────
+            if result["status_code"] == 137:
+                return CodeExecutionResponse(
+                    status="error",
+                    output=stdout_str,
+                    error="💾 Memory Limit Exceeded (256 MB)\n\nYour program consumed more memory than the allowed limit.",
+                    solution="Avoid creating very large lists, arrays, or recursive stacks. Release resources when no longer needed.",
+                )
+
+            # ── Compile error detection ──────────────────────────────────────
+            if "__COMPILE_FAILED__" in stdout_str:
+                compile_err = stdout_str.replace("__COMPILE_FAILED__", "").strip()
+                if stderr_str:
+                    compile_err = (compile_err + "\n" + stderr_str).strip()
+                return CodeExecutionResponse(
+                    status="error",
+                    output="",
+                    error="🔴 Compilation Error:\n\n" + compile_err,
+                    solution=generate_solution_hint(language, compile_err),
+                )
+
+            # ── Runtime error (exit code != 0, but compiled OK) ──────────────
+            if result["status_code"] not in (0, None):
+                runtime_err = stderr_str or stdout_str or f"Process exited with code {result['status_code']}"
+                return CodeExecutionResponse(
+                    status="error",
+                    output=stdout_str if stdout_str and stdout_str != runtime_err else "",
+                    error="🟠 Runtime Error:\n\n" + runtime_err,
+                    solution=generate_solution_hint(language, runtime_err),
+                )
+
+            # ── Success ──────────────────────────────────────────────────────
+            final_output = stdout_str
+
             return CodeExecutionResponse(
                 status="success",
-                output=out_str,
+                output=final_output,
                 error="",
-                solution=""
+                solution="",
             )
 
-    except docker.errors.ContainerError as e:
-        error_output = ""
-        if e.stderr:
-            error_output = e.stderr.decode("utf-8")
-        elif e.stdout:
-            error_output = e.stdout.decode("utf-8")
-        else:
-            error_output = str(e)
-
-        solution_hint = generate_solution_hint(request.language.lower(), error_output)
-
+    except docker.errors.ImageNotFound as e:
         return CodeExecutionResponse(
             status="error",
             output="",
-            error=error_output,
-            solution=solution_hint
+            error=f"Docker image not found: {str(e)}\n\nThe required image needs to be pulled first.",
+            solution=f"Run: docker pull {image}",
         )
 
     except docker.errors.APIError as e:
-        error_output = str(e)
-        solution_hint = generate_solution_hint(request.language.lower(), error_output)
+        err = str(e)
         return CodeExecutionResponse(
             status="error",
             output="",
-            error=error_output,
-            solution=solution_hint
+            error=f"Docker API error: {err}",
+            solution=generate_solution_hint(language, err),
         )
 
     except Exception as e:
-        error_output = str(e)
-        solution_hint = generate_solution_hint(request.language.lower(), error_output)
+        err = str(e)
         return CodeExecutionResponse(
             status="error",
             output="",
-            error=error_output,
-            solution=solution_hint
-        )
+            error=f"Execution engine error: {err}",
+            solution=generate_solution_hint(language, err),
+        )
+
+    finally:
+        if container is not None:
+            try:
+                container.remove(force=True)
+            except Exception:
+                pass
