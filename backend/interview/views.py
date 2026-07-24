@@ -150,10 +150,15 @@ def get_livekit_token(request):
                 if schedule.interviewer.user != request.user:
                     return Response({'error': 'You are not authorized for this interview.'}, status=403)
 
-            scheduled_start = timezone.make_aware(
-                datetime.combine(schedule.scheduled_date, schedule.scheduled_time)
-            )
+            dt_naive = datetime.combine(schedule.scheduled_date, schedule.scheduled_time)
+            scheduled_start = timezone.make_aware(dt_naive) if timezone.is_naive(dt_naive) else dt_naive
             now = timezone.now()
+
+            # Auto cancel if 15 mins past start time and status is Scheduled
+            if now > (scheduled_start + timedelta(minutes=15)) and schedule.status == 'Scheduled':
+                schedule.status = 'Cancelled'
+                schedule.save(update_fields=['status', 'updated_at'])
+                return Response({'error': 'This interview has been cancelled because neither party joined within 15 minutes of the scheduled time.'}, status=400)
 
             start_window = scheduled_start - timedelta(minutes=15)
             end_window = scheduled_start + timedelta(minutes=schedule.duration_minutes + 15)
@@ -262,6 +267,59 @@ def decline_interview(request, pk):
     return Response({'message': 'Interview request declined.'})
 
 
+# ========== CANCEL INTERVIEW SESSION ==========
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def cancel_interview_session(request):
+    schedule_id = request.data.get('schedule_id')
+    room_name = request.data.get('room_name')
+    reason = request.data.get('reason', 'cancelled')
+
+    schedule = None
+    if schedule_id:
+        schedule = InterviewSchedule.objects.filter(schedule_id=schedule_id).first()
+    elif room_name:
+        schedule = InterviewSchedule.objects.filter(room_name=room_name).first()
+
+    if not schedule:
+        return Response({'error': 'Interview schedule not found.'}, status=404)
+
+    schedule.status = 'Cancelled'
+    schedule.save(update_fields=['status', 'updated_at'])
+
+    reason_messages = {
+        'kicked': 'Candidate was kicked from the interview room by the interviewer.',
+        'tab_switch_limit': 'Interview was terminated due to candidate exceeding tab switch limit.',
+        'technical_issue': 'Interview was terminated due to face missing or technical issues.',
+        'timeout': 'Interview was cancelled due to no-show after 15 minutes.'
+    }
+    msg_detail = reason_messages.get(reason, f"Reason: {reason}")
+
+    try:
+        from notifications.utils import create_notification
+        create_notification(
+            user=schedule.candidate.user,
+            notification_type="interview",
+            title="Interview Cancelled",
+            message=f"Your interview scheduled for {schedule.scheduled_date} at {schedule.scheduled_time} was cancelled. {msg_detail}"
+        )
+        create_notification(
+            user=schedule.interviewer.user,
+            notification_type="interview",
+            title="Interview Cancelled",
+            message=f"Interview with {schedule.candidate.user.full_name} scheduled for {schedule.scheduled_date} was cancelled. {msg_detail}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send cancellation notification: {e}")
+
+    return Response({
+        'message': 'Interview session cancelled successfully.',
+        'status': schedule.status,
+        'schedule_id': schedule.schedule_id,
+        'reason': reason
+    })
+
+
 # ========== GET USER'S INTERVIEWS ==========
 class UserInterviewListView(generics.ListAPIView):
     serializer_class = InterviewScheduleSerializer
@@ -285,9 +343,23 @@ class UserInterviewListView(generics.ListAPIView):
                 interviewer=user.interviewer_profile
             )
 
-        return (qs_candidate | qs_interviewer).select_related(
+        all_qs = (qs_candidate | qs_interviewer).select_related(
             'candidate__user', 'interviewer__user'
-        ).distinct().order_by('-scheduled_date')
+        ).distinct()
+
+        # Check for 15-minute auto-cancellation for 'Scheduled' status
+        now = timezone.now()
+        for sched in all_qs.filter(status='Scheduled'):
+            try:
+                dt_naive = datetime.combine(sched.scheduled_date, sched.scheduled_time)
+                scheduled_start = timezone.make_aware(dt_naive) if timezone.is_naive(dt_naive) else dt_naive
+                if now > (scheduled_start + timedelta(minutes=15)):
+                    sched.status = 'Cancelled'
+                    sched.save(update_fields=['status', 'updated_at'])
+            except Exception as e:
+                logger.error(f"Error auto-cancelling schedule {sched.schedule_id}: {e}")
+
+        return all_qs.order_by('-scheduled_date')
 
 
 # ========== END INTERVIEW SESSION (INTERVIEWER) ==========
@@ -309,10 +381,10 @@ def end_interview_session(request):
     is_interviewer = hasattr(request.user, 'interviewer_profile') and schedule.interviewer == request.user.interviewer_profile
 
     if is_interviewer:
-        schedule.status = 'In Review'
-        schedule.save()
+        schedule.status = 'Completed'
+        schedule.save(update_fields=['status', 'updated_at'])
         return Response({
-            'message': 'Session ended by interviewer. Assessment in progress.',
+            'message': 'Session ended by interviewer. Interview marked as completed.',
             'status': schedule.status,
             'interviewer_ended': True,
             'schedule_id': schedule.schedule_id,
@@ -402,4 +474,56 @@ def get_interview_feedback(request, schedule_id):
         'status': schedule.status,
         'has_feedback': has_feedback,
         'feedback': feedback_data
+    })
+
+
+# =====================================
+# INTERVIEW PERFORMANCE FOR DASHBOARD
+# =====================================
+from django.db.models import Avg
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def interview_performance(request):
+    user = request.user
+    if not hasattr(user, 'candidate_profile'):
+        return Response({
+            "total_interviews": 0,
+            "technical_skills": 0,
+            "communication_skills": 0,
+            "problem_solving": 0,
+            "soft_skills": 0,
+            "code_quality": 0,
+            "overall_performance": 0,
+        })
+
+    from .models import InterviewFeedbackReview
+    reviews = InterviewFeedbackReview.objects.filter(candidate=user.candidate_profile)
+    if not reviews.exists():
+        return Response({
+            "total_interviews": 0,
+            "technical_skills": 0,
+            "communication_skills": 0,
+            "problem_solving": 0,
+            "soft_skills": 0,
+            "code_quality": 0,
+            "overall_performance": 0,
+        })
+
+    total = reviews.count()
+    tech_avg = reviews.aggregate(Avg('technical_skills'))['technical_skills__avg'] or 0
+    comm_avg = reviews.aggregate(Avg('communication_skills'))['communication_skills__avg'] or 0
+    prob_avg = reviews.aggregate(Avg('problem_solving'))['problem_solving__avg'] or 0
+    soft_avg = reviews.aggregate(Avg('soft_skills'))['soft_skills__avg'] or 0
+    code_avg = reviews.aggregate(Avg('code_quality'))['code_quality__avg'] or 0
+    overall_avg = reviews.aggregate(Avg('overall_rating'))['overall_rating__avg'] or 0
+
+    return Response({
+        "total_interviews": total,
+        "technical_skills": round((tech_avg / 5.0) * 100),
+        "communication_skills": round((comm_avg / 5.0) * 100),
+        "problem_solving": round((prob_avg / 5.0) * 100),
+        "soft_skills": round((soft_avg / 5.0) * 100),
+        "code_quality": round((code_avg / 5.0) * 100),
+        "overall_performance": round((overall_avg / 5.0) * 100),
     })
