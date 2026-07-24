@@ -102,6 +102,21 @@ const LiveVideo = ({
   const oppositeUserName =
     remoteUserObj?.name || remoteUserObj?.identity || oppositeFallback;
 
+  const isInterviewerRole = (role || '').toString().toLowerCase() === 'interviewer';
+
+  // Candidate auto-detect when interviewer leaves room
+  const prevHadInterviewerRef = useRef(false);
+  useEffect(() => {
+    if (!isInterviewerRole) {
+      if (hasRemoteParticipant) {
+        prevHadInterviewerRef.current = true;
+      } else if (prevHadInterviewerRef.current) {
+        console.log("Interviewer left the video room. Auto-ending candidate session.");
+        handleEndInterview(true);
+      }
+    }
+  }, [hasRemoteParticipant, isInterviewerRole, handleEndInterview]);
+
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
@@ -181,9 +196,12 @@ const LiveVideo = ({
           >
             {isMicOn ? '🎤 On' : '🎤 Off'}
           </button>
-          <button className="control-btn end-call" onClick={handleEndInterview}>
-            📞 End Interview
-          </button>
+          {/* ONLY INTERVIEWER CAN END THE INTERVIEW */}
+          {isInterviewerRole && (
+            <button className="control-btn end-call" onClick={() => handleEndInterview(false)}>
+              📞 End Interview
+            </button>
+          )}
         </div>
         <div className="footer-secure">
           <span>🔒 Secure Connection</span>
@@ -536,13 +554,21 @@ const InterviewPage = ({
   };
 
   // ---- End interview ----
-  const handleEndInterview = async () => {
+  const handleEndInterview = async (autoEnded = false) => {
     if (isEndingRef.current) return; // prevent double execution
-    isEndingRef.current = true;
-    if (!window.confirm('Are you sure you want to end the interview?')) {
-      isEndingRef.current = false;
-      return;
+
+    const scheduleId = selectedInterview?.id || selectedInterview?.schedule_id;
+    const userRoleStr = (role || selectedInterview?.role || '').toString().toLowerCase();
+    const isInterviewerRole = userRoleStr === 'interviewer';
+
+    if (isInterviewerRole && !autoEnded) {
+      if (!window.confirm('Are you sure you want to end the interview?')) {
+        return;
+      }
     }
+
+    isEndingRef.current = true;
+
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
@@ -565,10 +591,6 @@ const InterviewPage = ({
       document.exitFullscreen?.().catch(console.warn);
     }
 
-    const scheduleId = selectedInterview?.id || selectedInterview?.schedule_id;
-    const userRoleStr = (role || selectedInterview?.role || '').toString().toLowerCase();
-    const isInterviewerRole = userRoleStr === 'interviewer';
-
     if (isInterviewerRole) {
       setShowInterviewerFeedbackModal(true);
       if (scheduleId) {
@@ -581,6 +603,32 @@ const InterviewPage = ({
       setShowCandidateWaitingModal(true);
     }
   };
+
+  // ---- Candidate auto-termination poll when interviewer ends session ----
+  useEffect(() => {
+    const isInterviewerRole = (role || selectedInterview?.role || '').toString().toLowerCase() === 'interviewer';
+    if (!isInInterview || isInterviewerRole) return;
+
+    const checkInterval = setInterval(async () => {
+      const scheduleId = selectedInterview?.id || selectedInterview?.schedule_id;
+      if (!scheduleId) return;
+      try {
+        const res = await api.get('/interview/my-interviews/');
+        const list = res.data.results || res.data || [];
+        const current = list.find((item) => String(item.schedule_id || item.id) === String(scheduleId));
+        if (current && ['In Review', 'Completed'].includes(current.status)) {
+          if (!isEndingRef.current) {
+            console.log("Interviewer has ended the session. Auto-terminating candidate view.");
+            handleEndInterview(true);
+          }
+        }
+      } catch (err) {
+        console.warn("Candidate interview status check failed:", err);
+      }
+    }, 3500);
+
+    return () => clearInterval(checkInterval);
+  }, [isInInterview, role, selectedInterview]);
 
 
   // ---- Toggle camera & mic ----
