@@ -48,3 +48,62 @@ def generate_quiz(request):
 
     except Exception as e:
         return Response({"error": f"AI generation failed: {str(e)}"}, status=500)
+
+
+# =====================================
+# QUIZ PERFORMANCE FOR DASHBOARD
+# =====================================
+
+from .models import QuizPerformance
+from django.db.models import Avg, Max, Min
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def quiz_performance(request):
+    quizzes = QuizPerformance.objects.filter(user=request.user)
+
+    if not quizzes.exists():
+        return Response({
+            "total_quizzes": 0,
+            "minimum_score": 0,
+            "maximum_score": 0,
+            "average_score": 0,
+            "overall_score": 0
+        })
+
+    data = {
+        "total_quizzes": quizzes.count(),
+        "minimum_score": quizzes.aggregate(Min("score"))["score__min"] or 0,
+        "maximum_score": quizzes.aggregate(Max("score"))["score__max"] or 0,
+        "average_score": round(quizzes.aggregate(Avg("score"))["score__avg"] or 0, 2),
+        "overall_score": round(quizzes.aggregate(Avg("score"))["score__avg"] or 0, 2),
+    }
+
+    return Response(data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def save_quiz_result(request):
+    try:
+        data = request.data
+
+        result = QuizPerformance.objects.create(
+            user=request.user,
+            total_questions=data.get("total_questions"),
+            correct_answers=data.get("correct_answers"),
+            wrong_answers=data.get("wrong_answers"),
+            skipped_answers=data.get("skipped_answers"),
+            score=data.get("score")
+        )
+
+        return Response({
+            "message": "Quiz result saved successfully",
+            "result_id": result.id
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
