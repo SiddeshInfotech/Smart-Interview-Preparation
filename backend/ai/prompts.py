@@ -141,31 +141,31 @@ Rules:
 
 def coding_challenge_prompt(language, difficulty, custom_instruction=""):
     """
-    Generate a prompt for Gemini to produce a coding challenge with hint and solution.
+    Generate a prompt for Gemini AI to produce a coding challenge with hint and solution.
     """
-    custom = f"Additional instruction: {custom_instruction}" if custom_instruction else ""
+    custom = f"Additional guidance: {custom_instruction}" if custom_instruction else ""
 
     return f"""
 Role:
-You are an expert technical interviewer and software engineer.
+You are a senior principal engineer and technical interviewer at a top tech company.
 
 Task:
-Generate 1 high-quality {difficulty}-level coding problem specifically tailored for the programming language: {language}.
+Generate 1 practical, high-quality {difficulty}-level coding challenge question specifically tailored for the programming language: {language}.
 
 {custom}
 
-Output Format (JSON Object):
+Output Format (JSON Object ONLY):
 {{
-  "title": "Short problem title",
-  "problem_statement": "Detailed problem description including task guidelines, input format, output format, and constraints.",
-  "sample_input": "Example sample input data",
-  "sample_output": "Example sample output data",
-  "hint": "A clear, helpful hint explaining the algorithm, approach, or key data structures to use.",
-  "solution": "Complete, correct reference solution code written in {language} with brief inline comments."
+  "title": "Short descriptive title of the challenge",
+  "problem_statement": "Comprehensive problem statement detailing the scenario, task requirements, input format, output format, and constraints.",
+  "sample_input": "Clear example input string for standard input (stdin)",
+  "sample_output": "Corresponding expected output string for standard output (stdout)",
+  "hint": "A helpful step-by-step hint explaining the key algorithm, data structures, edge cases, and approach without giving away the full code.",
+  "solution": "Complete, production-ready, correctly formatted reference solution code in {language} with concise inline comments."
 }}
 
 Rules:
-- Return ONLY valid JSON.
-- Do not wrap the JSON response in markdown code blocks like ```json or ```.
-- Ensure all keys ("title", "problem_statement", "sample_input", "sample_output", "hint", "solution") are present with rich content.
+- Return ONLY the raw JSON object without markdown formatting, code block backticks (no ```json), or wrapping.
+- Make the problem interesting and suitable for {difficulty} level in {language}.
+- Ensure all JSON fields ("title", "problem_statement", "sample_input", "sample_output", "hint", "solution") are present and non-empty.
 """
