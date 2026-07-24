@@ -323,118 +323,118 @@ public class Main {
                 />
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* ===========================
-              RESULT PANEL & CONSOLE
-        =========================== */}
-        {showResult && (
-          <div className="result-panel">
-            <div className="result-header">
-              <h2>📤 Console Output</h2>
-              <button
-                type="button"
-                className="close-result-btn"
-                onClick={() => setShowResult(false)}
-                title="Close console"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* TERMINAL CONSOLE */}
-            <div className="pro-terminal">
-              <div className="pro-terminal-header">
-                <div className="terminal-dots">
-                  <span className="dot red"></span>
-                  <span className="dot yellow"></span>
-                  <span className="dot green"></span>
+            {/* ===========================
+                  RESULT PANEL & CONSOLE
+            =========================== */}
+            {showResult && (
+              <div className="result-panel">
+                <div className="result-header">
+                  <h2>📤 Console Output</h2>
+                  <button
+                    type="button"
+                    className="close-result-btn"
+                    onClick={() => setShowResult(false)}
+                    title="Close console"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div className="terminal-title">
-                  <span>Console Output</span>
-                </div>
-                <div className="terminal-status">
-                  {isRunning ? (
-                    <span className="status-badge running">● Compiling &amp; Executing...</span>
-                  ) : error ? (
-                    <span className="status-badge failed">✕ Compilation / Runtime Error</span>
-                  ) : (
-                    <span className="status-badge success">✓ Exit Code 0</span>
-                  )}
-                </div>
-              </div>
 
-              <div className="pro-terminal-body">
-                <pre className={`terminal-output-text ${error ? "has-error-text" : ""}`}>
-                  {isRunning
-                    ? "[Execution Engine] Compiling & running program..."
-                    : error
-                    ? error
-                    : output || "No output produced."}
-                </pre>
+                {/* TERMINAL CONSOLE */}
+                <div className="pro-terminal">
+                  <div className="pro-terminal-header">
+                    <div className="terminal-dots">
+                      <span className="dot red"></span>
+                      <span className="dot yellow"></span>
+                      <span className="dot green"></span>
+                    </div>
+                    <div className="terminal-title">
+                      <span>Console Output</span>
+                    </div>
+                    <div className="terminal-status">
+                      {isRunning ? (
+                        <span className="status-badge running">● Compiling &amp; Executing...</span>
+                      ) : error ? (
+                        <span className="status-badge failed">✕ Compilation / Runtime Error</span>
+                      ) : (
+                        <span className="status-badge success">✓ Exit Code 0</span>
+                      )}
+                    </div>
+                  </div>
 
-                {!error && !isRunning && (
-                  <div className="inline-idle-row">
-                    <span className="inline-idle-label">&gt;_</span>
-                    <input
-                      type="text"
-                      className="inline-idle-input"
-                      placeholder="Type input data here and press Enter..."
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          executeCode(e.target.value);
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="inline-idle-btn"
-                      onClick={() => executeCode(userInput)}
-                      disabled={isRunning}
-                    >
-                      {isRunning ? "Running..." : "Execute ↵"}
-                    </button>
+                  <div className="pro-terminal-body">
+                    <pre className={`terminal-output-text ${error ? "has-error-text" : ""}`}>
+                      {isRunning
+                        ? "[Execution Engine] Compiling & running program..."
+                        : error
+                        ? error
+                        : output || "No output produced."}
+                    </pre>
+
+                    {!error && !isRunning && (
+                      <div className="inline-idle-row">
+                        <span className="inline-idle-label">&gt;_</span>
+                        <input
+                          type="text"
+                          className="inline-idle-input"
+                          placeholder="Type input data here and press Enter..."
+                          value={userInput}
+                          onChange={(e) => setUserInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              executeCode(e.target.value);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="inline-idle-btn"
+                          onClick={() => executeCode(userInput)}
+                          disabled={isRunning}
+                        >
+                          {isRunning ? "Running..." : "Execute ↵"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pro-terminal-footer idle-footer">
+                    <span className="idle-footer-note">💡 Smart Execution Engine — Type keyboard input in the &gt;_ prompt field above and press Enter.</span>
+                  </div>
+                </div>
+
+                {error && !isRunning && (
+                  <div className="result-card error-console-card">
+                    <div className="error-console-header">
+                      <h4>⚠️ Compiler &amp; Runtime Error Output</h4>
+                    </div>
+                    <div className="error-console-box">
+                      <pre className="error-console-text">{error}</pre>
+                    </div>
+                  </div>
+                )}
+
+                {solution && !isRunning && (
+                  <div className="result-card solution-card">
+                    <h4>💡 Suggested Solution</h4>
+                    <div className="solution-box">
+                      <p>{solution}</p>
+                    </div>
+                  </div>
+                )}
+
+                {!error && !isRunning && output && (
+                  <div className="result-card success-card">
+                    <div className="success-message">
+                      ✓ Successfully compiled and executed.
+                    </div>
                   </div>
                 )}
               </div>
-
-              <div className="pro-terminal-footer idle-footer">
-                <span className="idle-footer-note">💡 Smart Execution Engine — Type keyboard input in the &gt;_ prompt field above and press Enter.</span>
-              </div>
-            </div>
-
-            {error && !isRunning && (
-              <div className="result-card error-console-card">
-                <div className="error-console-header">
-                  <h4>⚠️ Compiler &amp; Runtime Error Output</h4>
-                </div>
-                <div className="error-console-box">
-                  <pre className="error-console-text">{error}</pre>
-                </div>
-              </div>
-            )}
-
-            {solution && !isRunning && (
-              <div className="result-card solution-card">
-                <h4>💡 Suggested Solution</h4>
-                <div className="solution-box">
-                  <p>{solution}</p>
-                </div>
-              </div>
-            )}
-
-            {!error && !isRunning && output && (
-              <div className="result-card success-card">
-                <div className="success-message">
-                  ✓ Successfully compiled and executed.
-                </div>
-              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* PROGRAM INPUT POPUP MODAL */}
