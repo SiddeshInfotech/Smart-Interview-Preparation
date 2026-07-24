@@ -357,17 +357,59 @@ function ScheduleForm({ onSchedule }) {
   );
 }
 
+import FeedbackResultModal from "../components/FeedbackResultModal";
 import { useAuth } from "../context/AuthContext";
 
 // --- Descriptive InterviewList ---
 function InterviewList({ interviews, onSelectInterview, userRole }) {
-  const [filter, setFilter] = useState("All");
-  const filters = ["All", "Scheduled", "Completed", "Cancelled"];
+  const [filter, setFilter] = useState("Scheduled");
+  const filters = ["Scheduled", "Completed", "Cancelled", "All"];
+  const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [loadingResultId, setLoadingResultId] = useState(null);
 
   const safeInterviews = Array.isArray(interviews) ? interviews : [];
+
+  // Check 15m timeout auto cancellation
+  const processedInterviews = safeInterviews.map((iv) => {
+    if (iv.status === "Scheduled" && iv.date && iv.time) {
+      try {
+        const scheduledTime = new Date(`${iv.date}T${iv.time}`);
+        const now = new Date();
+        const timeoutMs = 15 * 60 * 1000;
+        if (now.getTime() > scheduledTime.getTime() + timeoutMs) {
+          return { ...iv, status: "Cancelled" };
+        }
+      } catch (err) {
+        console.warn("Date parse error:", err);
+      }
+    }
+    return iv;
+  });
+
   const filtered = filter === "All"
-    ? safeInterviews
-    : safeInterviews.filter((i) => i.status === filter);
+    ? processedInterviews
+    : processedInterviews.filter((i) => i.status === filter);
+
+  const handleViewResult = async (iv, e) => {
+    if (e) e.stopPropagation();
+    const scheduleId = iv.id || iv.schedule_id;
+    setLoadingResultId(scheduleId);
+    try {
+      const res = await api.get(`/interview/feedback/${scheduleId}/`);
+      if (res.data.has_feedback && res.data.feedback) {
+        setSelectedFeedback(res.data.feedback);
+        setShowResultModal(true);
+      } else {
+        alert("Interview feedback result is not yet available for this session.");
+      }
+    } catch (err) {
+      console.error("Failed to fetch feedback:", err);
+      alert("Could not load feedback results.");
+    } finally {
+      setLoadingResultId(null);
+    }
+  };
 
   return (
     <div className="card">
@@ -390,12 +432,13 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
         <div className="descriptive-interview-list">
           {filtered.map((iv, index) => {
             const isMeetingReady = Boolean(iv.meeting_link);
-            const candidateUser = iv.candidate_username || iv.candidate || "candidate";
-            const interviewerUser = iv.interviewer_username || iv.interviewer || "interviewer";
+            const candidateUser = iv.candidate_username || iv.candidate_name || iv.candidate || "candidate";
+            const interviewerUser = iv.interviewer_username || iv.interviewer_name || iv.interviewer || "interviewer";
+            const scheduleId = iv.id || iv.schedule_id;
 
             return (
               <div
-                key={iv.id || index}
+                key={scheduleId || index}
                 className="descriptive-interview-card"
                 onClick={() => onSelectInterview(iv)}
               >
@@ -445,20 +488,68 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
 
                 <div className="descriptive-card__footer">
                   <div className="meeting-status">
-                    {isMeetingReady ? (
+                    {iv.status === "Completed" ? (
+                      <span className="meeting-badge ready" style={{ background: "#dcfce7", color: "#15803d" }}>
+                        ✅ Interview Completed
+                      </span>
+                    ) : iv.status === "Cancelled" ? (
+                      <span className="meeting-badge pending" style={{ background: "#fee2e2", color: "#b91c1c" }}>
+                        ❌ Cancelled
+                      </span>
+                    ) : isMeetingReady ? (
                       <span className="meeting-badge ready">🟢 Meeting Link Ready</span>
                     ) : (
                       <span className="meeting-badge pending">🟡 Pending Acceptance</span>
                     )}
                   </div>
-                  <button className="btn-join-session" type="button">
-                    View & Join Lobby →
-                  </button>
+
+                  {iv.status === "Completed" ? (
+                    <button
+                      className="btn-view-result"
+                      type="button"
+                      disabled={loadingResultId === scheduleId}
+                      style={{
+                        background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                        color: "#ffffff",
+                        padding: "8px 16px",
+                        borderRadius: "8px",
+                        border: "none",
+                        fontWeight: "600",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 2px 4px rgba(37,99,235,0.2)",
+                      }}
+                      onClick={(e) => handleViewResult(iv, e)}
+                    >
+                      {loadingResultId === scheduleId ? "Loading..." : "📊 View Result"}
+                    </button>
+                  ) : iv.status === "Scheduled" ? (
+                    <button className="btn-join-session" type="button">
+                      View & Join Lobby →
+                    </button>
+                  ) : (
+                    <button className="btn-join-session" type="button">
+                      View Details →
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {showResultModal && selectedFeedback && (
+        <FeedbackResultModal
+          feedback={selectedFeedback}
+          onClose={() => {
+            setShowResultModal(false);
+            setSelectedFeedback(null);
+          }}
+        />
       )}
     </div>
   );

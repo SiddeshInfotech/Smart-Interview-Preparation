@@ -27,6 +27,7 @@ const LiveVideo = ({
   toggleCamera,
   toggleMic,
   handleEndInterview,
+  handleKickCandidate,
   role,
   participantName,
   selectedInterview,
@@ -196,11 +197,22 @@ const LiveVideo = ({
           >
             {isMicOn ? '🎤 On' : '🎤 Off'}
           </button>
-          {/* ONLY INTERVIEWER CAN END THE INTERVIEW */}
+          {/* INTERVIEWER CONTROLS */}
           {isInterviewerRole && (
-            <button className="control-btn end-call" onClick={() => handleEndInterview(false)}>
-              📞 End Interview
-            </button>
+            <>
+              {hasRemoteParticipant && (
+                <button
+                  className="control-btn kick-btn"
+                  style={{ background: "#dc2626", color: "#ffffff", fontWeight: "600" }}
+                  onClick={handleKickCandidate}
+                >
+                  🥾 Kick Candidate
+                </button>
+              )}
+              <button className="control-btn end-call" onClick={() => handleEndInterview(false)}>
+                📞 End Interview
+              </button>
+            </>
           )}
         </div>
         <div className="footer-secure">
@@ -394,7 +406,7 @@ const InterviewPage = ({
                   alert(`⚠️ You looked away! (${newCount}/${MAX_EYE_OFF})`);
                   if (newCount >= MAX_EYE_OFF + 2) {
                     alert('🚫 Interview terminated for looking away.');
-                    handleEndInterview();
+                    handleCancelInterview('technical_issue');
                   }
                 }
                 return newCount;
@@ -415,7 +427,7 @@ const InterviewPage = ({
                 alert(`⚠️ Face not detected! (${newCount}/${MAX_EYE_OFF})`);
                 if (newCount >= MAX_EYE_OFF + 2) {
                   alert('🚫 Interview terminated: face missing.');
-                  handleEndInterview();
+                  handleCancelInterview('technical_issue');
                 }
               }
               return newCount;
@@ -458,7 +470,7 @@ const InterviewPage = ({
           const newCount = prev + 1;
           if (newCount >= MAX_SWITCHES) {
             alert(`🚫 Interview terminated immediately due to excessive tab switches (${newCount}/${MAX_SWITCHES}).`);
-            handleEndInterview();
+            handleCancelInterview('tab_switch_limit');
           } else {
             setShowWarning(true);
             alert(`⚠️ Tab switch detected! (${newCount}/${MAX_SWITCHES}). If you switch tabs ${MAX_SWITCHES - newCount} more time(s), your interview will end immediately.`);
@@ -553,6 +565,63 @@ const InterviewPage = ({
     }
   };
 
+  // ---- Cancel interview ----
+  const handleCancelInterview = async (reason = 'cancelled') => {
+    if (isEndingRef.current) return;
+    isEndingRef.current = true;
+
+    const scheduleId = selectedInterview?.id || selectedInterview?.schedule_id;
+    if (scheduleId || roomName) {
+      try {
+        await api.post('/interview/cancel-session/', {
+          schedule_id: scheduleId,
+          room_name: roomName,
+          reason: reason,
+        });
+      } catch (err) {
+        console.warn("Failed to cancel session on backend:", err);
+      }
+    }
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((t) => t.stop());
+      localStreamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    if (detectionFrameRef.current) cancelAnimationFrame(detectionFrameRef.current);
+    if (faceLandmarker) {
+      faceLandmarker.close();
+      setFaceLandmarker(null);
+    }
+    setIsInInterview(false);
+    setIsConnected(false);
+    setToken(null);
+    setTabSwitchCount(0);
+    setShowWarning(false);
+    setTimer(0);
+    setEyeOffScreenCount(0);
+    setShowEyeWarning(false);
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(console.warn);
+    }
+
+    const reasonAlerts = {
+      kicked: 'The candidate was kicked out of the room by the interviewer.',
+      tab_switch_limit: 'Interview terminated due to exceeding tab switch limit. Moved to Cancelled.',
+      technical_issue: 'Interview terminated due to face missing or technical issues. Moved to Cancelled.',
+      cancelled: 'The interview session was cancelled.'
+    };
+    alert(reasonAlerts[reason] || `Interview session cancelled (${reason}).`);
+
+    if (onBack) onBack();
+  };
+
+  const handleKickCandidate = () => {
+    if (window.confirm('Are you sure you want to kick the candidate? This will cancel the interview.')) {
+      handleCancelInterview('kicked');
+    }
+  };
+
   // ---- End interview ----
   const handleEndInterview = async (autoEnded = false) => {
     if (isEndingRef.current) return; // prevent double execution
@@ -604,7 +673,7 @@ const InterviewPage = ({
     }
   };
 
-  // ---- Candidate auto-termination poll when interviewer ends session ----
+  // ---- Candidate auto-termination poll when interviewer ends or cancels session ----
   useEffect(() => {
     const isInterviewerRole = (role || selectedInterview?.role || '').toString().toLowerCase() === 'interviewer';
     if (!isInInterview || isInterviewerRole) return;
@@ -616,8 +685,11 @@ const InterviewPage = ({
         const res = await api.get('/interview/my-interviews/');
         const list = res.data.results || res.data || [];
         const current = list.find((item) => String(item.schedule_id || item.id) === String(scheduleId));
-        if (current && ['In Review', 'Completed'].includes(current.status)) {
-          if (!isEndingRef.current) {
+        if (current) {
+          if (current.status === 'Cancelled' && !isEndingRef.current) {
+            console.log("Interview status is Cancelled. Auto-terminating candidate view.");
+            handleCancelInterview('cancelled');
+          } else if (['In Review', 'Completed'].includes(current.status) && !isEndingRef.current) {
             console.log("Interviewer has ended the session. Auto-terminating candidate view.");
             handleEndInterview(true);
           }
@@ -625,7 +697,7 @@ const InterviewPage = ({
       } catch (err) {
         console.warn("Candidate interview status check failed:", err);
       }
-    }, 3500);
+    }, 3000);
 
     return () => clearInterval(checkInterval);
   }, [isInInterview, role, selectedInterview]);
@@ -833,6 +905,7 @@ const InterviewPage = ({
                 toggleCamera={toggleCamera}
                 toggleMic={toggleMic}
                 handleEndInterview={handleEndInterview}
+                handleKickCandidate={handleKickCandidate}
                 role={role}
                 participantName={participantName}
                 selectedInterview={selectedInterview}
