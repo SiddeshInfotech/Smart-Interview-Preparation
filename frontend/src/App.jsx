@@ -19,6 +19,7 @@ import QuizPage from "./pages/QuizPage";
 import QuizResult from "./pages/QuizResult";
 import FeedbackForm from "./pages/FeedbackForm";
 import Interview from "./pages/Interview";
+import Coding from "./pages/Coding";
 import AppShell from "./components/AppShell";
 import RequireRole from "./components/RequireRole";
 import InterviewPage from "./pages/InterviewPage";
@@ -45,6 +46,7 @@ function App() {
           <Route path="/Auth-page" element={<AuthPage />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/candidate-profile" element={<CandidateProfile />} />
+          <Route path="/coding" element={<Coding />} />
           
           {/* Quiz routes – candidate only */}
           <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>

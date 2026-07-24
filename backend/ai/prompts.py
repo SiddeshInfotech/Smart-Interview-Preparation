@@ -137,3 +137,35 @@ Rules:
 - Ensure the JSON is valid and contains exactly {count} questions.
 - Return ONLY the JSON, no other text.
 """
+
+
+def coding_challenge_prompt(language, difficulty, custom_instruction=""):
+    """
+    Generate a prompt for Gemini to produce a coding challenge with hint and solution.
+    """
+    custom = f"Additional instruction: {custom_instruction}" if custom_instruction else ""
+
+    return f"""
+Role:
+You are an expert technical interviewer and software engineer.
+
+Task:
+Generate 1 high-quality {difficulty}-level coding problem specifically tailored for the programming language: {language}.
+
+{custom}
+
+Output Format (JSON Object):
+{{
+  "title": "Short problem title",
+  "problem_statement": "Detailed problem description including task guidelines, input format, output format, and constraints.",
+  "sample_input": "Example sample input data",
+  "sample_output": "Example sample output data",
+  "hint": "A clear, helpful hint explaining the algorithm, approach, or key data structures to use.",
+  "solution": "Complete, correct reference solution code written in {language} with brief inline comments."
+}}
+
+Rules:
+- Return ONLY valid JSON.
+- Do not wrap the JSON response in markdown code blocks like ```json or ```.
+- Ensure all keys ("title", "problem_statement", "sample_input", "sample_output", "hint", "solution") are present with rich content.
+"""

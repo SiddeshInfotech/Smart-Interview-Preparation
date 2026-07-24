@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     "notifications",
     "feedback",
     "admin_panel",
+    "coding",
 ]
 
 MIDDLEWARE = [

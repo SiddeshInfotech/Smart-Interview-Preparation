@@ -26,6 +26,7 @@ const Quiz = () => {
   const suggestionRef = useRef(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
   const [selectedMode, setSelectedMode] = useState('');
+  const [selectedCodingLanguage, setSelectedCodingLanguage] = useState('Python');
   const [selectedQuestionCount, setSelectedQuestionCount] = useState(10);
   const [promptText, setPromptText] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -108,6 +109,7 @@ const Quiz = () => {
 
   // --- Options ---
   const modes = ['MCQ', 'Coding Challenge'];
+  const codingLanguages = ['C', 'C++', 'Java', 'Python'];
   const difficulties = ['Easy', 'Medium', 'Hard'];
   const questionCounts = [5, 10, 25];
 
@@ -117,8 +119,44 @@ const Quiz = () => {
   const showQuestionCount = selectedMode === 'MCQ';
   const showCustomInstructions = selectedMode !== '';
 
-  // --- Generate quiz ---
+  // --- Generate quiz / coding challenge ---
   const handleGenerate = async () => {
+    if (selectedMode === 'Coding Challenge') {
+      if (!selectedCodingLanguage || !selectedDifficulty) {
+        setError('Please select language and difficulty level.');
+        return;
+      }
+      setError('');
+      setGenerating(true);
+      try {
+        const response = await api.post('/coding/generate/', {
+          language: selectedCodingLanguage,
+          difficulty: selectedDifficulty,
+          custom_instruction: promptText,
+        });
+        navigate('/coding', {
+          state: {
+            language: selectedCodingLanguage,
+            questionData: response.data?.data,
+            difficulty: selectedDifficulty,
+          }
+        });
+      } catch (err) {
+        console.error('Failed to generate coding problem:', err);
+        const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to generate coding problem.';
+        setError(msg);
+        navigate('/coding', {
+          state: {
+            language: selectedCodingLanguage,
+            difficulty: selectedDifficulty,
+          }
+        });
+      } finally {
+        setGenerating(false);
+      }
+      return;
+    }
+
     if (!(selectedTopics.length > 0 && selectedDifficulty && selectedMode)) {
       setError('Please select all required fields.');
       return;
@@ -185,77 +223,99 @@ const Quiz = () => {
 
                 <div className="divider"></div>
 
-                {/* TOPICS */}
+                {/* TOPICS / LANGUAGE */}
                 <div className={`slide-section ${showTopics ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 100 }}>
                   <div className="slide-inner">
                     <div className="setup-section">
-                      <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <BookOpen size={18} color="#2563eb" />
-                        Select Topics
-                      </h3>
-                      <div className="skills-container">
-                        {selectedTopics.length > 0 && (
-                          <div className="skill-tags">
-                            {selectedTopics.map((topic) => (
-                              <span key={topic.id} className="skill-tag">
-                                {topic.name}
-                                <button
-                                  type="button"
-                                  className="skill-remove"
-                                  onClick={() => removeTopic(topic.id)}
-                                >
-                                  ×
-                                </button>
-                              </span>
+                      {selectedMode === 'Coding Challenge' ? (
+                        <>
+                          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <BookOpen size={18} color="#2563eb" />
+                            Select Language
+                          </h3>
+                          <div className="question-type-grid">
+                            {codingLanguages.map((lang) => (
+                              <div
+                                key={lang}
+                                className={`question-type-item ${selectedCodingLanguage === lang ? 'selected' : ''}`}
+                                onClick={() => setSelectedCodingLanguage(lang)}
+                              >
+                                {lang}
+                              </div>
                             ))}
                           </div>
-                        )}
-                        <div className="skill-input-wrapper" ref={suggestionRef}>
-                          <input
-                            type="text"
-                            placeholder="Type a topic and press Enter..."
-                            value={newTopic}
-                            onChange={(e) => {
-                              setNewTopic(e.target.value);
-                              if (e.target.value.trim().length === 0) {
-                                setTopicSuggestions([]);
-                                setShowTopicSuggestions(false);
-                              }
-                            }}
-                            onKeyDown={handleAddTopic}
-                            onFocus={() => {
-                              const query = newTopic.trim();
-                              if (topicSuggestions.length > 0 && query.length >= 1) {
-                                setShowTopicSuggestions(true);
-                              } else {
-                                fetchTopicSuggestions(query);
-                              }
-                            }}
-                          />
-                          <Plus size={18} className="skill-input-icon" />
-                          {showTopicSuggestions && (
-                            <div className="skill-suggestions-dropdown">
-                              {loadingSuggestions ? (
-                                <div className="suggestion-loading">Loading...</div>
-                              ) : (
-                                topicSuggestions.map((topic) => (
-                                  <div
-                                    key={topic.id}
-                                    className="suggestion-item"
-                                    onClick={() => addTopicFromSuggestion(topic)}
-                                  >
-                                    <span className="suggestion-name">{topic.skill_name}</span>
-                                    {topic.category && <span className="suggestion-category">{topic.category}</span>}
-                                  </div>
-                                ))
+                        </>
+                      ) : (
+                        <>
+                          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <BookOpen size={18} color="#2563eb" />
+                            Select Topics
+                          </h3>
+                          <div className="skills-container">
+                            {selectedTopics.length > 0 && (
+                              <div className="skill-tags">
+                                {selectedTopics.map((topic) => (
+                                  <span key={topic.id} className="skill-tag">
+                                    {topic.name}
+                                    <button
+                                      type="button"
+                                      className="skill-remove"
+                                      onClick={() => removeTopic(topic.id)}
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <div className="skill-input-wrapper" ref={suggestionRef}>
+                              <input
+                                type="text"
+                                placeholder="Type a topic and press Enter..."
+                                value={newTopic}
+                                onChange={(e) => {
+                                  setNewTopic(e.target.value);
+                                  if (e.target.value.trim().length === 0) {
+                                    setTopicSuggestions([]);
+                                    setShowTopicSuggestions(false);
+                                  }
+                                }}
+                                onKeyDown={handleAddTopic}
+                                onFocus={() => {
+                                  const query = newTopic.trim();
+                                  if (topicSuggestions.length > 0 && query.length >= 1) {
+                                    setShowTopicSuggestions(true);
+                                  } else {
+                                    fetchTopicSuggestions(query);
+                                  }
+                                }}
+                              />
+                              <Plus size={18} className="skill-input-icon" />
+                              {showTopicSuggestions && (
+                                <div className="skill-suggestions-dropdown">
+                                  {loadingSuggestions ? (
+                                    <div className="suggestion-loading">Loading...</div>
+                                  ) : (
+                                    topicSuggestions.map((topic) => (
+                                      <div
+                                        key={topic.id}
+                                        className="suggestion-item"
+                                        onClick={() => addTopicFromSuggestion(topic)}
+                                      >
+                                        <span className="suggestion-name">{topic.skill_name}</span>
+                                        {topic.category && <span className="suggestion-category">{topic.category}</span>}
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
-                        <div className="suggestions-hint">
-                          Suggested topics: JavaScript, React, Python, SQL, Data Structures, System Design
-                        </div>
-                      </div>
+                            <div className="suggestions-hint">
+                              Suggested topics: JavaScript, React, Python, SQL, Data Structures, System Design
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -343,7 +403,7 @@ const Quiz = () => {
                 <button
                   className="start-quiz-btn"
                   onClick={handleGenerate}
-                  disabled={!(selectedTopics.length > 0 && selectedDifficulty && selectedMode) || generating}
+                  disabled={(selectedMode === 'Coding Challenge' ? !selectedCodingLanguage : selectedTopics.length === 0) || !selectedDifficulty || !selectedMode || generating}
                 >
                   {generating ? (
                     <>
