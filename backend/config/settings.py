@@ -103,6 +103,7 @@ INSTALLED_APPS = [
     "interviewer",
     "interview",
     "resume",
+    "quiz",
     "analytics",
     "notifications",
     "feedback",
