@@ -20,9 +20,11 @@ import {
   verifyRegistrationOTP,
   login,
 } from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { loginUser } = useAuth();
   const [role, setRole] = useState("candidate");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -131,9 +133,7 @@ export default function Register() {
       // Auto-login the user
       try {
         const loginResponse = await login({ email: form.email, password: form.password });
-        localStorage.setItem("access_token", loginResponse.data.access_token);
-        localStorage.setItem("refresh_token", loginResponse.data.refresh_token);
-        localStorage.setItem("user_role", role);
+        await loginUser(loginResponse.data);
         
         if (role === "interviewer") {
           navigate("/interviewer-profile");

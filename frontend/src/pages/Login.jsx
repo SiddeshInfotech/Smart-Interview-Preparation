@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/Auth.css";
 import { login } from "../api/axios";
 import WelcomePopup from "../components/WelcomePopup";
+import { useAuth } from "../context/AuthContext";
 
 // Decode JWT payload without a library
 const decodeToken = (token) => {
@@ -17,6 +18,7 @@ const decodeToken = (token) => {
 
 export default function Login() {
   const navigate = useNavigate();
+  const { loginUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -36,33 +38,11 @@ export default function Login() {
       const response = await login({ email, password });
       console.log("Login Success:", response.data);
 
-      const accessToken = response.data.access_token;
-      localStorage.setItem("access_token", accessToken);
-      localStorage.setItem("refresh_token", response.data.refresh_token);
+      await loginUser(response.data);
 
-      // ✅ Store the full user object (if present)
-      if (response.data.user) {
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-        setUserName(response.data.user.full_name || "User");
-      } else {
-        console.warn("Login response missing user object – falling back to token decode.");
-        // Fallback: decode role from token
-        const payload = decodeToken(accessToken);
-        const role = payload.role || "candidate";
-        // Create a minimal user object from token data
-        const user = {
-          user_id: payload.user_id || payload.sub || null,
-          full_name: payload.full_name || payload.name || "User",
-          email: payload.email || email,
-          role: role,
-        };
-        localStorage.setItem("user", JSON.stringify(user));
-        setUserName(user.full_name);
-      }
-
-      // Also store role separately (optional)
-      const role = response.data.user?.role || decodeToken(accessToken).role || "candidate";
-      localStorage.setItem("user_role", role);
+      const role = response.data.user?.role || localStorage.getItem("user_role") || "candidate";
+      const name = response.data.user?.full_name || response.data.user?.name || "User";
+      setUserName(name);
 
       setLoading(false);
       return role;

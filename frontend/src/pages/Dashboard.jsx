@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "../styles/Dashboard.css";
 import { BookOpen, Code, Video } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 import {
   ResponsiveContainer,
@@ -14,24 +15,25 @@ import {
 } from "recharts";
 
 const Dashboard = () => {
+  const { userProfile } = useAuth();
   const [fullName, setFullName] = useState(() => {
-    const userObjStr = localStorage.getItem("user");
-    if (userObjStr) {
-      try {
-        const parsed = JSON.parse(userObjStr);
-        if (parsed.full_name) return parsed.full_name;
-        if (parsed.name) return parsed.name;
-        if (parsed.first_name && parsed.last_name) return `${parsed.first_name} ${parsed.last_name}`;
-        if (parsed.first_name) return parsed.first_name;
-        if (parsed.username && parsed.username !== "Candidate") return parsed.username;
-      } catch (e) { }
-    }
-    return (
-      localStorage.getItem("full_name") ||
-      localStorage.getItem("user_name") ||
-      "John Doe"
-    );
+    return userProfile?.name && userProfile.name !== "User" ? userProfile.name : "User";
   });
+
+  useEffect(() => {
+    if (userProfile?.name && userProfile.name !== "User") {
+      setFullName(userProfile.name);
+    } else {
+      const userObjStr = localStorage.getItem("user");
+      if (userObjStr) {
+        try {
+          const parsed = JSON.parse(userObjStr);
+          const name = parsed.full_name || parsed.name || (parsed.first_name ? `${parsed.first_name} ${parsed.last_name || ''}`.trim() : parsed.username);
+          if (name && name !== "Candidate") setFullName(name);
+        } catch (e) { }
+      }
+    }
+  }, [userProfile]);
 
   const user = {
     username: fullName,
@@ -47,17 +49,6 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    const userObjStr = localStorage.getItem("user");
-    if (userObjStr) {
-      try {
-        const parsed = JSON.parse(userObjStr);
-        const name = parsed.full_name || parsed.name || (parsed.first_name ? `${parsed.first_name} ${parsed.last_name || ''}`.trim() : parsed.username);
-        if (name && name !== "Candidate") setFullName(name);
-      } catch (e) { }
-    } else {
-      const name = localStorage.getItem("full_name") || localStorage.getItem("user_name");
-      if (name && name !== "Candidate") setFullName(name);
-    }
 
     const token = localStorage.getItem("access_token");
     fetch("http://127.0.0.1:8000/api/quiz/performance/", {

@@ -31,6 +31,18 @@ export const AuthProvider = ({ children }) => {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
+  const clearAuthCaches = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_role");
+    localStorage.removeItem("user");
+    localStorage.removeItem("full_name");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem(STORAGE_PROFILE_KEY);
+    localStorage.removeItem("cached_candidate_profile");
+    localStorage.removeItem("cached_interviewer_profile");
+  };
+
   // Helper to sync profile state with localStorage
   const updateCachedProfile = (newProfile) => {
     setUserProfile(newProfile);
@@ -44,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Fetch complete profile details (Auth profile + Candidate/Interviewer picture) in parallel
+  // Fetch complete profile details authoritatively from /auth/profile/
   const fetchProfile = useCallback(async () => {
     const currentToken = localStorage.getItem("access_token");
     if (!currentToken) {
@@ -53,37 +65,45 @@ export const AuthProvider = ({ children }) => {
     }
 
     setLoadingProfile(true);
-    let name = userProfile.name || "User";
-    let email = userProfile.email || "";
-    let profilePic = userProfile.profilePicture || null;
-    let role = userProfile.role || localStorage.getItem(STORAGE_ROLE_KEY) || "candidate";
-
-    const roleEndpoint = role === "interviewer" ? "/interviewer/profile/" : "/candidate/profile/";
 
     try {
-      const [authRes, roleRes] = await Promise.allSettled([
-        api.get("/auth/profile/"),
-        api.get(roleEndpoint),
-      ]);
+      // 1. Always fetch authoritative user profile from auth endpoint first
+      const authRes = await api.get("/auth/profile/");
+      if (authRes.data) {
+        const name = authRes.data.full_name || authRes.data.name || "User";
+        const email = authRes.data.email || "";
+        const role = authRes.data.role || localStorage.getItem(STORAGE_ROLE_KEY) || "candidate";
 
-      if (authRes.status === "fulfilled" && authRes.value?.data) {
-        name = authRes.value.data.full_name || name;
-        email = authRes.value.data.email || email;
-        role = authRes.value.data.role || role;
-      }
+        let profilePic = null;
+        const roleEndpoint = role === "interviewer" ? "/interviewer/profile/" : "/candidate/profile/";
 
-      if (roleRes.status === "fulfilled" && roleRes.value?.data?.profile_picture) {
-        const pic = roleRes.value.data.profile_picture;
-        profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
+        try {
+          const roleRes = await api.get(roleEndpoint);
+          if (roleRes.data?.profile_picture) {
+            const pic = roleRes.data.profile_picture;
+            profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
+          }
+        } catch (roleErr) {
+          console.warn("Role profile fetch warning:", roleErr);
+        }
+
+        const updated = { name, email, profilePicture: profilePic, role };
+        updateCachedProfile(updated);
+
+        // Keep localStorage user object updated for legacy/direct components
+        localStorage.setItem("user", JSON.stringify({
+          ...authRes.data,
+          full_name: name,
+          email: email,
+          role: role,
+        }));
       }
     } catch (error) {
-      console.error("Error fetching profiles in parallel:", error);
+      console.error("Error fetching authoritative profile:", error);
+    } finally {
+      setLoadingProfile(false);
     }
-
-    const updated = { name, email, profilePicture: profilePic, role };
-    updateCachedProfile(updated);
-    setLoadingProfile(false);
-  }, [userProfile.name, userProfile.email, userProfile.profilePicture, userProfile.role]);
+  }, []);
 
   // Fetch Notifications
   const fetchNotifications = useCallback(async () => {
@@ -100,14 +120,56 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Login handler to clear old caches and load new user state
+  const loginUser = async (loginData) => {
+    clearAuthCaches();
+
+    const accessToken = loginData.access_token;
+    const refreshToken = loginData.refresh_token;
+
+    if (accessToken) {
+      localStorage.setItem("access_token", accessToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem("refresh_token", refreshToken);
+    }
+
+    let role = loginData.user?.role;
+    if (!role && accessToken) {
+      try {
+        const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        role = payload.role;
+      } catch (e) {}
+    }
+    role = role || "candidate";
+    localStorage.setItem("user_role", role);
+
+    const userObj = loginData.user || {
+      full_name: "User",
+      email: "",
+      role: role,
+    };
+    localStorage.setItem("user", JSON.stringify(userObj));
+
+    setToken(accessToken || null);
+    setUserProfile({
+      name: userObj.full_name || userObj.name || "User",
+      email: userObj.email || "",
+      profilePicture: null,
+      role: role,
+    });
+
+    // Fetch authoritative backend profile for the newly logged in user
+    await fetchProfile();
+    await fetchNotifications();
+  };
+
   // Initial load on mount or auth change
   useEffect(() => {
-    const currentToken = localStorage.getItem("access_token");
-    if (currentToken) {
+    if (token) {
       fetchProfile();
       fetchNotifications();
 
-      // Poll notifications gently every 30s
       const interval = setInterval(fetchNotifications, 30000);
       const onNotifUpdate = () => fetchNotifications();
       window.addEventListener("notificationUpdate", onNotifUpdate);
@@ -117,7 +179,7 @@ export const AuthProvider = ({ children }) => {
         window.removeEventListener("notificationUpdate", onNotifUpdate);
       };
     }
-  }, [fetchProfile, fetchNotifications]);
+  }, [token, fetchProfile, fetchNotifications]);
 
   const markAsRead = async (id) => {
     try {
@@ -140,10 +202,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_role");
-    localStorage.removeItem(STORAGE_PROFILE_KEY);
+    clearAuthCaches();
     setToken(null);
     setUserProfile({ name: "User", email: "", profilePicture: null, role: "candidate" });
     setNotifications([]);
@@ -164,6 +223,7 @@ export const AuthProvider = ({ children }) => {
         loadingNotifications,
         fetchProfile,
         fetchNotifications,
+        loginUser,
         markAsRead,
         markAllAsRead,
         logout,
