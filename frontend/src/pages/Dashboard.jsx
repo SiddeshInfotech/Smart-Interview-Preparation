@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "../styles/Dashboard.css";
 import { BookOpen, Code, Video } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import api from "../api/axios";
 
 import {
   ResponsiveContainer,
@@ -49,27 +50,17 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-
-    const token = localStorage.getItem("access_token");
-    fetch("http://127.0.0.1:8000/api/quiz/performance/", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": token ? `Bearer ${token}` : "",
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch quiz performance");
+    const fetchQuizPerformance = async () => {
+      try {
+        const res = await api.get("/quiz/performance/");
+        if (res.data) {
+          setQuizPerformance(res.data);
         }
-        return response.json();
-      })
-      .then((data) => {
-        setQuizPerformance(data);
-      })
-      .catch((error) => {
-        console.log("Quiz API Error:", error);
-      });
+      } catch (err) {
+        console.warn("Quiz API Error:", err);
+      }
+    };
+    fetchQuizPerformance();
   }, []);
 
   const performanceData = [

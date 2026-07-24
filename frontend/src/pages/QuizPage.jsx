@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import api from "../api/axios";
 import "../styles/QuizPage.css";
 
 const QuizPage = () => {
@@ -123,7 +124,7 @@ const QuizPage = () => {
     }
   };
 
-  const handleSubmitQuiz = () => {
+  const handleSubmitQuiz = async () => {
     if (totalQuestions === 0) return;
     let correct = 0, wrong = 0, skipped = 0;
     quizData.forEach((q, idx) => {
@@ -145,6 +146,19 @@ const QuizPage = () => {
       questions: quizData,
       answers: userAnswers
     };
+
+    try {
+      await api.post('/quiz/save-result/', {
+        total_questions: totalQuestions,
+        correct_answers: correct,
+        wrong_answers: wrong,
+        skipped_answers: skipped,
+        score: Math.round(percentage * 100) / 100,
+      });
+    } catch (err) {
+      console.warn("Could not save quiz performance:", err);
+    }
+
     navigate('/quiz-result', { state: { results: resultsData } });
   };
 
