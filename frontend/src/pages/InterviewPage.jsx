@@ -566,17 +566,17 @@ const InterviewPage = ({
     }
 
     const scheduleId = selectedInterview?.id || selectedInterview?.schedule_id;
+    const userRoleStr = (role || selectedInterview?.role || '').toString().toLowerCase();
+    const isInterviewerRole = userRoleStr === 'interviewer';
 
-    if (role === 'interviewer') {
-      try {
-        await api.post('/interview/end-session/', {
+    if (isInterviewerRole) {
+      setShowInterviewerFeedbackModal(true);
+      if (scheduleId) {
+        api.post('/interview/end-session/', {
           schedule_id: scheduleId,
           room_name: roomName,
-        });
-      } catch (err) {
-        console.warn('Failed to notify end-session:', err);
+        }).catch((err) => console.warn('Failed to notify end-session:', err));
       }
-      setShowInterviewerFeedbackModal(true);
     } else {
       setShowCandidateWaitingModal(true);
     }
