@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import api from '../api/axios';
 import "../styles/QuizResult.css";
 
 const QuizResult = () => {
@@ -9,26 +8,6 @@ const QuizResult = () => {
   const results = location.state?.results;
 
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
-  const savedRef = useRef(false);
-
-  useEffect(() => {
-    if (!results || savedRef.current) return;
-    savedRef.current = true;
-    const autoSaveResult = async () => {
-      try {
-        await api.post('/quiz/save-result/', {
-          total_questions: results.total || results.questions?.length || 0,
-          correct_answers: results.correct || 0,
-          wrong_answers: results.wrong || 0,
-          skipped_answers: results.skipped || 0,
-          score: Math.round((results.percentage || results.score || 0) * 100) / 100,
-        });
-      } catch (err) {
-        console.warn("Quiz result auto-save:", err);
-      }
-    };
-    autoSaveResult();
-  }, [results]);
 
   if (!results) {
     return (

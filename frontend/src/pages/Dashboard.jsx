@@ -49,6 +49,16 @@ const Dashboard = () => {
     overall_score: 0,
   });
 
+  const [interviewPerformance, setInterviewPerformance] = useState({
+    total_interviews: 0,
+    technical_skills: 0,
+    communication_skills: 0,
+    problem_solving: 0,
+    soft_skills: 0,
+    code_quality: 0,
+    overall_performance: 0,
+  });
+
   useEffect(() => {
     const fetchQuizPerformance = async () => {
       try {
@@ -60,7 +70,19 @@ const Dashboard = () => {
         console.warn("Quiz API Error:", err);
       }
     };
+    const fetchInterviewPerformance = async () => {
+      try {
+        const res = await api.get("/interview/performance/");
+        if (res.data) {
+          setInterviewPerformance(res.data);
+        }
+      } catch (err) {
+        console.warn("Interview Performance API Error:", err);
+      }
+    };
+
     fetchQuizPerformance();
+    fetchInterviewPerformance();
   }, []);
 
   const performanceData = [
@@ -256,27 +278,29 @@ const Dashboard = () => {
 
           <div className="performance-content">
             <div className="performance-row">
-              <span>Confidence</span>
-              <strong>92%</strong>
+              <span>Technical Competency</span>
+              <strong>{interviewPerformance.technical_skills || 0}%</strong>
             </div>
             <div className="performance-row">
               <span>Communication Skills</span>
-              <strong>89%</strong>
+              <strong>{interviewPerformance.communication_skills || 0}%</strong>
             </div>
             <div className="performance-row">
-              <span>Decision Making</span>
-              <strong>87%</strong>
+              <span>Problem Solving & Logic</span>
+              <strong>{interviewPerformance.problem_solving || 0}%</strong>
             </div>
             <div className="performance-row">
-              <span>Problem Solving</span>
-              <strong>90%</strong>
+              <span>Soft Skills & Professionalism</span>
+              <strong>{interviewPerformance.soft_skills || 0}%</strong>
             </div>
 
             <hr className="performance-divider" />
 
             <div className="performance-row total-performance">
               <span>Overall Interview Performance</span>
-              <strong className="performance-score">90%</strong>
+              <strong className="performance-score">
+                {interviewPerformance.overall_performance || 0}%
+              </strong>
             </div>
           </div>
         </div>
