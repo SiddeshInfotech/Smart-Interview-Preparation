@@ -145,27 +145,51 @@ def coding_challenge_prompt(language, difficulty, custom_instruction=""):
     """
     custom = f"Additional guidance: {custom_instruction}" if custom_instruction else ""
 
+    difficulty_rules = {
+        "Easy": (
+            "CRITICAL DIFFICULTY REQUIREMENT: EASY.\n"
+            "- The problem MUST be simple, basic, and suitable for beginners.\n"
+            "- Examples of Easy topics: basic loops, simple conditional checks, calculating sums, finding max/min of numbers, checking even/odd, reversing a string, string concatenation.\n"
+            "- DO NOT generate complex dynamic programming, graph algorithms (BFS/DFS), complex tree traversals, two pointers, or advanced math.\n"
+            "- Keep the problem statement concise, clear, and easy to solve in under 15 lines of code."
+        ),
+        "Medium": (
+            "CRITICAL DIFFICULTY REQUIREMENT: MEDIUM.\n"
+            "- The problem should test intermediate problem-solving abilities.\n"
+            "- Examples: hash map usage, two pointers, sliding window, binary search, basic recursion, string parsing."
+        ),
+        "Hard": (
+            "CRITICAL DIFFICULTY REQUIREMENT: HARD.\n"
+            "- The problem should challenge advanced engineers.\n"
+            "- Examples: dynamic programming, graph algorithms, complex data structure manipulation, advanced tree operations."
+        )
+    }.get(difficulty, f"Generate a problem matching {difficulty} difficulty.")
+
     return f"""
 Role:
-You are a senior principal engineer and technical interviewer at a top tech company.
+You are a senior technical interviewer crafting an interview question.
 
 Task:
-Generate 1 practical, high-quality {difficulty}-level coding challenge question specifically tailored for the programming language: {language}.
+Generate 1 coding challenge question specifically tailored for the programming language: {language}.
+
+Target Difficulty Level: {difficulty}
+
+{difficulty_rules}
 
 {custom}
 
 Output Format (JSON Object ONLY):
 {{
   "title": "Short descriptive title of the challenge",
-  "problem_statement": "Comprehensive problem statement detailing the scenario, task requirements, input format, output format, and constraints.",
-  "sample_input": "Clear example input string for standard input (stdin)",
+  "problem_statement": "Comprehensive problem statement detailing the task requirements, input format, output format, and constraints.",
+  "sample_input": "Example input string for standard input (stdin)",
   "sample_output": "Corresponding expected output string for standard output (stdout)",
-  "hint": "A helpful step-by-step hint explaining the key algorithm, data structures, edge cases, and approach without giving away the full code.",
-  "solution": "Complete, production-ready, correctly formatted reference solution code in {language} with concise inline comments."
+  "hint": "A clear step-by-step hint explaining the basic logic, algorithm, or approach without revealing the full code.",
+  "solution": "Complete, correct reference solution code written in {language} with concise inline comments."
 }}
 
 Rules:
 - Return ONLY the raw JSON object without markdown formatting, code block backticks (no ```json), or wrapping.
-- Make the problem interesting and suitable for {difficulty} level in {language}.
+- STRICT COMPLIANCE: If difficulty is Easy, the problem MUST be basic and beginner-friendly.
 - Ensure all JSON fields ("title", "problem_statement", "sample_input", "sample_output", "hint", "solution") are present and non-empty.
 """
