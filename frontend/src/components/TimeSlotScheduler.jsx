@@ -10,7 +10,9 @@ const TimeSlotScheduler = ({ slots = [], selectedSlot = null, onSelectSlot, load
   };
 
   slots.forEach((slot) => {
-    const hour = new Date(slot.start_time).getHours();
+    let date = new Date(slot.start_time);
+    if (isNaN(date.getTime())) date = new Date(`2000-01-01T${slot.start_time}`);
+    const hour = isNaN(date.getTime()) ? 0 : date.getHours();
     if (hour < 12) {
       groupedSlots.morning.push(slot);
     } else if (hour < 17) {
@@ -21,7 +23,12 @@ const TimeSlotScheduler = ({ slots = [], selectedSlot = null, onSelectSlot, load
   });
 
   const formatTime = (timeStr) => {
-    const date = new Date(timeStr);
+    if (!timeStr) return "";
+    let date = new Date(timeStr);
+    if (isNaN(date.getTime())) {
+      date = new Date(`2000-01-01T${timeStr}`);
+    }
+    if (isNaN(date.getTime())) return timeStr;
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 

@@ -34,6 +34,7 @@ const generateTimeOptions = () => {
 const TIME_OPTIONS = generateTimeOptions();
 
 const InterviewerProfile = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isProgrammaticScroll, setIsProgrammaticScroll] = useState(false);
@@ -300,8 +301,26 @@ const InterviewerProfile = () => {
   };
 
   // --- Helper: format time for display ---
-  const formatSlotTime = (dateString) => {
-    const date = new Date(dateString);
+  const formatSlotTime = (timeString) => {
+    if (!timeString) return "";
+    let date = new Date(timeString);
+    if (isNaN(date.getTime())) {
+      date = new Date(`2000-01-01T${timeString}`);
+    }
+    if (isNaN(date.getTime())) {
+      const parts = String(timeString).split(":");
+      if (parts.length >= 2) {
+        let h = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        if (!isNaN(h) && !isNaN(m)) {
+          const ampm = h >= 12 ? "PM" : "AM";
+          const displayHour = h % 12 === 0 ? 12 : h % 12;
+          const displayMin = String(m).padStart(2, "0");
+          return `${String(displayHour).padStart(2, "0")}:${displayMin} ${ampm}`;
+        }
+      }
+      return timeString;
+    }
     return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
@@ -801,15 +820,10 @@ const InterviewerProfile = () => {
                   Back to Interview Scheduling
                 </button>
               ) : (
-                <>
-                  <button className="btn-skip" onClick={() => navigate("/dashboard")}>
-                    Skip
-                  </button>
-                  <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
-                    <Save size={17} />
-                    {saving ? "Saving..." : "Save Profile"}
-                  </button>
-                </>
+                <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
+                  <Save size={17} />
+                  {saving ? "Saving..." : "Save Profile"}
+                </button>
               )}
             </div>
           </div>

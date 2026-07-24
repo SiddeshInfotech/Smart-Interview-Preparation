@@ -604,13 +604,6 @@ const CandidateProfile = () => {
 
             {/* Action Buttons */}
             <div className="action-buttons">
-              {/* Skip button – replaces Back to Dashboard */}
-              <button
-                className="btn-skip"
-                onClick={() => navigate("/dashboard")}
-              >
-                Skip
-              </button>
               <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
                 <Save size={17} />
                 {saving ? "Saving..." : "Save Profile"}
