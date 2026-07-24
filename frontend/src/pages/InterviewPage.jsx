@@ -28,18 +28,36 @@ const LiveVideo = ({
   participantName,
   selectedInterview,
 }) => {
-  const { localParticipant, setCameraEnabled, setMicrophoneEnabled } = useLocalParticipant();
+  const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
   const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone]);
 
   const localIdentity = localParticipant?.identity;
 
+  // Synchronize camera state with LiveKit Room track
+  useEffect(() => {
+    if (localParticipant) {
+      localParticipant
+        .setCameraEnabled(isCameraOn)
+        .catch((err) => console.warn('Camera sync error:', err));
+    }
+  }, [isCameraOn, localParticipant]);
+
+  // Synchronize microphone state with LiveKit Room track
+  useEffect(() => {
+    if (localParticipant) {
+      localParticipant
+        .setMicrophoneEnabled(isMicOn)
+        .catch((err) => console.warn('Mic sync error:', err));
+    }
+  }, [isMicOn, localParticipant]);
+
   const handleToggleCamera = async () => {
     const nextState = !isCameraOn;
     toggleCamera();
-    if (setCameraEnabled) {
+    if (localParticipant) {
       try {
-        await setCameraEnabled(nextState);
+        await localParticipant.setCameraEnabled(nextState);
       } catch (err) {
         console.warn('Set camera enabled error:', err);
       }
@@ -49,9 +67,9 @@ const LiveVideo = ({
   const handleToggleMic = async () => {
     const nextState = !isMicOn;
     toggleMic();
-    if (setMicrophoneEnabled) {
+    if (localParticipant) {
       try {
-        await setMicrophoneEnabled(nextState);
+        await localParticipant.setMicrophoneEnabled(nextState);
       } catch (err) {
         console.warn('Set mic enabled error:', err);
       }
@@ -128,8 +146,16 @@ const LiveVideo = ({
             playsInline
             muted
             className="video-element"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: isCameraOn ? 'block' : 'none',
+            }}
           />
+          {!isCameraOn && (
+            <div className="video-placeholder">📷 Camera Off</div>
+          )}
           <div className="video-label">👤 {participantName || 'You'} (You)</div>
         </div>
       </div>
@@ -717,8 +743,8 @@ const InterviewPage = ({
               serverUrl={serverUrl}
               token={token}
               connect={isConnected}
-              video={true}
-              audio={true}
+              video={isCameraOn}
+              audio={isMicOn}
               onDisconnected={() => {
                 setIsConnected(false);
                 if (isInInterview && !isEndingRef.current) {
