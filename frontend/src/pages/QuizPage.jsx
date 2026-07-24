@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../styles/QuizPage.css";
 
@@ -14,12 +14,6 @@ const QuizPage = () => {
   const [showPanel, setShowPanel] = useState(false);
   const [isAnswered, setIsAnswered] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-
-  // Explanation animation state
-  const [explanationLines, setExplanationLines] = useState([]);
-  const [currentLineIndex, setCurrentLineIndex] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
-  const explanationShownRef = useRef(false);
 
   // Load questions
   useEffect(() => {
@@ -43,13 +37,9 @@ const QuizPage = () => {
     }
   }, [location, navigate]);
 
-  // Reset on question change
+  // Reset panel on question change
   useEffect(() => {
-    setExplanationLines([]);
-    setCurrentLineIndex(0);
-    setIsTyping(false);
     setShowPanel(false);
-    explanationShownRef.current = false;
   }, [currentQuestion]);
 
   const totalQuestions = quizData.length;
@@ -62,54 +52,10 @@ const QuizPage = () => {
     const newAnswers = [...userAnswers];
     newAnswers[currentQuestion] = index;
     setUserAnswers(newAnswers);
-
-    const isCorrect = index === quizData[currentQuestion]?.correct;
-
-    if (!isCorrect) {
-      const explanation = quizData[currentQuestion]?.explanation || "No explanation available.";
-      const lines = explanation.split(/(?<=[.!?])\s*/).filter(line => line.trim().length > 0);
-      setExplanationLines(lines);
-      setCurrentLineIndex(0);
-      setIsTyping(true);
-      setShowPanel(true);
-      explanationShownRef.current = false;
-    } else {
-      explanationShownRef.current = true;
-    }
   };
 
-  // Animate lines one by one
-  useEffect(() => {
-    if (!isTyping || explanationLines.length === 0) return;
-    if (currentLineIndex < explanationLines.length - 1) {
-      const timeout = setTimeout(() => {
-        setCurrentLineIndex(prev => prev + 1);
-      }, 400);
-      return () => clearTimeout(timeout);
-    } else {
-      setIsTyping(false);
-      explanationShownRef.current = true;
-    }
-  }, [currentLineIndex, isTyping, explanationLines.length]);
-
   const togglePanel = () => {
-    const willOpen = !showPanel;
-    if (willOpen && isAnswered) {
-      if (!explanationShownRef.current && selectedOption !== null && selectedOption !== quizData[currentQuestion]?.correct) {
-        const explanation = quizData[currentQuestion]?.explanation || "No explanation available.";
-        const lines = explanation.split(/(?<=[.!?])\s*/).filter(line => line.trim().length > 0);
-        setExplanationLines(lines);
-        setCurrentLineIndex(0);
-        setIsTyping(true);
-      } else {
-        const fullExplanation = quizData[currentQuestion]?.explanation || "No explanation available.";
-        const lines = fullExplanation.split(/(?<=[.!?])\s*/).filter(line => line.trim().length > 0);
-        setExplanationLines(lines);
-        setCurrentLineIndex(lines.length - 1);
-        setIsTyping(false);
-      }
-    }
-    setShowPanel(willOpen);
+    setShowPanel(prev => !prev);
   };
 
   const handleNext = () => {
@@ -127,10 +73,6 @@ const QuizPage = () => {
           setIsAnswered(false);
         }
         setShowPanel(false);
-        setExplanationLines([]);
-        setCurrentLineIndex(0);
-        setIsTyping(false);
-        explanationShownRef.current = false;
         setIsAnimating(false);
       }, 300);
     }
@@ -150,10 +92,6 @@ const QuizPage = () => {
           setIsAnswered(false);
         }
         setShowPanel(false);
-        setExplanationLines([]);
-        setCurrentLineIndex(0);
-        setIsTyping(false);
-        explanationShownRef.current = false;
         setIsAnimating(false);
       }, 300);
     }
@@ -180,10 +118,6 @@ const QuizPage = () => {
           setIsAnswered(false);
         }
         setShowPanel(false);
-        setExplanationLines([]);
-        setCurrentLineIndex(0);
-        setIsTyping(false);
-        explanationShownRef.current = false;
         setIsAnimating(false);
       }, 300);
     }
@@ -221,8 +155,6 @@ const QuizPage = () => {
     return "option-btn disabled";
   };
 
-  const getButtonText = () => isAnswered ? "💡 Explanation" : "💡 Hint";
-
   if (loading) {
     return (
       <div className="quiz-page">
@@ -254,37 +186,14 @@ const QuizPage = () => {
       <aside className={`hint-sidebar ${showPanel ? 'active' : ''}`}>
         <div className="hint-box">
           <div className="hint-header">
-            <h3>{isAnswered ? "💡 Explanation" : "💡 Hint"}</h3>
+            <h3>💡 Hint</h3>
             <button className="close-hint" onClick={togglePanel}>✕</button>
           </div>
           <div className="hint-content">
-            {!isAnswered && (
-              <div className="hint-section">
-                <h4>HINT</h4>
-                <p>{quizData[currentQuestion]?.hint || "No hint available"}</p>
-              </div>
-            )}
-            {isAnswered && (
-              <div className="explanation-section">
-                <h4>EXPLANATION</h4>
-                <div className="explanation-text">
-                  {explanationLines.length === 0 ? (
-                    <p>No explanation available.</p>
-                  ) : (
-                    explanationLines.map((line, idx) => (
-                      <p
-                        key={idx}
-                        className={`explanation-line ${idx <= currentLineIndex ? 'visible' : ''}`}
-                        style={{ animationDelay: `${idx * 0.15}s` }}
-                      >
-                        {line}
-                      </p>
-                    ))
-                  )}
-                  {isTyping && <span className="cursor-blink">▌</span>}
-                </div>
-              </div>
-            )}
+            <div className="hint-section">
+              <h4>HINT</h4>
+              <p>{quizData[currentQuestion]?.hint || "No hint available"}</p>
+            </div>
           </div>
         </div>
       </aside>
@@ -297,8 +206,8 @@ const QuizPage = () => {
             <span className="number">{currentQuestion + 1}</span>
             <span className="total">/{totalQuestions}</span>
           </div>
-          <button className={`hint-btn ${isAnswered ? 'explanation-mode' : ''}`} onClick={togglePanel}>
-            {getButtonText()}
+          <button className="hint-btn" onClick={togglePanel}>
+            💡 Hint
           </button>
         </div>
 

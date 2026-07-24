@@ -44,32 +44,41 @@ const QuizResult = () => {
       <div className="score-content">
         {/* Quiz Header */}
         <div className="quiz-header">
-          <h1 className="quiz-title">PrepMaster AI</h1>
+          <div className="quiz-badge">{passed ? 'PASSED' : 'NEEDS PRACTICE'}</div>
+          <h1 className="quiz-title">Quiz Results</h1>
           <div className="quiz-subtitle">
-            {passed ? '🎉 Congratulations! You passed the quiz!' : '💪 Great effort! Keep practicing to improve.'}
+            {passed ? '🎉 Congratulations! You successfully passed the quiz!' : '💪 Great effort! Review your answers below to keep improving.'}
           </div>
         </div>
 
         {/* Statistics Cards */}
         <div className="stats-grid">
           <div className="stat-card animate-correct">
+            <div className="stat-icon-wrapper correct-bg">✅</div>
             <div className="stat-label">{correct}</div>
-            <div className="stat-description">✅ Correct Answers</div>
+            <div className="stat-description">Correct Answers</div>
           </div>
           <div className="stat-card animate-wrong">
+            <div className="stat-icon-wrapper wrong-bg">❌</div>
             <div className="stat-label">{wrong}</div>
-            <div className="stat-description">❌ Wrong Answers</div>
+            <div className="stat-description">Wrong Answers</div>
+          </div>
+          <div className="stat-card animate-skipped">
+            <div className="stat-icon-wrapper skipped-bg">⏭️</div>
+            <div className="stat-label">{skipped}</div>
+            <div className="stat-description">Skipped Questions</div>
           </div>
           <div className="stat-card animate-score">
+            <div className="stat-icon-wrapper score-bg">📊</div>
             <div className="stat-label">{percentage.toFixed(0)}%</div>
-            <div className="stat-description">📊 Score</div>
+            <div className="stat-description">Overall Score</div>
           </div>
         </div>
 
-        {/* Question Summary */}
+        {/* Question Summary Header */}
         <div className="question-summary">
-          <h2 className="summary-title">Question Summary</h2>
-          <p className="summary-subtitle">Review your answers and see the correct ones.</p>
+          <h2 className="summary-title">Question Breakdown</h2>
+          <p className="summary-subtitle">Detailed review of your selections and correct answers.</p>
         </div>
 
         {/* Questions List */}
@@ -78,57 +87,86 @@ const QuizResult = () => {
             {questions.map((q, idx) => {
               const userAns = answers[idx];
               const isSkipped = userAns === null || userAns === -1;
-              const selectedOptionIndex = userAns !== null && userAns !== -1 ? userAns : null;
+              const selectedOptionIndex = !isSkipped ? userAns : null;
               const isCorrect = userAns === q.correct;
 
               return (
                 <div key={idx} className="question-card">
                   <div className="question-header">
-                    <div className="question-number">Question {idx + 1}</div>
+                    <div className="question-number">QUESTION {idx + 1}</div>
                     <div className="question-text">{q.question}</div>
                   </div>
 
-                  {/* Options – show correct in green, user's wrong in red */}
+                  {/* Options – Correct in GREEN, Selected Wrong in RED */}
                   <div className="options-grid">
                     {q.options.map((opt, optIdx) => {
                       const isCorrectOption = optIdx === q.correct;
                       const isSelected = selectedOptionIndex === optIdx;
 
                       let className = 'option-item';
-                      // Correct option always gets green
+                      let badgeText = '';
+                      let badgeClass = '';
+
                       if (isCorrectOption) {
                         className += ' correct-option';
-                      }
-                      // If user selected a wrong option, it gets red
-                      if (isSelected && !isCorrect) {
+                        if (isSelected) {
+                          badgeText = '✓ Your Answer (Correct)';
+                          badgeClass = 'correct-badge';
+                        } else {
+                          badgeText = '✓ Correct Answer';
+                          badgeClass = 'correct-badge';
+                        }
+                      } else if (isSelected) {
                         className += ' wrong-option';
+                        badgeText = '✕ Your Answer';
+                        badgeClass = 'wrong-badge';
                       }
 
                       return (
                         <div key={optIdx} className={className}>
-                          {optionLabels[optIdx]}. {opt}
+                          <div className="option-text-wrapper">
+                            <span className="option-label-prefix">{optionLabels[optIdx]}.</span>
+                            <span className="option-text">{opt}</span>
+                          </div>
+                          {badgeText && (
+                            <span className={`option-status-badge ${badgeClass}`}>
+                              {badgeText}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* Stats & Result */}
+                  {/* Stats & Result Indicator */}
                   <div className="question-footer">
-                    {isSkipped ? (
-                      <div className="result-indicator skipped-result">⏭️ Skipped</div>
-                    ) : isCorrect ? (
-                      <div className="result-indicator correct-result">✅ Correct</div>
-                    ) : (
-                      <div className="result-indicator wrong-result">❌ Wrong</div>
-                    )}
-                    <div className="correct-option-text">
-                      Correct Option: <strong>{optionLabels[q.correct]}</strong>
+                    <div className="footer-status-wrapper">
+                      {isSkipped ? (
+                        <div className="result-indicator skipped-result">
+                          ⏭️ Skipped
+                        </div>
+                      ) : isCorrect ? (
+                        <div className="result-indicator correct-result">
+                          ✅ Correct
+                        </div>
+                      ) : (
+                        <div className="result-indicator wrong-result">
+                          ❌ Incorrect
+                        </div>
+                      )}
+                      <div className="correct-option-text">
+                        Correct Answer: <strong>Option {optionLabels[q.correct]}</strong>
+                      </div>
                     </div>
                   </div>
 
-                  {!isSkipped && (
+                  {q.explanation && (
                     <div className="explanation-box">
-                      <strong>💡 Explanation:</strong> {q.explanation}
+                      <div className="explanation-header">
+                        <span className="explanation-icon">💡</span>
+                        <strong>Explanation:</strong>
+                      </div>
+                      <p className="explanation-content">{q.explanation}</p>
                     </div>
                   )}
                 </div>
@@ -137,33 +175,33 @@ const QuizResult = () => {
           </div>
         </div>
 
-        {/* Detailed Analysis Button */}
+        {/* Detailed Analysis Section */}
         <div className="analysis-section">
           <button
             className="analysis-btn"
             onClick={() => setShowDetailedAnalysis(!showDetailedAnalysis)}
           >
-            {showDetailedAnalysis ? 'Hide Detailed Analysis' : 'View Detailed Analysis'}
+            {showDetailedAnalysis ? '📊 Hide Detailed Analysis' : '📊 View Detailed Analysis'}
           </button>
 
           {showDetailedAnalysis && (
             <div className="detailed-analysis slide-up">
-              <h3>Detailed Performance Analysis</h3>
+              <h3>Detailed Performance Breakdown</h3>
               <div className="analysis-grid">
                 <div className="analysis-item fade-in">
                   <span className="analysis-label">Total Questions</span>
                   <span className="analysis-value">{total}</span>
                 </div>
                 <div className="analysis-item fade-in delay-1">
-                  <span className="analysis-label">Correct Rate</span>
+                  <span className="analysis-label">Accuracy Rate</span>
                   <span className="analysis-value">{((correct / total) * 100).toFixed(0)}%</span>
                 </div>
                 <div className="analysis-item fade-in delay-2">
-                  <span className="analysis-label">Wrong Rate</span>
+                  <span className="analysis-label">Error Rate</span>
                   <span className="analysis-value">{((wrong / total) * 100).toFixed(0)}%</span>
                 </div>
                 <div className="analysis-item fade-in delay-3">
-                  <span className="analysis-label">Skipped</span>
+                  <span className="analysis-label">Skipped Questions</span>
                   <span className="analysis-value">{skipped}</span>
                 </div>
               </div>
@@ -173,10 +211,10 @@ const QuizResult = () => {
 
         {/* Action Buttons */}
         <div className="action-buttons">
-          <button className="analysis-btn" onClick={() => navigate('/quiz')} style={{ background: '#64748b', boxShadow: 'none' }}>
+          <button className="action-btn retry-btn" onClick={() => navigate('/quiz')}>
             🔄 Retry Quiz
           </button>
-          <button className="analysis-btn" onClick={() => navigate('/dashboard')}>
+          <button className="action-btn dashboard-btn" onClick={() => navigate('/dashboard')}>
             🏠 Go to Dashboard
           </button>
         </div>
