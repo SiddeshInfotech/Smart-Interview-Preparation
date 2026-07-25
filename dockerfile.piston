@@ -2,7 +2,7 @@
 FROM node:18-alpine
 
 # Install build tools and dependencies
-RUN apk add --no-cache git python3 make g++ bash cgroup-tools
+RUN apk add --no-cache git python3 make g++ bash cgroup-tools curl
 
 WORKDIR /piston
 
@@ -21,15 +21,15 @@ RUN mkdir -p /var/data/jobs /var/data/packages /var/data/piston /var/data/isolat
              /tmp/jobs /tmp/packages /tmp/piston /tmp/isolate && \
     chmod -R 777 /var/data /tmp /piston
 
-# 4. Configure Environment Variables as specified in plan
+# 4. Configure Environment Variables to use writable /tmp storage
 ENV PORT=2000
 ENV DISABLE_SECURITY=true
-ENV PISTON_JOBS_DIRECTORY=/var/data/jobs
-ENV PISTON_PACKAGES_DIRECTORY=/var/data/packages
-ENV PISTON_DATA_DIRECTORY=/var/data/piston
-ENV ISOLATE_HOME=/var/data/isolate
+ENV PISTON_JOBS_DIRECTORY=/tmp/jobs
+ENV PISTON_PACKAGES_DIRECTORY=/tmp/packages
+ENV PISTON_DATA_DIRECTORY=/tmp/piston
+ENV ISOLATE_HOME=/tmp/isolate
 
-# 5. Pre-install default language runtimes (Python, GCC, Java, Node.js)
+# 5. Pre-install packages during build
 WORKDIR /piston/cli
 RUN node src/index.js install python gcc java node || true
 
@@ -37,5 +37,5 @@ WORKDIR /piston/api
 
 EXPOSE 2000
 
-# 6. Official Piston startup command
-CMD ["node", "src/index.js"]
+# 6. Auto-install runtimes on boot and start API server
+CMD ["sh", "-c", "(node /piston/cli/src/index.js install python gcc java node || true) & exec node src/index.js"]
