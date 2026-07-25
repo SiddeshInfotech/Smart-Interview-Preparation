@@ -16,16 +16,16 @@ RUN npm install
 WORKDIR /piston/cli
 RUN npm install
 
-# 3. Environment Variables for Render (Disable isolate sandboxing & use writable /tmp)
+# 3. Environment Variables for Render (Disable isolate sandboxing & use image data directory)
 ENV PORT=2000
 ENV DISABLE_SECURITY=true
 ENV PISTON_DISABLE_SECURITY=true
-ENV DATA_DIRECTORY=/tmp/piston
-ENV PISTON_DATA_DIRECTORY=/tmp/piston
+ENV DATA_DIRECTORY=/piston/data
+ENV PISTON_DATA_DIRECTORY=/piston/data
 
-# 4. Create writable storage directories
-RUN mkdir -p /tmp/piston/packages /tmp/piston/jobs /tmp/piston/isolate && \
-    chmod -R 777 /tmp /piston
+# 4. Create data directories inside image
+RUN mkdir -p /piston/data/packages /piston/data/jobs /piston/data/isolate && \
+    chmod -R 777 /piston
 
 # 5. Pre-install language runtimes during image build
 RUN node /piston/cli/index.js install python 3.10.0 || node /piston/cli/index.js install python || true
@@ -38,4 +38,5 @@ WORKDIR /piston/api
 
 EXPOSE 2000
 
-CMD ["node", "src/index.js"]
+# 6. Ensure directories exist on boot and start API server
+CMD ["sh", "-c", "mkdir -p /piston/data/packages /piston/data/jobs /piston/data/isolate && exec node src/index.js"]
