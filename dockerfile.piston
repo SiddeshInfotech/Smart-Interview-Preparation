@@ -2,26 +2,28 @@ FROM ghcr.io/engineer-man/piston:latest
 
 USER root
 
+# Environment variables for Render cloud deployment
 ENV PORT=2000
 ENV DISABLE_SECURITY=true
+ENV PISTON_JOBS_DIRECTORY=/tmp/jobs
+ENV PISTON_PACKAGES_DIRECTORY=/tmp/packages
+ENV PISTON_DATA_DIRECTORY=/tmp/piston
 
-# Use writable directories
-ENV PISTON_JOBS_DIRECTORY=/var/data/jobs
-ENV PISTON_PACKAGES_DIRECTORY=/var/data/packages
-ENV PISTON_DATA_DIRECTORY=/var/data/piston
-ENV ISOLATE_HOME=/var/data/isolate
+# 1. Create writable /tmp target directories
+# 2. Symlink all possible isolate/jobs/packages paths across /piston to /tmp
+# 3. Grant 777 permissions across /tmp and /piston during build phase
+RUN mkdir -p /tmp/jobs /tmp/packages /tmp/piston /tmp/isolate && \
+    chmod -R 777 /tmp && \
+    mkdir -p /piston /piston/repo /piston/repo/api /piston/repo/api/src && \
+    ln -sf /tmp/isolate /piston/isolate && \
+    ln -sf /tmp/isolate /piston/repo/isolate && \
+    ln -sf /tmp/isolate /piston/repo/api/isolate && \
+    ln -sf /tmp/isolate /piston/repo/api/src/isolate && \
+    ln -sf /tmp/jobs /piston/repo/api/jobs && \
+    ln -sf /tmp/packages /piston/repo/api/packages && \
+    chmod -R 777 /piston 2>/dev/null || true
 
-RUN mkdir -p \
-    /var/data/jobs \
-    /var/data/packages \
-    /var/data/piston \
-    /var/data/isolate
+# Maintain Piston's native working directory
+WORKDIR /piston/repo/api
 
-RUN chmod -R 777 /var/data/jobs \
-    /var/data/packages \
-    /var/data/piston \
-    /var/data/isolate
-
-WORKDIR /piston
-
-CMD ["node", "api/src/index.js"]
+EXPOSE 2000
