@@ -1,17 +1,27 @@
 FROM ghcr.io/engineer-man/piston:latest
 
-# Environment variables required for cloud sandboxing on Render
-ENV PORT=2000
-ENV DISABLE_SECURITY=true
-ENV PISTON_JOBS_DIRECTORY=/tmp/jobs
-ENV PISTON_PACKAGES_DIRECTORY=/tmp/packages
-
 USER root
 
-# Pre-create writable directories and link isolate to /tmp
-RUN mkdir -p /tmp/isolate /tmp/jobs /tmp/packages /piston/api/src && \
-    chmod -R 777 /tmp /piston && \
-    ln -sf /tmp/isolate /piston/isolate && \
-    ln -sf /tmp/isolate /piston/api/src/isolate
+ENV PORT=2000
+ENV DISABLE_SECURITY=true
 
-EXPOSE 2000
+# Use writable directories
+ENV PISTON_JOBS_DIRECTORY=/var/data/jobs
+ENV PISTON_PACKAGES_DIRECTORY=/var/data/packages
+ENV PISTON_DATA_DIRECTORY=/var/data/piston
+ENV ISOLATE_HOME=/var/data/isolate
+
+RUN mkdir -p \
+    /var/data/jobs \
+    /var/data/packages \
+    /var/data/piston \
+    /var/data/isolate
+
+RUN chmod -R 777 /var/data/jobs \
+    /var/data/packages \
+    /var/data/piston \
+    /var/data/isolate
+
+WORKDIR /piston
+
+CMD ["node", "api/src/index.js"]
