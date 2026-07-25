@@ -1,43 +1,35 @@
-# Production-Ready Piston API Deployment on Render (Built from Source)
 FROM node:18-alpine
 
-# Install build tools, git, curl, and package extraction tools
 RUN apk add --no-cache git python3 make g++ bash curl tar xz gzip
 
 WORKDIR /piston
-
-# 1. Clone the official EngineerMan Piston repository from source
 RUN git clone https://github.com/engineer-man/piston.git .
 
-# 2. Install API & CLI dependencies
 WORKDIR /piston/api
 RUN npm install
 
 WORKDIR /piston/cli
 RUN npm install
 
-# 3. Environment Variables for Render (Disable isolate sandboxing & use unified data directory)
 ENV PORT=2000
 ENV DISABLE_SECURITY=true
 ENV PISTON_DISABLE_SECURITY=true
-ENV DATA_DIRECTORY=/piston/data
-ENV PISTON_DATA_DIRECTORY=/piston/data
+ENV PISTON_DATA_DIRECTORY=/var/data/piston
+ENV PISTON_JOBS_DIRECTORY=/var/data/jobs
+ENV PISTON_PACKAGES_DIRECTORY=/var/data/packages
+ENV ISOLATE_HOME=/var/data/isolate
 
-# 4. Create data directories and symlink /var/data/piston -> /piston/data
-RUN mkdir -p /piston/data/packages /piston/data/jobs /piston/data/isolate /var/data && \
-    ln -sf /piston/data /var/data/piston && \
-    chmod -R 777 /piston /var/data
+RUN mkdir -p /var/data/piston /var/data/jobs /var/data/packages /var/data/isolate \
+    && chmod -R 777 /var/data /piston
 
-# 5. Pre-install language runtimes during image build
-RUN node /piston/cli/index.js install python || true
-RUN node /piston/cli/index.js install gcc || true
-RUN node /piston/cli/index.js install java || true
-RUN node /piston/cli/index.js install node || true
-RUN node /piston/cli/index.js install go || true
+RUN node /piston/cli/index.js install python
+RUN node /piston/cli/index.js install gcc
+RUN node /piston/cli/index.js install java
+RUN node /piston/cli/index.js install node
+RUN node /piston/cli/index.js install go
+
+RUN ls -R /var/data || true
 
 WORKDIR /piston/api
-
 EXPOSE 2000
-
-# 6. Ensure runtimes are installed on boot before starting API server
-CMD ["sh", "-c", "node /piston/cli/index.js install python || true; node /piston/cli/index.js install gcc || true; node /piston/cli/index.js install java || true; node /piston/cli/index.js install node || true; node /piston/cli/index.js install go || true; exec node src/index.js"]
+CMD ["node", "src/index.js"]
