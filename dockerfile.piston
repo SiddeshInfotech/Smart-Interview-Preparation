@@ -19,11 +19,13 @@ RUN mkdir -p /tmp/jobs /tmp/packages /tmp/piston /tmp/isolate && \
     ln -sf /tmp/isolate /piston/repo/isolate && \
     ln -sf /tmp/isolate /piston/repo/api/isolate && \
     ln -sf /tmp/isolate /piston/repo/api/src/isolate && \
+    ln -sf /tmp/jobs /piston/repo/jobs && \
     ln -sf /tmp/jobs /piston/repo/api/jobs && \
+    ln -sf /tmp/packages /piston/repo/packages && \
     ln -sf /tmp/packages /piston/repo/api/packages && \
     chmod -R 777 /piston 2>/dev/null || true
 
-# Maintain Piston's native working directory
-WORKDIR /piston/repo/api
+# Maintain Piston's native base working directory (/piston/repo)
+WORKDIR /piston/repo
 
 EXPOSE 2000
