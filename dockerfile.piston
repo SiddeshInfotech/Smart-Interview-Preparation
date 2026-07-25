@@ -1,11 +1,7 @@
 FROM ghcr.io/engineer-man/piston:latest
 
-# Environment variables required for cloud sandboxing
+# Environment variables required for cloud sandboxing on Render
 ENV PORT=2000
 ENV DISABLE_SECURITY=true
 
-# Expose Piston API Port
 EXPOSE 2000
-
-# Install language runtimes on startup and launch Piston API server
-CMD ["sh", "-c", "(node /piston/cli/index.js install python gcc java node || node cli/index.js install python gcc java node || node /piston/cli/src/index.js install python gcc java node || true) & exec node api/src/index.js"]
