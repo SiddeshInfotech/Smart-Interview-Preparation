@@ -31,11 +31,11 @@ ENV ISOLATE_HOME=/tmp/isolate
 
 # 5. Pre-install packages during build
 WORKDIR /piston/cli
-RUN node src/index.js install python gcc java node || true
+RUN node index.js install python gcc java node || true
 
 WORKDIR /piston/api
 
 EXPOSE 2000
 
 # 6. Auto-install runtimes on boot and start API server
-CMD ["sh", "-c", "(node /piston/cli/src/index.js install python gcc java node || true) & exec node src/index.js"]
+CMD ["sh", "-c", "(node /piston/cli/index.js install python gcc java node || true) & exec node src/index.js"]
