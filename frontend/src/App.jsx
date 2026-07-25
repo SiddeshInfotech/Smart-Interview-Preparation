@@ -60,7 +60,7 @@ function App() {
           <Route element={<AppShell />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="resume-upload" element={<ResumeUpload />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="profile" element={<CandidateProfile />} />
             <Route path="feedback-form" element={<FeedbackForm />} />
             
             {/* Quiz – candidate only */}

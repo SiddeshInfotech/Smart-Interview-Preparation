@@ -1,37 +1,62 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import "../styles/CandidateProfile.css";
 import {
-  LayoutDashboard,
-  Brain,
-  CalendarDays,
-  BarChart3,
-  Bell,
-  Settings,
-  UserCircle,
   User,
   GraduationCap,
   Briefcase,
+  Globe,
   Save,
+  Edit3,
   Menu,
   X,
-  Globe,
   Plus,
+  CalendarDays,
+  MapPin,
+  Mail,
+  UserCircle,
+  Camera,
+  Sparkles,
+  Lock,
+  ShieldCheck,
+  Check,
+  CheckCircle2,
+  Trash2,
+  ArrowUpRight,
+  ChevronRight,
+  AlertCircle
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
+// Custom GitHub Icon Component
+const GitHubIcon = ({ size = 18, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.15 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.62.24 2.85.12 3.15.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+  </svg>
+);
+
+// Custom LinkedIn Icon Component
+const LinkedInIcon = ({ size = 18, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+  </svg>
+);
+
 const CandidateProfile = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { userProfile } = useAuth();
+  
+  // Mode State: Read-Only by default when opened from dashboard; editable during setup or when user clicks Edit
+  const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isProgrammaticScroll, setIsProgrammaticScroll] = useState(false);
-  const scrollTimeoutRef = useRef(null);
+  const isProgrammaticScroll = useRef(false);
 
-  // --- Profile form state ---
+  // --- Profile Form State ---
   const [profile, setProfile] = useState({
     full_name: "",
     email: "",
@@ -39,27 +64,56 @@ const CandidateProfile = () => {
     gender: "",
     location: "",
     education: "",
-    experience_years: 0,
+    experience_years: 0, // Integer / Round number
     linkedin_url: "",
     github_url: "",
     portfolio_url: "",
   });
 
-  // --- Profile picture state ---
+  // --- Profile Picture State ---
   const [profilePicture, setProfilePicture] = useState(null);
 
-  // --- Skills state ---
+  // --- Skills State ---
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState("");
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
-  // --- UI state ---
+  // --- UI Feedback States ---
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [validationError, setValidationError] = useState("");
 
-  // --- Refs ---
+  // --- Popular Quick Skill Recommendations ---
+  const popularSkills = [
+    "React",
+    "TypeScript",
+    "Node.js",
+    "Python",
+    "Docker",
+    "AWS",
+    "System Design",
+    "PostgreSQL",
+    "GraphQL",
+    "TailwindCSS"
+  ];
+
+  // --- Degree Suggestions ---
+  const degreeSuggestions = [
+    "Bachelor of Computer Applications (BCA)",
+    "Bachelor of Technology (B.Tech) - Computer Science",
+    "Bachelor of Engineering (BE)",
+    "Master of Computer Applications (MCA)",
+    "Master of Technology (M.Tech)",
+    "B.Sc Computer Science",
+    "Diploma in Computer Engineering"
+  ];
+
+  // --- Section Refs ---
+  const mainContentRef = useRef(null);
   const profileRef = useRef(null);
   const educationRef = useRef(null);
   const skillsExperienceRef = useRef(null);
@@ -67,10 +121,13 @@ const CandidateProfile = () => {
   const suggestionRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // --- Fetch profile on mount ---
+  // --- Fetch Profile Data on Mount ---
   useEffect(() => {
     const fetchProfile = async () => {
-      // Instant cache load
+      // Check query param e.g. ?mode=setup (registration flow)
+      const isSetupMode = searchParams.get("mode") === "setup";
+
+      // Load instant cached data
       const cachedStr = localStorage.getItem("cached_candidate_profile");
       if (cachedStr) {
         try {
@@ -82,7 +139,7 @@ const CandidateProfile = () => {
             gender: cachedData.gender || "",
             location: cachedData.location || "",
             education: cachedData.education || "",
-            experience_years: cachedData.experience_years || 0,
+            experience_years: Math.round(cachedData.experience_years || 0),
             linkedin_url: cachedData.linkedin_url || "",
             github_url: cachedData.github_url || "",
             portfolio_url: cachedData.portfolio_url || "",
@@ -98,7 +155,16 @@ const CandidateProfile = () => {
             );
           }
           setLoading(false);
-        } catch (e) {}
+
+          // Determine edit mode: registration mode or incomplete mandatory fields opens in Edit mode directly
+          if (isSetupMode || !cachedData.location || !cachedData.education) {
+            setIsEditing(true);
+          } else {
+            setIsEditing(false); // Read only when opened from dashboard profile link
+          }
+        } catch (e) {
+          console.error("Error parsing profile cache", e);
+        }
       }
 
       try {
@@ -113,7 +179,7 @@ const CandidateProfile = () => {
           gender: data.gender || "",
           location: data.location || "",
           education: data.education || "",
-          experience_years: data.experience_years || 0,
+          experience_years: Math.round(data.experience_years || 0),
           linkedin_url: data.linkedin_url || "",
           github_url: data.github_url || "",
           portfolio_url: data.portfolio_url || "",
@@ -130,8 +196,15 @@ const CandidateProfile = () => {
             }))
           );
         }
+
+        // If registration setup or incomplete profile, default to edit mode
+        if (isSetupMode || !data.location || !data.education || !data.date_of_birth) {
+          setIsEditing(true);
+        } else {
+          setIsEditing(false);
+        }
       } catch (error) {
-        console.error("Error loading profile:", error);
+        console.error("Error loading candidate profile:", error);
         if (error.response?.status === 401) {
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
@@ -143,20 +216,61 @@ const CandidateProfile = () => {
     };
 
     fetchProfile();
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
-  // --- Resize handler for sidebar ---
+  // --- Auto Active Highlight via Scroll Observer ---
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 769) {
-        setSidebarOpen(false);
-      }
+    const observerOptions = {
+      root: mainContentRef.current,
+      rootMargin: "-15% 0px -50% 0px",
+      threshold: 0.1,
     };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
-  // --- Click outside to close suggestions ---
+    const sectionRefs = [
+      { id: "profile", ref: profileRef },
+      { id: "education", ref: educationRef },
+      { id: "skillsExperience", ref: skillsExperienceRef },
+      { id: "digitalPresence", ref: digitalPresenceRef },
+    ];
+
+    const observer = new IntersectionObserver((entries) => {
+      if (isProgrammaticScroll.current) return;
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const found = sectionRefs.find((item) => item.ref.current === entry.target);
+          if (found) {
+            setActiveSection(found.id);
+          }
+        }
+      });
+    }, observerOptions);
+
+    sectionRefs.forEach((item) => {
+      if (item.ref.current) {
+        observer.observe(item.ref.current);
+      }
+    });
+
+    return () => observer.disconnect();
+  }, [loading]);
+
+  // --- Smooth Scroll Navigation ---
+  const handleNavClick = (sectionId, ref) => {
+    setActiveSection(sectionId);
+    isProgrammaticScroll.current = true;
+    if (ref && ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    setTimeout(() => {
+      isProgrammaticScroll.current = false;
+    }, 800);
+
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
+  };
+
+  // --- Close Suggestions on Click Outside ---
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (suggestionRef.current && !suggestionRef.current.contains(event.target)) {
@@ -167,7 +281,7 @@ const CandidateProfile = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // --- Debounced skill suggestions ---
+  // --- Debounced Skill Search API ---
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (newSkill.trim().length >= 1) {
@@ -181,90 +295,6 @@ const CandidateProfile = () => {
     return () => clearTimeout(delayDebounce);
   }, [newSkill]);
 
-  // --- Auto-highlight sidebar on scroll using getBoundingClientRect + RAF ---
-  useEffect(() => {
-    const sections = [
-      { ref: profileRef, name: "profile" },
-      { ref: educationRef, name: "education" },
-      { ref: skillsExperienceRef, name: "skillsExperience" },
-      { ref: digitalPresenceRef, name: "digitalPresence" },
-    ];
-
-    let rafId = null;
-
-    const updateActiveSection = () => {
-      if (isProgrammaticScroll) return;
-
-      const scrollY = window.scrollY + 120; // offset for sticky header
-      let newActive = "profile";
-      let minDistance = Infinity;
-
-      sections.forEach(({ ref, name }) => {
-        const el = ref.current;
-        if (!el) return;
-
-        const rect = el.getBoundingClientRect();
-        const top = rect.top + window.scrollY;
-        const bottom = rect.bottom + window.scrollY;
-
-        if (scrollY >= top && scrollY < bottom) {
-          const distance = Math.abs(scrollY - top);
-          if (distance < minDistance) {
-            minDistance = distance;
-            newActive = name;
-          }
-        }
-      });
-
-      setActiveSection((prev) => (prev !== newActive ? newActive : prev));
-    };
-
-    const handleScroll = () => {
-      if (scrollTimeoutRef.current) {
-        cancelAnimationFrame(scrollTimeoutRef.current);
-      }
-      scrollTimeoutRef.current = requestAnimationFrame(updateActiveSection);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    updateActiveSection();
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollTimeoutRef.current) {
-        cancelAnimationFrame(scrollTimeoutRef.current);
-      }
-    };
-  }, [isProgrammaticScroll]);
-
-  // --- Navigation functions ---
-  const scrollToSection = (ref) => {
-    if (ref.current) {
-      setIsProgrammaticScroll(true);
-      ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      setTimeout(() => {
-        setIsProgrammaticScroll(false);
-      }, 700);
-    }
-  };
-
-  const handleNavClick = (section) => {
-    setActiveSection(section);
-    const refs = {
-      profile: profileRef,
-      education: educationRef,
-      skillsExperience: skillsExperienceRef,
-      digitalPresence: digitalPresenceRef,
-    };
-    scrollToSection(refs[section]);
-    if (window.innerWidth <= 768) {
-      setSidebarOpen(false);
-    }
-  };
-
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-
-  // --- Skill suggestions API ---
   const fetchSkillSuggestions = async (query) => {
     setLoadingSuggestions(true);
     try {
@@ -272,7 +302,7 @@ const CandidateProfile = () => {
       setSkillSuggestions(response.data);
       setShowSuggestions(response.data.length > 0);
     } catch (error) {
-      console.error("Error fetching skills:", error);
+      console.error("Error fetching skill suggestions:", error);
       setSkillSuggestions([]);
       setShowSuggestions(false);
     } finally {
@@ -280,56 +310,77 @@ const CandidateProfile = () => {
     }
   };
 
-  const addSkillFromSuggestion = (skill) => {
-    if (!skills.some((s) => s.skill_name.toLowerCase() === skill.skill_name.toLowerCase())) {
-      setSkills([...skills, { id: skill.id, skill_name: skill.skill_name }]);
+  const addSkillFromSuggestion = (skillName) => {
+    if (!isEditing) return;
+    const name = typeof skillName === "string" ? skillName : skillName.skill_name;
+    if (!skills.some((s) => s.skill_name.toLowerCase() === name.toLowerCase())) {
+      setSkills([...skills, { id: Date.now() + Math.random(), skill_name: name }]);
     }
     setNewSkill("");
     setShowSuggestions(false);
   };
 
-  const handleAddSkill = (e) => {
+  const handleAddSkillKey = (e) => {
+    if (!isEditing) return;
     if (e.key === "Enter" && newSkill.trim()) {
+      e.preventDefault();
       const trimmed = newSkill.trim();
       const matched = skillSuggestions.find(
         (s) => s.skill_name.toLowerCase() === trimmed.toLowerCase()
       );
       if (matched) {
-        addSkillFromSuggestion(matched);
+        addSkillFromSuggestion(matched.skill_name);
       } else {
-        if (!skills.some((s) => s.skill_name.toLowerCase() === trimmed.toLowerCase())) {
-          setSkills([...skills, { id: Date.now(), skill_name: trimmed }]);
-        }
-        setNewSkill("");
-        setShowSuggestions(false);
+        addSkillFromSuggestion(trimmed);
       }
     }
   };
 
   const removeSkill = (id) => {
+    if (!isEditing) return;
     setSkills(skills.filter((s) => s.id !== id));
   };
 
-  // --- Handle file selection (preview) ---
+  // --- File Selection for Profile Picture ---
   const handleFileChange = (e) => {
+    if (!isEditing) return;
     if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
       const reader = new FileReader();
       reader.onload = (ev) => {
         setProfilePicture(ev.target.result);
       };
-      reader.readAsDataURL(e.target.files[0]);
+      reader.readAsDataURL(file);
     }
   };
 
-  // --- Save profile (using axios) ---
+  // --- Save Profile with Mandatory Validation ---
   const handleSaveProfile = async () => {
+    setValidationError("");
+
+    // Validate Mandatory Fields: Name, Email, Date of Birth, Location, Education
+    const missing = [];
+    if (!profile.full_name && !userProfile?.name) missing.push("Name");
+    if (!profile.email && !userProfile?.email) missing.push("Email");
+    if (!profile.date_of_birth) missing.push("Date of Birth");
+    if (!profile.location || !profile.location.trim()) missing.push("Location");
+    if (!profile.education || !profile.education.trim()) missing.push("Education");
+
+    if (missing.length > 0) {
+      setValidationError(`Mandatory fields required: ${missing.join(", ")}`);
+      return;
+    }
+
     setSaving(true);
     const formData = new FormData();
-    formData.append("date_of_birth", profile.date_of_birth ? profile.date_of_birth.toISOString().split("T")[0] : "");
+    formData.append(
+      "date_of_birth",
+      profile.date_of_birth ? profile.date_of_birth.toISOString().split("T")[0] : ""
+    );
     formData.append("gender", profile.gender);
-    formData.append("location", profile.location);
-    formData.append("education", profile.education);
-    formData.append("experience_years", profile.experience_years);
+    formData.append("location", profile.location.trim());
+    formData.append("education", profile.education.trim());
+    formData.append("experience_years", Math.round(profile.experience_years || 0));
     formData.append("skills", skills.map((s) => s.skill_name).join(","));
     formData.append("linkedin_url", profile.linkedin_url);
     formData.append("github_url", profile.github_url);
@@ -344,299 +395,682 @@ const CandidateProfile = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
       localStorage.setItem("cached_candidate_profile", JSON.stringify(response.data));
-      alert("Profile updated successfully!");
-      setProfilePicture(response.data.profile_picture || null);
+      setProfilePicture(response.data.profile_picture || profilePicture);
+      
+      setToastMessage("Candidate profile updated successfully!");
+      setShowSuccessToast(true);
+      setIsEditing(false); // Switch to Read-Only format after saving
+      setTimeout(() => setShowSuccessToast(false), 4000);
     } catch (error) {
-      console.error("Save error:", error);
+      console.error("Save candidate profile error:", error);
       if (error.response?.status === 401) {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         navigate("/login");
       } else {
-        alert("Error: " + JSON.stringify(error.response?.data || error.message));
+        alert("Error saving profile: " + (error.response?.data?.detail || error.message));
       }
     } finally {
       setSaving(false);
     }
   };
 
-  // --- Show loading while fetching ---
   if (loading) {
-    return <div className="loading-spinner">Loading profile...</div>;
+    return (
+      <div className="cp-loading-screen">
+        <div className="cp-spinner"></div>
+        <p className="cp-loading-text">Loading candidate profile...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="candidate-profile">
-      {/* Header – REMOVED – no top navbar */}
+    <div className="candidate-profile-page">
+      {/* Mobile Top Navbar with Menu Toggle */}
+      <header className="cp-mobile-header">
+        <button className="cp-menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+          {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+        <span className="cp-mobile-title">PrepMasterAI Profile</span>
+        {isEditing ? (
+          <button className="cp-quick-save-btn" onClick={handleSaveProfile} disabled={saving}>
+            <Save size={16} />
+          </button>
+        ) : (
+          <button className="cp-quick-save-btn" onClick={() => setIsEditing(true)}>
+            <Edit3 size={16} />
+          </button>
+        )}
+      </header>
 
-      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
+      {/* Sidebar Backdrop for Mobile */}
+      {sidebarOpen && (
+        <div className="cp-sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
 
-      <div className="main-container" style={{ paddingTop: 0 }}>
-        {/* Sidebar */}
-        <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-          <div className="profile-nav">
-            <div
-              className="nav-item"
-              onClick={() => navigate("/dashboard")}
-              style={{ color: "var(--color-primary)", fontWeight: "600" }}
-            >
-              <LayoutDashboard size={18} /> <span>Back to Dashboard</span>
+      <div className="cp-layout-container">
+        {/* Left Navigation Sidebar */}
+        <aside className={`cp-sidebar ${sidebarOpen ? "open" : ""}`}>
+          <div className="cp-sidebar-brand">
+            <div className="cp-brand-icon">
+              <Sparkles size={20} />
             </div>
-            <div style={{ margin: "4px 0", borderBottom: "1px solid var(--color-border)" }} />
-            <div
-              className={`nav-item ${activeSection === "profile" ? "active" : ""}`}
-              onClick={() => handleNavClick("profile")}
-            >
-              <User size={18} /> <span>Personal Information</span>
+            <div className="cp-brand-text">
+              <span className="cp-brand-title">PrepMasterAI</span>
+              <span className="cp-brand-subtitle">Candidate Profile</span>
             </div>
-            <div
-              className={`nav-item ${activeSection === "education" ? "active" : ""}`}
-              onClick={() => handleNavClick("education")}
-            >
-              <GraduationCap size={18} /> <span>Education</span>
+          </div>
+
+          <div className="cp-sidebar-nav">
+            <div className="cp-nav-divider">
+              <span>PROFILE NAVIGATION</span>
             </div>
+
+            {/* Navigation Menu Items */}
             <div
-              className={`nav-item ${activeSection === "skillsExperience" ? "active" : ""}`}
-              onClick={() => handleNavClick("skillsExperience")}
+              className={`cp-nav-item ${activeSection === "profile" ? "active" : ""}`}
+              onClick={() => handleNavClick("profile", profileRef)}
             >
-              <Briefcase size={18} /> <span>Skills & Experience</span>
+              <User size={18} />
+              <span>Personal Information</span>
+              {activeSection === "profile" && <ChevronRight size={16} className="cp-nav-arrow" />}
             </div>
+
             <div
-              className={`nav-item ${activeSection === "digitalPresence" ? "active" : ""}`}
-              onClick={() => handleNavClick("digitalPresence")}
+              className={`cp-nav-item ${activeSection === "education" ? "active" : ""}`}
+              onClick={() => handleNavClick("education", educationRef)}
             >
-              <Globe size={18} /> <span>Digital Presence</span>
+              <GraduationCap size={18} />
+              <span>Education</span>
+              {activeSection === "education" && <ChevronRight size={16} className="cp-nav-arrow" />}
             </div>
+
+            <div
+              className={`cp-nav-item ${activeSection === "skillsExperience" ? "active" : ""}`}
+              onClick={() => handleNavClick("skillsExperience", skillsExperienceRef)}
+            >
+              <Briefcase size={18} />
+              <span>Skills & Experience</span>
+              {activeSection === "skillsExperience" && <ChevronRight size={16} className="cp-nav-arrow" />}
+            </div>
+
+            <div
+              className={`cp-nav-item ${activeSection === "digitalPresence" ? "active" : ""}`}
+              onClick={() => handleNavClick("digitalPresence", digitalPresenceRef)}
+            >
+              <Globe size={18} />
+              <span>Digital Presence</span>
+              {activeSection === "digitalPresence" && <ChevronRight size={16} className="cp-nav-arrow" />}
+            </div>
+          </div>
+
+          {/* Mode Indicator Card in Sidebar */}
+          <div className="cp-sidebar-mode-card">
+            <div className="cp-mode-badge-wrapper">
+              <span className={`cp-mode-dot ${isEditing ? "editing" : "readonly"}`}></span>
+              <span className="cp-mode-title">
+                {isEditing ? "Editing Mode" : "Read-Only Mode"}
+              </span>
+            </div>
+            <p className="cp-mode-hint">
+              {isEditing
+                ? "Make your updates and click Save Profile at the bottom."
+                : "Click Edit Profile at the bottom to update details."}
+            </p>
           </div>
         </aside>
 
-        {/* Content */}
-        <main className="content">
-          <div className="profile-section" id="profile">
-            <div className="section-header">
-              <h2>Profile Setup</h2>
+        {/* Main Content Area */}
+        <main className="cp-main-content" ref={mainContentRef}>
+          <div className="cp-content-wrapper">
+
+            {/* Page Header Banner - Clean Light Design Theme */}
+            <div className="cp-page-banner">
+              <div className="cp-banner-info">
+                <h1 className="cp-banner-title">PrepMasterAI Candidate Profile</h1>
+                <p className="cp-banner-desc">
+                  Manage your candidate profile information, technical skills, and digital portfolio links.
+                </p>
+              </div>
+
+              <div className="cp-mode-status-tag">
+                {isEditing ? (
+                  <span className="cp-tag-badge editing">
+                    <Edit3 size={14} /> Edit Mode
+                  </span>
+                ) : (
+                  <span className="cp-tag-badge readonly">
+                    <ShieldCheck size={14} /> Read-Only View
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* Personal Information */}
-            <div className="personal-info" ref={profileRef}>
-              <h3>Personal Information</h3>
-              <div className="info-grid-vertical">
-                <div className="form-group profile-picture-group">
-                  <label>Profile Picture</label>
-                  <div className="profile-picture-upload">
-                    <div className="profile-pic-wrapper">
+            {/* Toast Success Notification */}
+            {showSuccessToast && (
+              <div className="cp-toast-notification">
+                <CheckCircle2 size={20} className="cp-toast-icon" />
+                <span>{toastMessage}</span>
+              </div>
+            )}
+
+            {/* Mandatory Validation Error Alert */}
+            {validationError && (
+              <div className="cp-error-notification">
+                <AlertCircle size={20} className="cp-error-icon" />
+                <span>{validationError}</span>
+              </div>
+            )}
+
+            {/* SECTION 1: Personal Information */}
+            <section className="cp-card-section" id="profile" ref={profileRef}>
+              <div className="cp-card-header">
+                <div className="cp-card-header-icon profile">
+                  <User size={20} />
+                </div>
+                <div>
+                  <h2 className="cp-card-title">Personal Information</h2>
+                  <p className="cp-card-subtitle">Manage your account details and contact information</p>
+                </div>
+              </div>
+
+              <div className="cp-card-body">
+                {/* Profile Picture Upload Section */}
+                <div className="cp-avatar-upload-area">
+                  <div className="cp-avatar-container">
+                    <div className="cp-avatar-ring">
                       {profilePicture ? (
-                        <img src={profilePicture} alt="Profile" className="profile-pic-img" />
+                        <img src={profilePicture} alt="Candidate Profile" className="cp-avatar-image" />
                       ) : (
-                        <UserCircle size={56} className="default-avatar" />
+                        <div className="cp-avatar-placeholder">
+                          <UserCircle size={68} />
+                          <span className="cp-avatar-placeholder-text">Profile</span>
+                        </div>
                       )}
                     </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      id="profile-pic-input"
-                      ref={fileInputRef}
-                      style={{ display: "none" }}
-                      onChange={handleFileChange}
-                    />
-                    <label htmlFor="profile-pic-input" className="profile-pic-label">
-                      {profilePicture ? "Change Picture" : "Upload Picture"}
-                    </label>
+                    {isEditing && (
+                      <label htmlFor="cp-avatar-input" className="cp-avatar-camera-badge" title="Change Avatar">
+                        <Camera size={16} />
+                      </label>
+                    )}
                   </div>
-                </div>
 
-                <div className="form-group">
-                  <label>Name</label>
-                  <input
-                    type="text"
-                    value={profile.full_name || userProfile?.name || ""}
-                    disabled
-                    className="disabled-input"
-                  />
-                </div>
+                  {isEditing ? (
+                    <div className="cp-avatar-actions">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="cp-avatar-input"
+                        ref={fileInputRef}
+                        style={{ display: "none" }}
+                        onChange={handleFileChange}
+                      />
+                      <label htmlFor="cp-avatar-input" className="cp-btn-secondary">
+                        <Camera size={16} />
+                        <span>{profilePicture ? "Change Picture" : "Upload Picture"}</span>
+                      </label>
 
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="text"
-                    value={profile.email || userProfile?.email || ""}
-                    disabled
-                    className="disabled-input"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Date of Birth</label>
-                  <div className="date-input-wrapper">
-                    <DatePicker
-                      selected={profile.date_of_birth}
-                      onChange={(date) => setProfile({ ...profile, date_of_birth: date })}
-                      dateFormat="MM/dd/yyyy"
-                      placeholderText="mm/dd/yyyy"
-                      className="custom-datepicker-input"
-                      wrapperClassName="custom-datepicker-wrapper"
-                      showMonthDropdown
-                      showYearDropdown
-                      dropdownMode="select"
-                      yearDropdownItemNumber={15}
-                      scrollableYearDropdown
-                      maxDate={new Date()}
-                    />
-                    <CalendarDays size={18} className="date-input-icon" />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Gender</label>
-                  <select
-                    value={profile.gender}
-                    onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="M">Male</option>
-                    <option value="F">Female</option>
-                    <option value="O">Other</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Location</label>
-                  <input
-                    type="text"
-                    value={profile.location}
-                    onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                    placeholder="City, Country"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Education & Experience */}
-            <div className="education-section" ref={educationRef}>
-              <h3>Education & Experience</h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Highest Degree / Education</label>
-                  <input
-                    type="text"
-                    value={profile.education}
-                    onChange={(e) => setProfile({ ...profile, education: e.target.value })}
-                    placeholder="e.g., Bachelor of Computer Engineering"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Years of Experience</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={profile.experience_years}
-                    onChange={(e) =>
-                      setProfile({ ...profile, experience_years: parseFloat(e.target.value) || 0 })
-                    }
-                    placeholder="e.g., 2.5"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Skills */}
-            <div className="skills-experience-section" ref={skillsExperienceRef}>
-              <h3>Skills</h3>
-              <div className="skills-container">
-                <label>Technical Skills</label>
-                {skills.length > 0 && (
-                  <div className="skill-tags">
-                    {skills.map((skill) => (
-                      <span key={skill.id} className="skill-tag">
-                        {skill.skill_name}
+                      {profilePicture && (
                         <button
                           type="button"
-                          className="skill-remove"
-                          onClick={() => removeSkill(skill.id)}
+                          className="cp-btn-text-danger"
+                          onClick={() => setProfilePicture(null)}
                         >
-                          ×
+                          <Trash2 size={15} />
+                          <span>Remove</span>
                         </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="skill-input-wrapper" ref={suggestionRef}>
-                  <input
-                    type="text"
-                    placeholder="Type a skill and press Enter or select from suggestions..."
-                    value={newSkill}
-                    onChange={(e) => setNewSkill(e.target.value)}
-                    onKeyDown={handleAddSkill}
-                    onFocus={() =>
-                      newSkill.trim().length >= 1 && setShowSuggestions(skillSuggestions.length > 0)
-                    }
-                  />
-                  <Plus size={18} className="skill-input-icon" />
-                  {showSuggestions && (
-                    <div className="skill-suggestions-dropdown">
-                      {loadingSuggestions ? (
-                        <div className="suggestion-loading">Loading...</div>
-                      ) : (
-                        skillSuggestions.map((skill) => (
-                          <div
-                            key={skill.id}
-                            className="suggestion-item"
-                            onClick={() => addSkillFromSuggestion(skill)}
-                          >
-                            <span className="suggestion-name">{skill.skill_name}</span>
-                            <span className="suggestion-category">{skill.category}</span>
-                          </div>
-                        ))
                       )}
                     </div>
+                  ) : (
+                    <span className="cp-field-hint">Profile photo saved</span>
                   )}
                 </div>
-                <div className="suggestions-hint">
-                  Suggested: Docker, AWS, System Design, TypeScript
+
+                {/* Form Fields Grid */}
+                <div className="cp-form-grid">
+                  {/* Name (Mandatory & Locked) */}
+                  <div className="cp-field-group">
+                    <label className="cp-label">
+                      <span>Full Name <span className="cp-required-star">*</span></span>
+                      <span className="cp-locked-badge"><Lock size={12} /> Locked</span>
+                    </label>
+                    <div className="cp-input-wrapper disabled">
+                      <User size={18} className="cp-input-icon" />
+                      <input
+                        type="text"
+                        value={profile.full_name || userProfile?.name || ""}
+                        disabled
+                        className="cp-input disabled"
+                      />
+                      <Lock size={15} className="cp-lock-icon" />
+                    </div>
+                  </div>
+
+                  {/* Email (Mandatory & Locked) */}
+                  <div className="cp-field-group">
+                    <label className="cp-label">
+                      <span>Email Address <span className="cp-required-star">*</span></span>
+                      <span className="cp-locked-badge"><Lock size={12} /> Locked</span>
+                    </label>
+                    <div className="cp-input-wrapper disabled">
+                      <Mail size={18} className="cp-input-icon" />
+                      <input
+                        type="text"
+                        value={profile.email || userProfile?.email || ""}
+                        disabled
+                        className="cp-input disabled"
+                      />
+                      <Lock size={15} className="cp-lock-icon" />
+                    </div>
+                  </div>
+
+                  {/* Date of Birth (Mandatory) */}
+                  <div className="cp-field-group">
+                    <label className="cp-label">
+                      <span>Date of Birth <span className="cp-required-star">*</span></span>
+                    </label>
+                    <div className="cp-input-wrapper">
+                      <CalendarDays size={18} className="cp-input-icon" />
+                      <DatePicker
+                        selected={profile.date_of_birth}
+                        onChange={(date) => isEditing && setProfile({ ...profile, date_of_birth: date })}
+                        disabled={!isEditing}
+                        dateFormat="MM/dd/yyyy"
+                        placeholderText="Select Date of Birth (MM/DD/YYYY)"
+                        className={`cp-input cp-datepicker-input ${!isEditing ? "readonly" : ""}`}
+                        wrapperClassName="cp-datepicker-wrapper"
+                        showMonthDropdown
+                        showYearDropdown
+                        dropdownMode="select"
+                        yearDropdownItemNumber={35}
+                        scrollableYearDropdown
+                        maxDate={new Date()}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Gender */}
+                  <div className="cp-field-group">
+                    <label className="cp-label">Gender</label>
+                    <div className="cp-input-wrapper">
+                      <UserCircle size={18} className="cp-input-icon" />
+                      <select
+                        className={`cp-select ${!isEditing ? "readonly" : ""}`}
+                        value={profile.gender}
+                        disabled={!isEditing}
+                        onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                        <option value="O">Other / Non-Binary</option>
+                        <option value="N">Prefer not to say</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Location (Mandatory) */}
+                  <div className="cp-field-group full-span">
+                    <label className="cp-label">
+                      <span>Location <span className="cp-required-star">*</span></span>
+                    </label>
+                    <div className="cp-input-wrapper">
+                      <MapPin size={18} className="cp-input-icon" />
+                      <input
+                        type="text"
+                        disabled={!isEditing}
+                        className={`cp-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.location}
+                        onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                        placeholder="e.g., Dhule, Maharashtra, India"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
+            </section>
+
+            {/* SECTION 2: Education & Experience */}
+            <section className="cp-card-section" id="education" ref={educationRef}>
+              <div className="cp-card-header">
+                <div className="cp-card-header-icon education">
+                  <GraduationCap size={20} />
+                </div>
+                <div>
+                  <h2 className="cp-card-title">Education & Experience</h2>
+                  <p className="cp-card-subtitle">Highlight your qualifications and work experience</p>
+                </div>
+              </div>
+
+              <div className="cp-card-body">
+                <div className="cp-form-grid">
+                  {/* Highest Degree (Mandatory) */}
+                  <div className="cp-field-group full-span">
+                    <label className="cp-label">
+                      <span>Highest Degree / Qualification <span className="cp-required-star">*</span></span>
+                    </label>
+                    <div className="cp-input-wrapper">
+                      <GraduationCap size={18} className="cp-input-icon" />
+                      <input
+                        type="text"
+                        disabled={!isEditing}
+                        className={`cp-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.education}
+                        onChange={(e) => setProfile({ ...profile, education: e.target.value })}
+                        placeholder="e.g., Bachelor of Computer Applications (BCA), 2022–2025"
+                      />
+                    </div>
+                    {/* Degree Suggestions Pills (Only when editing) */}
+                    {isEditing && (
+                      <div className="cp-quick-suggestions-pills">
+                        <span className="cp-pills-label">Quick Suggestions:</span>
+                        {degreeSuggestions.map((deg, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            className="cp-pill-btn"
+                            onClick={() => setProfile({ ...profile, education: deg })}
+                          >
+                            + {deg.split(" ")[0]} {deg.split("(")[1] ? `(${deg.split("(")[1]}` : ""}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Total Experience Years - ROUND INTEGER */}
+                  <div className="cp-field-group full-span">
+                    <label className="cp-label">Total Years of Experience (Round Figure)</label>
+                    <div className="cp-input-wrapper">
+                      <Briefcase size={18} className="cp-input-icon" />
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        max="50"
+                        disabled={!isEditing}
+                        className={`cp-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.experience_years}
+                        onChange={(e) =>
+                          setProfile({
+                            ...profile,
+                            experience_years: Math.max(0, parseInt(e.target.value, 10) || 0),
+                          })
+                        }
+                        placeholder="e.g., 2"
+                      />
+                      <span className="cp-input-suffix">Years</span>
+                    </div>
+
+                    {/* Quick Integer Experience Badges */}
+                    {isEditing && (
+                      <div className="cp-quick-suggestions-pills">
+                        {[0, 1, 2, 3, 5].map((yr) => (
+                          <button
+                            key={yr}
+                            type="button"
+                            className={`cp-pill-btn ${profile.experience_years === yr ? "active" : ""}`}
+                            onClick={() => setProfile({ ...profile, experience_years: yr })}
+                          >
+                            {yr === 0 ? "Fresher (0 yrs)" : `${yr}+ Years`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 3: Skills & Experience */}
+            <section className="cp-card-section" id="skillsExperience" ref={skillsExperienceRef}>
+              <div className="cp-card-header">
+                <div className="cp-card-header-icon skills">
+                  <Briefcase size={20} />
+                </div>
+                <div>
+                  <h2 className="cp-card-title">Skills & Experience</h2>
+                  <p className="cp-card-subtitle">Technical skills and specialized area highlights</p>
+                </div>
+              </div>
+
+              <div className="cp-card-body">
+                <div className="cp-skills-manager">
+                  <div className="cp-skills-header-row">
+                    <label className="cp-label">Technical Skills</label>
+                    <span className="cp-skills-count-badge">{skills.length} Skills</span>
+                  </div>
+
+                  {/* Active Skill Chips */}
+                  <div className="cp-skills-chips-wrapper">
+                    {skills.length === 0 ? (
+                      <div className="cp-empty-skills-msg">
+                        {isEditing
+                          ? "No skills added yet. Type below or pick from recommendations."
+                          : "No skills specified yet."}
+                      </div>
+                    ) : (
+                      skills.map((skill) => (
+                        <div key={skill.id} className="cp-skill-chip">
+                          <span>{skill.skill_name}</span>
+                          {isEditing && (
+                            <button
+                              type="button"
+                              className="cp-skill-remove-btn"
+                              onClick={() => removeSkill(skill.id)}
+                              title="Remove skill"
+                            >
+                              <X size={13} />
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Input Search & Popular Pills (Only visible when editing) */}
+                  {isEditing && (
+                    <>
+                      <div className="cp-skill-input-container" ref={suggestionRef}>
+                        <div className="cp-input-wrapper">
+                          <Plus size={18} className="cp-input-icon" />
+                          <input
+                            type="text"
+                            className="cp-input"
+                            placeholder="Type a skill (e.g. React, Python) and press Enter..."
+                            value={newSkill}
+                            onChange={(e) => setNewSkill(e.target.value)}
+                            onKeyDown={handleAddSkillKey}
+                            onFocus={() =>
+                              newSkill.trim().length >= 1 && setShowSuggestions(skillSuggestions.length > 0)
+                            }
+                          />
+                        </div>
+
+                        {showSuggestions && (
+                          <div className="cp-suggestions-dropdown">
+                            {loadingSuggestions ? (
+                              <div className="cp-suggestion-loading">Searching skills...</div>
+                            ) : (
+                              skillSuggestions.map((s) => (
+                                <div
+                                  key={s.id}
+                                  className="cp-suggestion-item"
+                                  onClick={() => addSkillFromSuggestion(s.skill_name)}
+                                >
+                                  <span className="cp-suggestion-name">{s.skill_name}</span>
+                                  {s.category && <span className="cp-suggestion-cat">{s.category}</span>}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="cp-popular-skills-section">
+                        <span className="cp-pills-label">Popular Suggestions:</span>
+                        <div className="cp-popular-pills-grid">
+                          {popularSkills.map((popSkill, idx) => {
+                            const isAdded = skills.some(
+                              (s) => s.skill_name.toLowerCase() === popSkill.toLowerCase()
+                            );
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                className={`cp-pill-btn ${isAdded ? "added" : ""}`}
+                                onClick={() => addSkillFromSuggestion(popSkill)}
+                                disabled={isAdded}
+                              >
+                                {isAdded ? <Check size={12} /> : <Plus size={12} />}
+                                <span>{popSkill}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 4: Digital Presence */}
+            <section className="cp-card-section" id="digitalPresence" ref={digitalPresenceRef}>
+              <div className="cp-card-header">
+                <div className="cp-card-header-icon digital">
+                  <Globe size={20} />
+                </div>
+                <div>
+                  <h2 className="cp-card-title">Digital Presence</h2>
+                  <p className="cp-card-subtitle">Connect your LinkedIn, GitHub, and Personal Portfolio</p>
+                </div>
+              </div>
+
+              <div className="cp-card-body">
+                <div className="cp-form-grid">
+                  {/* LinkedIn */}
+                  <div className="cp-field-group full-span">
+                    <label className="cp-label">LinkedIn Profile URL</label>
+                    <div className="cp-input-wrapper">
+                      <LinkedInIcon size={18} className="cp-input-icon linkedin" />
+                      <input
+                        type="url"
+                        disabled={!isEditing}
+                        className={`cp-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.linkedin_url}
+                        onChange={(e) => setProfile({ ...profile, linkedin_url: e.target.value })}
+                        placeholder="https://www.linkedin.com/in/kimayanitinpatil"
+                      />
+                      {profile.linkedin_url && (
+                        <a
+                          href={profile.linkedin_url.startsWith("http") ? profile.linkedin_url : `https://${profile.linkedin_url}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="cp-link-preview-btn"
+                          title="Open Link"
+                        >
+                          <ArrowUpRight size={16} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* GitHub */}
+                  <div className="cp-field-group full-span">
+                    <label className="cp-label">GitHub Profile URL</label>
+                    <div className="cp-input-wrapper">
+                      <GitHubIcon size={18} className="cp-input-icon github" />
+                      <input
+                        type="url"
+                        disabled={!isEditing}
+                        className={`cp-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.github_url}
+                        onChange={(e) => setProfile({ ...profile, github_url: e.target.value })}
+                        placeholder="https://github.com/kimayanitinpatil"
+                      />
+                      {profile.github_url && (
+                        <a
+                          href={profile.github_url.startsWith("http") ? profile.github_url : `https://${profile.github_url}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="cp-link-preview-btn"
+                          title="Open Link"
+                        >
+                          <ArrowUpRight size={16} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Portfolio */}
+                  <div className="cp-field-group full-span">
+                    <label className="cp-label">Portfolio Website URL</label>
+                    <div className="cp-input-wrapper">
+                      <Globe size={18} className="cp-input-icon portfolio" />
+                      <input
+                        type="url"
+                        disabled={!isEditing}
+                        className={`cp-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.portfolio_url}
+                        onChange={(e) => setProfile({ ...profile, portfolio_url: e.target.value })}
+                        placeholder="https://kimayanitinpatil.dev"
+                      />
+                      {profile.portfolio_url && (
+                        <a
+                          href={profile.portfolio_url.startsWith("http") ? profile.portfolio_url : `https://${profile.portfolio_url}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="cp-link-preview-btn"
+                          title="Open Link"
+                        >
+                          <ArrowUpRight size={16} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Bottom Action Footer Panel - Toggle between Read-Only and Save Modes */}
+            <div className="cp-bottom-bar">
+              <div className="cp-bottom-bar-info">
+                {isEditing ? (
+                  <span className="cp-save-status editing">
+                    <Sparkles size={16} className="cp-status-icon" /> Make changes and click Save Profile
+                  </span>
+                ) : (
+                  <span className="cp-save-status readonly">
+                    <ShieldCheck size={16} className="cp-status-icon" /> Profile shown in Read-Only format
+                  </span>
+                )}
+              </div>
+
+              <div className="cp-bottom-bar-actions">
+                {isEditing ? (
+                  <button
+                    type="button"
+                    className="cp-btn-primary"
+                    onClick={handleSaveProfile}
+                    disabled={saving}
+                  >
+                    <Save size={18} />
+                    <span>{saving ? "Saving Profile..." : "Save Profile"}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="cp-btn-primary edit-mode-btn"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Edit3 size={18} />
+                    <span>Edit Profile</span>
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Digital Presence */}
-            <div className="digital-presence" ref={digitalPresenceRef}>
-              <h3>Digital Presence</h3>
-              <div className="form-group full-width">
-                <label>LinkedIn Profile URL</label>
-                <input
-                  type="url"
-                  value={profile.linkedin_url}
-                  onChange={(e) => setProfile({ ...profile, linkedin_url: e.target.value })}
-                  placeholder="linkedin.com/in/username"
-                />
-              </div>
-              <div className="form-group full-width">
-                <label>GitHub URL</label>
-                <input
-                  type="url"
-                  value={profile.github_url}
-                  onChange={(e) => setProfile({ ...profile, github_url: e.target.value })}
-                  placeholder="github.com/username"
-                />
-              </div>
-              <div className="form-group full-width">
-                <label>Portfolio URL</label>
-                <input
-                  type="url"
-                  value={profile.portfolio_url}
-                  onChange={(e) => setProfile({ ...profile, portfolio_url: e.target.value })}
-                  placeholder="https://yourportfolio.com"
-                />
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="action-buttons">
-              <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
-                <Save size={17} />
-                {saving ? "Saving..." : "Save Profile"}
-              </button>
-            </div>
           </div>
         </main>
       </div>
