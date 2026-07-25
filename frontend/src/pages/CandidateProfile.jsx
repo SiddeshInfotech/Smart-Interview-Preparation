@@ -524,28 +524,6 @@ const CandidateProfile = () => {
         <main className="cp-main-content" ref={mainContentRef}>
           <div className="cp-content-wrapper">
 
-            {/* Page Header Banner - Clean Light Design Theme */}
-            <div className="cp-page-banner">
-              <div className="cp-banner-info">
-                <h1 className="cp-banner-title">PrepMasterAI Candidate Profile</h1>
-                <p className="cp-banner-desc">
-                  Manage your candidate profile information, technical skills, and digital portfolio links.
-                </p>
-              </div>
-
-              <div className="cp-mode-status-tag">
-                {isEditing ? (
-                  <span className="cp-tag-badge editing">
-                    <Edit3 size={14} /> Edit Mode
-                  </span>
-                ) : (
-                  <span className="cp-tag-badge readonly">
-                    <ShieldCheck size={14} /> Read-Only View
-                  </span>
-                )}
-              </div>
-            </div>
-
             {/* Toast Success Notification */}
             {showSuccessToast && (
               <div className="cp-toast-notification">
@@ -868,69 +846,71 @@ const CandidateProfile = () => {
                     )}
                   </div>
 
-                  {/* Input Search & Popular Pills (Only visible when editing) */}
-                  {isEditing && (
-                    <>
-                      <div className="cp-skill-input-container" ref={suggestionRef}>
-                        <div className="cp-input-wrapper">
-                          <Plus size={18} className="cp-input-icon" />
-                          <input
-                            type="text"
-                            className="cp-input"
-                            placeholder="Type a skill (e.g. React, Python) and press Enter..."
-                            value={newSkill}
-                            onChange={(e) => setNewSkill(e.target.value)}
-                            onKeyDown={handleAddSkillKey}
-                            onFocus={() =>
-                              newSkill.trim().length >= 1 && setShowSuggestions(skillSuggestions.length > 0)
-                            }
-                          />
-                        </div>
+                  {/* Skill Input Textfield (Always Rendered on Page) */}
+                  <div className="cp-skill-input-container" ref={suggestionRef}>
+                    <div className="cp-input-wrapper">
+                      <Plus size={18} className="cp-input-icon" />
+                      <input
+                        type="text"
+                        className={`cp-input ${!isEditing ? "readonly" : ""}`}
+                        disabled={!isEditing}
+                        placeholder={
+                          isEditing
+                            ? "Type a skill (e.g. React, Python) and press Enter..."
+                            : "Click 'Edit Profile' below to add or edit skills..."
+                        }
+                        value={newSkill}
+                        onChange={(e) => setNewSkill(e.target.value)}
+                        onKeyDown={handleAddSkillKey}
+                        onFocus={() =>
+                          isEditing && newSkill.trim().length >= 1 && setShowSuggestions(skillSuggestions.length > 0)
+                        }
+                      />
+                    </div>
 
-                        {showSuggestions && (
-                          <div className="cp-suggestions-dropdown">
-                            {loadingSuggestions ? (
-                              <div className="cp-suggestion-loading">Searching skills...</div>
-                            ) : (
-                              skillSuggestions.map((s) => (
-                                <div
-                                  key={s.id}
-                                  className="cp-suggestion-item"
-                                  onClick={() => addSkillFromSuggestion(s.skill_name)}
-                                >
-                                  <span className="cp-suggestion-name">{s.skill_name}</span>
-                                  {s.category && <span className="cp-suggestion-cat">{s.category}</span>}
-                                </div>
-                              ))
-                            )}
-                          </div>
+                    {isEditing && showSuggestions && (
+                      <div className="cp-suggestions-dropdown">
+                        {loadingSuggestions ? (
+                          <div className="cp-suggestion-loading">Searching skills...</div>
+                        ) : (
+                          skillSuggestions.map((s) => (
+                            <div
+                              key={s.id}
+                              className="cp-suggestion-item"
+                              onClick={() => addSkillFromSuggestion(s.skill_name)}
+                            >
+                              <span className="cp-suggestion-name">{s.skill_name}</span>
+                              {s.category && <span className="cp-suggestion-cat">{s.category}</span>}
+                            </div>
+                          ))
                         )}
                       </div>
+                    )}
+                  </div>
 
-                      <div className="cp-popular-skills-section">
-                        <span className="cp-pills-label">Popular Suggestions:</span>
-                        <div className="cp-popular-pills-grid">
-                          {popularSkills.map((popSkill, idx) => {
-                            const isAdded = skills.some(
-                              (s) => s.skill_name.toLowerCase() === popSkill.toLowerCase()
-                            );
-                            return (
-                              <button
-                                key={idx}
-                                type="button"
-                                className={`cp-pill-btn ${isAdded ? "added" : ""}`}
-                                onClick={() => addSkillFromSuggestion(popSkill)}
-                                disabled={isAdded}
-                              >
-                                {isAdded ? <Check size={12} /> : <Plus size={12} />}
-                                <span>{popSkill}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  {/* Popular Skills Suggestions */}
+                  <div className="cp-popular-skills-section">
+                    <span className="cp-pills-label">Suggested Skills:</span>
+                    <div className="cp-popular-pills-grid">
+                      {popularSkills.map((popSkill, idx) => {
+                        const isAdded = skills.some(
+                          (s) => s.skill_name.toLowerCase() === popSkill.toLowerCase()
+                        );
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            className={`cp-pill-btn ${isAdded ? "added" : ""}`}
+                            onClick={() => isEditing && addSkillFromSuggestion(popSkill)}
+                            disabled={!isEditing || isAdded}
+                          >
+                            {isAdded ? <Check size={12} /> : <Plus size={12} />}
+                            <span>{popSkill}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
