@@ -14,16 +14,19 @@ DEFAULT_PISTON_URL = getattr(
 
 # Language map: canonical key -> Piston runtime language name and default versions
 LANGUAGE_MAP = {
-    "python": {"piston_name": "python", "version": "3.10.0", "filename": "main.py"},
-    "py": {"piston_name": "python", "version": "3.10.0", "filename": "main.py"},
-    "c": {"piston_name": "c", "version": "10.2.0", "filename": "main.c"},
-    "cpp": {"piston_name": "c++", "version": "10.2.0", "filename": "main.cpp"},
-    "c++": {"piston_name": "c++", "version": "10.2.0", "filename": "main.cpp"},
-    "java": {"piston_name": "java", "version": "15.0.2", "filename": "Main.java"},
-    "js": {"piston_name": "javascript", "version": "18.15.0", "filename": "main.js"},
-    "javascript": {"piston_name": "javascript", "version": "18.15.0", "filename": "main.js"},
-    "node": {"piston_name": "javascript", "version": "18.15.0", "filename": "main.js"},
-    "go": {"piston_name": "go", "version": "1.16.2", "filename": "main.go"},
+    "python": {"piston_name": "python", "version": "*", "filename": "main.py"},
+    "py": {"piston_name": "python", "version": "*", "filename": "main.py"},
+    "python3": {"piston_name": "python", "version": "*", "filename": "main.py"},
+    "py3": {"piston_name": "python", "version": "*", "filename": "main.py"},
+    "c": {"piston_name": "c", "version": "*", "filename": "main.c"},
+    "cpp": {"piston_name": "c++", "version": "*", "filename": "main.cpp"},
+    "c++": {"piston_name": "c++", "version": "*", "filename": "main.cpp"},
+    "java": {"piston_name": "java", "version": "*", "filename": "Main.java"},
+    "js": {"piston_name": "javascript", "version": "*", "filename": "main.js"},
+    "javascript": {"piston_name": "javascript", "version": "*", "filename": "main.js"},
+    "node": {"piston_name": "javascript", "version": "*", "filename": "main.js"},
+    "go": {"piston_name": "go", "version": "*", "filename": "main.go"},
+    "golang": {"piston_name": "go", "version": "*", "filename": "main.go"},
 }
 
 
@@ -92,27 +95,33 @@ class PistonExecutionService(AbstractExecutionProvider):
     def __init__(self, api_url: str = None):
         self.api_url = (api_url or DEFAULT_PISTON_URL).rstrip("/")
 
-    def resolve_version(self, piston_name: str, default_version: str) -> str:
+    def resolve_version(self, piston_name: str, default_version: str = "*") -> str:
         """
         Queries GET /api/v2/runtimes to find exact installed version string
-        for the given language name/alias, falling back to default_version.
+        for the given language name/alias, falling back to default_version (or wildcard '*').
         """
         try:
             resp = requests.get(f"{self.api_url}/runtimes", timeout=3)
             if resp.status_code == 200:
                 runtimes = resp.json()
-                for r in runtimes:
-                    if r.get("language") == piston_name or piston_name in r.get("aliases", []):
-                        return r.get("version") or default_version
+                if isinstance(runtimes, list):
+                    pname = (piston_name or "").lower().strip()
+                    for r in runtimes:
+                        if not isinstance(r, dict):
+                            continue
+                        lang = (r.get("language") or "").lower().strip()
+                        aliases = [str(a).lower().strip() for a in r.get("aliases", []) if a]
+                        if lang == pname or pname in aliases:
+                            return r.get("version") or default_version
         except Exception:
             pass
-        return default_version
+        return default_version if default_version and default_version != "3.10.0" else "*"
 
     def get_piston_config(self, language: str) -> dict:
         lang_norm = (language or "python").lower().strip()
         config = LANGUAGE_MAP.get(lang_norm, {
             "piston_name": lang_norm,
-            "version": "3.10.0",
+            "version": "*",
             "filename": "main.txt"
         }).copy()
         
