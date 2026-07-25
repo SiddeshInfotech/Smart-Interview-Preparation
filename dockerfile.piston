@@ -16,27 +16,28 @@ RUN npm install
 WORKDIR /piston/cli
 RUN npm install
 
-# 3. Environment Variables for Render (Disable isolate sandboxing & use image data directory)
+# 3. Environment Variables for Render (Disable isolate sandboxing & use unified data directory)
 ENV PORT=2000
 ENV DISABLE_SECURITY=true
 ENV PISTON_DISABLE_SECURITY=true
 ENV DATA_DIRECTORY=/piston/data
 ENV PISTON_DATA_DIRECTORY=/piston/data
 
-# 4. Create data directories inside image
-RUN mkdir -p /piston/data/packages /piston/data/jobs /piston/data/isolate && \
-    chmod -R 777 /piston
+# 4. Create data directories and symlink /var/data/piston -> /piston/data
+RUN mkdir -p /piston/data/packages /piston/data/jobs /piston/data/isolate /var/data && \
+    ln -sf /piston/data /var/data/piston && \
+    chmod -R 777 /piston /var/data
 
 # 5. Pre-install language runtimes during image build
-RUN node /piston/cli/index.js install python 3.10.0 || node /piston/cli/index.js install python || true
-RUN node /piston/cli/index.js install gcc 10.2.0 || node /piston/cli/index.js install gcc || true
-RUN node /piston/cli/index.js install java 15.0.2 || node /piston/cli/index.js install java || true
-RUN node /piston/cli/index.js install node 18.15.0 || node /piston/cli/index.js install node || true
-RUN node /piston/cli/index.js install go 1.16.2 || node /piston/cli/index.js install go || true
+RUN node /piston/cli/index.js install python || true
+RUN node /piston/cli/index.js install gcc || true
+RUN node /piston/cli/index.js install java || true
+RUN node /piston/cli/index.js install node || true
+RUN node /piston/cli/index.js install go || true
 
 WORKDIR /piston/api
 
 EXPOSE 2000
 
-# 6. Ensure directories exist on boot and start API server
-CMD ["sh", "-c", "mkdir -p /piston/data/packages /piston/data/jobs /piston/data/isolate && exec node src/index.js"]
+# 6. Ensure runtimes are installed on boot before starting API server
+CMD ["sh", "-c", "node /piston/cli/index.js install python || true; node /piston/cli/index.js install gcc || true; node /piston/cli/index.js install java || true; node /piston/cli/index.js install node || true; node /piston/cli/index.js install go || true; exec node src/index.js"]
