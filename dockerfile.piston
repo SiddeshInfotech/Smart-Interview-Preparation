@@ -1,0 +1,41 @@
+# Production-Ready Piston API Deployment on Render (Built from Source)
+FROM node:18-alpine
+
+# Install build tools and dependencies
+RUN apk add --no-cache git python3 make g++ bash cgroup-tools curl
+
+WORKDIR /piston
+
+# 1. Clone the official EngineerMan Piston repository from source
+RUN git clone https://github.com/engineer-man/piston.git .
+
+# 2. Install API & CLI dependencies
+WORKDIR /piston/api
+RUN npm install
+
+WORKDIR /piston/cli
+RUN npm install
+
+# 3. Create writable storage directories (/var/data and /tmp fallbacks)
+RUN mkdir -p /var/data/jobs /var/data/packages /var/data/piston /var/data/isolate \
+             /tmp/jobs /tmp/packages /tmp/piston /tmp/isolate && \
+    chmod -R 777 /var/data /tmp /piston
+
+# 4. Configure Environment Variables to use writable /tmp storage
+ENV PORT=2000
+ENV DISABLE_SECURITY=true
+ENV PISTON_JOBS_DIRECTORY=/tmp/jobs
+ENV PISTON_PACKAGES_DIRECTORY=/tmp/packages
+ENV PISTON_DATA_DIRECTORY=/tmp/piston
+ENV ISOLATE_HOME=/tmp/isolate
+
+# 5. Pre-install packages during build
+WORKDIR /piston/cli
+RUN node index.js install python gcc java node || true
+
+WORKDIR /piston/api
+
+EXPOSE 2000
+
+# 6. Auto-install runtimes on boot and start API server
+CMD ["sh", "-c", "(node /piston/cli/index.js install python gcc java node || true) & exec node src/index.js"]
