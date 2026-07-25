@@ -26,21 +26,22 @@ ENV DISABLE_SECURITY=true
 ENV PISTON_DATA_DIRECTORY=/piston/data
 ENV PISTON_PACKAGES_DIRECTORY=/piston/data/packages
 ENV PISTON_JOBS_DIRECTORY=/piston/data/jobs
+ENV DATA_DIRECTORY=/piston/data
+ENV PACKAGES_DIRECTORY=/piston/data/packages
+ENV JOBS_DIRECTORY=/piston/data/jobs
 ENV ISOLATE_HOME=/piston/data/isolate
 
-# 5. Pre-install packages during build
-#WORKDIR /piston/cli
-#RUN node index.js install python gcc java node go || true
-# Pre-install specific runtime versions into the container image
+# 5. Pre-install specific runtime packages into the container image
 WORKDIR /piston/cli
-RUN node index.js install python=3.10.0
-RUN node index.js install gcc=10.2.0
-RUN node index.js install java=15.0.2
-RUN node index.js install node=18.15.0
+RUN node index.js install python 3.10.0
+RUN node index.js install gcc 10.2.0
+RUN node index.js install java 15.0.2
+RUN node index.js install node 18.15.0
+RUN node index.js install go 1.16.2
 
 WORKDIR /piston/api
 
 EXPOSE 2000
 
 # 6. Ensure runtimes are installed on boot before starting API server
-CMD ["sh", "-c", "node /piston/cli/index.js install python gcc java node go || true; exec node src/index.js"]
+CMD ["sh", "-c", "for pkg in python gcc java node go; do node /piston/cli/index.js install $pkg || true; done; exec node src/index.js"]
