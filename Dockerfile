@@ -1,27 +1,38 @@
-# Production-Ready Piston API Deployment on Render
-FROM ghcr.io/engineer-man/piston:latest
+# Production-Ready Piston API Deployment on Render (Built from Source)
+FROM node:18-alpine
 
-# Disable isolate cgroup sandboxing (required for cloud environments like Render)
+# Install build tools, git, curl, and package extraction tools
+RUN apk add --no-cache git python3 make g++ bash curl tar xz gzip
+
+WORKDIR /piston
+
+# 1. Clone the official EngineerMan Piston repository from source
+RUN git clone https://github.com/engineer-man/piston.git .
+
+# 2. Install API & CLI dependencies
+WORKDIR /piston/api
+RUN npm install
+
+WORKDIR /piston/cli
+RUN npm install
+
+# 3. Environment Variables for Render (Disable isolate sandboxing & use writable /tmp)
 ENV PORT=2000
 ENV DISABLE_SECURITY=true
 ENV PISTON_DISABLE_SECURITY=true
 ENV DATA_DIRECTORY=/tmp/piston
 ENV PISTON_DATA_DIRECTORY=/tmp/piston
-ENV PACKAGES_DIRECTORY=/tmp/piston/packages
-ENV PISTON_PACKAGES_DIRECTORY=/tmp/piston/packages
 
-# Ensure writable data directories exist
+# 4. Create writable storage directories
 RUN mkdir -p /tmp/piston/packages /tmp/piston/jobs /tmp/piston/isolate && \
-    chmod -R 777 /tmp
+    chmod -R 777 /tmp /piston
 
-# Pre-install language runtimes using Piston's CLI runner into the image
-WORKDIR /piston/cli
-
-RUN node index.js install python 3.10.0 || node index.js install python || true
-RUN node index.js install gcc 10.2.0 || node index.js install gcc || true
-RUN node index.js install java 15.0.2 || node index.js install java || true
-RUN node index.js install node 18.15.0 || node index.js install node || true
-RUN node index.js install go 1.16.2 || node index.js install go || true
+# 5. Pre-install language runtimes during image build
+RUN node /piston/cli/index.js install python 3.10.0 || node /piston/cli/index.js install python || true
+RUN node /piston/cli/index.js install gcc 10.2.0 || node /piston/cli/index.js install gcc || true
+RUN node /piston/cli/index.js install java 15.0.2 || node /piston/cli/index.js install java || true
+RUN node /piston/cli/index.js install node 18.15.0 || node /piston/cli/index.js install node || true
+RUN node /piston/cli/index.js install go 1.16.2 || node /piston/cli/index.js install go || true
 
 WORKDIR /piston/api
 
