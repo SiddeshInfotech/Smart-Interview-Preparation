@@ -16,26 +16,25 @@ RUN npm install
 WORKDIR /piston/cli
 RUN npm install
 
-# 3. Create writable storage directories (/var/data and /tmp fallbacks)
-RUN mkdir -p /var/data/jobs /var/data/packages /var/data/piston /var/data/isolate \
-             /tmp/jobs /tmp/packages /tmp/piston /tmp/isolate && \
-    chmod -R 777 /var/data /tmp /piston
+# 3. Create writable storage directories
+RUN mkdir -p /piston/data/jobs /piston/data/packages /piston/data/isolate && \
+    chmod -R 777 /piston /tmp
 
-# 4. Configure Environment Variables to use writable /tmp storage
+# 4. Configure Environment Variables
 ENV PORT=2000
 ENV DISABLE_SECURITY=true
-ENV PISTON_JOBS_DIRECTORY=/tmp/jobs
-ENV PISTON_PACKAGES_DIRECTORY=/tmp/packages
-ENV PISTON_DATA_DIRECTORY=/tmp/piston
-ENV ISOLATE_HOME=/tmp/isolate
+ENV PISTON_DATA_DIRECTORY=/piston/data
+ENV PISTON_PACKAGES_DIRECTORY=/piston/data/packages
+ENV PISTON_JOBS_DIRECTORY=/piston/data/jobs
+ENV ISOLATE_HOME=/piston/data/isolate
 
 # 5. Pre-install packages during build
 WORKDIR /piston/cli
-RUN node index.js install python gcc java node || true
+RUN node index.js install python gcc java node go || true
 
 WORKDIR /piston/api
 
 EXPOSE 2000
 
-# 6. Auto-install runtimes on boot and start API server
-CMD ["sh", "-c", "(node /piston/cli/index.js install python gcc java node || true) & exec node src/index.js"]
+# 6. Ensure runtimes are installed on boot before starting API server
+CMD ["sh", "-c", "node /piston/cli/index.js install python gcc java node go || true; exec node src/index.js"]
