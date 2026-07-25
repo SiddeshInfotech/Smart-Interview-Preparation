@@ -1,7 +1,20 @@
 # Production-Ready Piston API Deployment on Render
 FROM ghcr.io/engineer-man/piston:latest
 
-# Pre-install language runtimes using Piston's CLI runner
+# Disable isolate cgroup sandboxing (required for cloud environments like Render)
+ENV PORT=2000
+ENV DISABLE_SECURITY=true
+ENV PISTON_DISABLE_SECURITY=true
+ENV DATA_DIRECTORY=/tmp/piston
+ENV PISTON_DATA_DIRECTORY=/tmp/piston
+ENV PACKAGES_DIRECTORY=/tmp/piston/packages
+ENV PISTON_PACKAGES_DIRECTORY=/tmp/piston/packages
+
+# Ensure writable data directories exist
+RUN mkdir -p /tmp/piston/packages /tmp/piston/jobs /tmp/piston/isolate && \
+    chmod -R 777 /tmp /piston
+
+# Pre-install language runtimes using Piston's CLI runner into the image
 WORKDIR /piston/cli
 
 RUN node index.js install python 3.10.0 || node index.js install python || true
