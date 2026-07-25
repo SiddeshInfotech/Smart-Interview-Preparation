@@ -12,7 +12,7 @@ ENV PISTON_PACKAGES_DIRECTORY=/tmp/piston/packages
 
 # Ensure writable data directories exist
 RUN mkdir -p /tmp/piston/packages /tmp/piston/jobs /tmp/piston/isolate && \
-    chmod -R 777 /tmp /piston
+    chmod -R 777 /tmp
 
 # Pre-install language runtimes using Piston's CLI runner into the image
 WORKDIR /piston/cli
@@ -26,3 +26,5 @@ RUN node index.js install go 1.16.2 || node index.js install go || true
 WORKDIR /piston/api
 
 EXPOSE 2000
+
+CMD ["node", "src/index.js"]
