@@ -29,8 +29,14 @@ ENV PISTON_JOBS_DIRECTORY=/piston/data/jobs
 ENV ISOLATE_HOME=/piston/data/isolate
 
 # 5. Pre-install packages during build
+#WORKDIR /piston/cli
+#RUN node index.js install python gcc java node go || true
+# Pre-install specific runtime versions into the container image
 WORKDIR /piston/cli
-RUN node index.js install python gcc java node go || true
+RUN node index.js install python=3.10.0
+RUN node index.js install gcc=10.2.0
+RUN node index.js install java=15.0.2
+RUN node index.js install node=18.15.0
 
 WORKDIR /piston/api
 
