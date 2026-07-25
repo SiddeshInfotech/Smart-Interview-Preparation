@@ -1,0 +1,10 @@
+FROM ghcr.io/engineer-man/piston:latest
+
+# Environment variables required for cloud sandboxing
+ENV PORT=2000
+ENV DISABLE_SECURITY=true
+
+# Pre-install compilers and interpreters during image build
+RUN /piston/cli install python=3.10.0 gcc=10.2.0 java=15.0.2 node=18.15.0
+
+EXPOSE 2000
