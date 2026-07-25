@@ -12,18 +12,18 @@ DEFAULT_PISTON_URL = getattr(
     os.environ.get("PISTON_API_URL", "https://emkc.org/api/v2/piston")
 ).rstrip("/")
 
-# Language map: canonical key -> Piston runtime language name
+# Language map: canonical key -> Piston runtime language name and default versions
 LANGUAGE_MAP = {
-    "python": {"piston_name": "python", "version": "*", "filename": "main.py"},
-    "py": {"piston_name": "python", "version": "*", "filename": "main.py"},
-    "c": {"piston_name": "c", "version": "*", "filename": "main.c"},
-    "cpp": {"piston_name": "c++", "version": "*", "filename": "main.cpp"},
-    "c++": {"piston_name": "c++", "version": "*", "filename": "main.cpp"},
-    "java": {"piston_name": "java", "version": "*", "filename": "Main.java"},
-    "js": {"piston_name": "javascript", "version": "*", "filename": "main.js"},
-    "javascript": {"piston_name": "javascript", "version": "*", "filename": "main.js"},
-    "node": {"piston_name": "javascript", "version": "*", "filename": "main.js"},
-    "go": {"piston_name": "go", "version": "*", "filename": "main.go"},
+    "python": {"piston_name": "python", "version": "3.10.0", "filename": "main.py"},
+    "py": {"piston_name": "python", "version": "3.10.0", "filename": "main.py"},
+    "c": {"piston_name": "c", "version": "10.2.0", "filename": "main.c"},
+    "cpp": {"piston_name": "c++", "version": "10.2.0", "filename": "main.cpp"},
+    "c++": {"piston_name": "c++", "version": "10.2.0", "filename": "main.cpp"},
+    "java": {"piston_name": "java", "version": "15.0.2", "filename": "Main.java"},
+    "js": {"piston_name": "javascript", "version": "18.15.0", "filename": "main.js"},
+    "javascript": {"piston_name": "javascript", "version": "18.15.0", "filename": "main.js"},
+    "node": {"piston_name": "javascript", "version": "18.15.0", "filename": "main.js"},
+    "go": {"piston_name": "go", "version": "1.16.2", "filename": "main.go"},
 }
 
 
@@ -92,13 +92,34 @@ class PistonExecutionService(AbstractExecutionProvider):
     def __init__(self, api_url: str = None):
         self.api_url = (api_url or DEFAULT_PISTON_URL).rstrip("/")
 
+    def resolve_version(self, piston_name: str, default_version: str) -> str:
+        """
+        Queries GET /api/v2/runtimes to find exact installed version string
+        for the given language name/alias, falling back to default_version.
+        """
+        try:
+            resp = requests.get(f"{self.api_url}/runtimes", timeout=3)
+            if resp.status_code == 200:
+                runtimes = resp.json()
+                for r in runtimes:
+                    if r.get("language") == piston_name or piston_name in r.get("aliases", []):
+                        return r.get("version") or default_version
+        except Exception:
+            pass
+        return default_version
+
     def get_piston_config(self, language: str) -> dict:
         lang_norm = (language or "python").lower().strip()
-        return LANGUAGE_MAP.get(lang_norm, {
+        config = LANGUAGE_MAP.get(lang_norm, {
             "piston_name": lang_norm,
-            "version": "*",
+            "version": "3.10.0",
             "filename": "main.txt"
-        })
+        }).copy()
+        
+        # Dynamically resolve installed version from Piston instance
+        resolved = self.resolve_version(config["piston_name"], config["version"])
+        config["version"] = resolved
+        return config
 
     def execute(self, language: str, code: str, stdin: str = "") -> dict:
         start_time = time.time()
@@ -121,6 +142,7 @@ class PistonExecutionService(AbstractExecutionProvider):
 
         payload = {
             "language": config["piston_name"],
+            "version": str(config["version"]),
             "files": [
                 {
                     "name": config["filename"],
@@ -131,9 +153,6 @@ class PistonExecutionService(AbstractExecutionProvider):
             "compile_timeout": 10000,
             "run_timeout": 5000
         }
-
-        if config.get("version") and config["version"] != "*":
-            payload["version"] = config["version"]
 
         try:
             response = requests.post(endpoint, json=payload, timeout=15)
