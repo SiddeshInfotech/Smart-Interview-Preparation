@@ -6,7 +6,12 @@ ENV DISABLE_SECURITY=true
 ENV PISTON_JOBS_DIRECTORY=/tmp/jobs
 ENV PISTON_PACKAGES_DIRECTORY=/tmp/packages
 
-# Change working directory to /tmp (writable mount on Render cloud containers)
-WORKDIR /tmp
+USER root
+
+# Pre-create writable directories and link isolate to /tmp
+RUN mkdir -p /tmp/isolate /tmp/jobs /tmp/packages /piston/api/src && \
+    chmod -R 777 /tmp /piston && \
+    ln -sf /tmp/isolate /piston/isolate && \
+    ln -sf /tmp/isolate /piston/api/src/isolate
 
 EXPOSE 2000
