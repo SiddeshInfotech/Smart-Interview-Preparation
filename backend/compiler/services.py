@@ -121,7 +121,6 @@ class PistonExecutionService(AbstractExecutionProvider):
 
         payload = {
             "language": config["piston_name"],
-            "version": config["version"],
             "files": [
                 {
                     "name": config["filename"],
@@ -132,6 +131,9 @@ class PistonExecutionService(AbstractExecutionProvider):
             "compile_timeout": 10000,
             "run_timeout": 5000
         }
+
+        if config.get("version") and config["version"] != "*":
+            payload["version"] = config["version"]
 
         try:
             response = requests.post(endpoint, json=payload, timeout=15)

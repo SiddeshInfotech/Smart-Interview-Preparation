@@ -29,9 +29,13 @@ ENV PISTON_PACKAGES_DIRECTORY=/var/data/packages
 ENV PISTON_DATA_DIRECTORY=/var/data/piston
 ENV ISOLATE_HOME=/var/data/isolate
 
+# 5. Pre-install default language runtimes (Python, GCC, Java, Node.js)
+WORKDIR /piston/cli
+RUN node src/index.js install python gcc java node || true
+
 WORKDIR /piston/api
 
 EXPOSE 2000
 
-# 5. Official Piston startup command
+# 6. Official Piston startup command
 CMD ["node", "src/index.js"]
