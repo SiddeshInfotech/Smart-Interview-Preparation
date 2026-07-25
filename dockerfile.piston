@@ -3,5 +3,10 @@ FROM ghcr.io/engineer-man/piston:latest
 # Environment variables required for cloud sandboxing on Render
 ENV PORT=2000
 ENV DISABLE_SECURITY=true
+ENV PISTON_JOBS_DIRECTORY=/tmp/jobs
+ENV PISTON_PACKAGES_DIRECTORY=/tmp/packages
+
+# Change working directory to /tmp (writable mount on Render cloud containers)
+WORKDIR /tmp
 
 EXPOSE 2000
