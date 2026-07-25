@@ -94,73 +94,50 @@ class PistonExecutionService(AbstractExecutionProvider):
 
     def __init__(self, api_url: str = None):
         self.api_url = (api_url or DEFAULT_PISTON_URL).rstrip("/")
+        # In‑memory cache for /runtimes endpoint
+        self._runtimes_cache = {"data": None, "timestamp": 0}
+        self._cache_ttl = getattr(settings, "PISTON_RUNTIMES_CACHE_TTL", 300)
 
-    def resolve_version(self, piston_name: str, default_version: str = "*") -> str:
-        """
-        Queries GET /api/v2/runtimes to find exact installed version string
-        for the given language name/alias, falling back to default_version (or wildcard '*').
-        Queries GET /api/v2/runtimes to find the installed version string for the given language
-        name/alias. Returns the first matching version if an exact match is not found.
-        Falls back to the provided default_version.
-        """
+    def _fetch_runtimes(self) -> list:
+        """Retrieve runtimes from Piston, using an in‑memory cache.
+        Returns a list of runtime dictionaries (or empty list on failure)."""
+        now = time.time()
+        if self._runtimes_cache["data"] and now - self._runtimes_cache["timestamp"] < self._cache_ttl:
+            return self._runtimes_cache["data"]
         try:
             resp = requests.get(f"{self.api_url}/runtimes", timeout=3)
-            if resp.status_code == 200:
-                runtimes = resp.json()
-                if isinstance(runtimes, list):
-                    pname = (piston_name or "").lower().strip()
-                    # First try exact language or alias match and return its version
-                    for r in runtimes:
-                        if not isinstance(r, dict):
-                            continue
-                        lang = (r.get("language") or "").lower().strip()
-                        aliases = [str(a).lower().strip() for a in r.get("aliases", []) if a]
-                        if lang == pname or pname in aliases:
-                            version = r.get("version")
-                            if version:
-                                return version
-                    # If no exact version, fallback to the first runtime entry for the language
-                    for r in runtimes:
-                        if not isinstance(r, dict):
-                            continue
-                        lang = (r.get("language") or "").lower().strip()
-                        if lang == pname:
-                            return r.get("version") or default_version
+            resp.raise_for_status()
+            runtimes = resp.json()
+            if isinstance(runtimes, list):
+                self._runtimes_cache = {"data": runtimes, "timestamp": now}
+                return runtimes
         except Exception:
             pass
-        return default_version
+        return []
+
+    def resolve_version(self, piston_name: str) -> str | None:
+        """Return the exact version string for *piston_name* if it exists on the server.
+        Returns ``None`` when no matching runtime is found."""
+        pname = (piston_name or "").lower().strip()
+        for r in self._fetch_runtimes():
+            if not isinstance(r, dict):
+                continue
+            lang = (r.get("language") or "").lower().strip()
+            aliases = [str(a).lower().strip() for a in r.get("aliases", []) if a]
+            if lang == pname or pname in aliases:
+                return r.get("version")
+        return None
 
     def get_piston_config(self, language: str) -> dict:
         lang_norm = (language or "python").lower().strip()
         config = LANGUAGE_MAP.get(lang_norm, {
             "piston_name": lang_norm,
-            "version": "*",
-            "filename": "main.txt"
+            "version": None,
+            "filename": "main.txt",
         }).copy()
-        # Dynamically resolve installed version from Piston instance
-        resolved = self.resolve_version(config["piston_name"], config["version"])
-        # If still wildcard, attempt to fetch a concrete version from runtimes
-        if resolved == "*":
-            try:
-                resp = requests.get(f"{self.api_url}/runtimes", timeout=3)
-                if resp.status_code == 200:
-                    runtimes = resp.json()
-                    if isinstance(runtimes, list):
-                        pname = config["piston_name"].lower()
-                        for r in runtimes:
-                            if not isinstance(r, dict):
-                                continue
-                            if (r.get("language") or "").lower() == pname:
-                                resolved = r.get("version") or "*"
-                                break
-            except Exception:
-                pass
-        # Final safeguard: if still '*', use a known default concrete version for Python
-        if resolved == "*" and config["piston_name"] == "python":
-            resolved = "3.10.0"
-        config["version"] = resolved
+        # Resolve the exact version from the Piston server; may be ``None``
+        config["version"] = self.resolve_version(config["piston_name"])
         return config
-
     def execute(self, language: str, code: str, stdin: str = "") -> dict:
         start_time = time.time()
 
@@ -178,6 +155,19 @@ class PistonExecutionService(AbstractExecutionProvider):
             }
 
         config = self.get_piston_config(language)
+        # If we could not resolve a version for the requested language, return a clear error.
+        if not config.get("version"):
+            return {
+                "status": "error",
+                "output": "",
+                "error": f"Requested runtime for {config['piston_name']} not available on Piston server.",
+                "stdout": "",
+                "stderr": f"Runtime {config['piston_name']} unavailable.",
+                "exit_code": -1,
+                "execution_time": 0.0,
+                "memory_used": None,
+                "solution": "Choose a supported language or contact the administrator to add the required runtime.",
+            }
         endpoint = f"{self.api_url}/execute"
 
         payload = {
