@@ -108,8 +108,10 @@ class PistonExecutionService(AbstractExecutionProvider):
             resp = requests.get(f"{self.api_url}/runtimes", timeout=3)
             resp.raise_for_status()
             runtimes = resp.json()
-            if isinstance(runtimes, list):
+            if isinstance(runtimes, list) and len(runtimes) > 0:
                 self._runtimes_cache = {"data": runtimes, "timestamp": now}
+                return runtimes
+            elif isinstance(runtimes, list):
                 return runtimes
         except Exception:
             pass
