@@ -109,7 +109,12 @@ INSTALLED_APPS = [
     "feedback",
     "admin_panel",
     "coding",
+    "compiler",
 ]
+
+# ========== PISTON API CONFIGURATION ==========
+PISTON_API_URL = os.environ.get("PISTON_API_URL", "https://emkc.org/api/v2/piston")
+
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

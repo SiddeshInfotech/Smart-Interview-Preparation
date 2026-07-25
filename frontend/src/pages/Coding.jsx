@@ -11,6 +11,7 @@ const mapLanguageKey = (langStr) => {
   if (lower === "c") return "c";
   if (lower === "c++" || lower === "cpp") return "cpp";
   if (lower === "java") return "java";
+  if (lower === "javascript" || lower === "js") return "javascript";
   return "python";
 };
 
@@ -23,12 +24,14 @@ const CodingAssessment = () => {
 
   const languageKey = mapLanguageKey(displayLanguage);
 
+  const [selectedLang, setSelectedLang] = useState(languageKey);
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
   const [solution, setSolution] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [execTime, setExecTime] = useState(null);
 
   // Active question tab ("problem", "hint", "solution")
   const [activeTab, setActiveTab] = useState("problem");
@@ -93,12 +96,30 @@ public class Main {
             System.out.println("No input provided. Type your input in the box below.");
         }
     }
-}`
+}`,
+
+    javascript: `// JavaScript (Node.js)
+const fs = require('fs');
+
+function main() {
+    try {
+        const input = fs.readFileSync(0, 'utf-8').trim();
+        if (input) {
+            console.log("Program Output:\\n" + input);
+        } else {
+            console.log("No input provided. Type your input in the box below.");
+        }
+    } catch (e) {
+        console.error("Error: " + e.message);
+    }
+}
+
+main();`
   };
 
   useEffect(() => {
-    setCode(templates[languageKey] || templates.python);
-  }, [languageKey]);
+    setCode(templates[selectedLang] || templates.python);
+  }, [selectedLang]);
 
   const handleQuit = () => {
     if (window.confirm("Are you sure you want to quit the coding assessment? Unsaved progress will be lost.")) {
@@ -121,24 +142,39 @@ public class Main {
     setError("");
     setSolution("");
     setIsRunning(true);
+    setExecTime(null);
 
     try {
-      const response = await api.post("/coding/run/", {
-        language: languageKey,
-        code: code,
-        input: overrideInput
-      });
+      let data;
+      try {
+        const response = await api.post("/compiler/execute/", {
+          language: selectedLang,
+          code: code,
+          stdin: overrideInput
+        });
+        data = response.data;
+      } catch (e) {
+        // Fallback to legacy endpoint
+        const response = await api.post("/coding/run/", {
+          language: selectedLang,
+          code: code,
+          input: overrideInput
+        });
+        data = response.data;
+      }
 
-      const data = response.data;
+      if (data.execution_time) {
+        setExecTime(data.execution_time);
+      }
 
       if (data.status === "success") {
         const inputDisplay = overrideInput.trim() ? `>>> ${overrideInput}\n` : "";
-        setOutput(inputDisplay + (data.output || "Program executed successfully with no output."));
+        setOutput(inputDisplay + (data.output || data.stdout || "Program executed successfully with no output."));
         setError("");
         setSolution("");
       } else {
         setOutput("");
-        setError(data.error || data.output || "Execution Error");
+        setError(data.error || data.stderr || data.output || "Execution Error");
         setSolution(data.solution || "");
       }
     } catch (err) {
@@ -146,7 +182,7 @@ public class Main {
       setOutput("");
       const errMsg = err.response?.data?.error || err.message || "Unable to connect to execution server.";
       setError(errMsg);
-      setSolution("Ensure the Django backend (port 8000) and Code Executor service (port 8001) are running.");
+      setSolution("Ensure the Django backend service is running.");
     } finally {
       setIsRunning(false);
     }
@@ -160,7 +196,32 @@ public class Main {
       <header className="coding-header">
         <div className="coding-header-left">
           <h2 className="coding-header-title">💻 Smart Coding Assessment</h2>
-          <span className="lang-badge">Language: {displayLanguage}</span>
+          <select
+            value={selectedLang}
+            onChange={(e) => setSelectedLang(e.target.value)}
+            className="lang-select-dropdown"
+            style={{
+              padding: "6px 12px",
+              borderRadius: "6px",
+              border: "1px solid #cbd5e1",
+              backgroundColor: "#ffffff",
+              color: "#0f172a",
+              fontWeight: "600",
+              cursor: "pointer",
+              marginLeft: "12px"
+            }}
+          >
+            <option value="python">Python 3</option>
+            <option value="c">C (GCC)</option>
+            <option value="cpp">C++ (GCC)</option>
+            <option value="java">Java</option>
+            <option value="javascript">JavaScript (Node.js)</option>
+          </select>
+          {execTime !== null && (
+            <span style={{ fontSize: "13px", color: "#059669", fontWeight: "600", marginLeft: "12px" }}>
+              ⚡ {execTime}s
+            </span>
+          )}
         </div>
         <div className="coding-header-right">
           <button type="button" className="quit-btn" onClick={handleQuit}>
