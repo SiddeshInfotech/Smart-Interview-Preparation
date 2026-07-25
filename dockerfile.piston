@@ -4,7 +4,7 @@ FROM ghcr.io/engineer-man/piston:latest
 ENV PORT=2000
 ENV DISABLE_SECURITY=true
 
-# Pre-install compilers and interpreters during image build
-RUN /piston/cli install python=3.10.0 gcc=10.2.0 java=15.0.2 node=18.15.0
+# Pre-install compilers and interpreters during image build using Node CLI
+RUN node /piston/repo/cli/index.js install python gcc java node
 
 EXPOSE 2000
