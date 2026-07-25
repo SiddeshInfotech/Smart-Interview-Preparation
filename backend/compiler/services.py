@@ -99,6 +99,9 @@ class PistonExecutionService(AbstractExecutionProvider):
         """
         Queries GET /api/v2/runtimes to find exact installed version string
         for the given language name/alias, falling back to default_version (or wildcard '*').
+        Queries GET /api/v2/runtimes to find the installed version string for the given language
+        name/alias. Returns the first matching version if an exact match is not found.
+        Falls back to the provided default_version.
         """
         try:
             resp = requests.get(f"{self.api_url}/runtimes", timeout=3)
@@ -106,16 +109,26 @@ class PistonExecutionService(AbstractExecutionProvider):
                 runtimes = resp.json()
                 if isinstance(runtimes, list):
                     pname = (piston_name or "").lower().strip()
+                    # First try exact language or alias match and return its version
                     for r in runtimes:
                         if not isinstance(r, dict):
                             continue
                         lang = (r.get("language") or "").lower().strip()
                         aliases = [str(a).lower().strip() for a in r.get("aliases", []) if a]
                         if lang == pname or pname in aliases:
+                            version = r.get("version")
+                            if version:
+                                return version
+                    # If no exact version, fallback to the first runtime entry for the language
+                    for r in runtimes:
+                        if not isinstance(r, dict):
+                            continue
+                        lang = (r.get("language") or "").lower().strip()
+                        if lang == pname:
                             return r.get("version") or default_version
         except Exception:
             pass
-        return default_version if default_version and default_version != "3.10.0" else "*"
+        return default_version
 
     def get_piston_config(self, language: str) -> dict:
         lang_norm = (language or "python").lower().strip()
@@ -124,9 +137,27 @@ class PistonExecutionService(AbstractExecutionProvider):
             "version": "*",
             "filename": "main.txt"
         }).copy()
-        
         # Dynamically resolve installed version from Piston instance
         resolved = self.resolve_version(config["piston_name"], config["version"])
+        # If still wildcard, attempt to fetch a concrete version from runtimes
+        if resolved == "*":
+            try:
+                resp = requests.get(f"{self.api_url}/runtimes", timeout=3)
+                if resp.status_code == 200:
+                    runtimes = resp.json()
+                    if isinstance(runtimes, list):
+                        pname = config["piston_name"].lower()
+                        for r in runtimes:
+                            if not isinstance(r, dict):
+                                continue
+                            if (r.get("language") or "").lower() == pname:
+                                resolved = r.get("version") or "*"
+                                break
+            except Exception:
+                pass
+        # Final safeguard: if still '*', use a known default concrete version for Python
+        if resolved == "*" and config["piston_name"] == "python":
+            resolved = "3.10.0"
         config["version"] = resolved
         return config
 
