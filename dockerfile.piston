@@ -33,6 +33,10 @@ RUN echo "===== CLI PACKAGE =====" \
 RUN echo "===== API PACKAGE =====" \
  && cat api/package.json
 
+RUN curl -L https://github.com/engineer-man/piston/releases/download/pkgs/index
+
+RUN curl -I https://github.com/engineer-man/piston/releases/download/pkgs/index
+
 # ------------------------------------------------------------
 # Install API dependencies
 # ------------------------------------------------------------
