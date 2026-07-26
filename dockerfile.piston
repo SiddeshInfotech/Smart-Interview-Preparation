@@ -16,11 +16,11 @@ RUN apk add --no-cache \
     unzip
 
 # ------------------------------------------------------------
-# Clone official Piston repository
+# Copy local Piston server from repository
 # ------------------------------------------------------------
 WORKDIR /opt
 
-RUN git clone https://github.com/engineer-man/piston.git
+COPY piston-server /opt/piston
 
 WORKDIR /opt/piston
 

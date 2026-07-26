@@ -2,21 +2,27 @@ FROM ghcr.io/engineer-man/piston:latest
 
 USER root
 
+# Create runtime directory
 RUN mkdir -p /piston/packages
 
-COPY packages/ /piston/packages/
+# Copy pre-built runtimes
+COPY build/packages/ /piston/packages/
 
-RUN rm -rf \
-    /piston/packages/.gitignore \
-    /piston/packages/README.MD \
-    /piston/packages/README.md \
-    /piston/packages/CONTRIBUTING.MD \
-    /piston/packages/Makefile \
-    /piston/packages/test.sh \
-    /piston/packages/init
+# Remove any accidental metadata files if present
+RUN find /piston/packages -maxdepth 1 \
+    \( \
+        -name ".gitignore" -o \
+        -name "README.md" -o \
+        -name "README.MD" -o \
+        -name "CONTRIBUTING.MD" -o \
+        -name "Makefile" -o \
+        -name "test.sh" -o \
+        -name "init" \
+    \) -exec rm -rf {} +
 
+# Fix permissions
 RUN chown -R piston:piston /piston
 
 EXPOSE 2000
 
-CMD ["/piston_api/src/docker-entrypoint.sh"]
+ENTRYPOINT ["/piston_api/src/docker-entrypoint.sh"]
