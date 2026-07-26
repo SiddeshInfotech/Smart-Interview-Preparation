@@ -22,6 +22,10 @@ WORKDIR /opt
 
 RUN git clone https://github.com/engineer-man/piston.git
 
+RUN echo "===== ROOT PACKAGE =====" && cat package.json
+RUN echo "===== CLI PACKAGE =====" && cat cli/package.json
+RUN echo "===== API PACKAGE =====" && cat api/package.json
+
 # ------------------------------------------------------------
 # Install API dependencies
 # ------------------------------------------------------------
