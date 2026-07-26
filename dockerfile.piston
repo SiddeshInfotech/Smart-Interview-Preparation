@@ -23,10 +23,15 @@ RUN mkdir -p /var/data/piston /var/data/jobs /var/data/packages /var/data/isolat
     && chmod -R 777 /var/data /piston
 
 RUN node /piston/cli/index.js install python
+RUN ls -R /var/data/piston
 RUN node /piston/cli/index.js install gcc
+RUN ls -R /var/data/piston
 RUN node /piston/cli/index.js install java
+RUN ls -R /var/data/piston
 RUN node /piston/cli/index.js install node
+RUN ls -R /var/data/piston
 RUN node /piston/cli/index.js install go
+RUN ls -R /var/data/piston
 
 RUN ls -R /var/data || true
 
