@@ -59,6 +59,7 @@ RUN chmod -R 777 /var/data
 # -----------------------------
 WORKDIR /opt/piston
 
+node cli/index.js repo add pkgs https://github.com/engineer-man/piston.git
 RUN node cli/index.js install python || true
 RUN node cli/index.js install gcc || true
 RUN node cli/index.js install java || true
