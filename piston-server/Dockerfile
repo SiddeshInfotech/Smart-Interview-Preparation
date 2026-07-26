@@ -6,7 +6,7 @@ USER root
 RUN mkdir -p /piston/packages
 
 # Copy pre-built runtimes
-COPY build/packages/ /piston/packages/
+COPY build/ /piston/packages/
 
 # Remove any accidental metadata files if present
 RUN find /piston/packages -maxdepth 1 \
