@@ -12,6 +12,8 @@ import {
   UserRound,
   Phone,
   CheckCircle,
+  ArrowRight,
+  AlertCircle
 } from "lucide-react";
 import "../styles/Register.css";
 import {
@@ -142,7 +144,6 @@ export default function Register() {
         }
       } catch (loginErr) {
         console.error("Auto-login failed:", loginErr);
-        // Fallback to login page if auto-login fails for any reason
         navigate("/login");
       }
     } catch (err) {
@@ -208,11 +209,12 @@ export default function Register() {
   return (
     <div className="register-shell">
       <div className="register-card">
-        <h2 className="register-title">Create Account</h2>
+        <h2 className="register-title">Create Your Account</h2>
         <p className="register-subtext">
-          Join over 50,000 professionals using AI-driven behavioral analysis.
+          Join over 50,000 candidates and engineering interviewers.
         </p>
 
+        {/* ROLE TOGGLE */}
         <div className="role-toggle" role="tablist" aria-label="Registration Role">
           <button
             type="button"
@@ -463,13 +465,23 @@ export default function Register() {
           {/* Form Level Error Message */}
           {error && (
             <div className="field-error" style={{ whiteSpace: "pre-line" }} role="alert">
-              {error}
+              <AlertCircle size={16} className="error-icon" />
+              <div>{error}</div>
             </div>
           )}
 
           {/* Submit Button */}
-          <button className="btn-primary btn-block" type="submit" disabled={loading}>
-            {loading ? "Creating Account…" : "Start My Journey"}
+          <button className="primary-btn btn-block" type="submit" disabled={loading}>
+            {loading ? (
+              <>
+                <span className="spinner"></span>
+                Creating Account…
+              </>
+            ) : (
+              <>
+                Start My Journey <ArrowRight size={17} />
+              </>
+            )}
           </button>
         </form>
 
