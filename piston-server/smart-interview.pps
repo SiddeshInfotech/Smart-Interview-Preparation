@@ -1,0 +1,7 @@
+#!/usr/bin/env -S piston ppman spec
+
+# Smart Interview Portal runtimes
+
+python 3.12.0
+gcc 10.2.0
+java 15.0.2

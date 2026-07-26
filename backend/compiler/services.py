@@ -14,14 +14,15 @@ DEFAULT_PISTON_URL = getattr(
 
 # Language map: canonical key -> Piston runtime language name and default versions
 LANGUAGE_MAP = {
-    "python": {"piston_name": "python", "version": "*", "filename": "main.py"},
-    "py": {"piston_name": "python", "version": "*", "filename": "main.py"},
-    "python3": {"piston_name": "python", "version": "*", "filename": "main.py"},
-    "py3": {"piston_name": "python", "version": "*", "filename": "main.py"},
-    "c": {"piston_name": "c", "version": "*", "filename": "main.c"},
-    "cpp": {"piston_name": "c++", "version": "*", "filename": "main.cpp"},
-    "c++": {"piston_name": "c++", "version": "*", "filename": "main.cpp"},
-    "java": {"piston_name": "java", "version": "*", "filename": "Main.java"},
+    "python": {"piston_name": "python", "version": "3.12.0", "filename": "main.py"},
+    "py": {"piston_name": "python", "version": "3.12.0", "filename": "main.py"},
+    "python3": {"piston_name": "python", "version": "3.12.0", "filename": "main.py"},
+    "py3": {"piston_name": "python", "version": "3.12.0", "filename": "main.py"},
+    "c": {"piston_name": "gcc", "version": "10.2.0", "filename": "main.c"},
+    "gcc": {"piston_name": "gcc", "version": "10.2.0", "filename": "main.c"},
+    "cpp": {"piston_name": "gcc", "version": "10.2.0", "filename": "main.cpp"},
+    "c++": {"piston_name": "gcc", "version": "10.2.0", "filename": "main.cpp"},
+    "java": {"piston_name": "java", "version": "15.0.2", "filename": "Main.java"},
     "js": {"piston_name": "javascript", "version": "*", "filename": "main.js"},
     "javascript": {"piston_name": "javascript", "version": "*", "filename": "main.js"},
     "node": {"piston_name": "javascript", "version": "*", "filename": "main.js"},
@@ -117,28 +118,47 @@ class PistonExecutionService(AbstractExecutionProvider):
             pass
         return []
 
-    def resolve_version(self, piston_name: str) -> str | None:
+    def resolve_version(self, piston_name: str, target_version: str = "*") -> str | None:
         """Return the exact version string for *piston_name* if it exists on the server.
-        Returns ``None`` when no matching runtime is found."""
+        Matches target_version if specified, or defaults to installed version."""
         pname = (piston_name or "").lower().strip()
-        for r in self._fetch_runtimes():
+        tver = (target_version or "*").strip()
+        runtimes = self._fetch_runtimes()
+        
+        # 1. Look for exact language and exact target version match
+        for r in runtimes:
+            if not isinstance(r, dict):
+                continue
+            lang = (r.get("language") or "").lower().strip()
+            aliases = [str(a).lower().strip() for a in r.get("aliases", []) if a]
+            ver = (r.get("version") or "").strip()
+
+            if (lang == pname or pname in aliases):
+                if tver != "*" and ver == tver:
+                    return ver
+
+        # 2. Fallback to any installed version for language if target_version is '*' or exact not found
+        for r in runtimes:
             if not isinstance(r, dict):
                 continue
             lang = (r.get("language") or "").lower().strip()
             aliases = [str(a).lower().strip() for a in r.get("aliases", []) if a]
             if lang == pname or pname in aliases:
                 return r.get("version")
-        return None
+
+        # 3. If offline/uncached, fallback to configured target_version if not wildcard
+        return tver if tver != "*" else None
 
     def get_piston_config(self, language: str) -> dict:
         lang_norm = (language or "python").lower().strip()
         config = LANGUAGE_MAP.get(lang_norm, {
             "piston_name": lang_norm,
-            "version": None,
+            "version": "*",
             "filename": "main.txt",
         }).copy()
-        # Resolve the exact version from the Piston server; may be ``None``
-        config["version"] = self.resolve_version(config["piston_name"])
+        target_version = config.get("version", "*")
+        resolved = self.resolve_version(config["piston_name"], target_version)
+        config["version"] = resolved or target_version
         return config
     def execute(self, language: str, code: str, stdin: str = "") -> dict:
         start_time = time.time()

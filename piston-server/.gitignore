@@ -1,0 +1,9 @@
+data/
+var/
+build/
+build;*/
+repo/
+packages/
+.piston_env
+node_modules/
+.vscode/

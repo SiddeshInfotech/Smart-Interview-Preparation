@@ -87,15 +87,15 @@ def execution_history_view(request):
 def runtimes_view(request):
     """
     GET /api/compiler/runtimes/
-    Returns supported languages and aliases for the compiler module.
+    Returns supported languages, versions, and aliases for the compiler module.
     """
     supported_languages = [
-        {"name": "Python 3", "key": "python", "piston_alias": "python"},
-        {"name": "C (GCC)", "key": "c", "piston_alias": "c"},
-        {"name": "C++ (GCC)", "key": "cpp", "piston_alias": "c++"},
-        {"name": "Java", "key": "java", "piston_alias": "java"},
-        {"name": "JavaScript (Node.js)", "key": "javascript", "piston_alias": "javascript"},
-        {"name": "Go", "key": "go", "piston_alias": "go"}
+        {"name": "Python 3.12", "key": "python", "version": "3.12.0", "piston_alias": "python"},
+        {"name": "C (GCC 10.2)", "key": "c", "version": "10.2.0", "piston_alias": "gcc"},
+        {"name": "C++ (GCC 10.2)", "key": "cpp", "version": "10.2.0", "piston_alias": "gcc"},
+        {"name": "Java 15", "key": "java", "version": "15.0.2", "piston_alias": "java"},
+        {"name": "JavaScript (Node.js)", "key": "javascript", "version": "*", "piston_alias": "javascript"},
+        {"name": "Go", "key": "go", "version": "*", "piston_alias": "go"}
     ]
     return Response({
         "success": True,
