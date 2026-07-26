@@ -4,12 +4,13 @@ import requests
 from django.conf import settings
 
 # Default Piston API URL fallback order:
-# 1. Environment variable PISTON_API_URL
-# 2. Public Piston instance (or local container)
+# 1. Django settings.PISTON_API_URL
+# 2. Environment variable PISTON_API_URL
+# 3. Local Piston server (http://localhost:2000/api/v2)
 DEFAULT_PISTON_URL = getattr(
     settings,
     "PISTON_API_URL",
-    os.environ.get("PISTON_API_URL", "https://emkc.org/api/v2/piston")
+    os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
 ).rstrip("/")
 
 # Language map: canonical key -> Piston runtime language name and default versions
@@ -203,7 +204,7 @@ class PistonExecutionService(AbstractExecutionProvider):
             ],
             "stdin": stdin or "",
             "compile_timeout": 10000,
-            "run_timeout": 5000
+            "run_timeout": 3000
         }
 
         try:

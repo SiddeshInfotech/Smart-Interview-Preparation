@@ -195,3 +195,6 @@ USE_TZ = True
 
 # ========== DEFAULT PRIMARY KEY FIELD TYPE ==========
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ========== PISTON CODE EXECUTION ENGINE ==========
+PISTON_API_URL = os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
