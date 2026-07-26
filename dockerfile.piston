@@ -1,40 +1,87 @@
 FROM node:18-alpine
 
-RUN apk add --no-cache git python3 make g++ bash curl tar xz gzip
+# -----------------------------
+# Install system dependencies
+# -----------------------------
+RUN apk add --no-cache \
+    git \
+    bash \
+    python3 \
+    make \
+    g++ \
+    curl \
+    tar \
+    xz \
+    gzip \
+    unzip
 
-WORKDIR /piston
-RUN git clone https://github.com/engineer-man/piston.git .
+# -----------------------------
+# Clone Piston
+# -----------------------------
+WORKDIR /opt
 
-WORKDIR /piston/api
+RUN git clone https://github.com/engineer-man/piston.git
+
+# -----------------------------
+# Install dependencies
+# -----------------------------
+WORKDIR /opt/piston/api
 RUN npm install
 
-WORKDIR /piston/cli
+WORKDIR /opt/piston/cli
 RUN npm install
 
+# -----------------------------
+# Environment
+# -----------------------------
 ENV PORT=2000
+
 ENV DISABLE_SECURITY=true
 ENV PISTON_DISABLE_SECURITY=true
+
 ENV PISTON_DATA_DIRECTORY=/var/data/piston
-ENV PISTON_JOBS_DIRECTORY=/var/data/jobs
-ENV PISTON_PACKAGES_DIRECTORY=/var/data/packages
-ENV ISOLATE_HOME=/var/data/isolate
+ENV PISTON_PACKAGES_DIRECTORY=/var/data/piston/packages
+ENV PISTON_JOBS_DIRECTORY=/var/data/piston/jobs
+ENV ISOLATE_HOME=/var/data/piston/isolate
 
-RUN mkdir -p /var/data/piston /var/data/jobs /var/data/packages /var/data/isolate \
-    && chmod -R 777 /var/data /piston
+# -----------------------------
+# Writable directories
+# -----------------------------
+RUN mkdir -p \
+    /var/data/piston/packages \
+    /var/data/piston/jobs \
+    /var/data/piston/isolate
 
-RUN node /piston/cli/index.js install python
-RUN ls -R /var/data/piston
-RUN node /piston/cli/index.js install gcc
-RUN ls -R /var/data/piston
-RUN node /piston/cli/index.js install java
-RUN ls -R /var/data/piston
-RUN node /piston/cli/index.js install node
-RUN ls -R /var/data/piston
-RUN node /piston/cli/index.js install go
-RUN ls -R /var/data/piston
+RUN chmod -R 777 /var/data
 
-RUN ls -R /var/data || true
+# -----------------------------
+# Install runtimes
+# -----------------------------
+WORKDIR /opt/piston
 
-WORKDIR /piston/api
+RUN node cli/index.js install python || true
+RUN node cli/index.js install gcc || true
+RUN node cli/index.js install java || true
+RUN node cli/index.js install node || true
+RUN node cli/index.js install go || true
+
+# -----------------------------
+# Debug
+# -----------------------------
+RUN echo "===== DATA ====="
+RUN find /var/data -maxdepth 4
+
+RUN echo "===== PACKAGES ====="
+RUN find /var/data/piston/packages -maxdepth 4 || true
+
+RUN echo "===== RUNTIMES ====="
+RUN node cli/index.js list || true
+
+# -----------------------------
+# API
+# -----------------------------
+WORKDIR /opt/piston/api
+
 EXPOSE 2000
-CMD ["node", "src/index.js"]
+
+CMD ["node","src/index.js"]
