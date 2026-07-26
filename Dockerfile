@@ -1,43 +1,120 @@
-# Production-Ready Piston API Deployment on Render (Built from Source)
 FROM node:18-alpine
 
-# Install build tools, git, curl, and package extraction tools
-RUN apk add --no-cache git python3 make g++ bash curl tar xz gzip
+# ------------------------------------------------------------
+# Install required packages
+# ------------------------------------------------------------
+RUN apk add --no-cache \
+    git \
+    bash \
+    python3 \
+    make \
+    g++ \
+    curl \
+    tar \
+    xz \
+    gzip \
+    unzip
 
-WORKDIR /piston
+# ------------------------------------------------------------
+# Clone official Piston repository
+# ------------------------------------------------------------
+WORKDIR /opt
 
-# 1. Clone the official EngineerMan Piston repository from source
-RUN git clone https://github.com/engineer-man/piston.git .
+RUN git clone https://github.com/engineer-man/piston.git
 
-# 2. Install API & CLI dependencies
-WORKDIR /piston/api
+# ------------------------------------------------------------
+# Install API dependencies
+# ------------------------------------------------------------
+WORKDIR /opt/piston/api
 RUN npm install
 
-WORKDIR /piston/cli
+# ------------------------------------------------------------
+# Install CLI dependencies
+# ------------------------------------------------------------
+WORKDIR /opt/piston/cli
 RUN npm install
 
-# 3. Environment Variables for Render (Disable isolate sandboxing & use unified data directory)
+# ------------------------------------------------------------
+# Environment Variables
+# ------------------------------------------------------------
 ENV PORT=2000
+
 ENV DISABLE_SECURITY=true
 ENV PISTON_DISABLE_SECURITY=true
-ENV DATA_DIRECTORY=/piston/data
-ENV PISTON_DATA_DIRECTORY=/piston/data
 
-# 4. Create data directories and symlink /var/data/piston -> /piston/data
-RUN mkdir -p /piston/data/packages /piston/data/jobs /piston/data/isolate /var/data && \
-    ln -sf /piston/data /var/data/piston && \
-    chmod -R 777 /piston /var/data
+ENV PISTON_DATA_DIRECTORY=/var/data/piston
+ENV PISTON_PACKAGES_DIRECTORY=/var/data/piston/packages
+ENV PISTON_JOBS_DIRECTORY=/var/data/piston/jobs
+ENV ISOLATE_HOME=/var/data/piston/isolate
 
-# 5. Pre-install language runtimes during image build
-RUN node /piston/cli/index.js install python || true
-RUN node /piston/cli/index.js install gcc || true
-RUN node /piston/cli/index.js install java || true
-RUN node /piston/cli/index.js install node || true
-RUN node /piston/cli/index.js install go || true
+# ------------------------------------------------------------
+# Create writable directories
+# ------------------------------------------------------------
+RUN mkdir -p \
+    /var/data/piston/packages \
+    /var/data/piston/jobs \
+    /var/data/piston/isolate
 
-WORKDIR /piston/api
+RUN chmod -R 777 /var/data
+
+# ------------------------------------------------------------
+# Switch to project root
+# ------------------------------------------------------------
+WORKDIR /opt/piston
+
+# ------------------------------------------------------------
+# DEBUG INFORMATION
+# ------------------------------------------------------------
+RUN echo "========== CLI HELP =========="
+RUN node cli/index.js --help || true
+
+RUN echo "========== PPMAN HELP =========="
+RUN node cli/index.js ppman --help || true
+
+RUN echo "========== CURRENT CONFIG =========="
+RUN find . -iname "*config*" | head -20
+
+RUN echo "========== PACKAGE URL =========="
+RUN grep -R "pkgs" -n . || true
+
+# ------------------------------------------------------------
+# INSTALL RUNTIMES (new CLI)
+# ------------------------------------------------------------
+RUN echo "========== INSTALL PYTHON =========="
+RUN node cli/index.js ppman install python || true
+
+RUN echo "========== INSTALL GCC =========="
+RUN node cli/index.js ppman install gcc || true
+
+RUN echo "========== INSTALL JAVA =========="
+RUN node cli/index.js ppman install java || true
+
+RUN echo "========== INSTALL NODE =========="
+RUN node cli/index.js ppman install node || true
+
+RUN echo "========== INSTALL GO =========="
+RUN node cli/index.js ppman install go || true
+
+# ------------------------------------------------------------
+# VERIFY INSTALLED PACKAGES
+# ------------------------------------------------------------
+RUN echo "========== PACKAGE DIRECTORY =========="
+RUN find /var/data/piston/packages -maxdepth 5 || true
+
+RUN echo "========== DATA DIRECTORY =========="
+RUN find /var/data -maxdepth 5 || true
+
+RUN echo "========== CLI LIST =========="
+RUN node cli/index.js list || true
+
+RUN echo "========== PPMAN LIST =========="
+RUN node cli/index.js ppman list || true
+
+# ------------------------------------------------------------
+# Start API
+# ------------------------------------------------------------
+WORKDIR /opt/piston/api
 
 EXPOSE 2000
 
-# 6. Ensure runtimes are installed on boot before starting API server
-CMD ["sh", "-c", "node /piston/cli/index.js install python || true; node /piston/cli/index.js install gcc || true; node /piston/cli/index.js install java || true; node /piston/cli/index.js install node || true; node /piston/cli/index.js install go || true; exec node src/index.js"]
+CMD ["node","src/index.js"]

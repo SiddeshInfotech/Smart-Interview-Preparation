@@ -1,8 +1,8 @@
 FROM node:18-alpine
 
-# -----------------------------
-# Install system dependencies
-# -----------------------------
+# ------------------------------------------------------------
+# Install required packages
+# ------------------------------------------------------------
 RUN apk add --no-cache \
     git \
     bash \
@@ -15,25 +15,28 @@ RUN apk add --no-cache \
     gzip \
     unzip
 
-# -----------------------------
-# Clone Piston
-# -----------------------------
+# ------------------------------------------------------------
+# Clone official Piston repository
+# ------------------------------------------------------------
 WORKDIR /opt
 
 RUN git clone https://github.com/engineer-man/piston.git
 
-# -----------------------------
-# Install dependencies
-# -----------------------------
+# ------------------------------------------------------------
+# Install API dependencies
+# ------------------------------------------------------------
 WORKDIR /opt/piston/api
 RUN npm install
 
+# ------------------------------------------------------------
+# Install CLI dependencies
+# ------------------------------------------------------------
 WORKDIR /opt/piston/cli
 RUN npm install
 
-# -----------------------------
-# Environment
-# -----------------------------
+# ------------------------------------------------------------
+# Environment Variables
+# ------------------------------------------------------------
 ENV PORT=2000
 
 ENV DISABLE_SECURITY=true
@@ -44,9 +47,9 @@ ENV PISTON_PACKAGES_DIRECTORY=/var/data/piston/packages
 ENV PISTON_JOBS_DIRECTORY=/var/data/piston/jobs
 ENV ISOLATE_HOME=/var/data/piston/isolate
 
-# -----------------------------
-# Writable directories
-# -----------------------------
+# ------------------------------------------------------------
+# Create writable directories
+# ------------------------------------------------------------
 RUN mkdir -p \
     /var/data/piston/packages \
     /var/data/piston/jobs \
@@ -54,33 +57,62 @@ RUN mkdir -p \
 
 RUN chmod -R 777 /var/data
 
-# -----------------------------
-# Install runtimes
-# -----------------------------
+# ------------------------------------------------------------
+# Switch to project root
+# ------------------------------------------------------------
 WORKDIR /opt/piston
 
-RUN node cli/index.js repo add pkgs https://github.com/engineer-man/piston.git
-RUN node cli/index.js install python || true
-RUN node cli/index.js install gcc || true
-RUN node cli/index.js install java || true
-RUN node cli/index.js install node || true
-RUN node cli/index.js install go || true
+# ------------------------------------------------------------
+# DEBUG INFORMATION
+# ------------------------------------------------------------
+RUN echo "========== CLI HELP =========="
+RUN node cli/index.js --help || true
 
-# -----------------------------
-# Debug
-# -----------------------------
-RUN echo "===== DATA ====="
-RUN find /var/data -maxdepth 4
+RUN echo "========== PPMAN HELP =========="
+RUN node cli/index.js ppman --help || true
 
-RUN echo "===== PACKAGES ====="
-RUN find /var/data/piston/packages -maxdepth 4 || true
+RUN echo "========== CURRENT CONFIG =========="
+RUN find . -iname "*config*" | head -20
 
-RUN echo "===== RUNTIMES ====="
+RUN echo "========== PACKAGE URL =========="
+RUN grep -R "pkgs" -n . || true
+
+# ------------------------------------------------------------
+# INSTALL RUNTIMES (new CLI)
+# ------------------------------------------------------------
+RUN echo "========== INSTALL PYTHON =========="
+RUN node cli/index.js ppman install python || true
+
+RUN echo "========== INSTALL GCC =========="
+RUN node cli/index.js ppman install gcc || true
+
+RUN echo "========== INSTALL JAVA =========="
+RUN node cli/index.js ppman install java || true
+
+RUN echo "========== INSTALL NODE =========="
+RUN node cli/index.js ppman install node || true
+
+RUN echo "========== INSTALL GO =========="
+RUN node cli/index.js ppman install go || true
+
+# ------------------------------------------------------------
+# VERIFY INSTALLED PACKAGES
+# ------------------------------------------------------------
+RUN echo "========== PACKAGE DIRECTORY =========="
+RUN find /var/data/piston/packages -maxdepth 5 || true
+
+RUN echo "========== DATA DIRECTORY =========="
+RUN find /var/data -maxdepth 5 || true
+
+RUN echo "========== CLI LIST =========="
 RUN node cli/index.js list || true
 
-# -----------------------------
-# API
-# -----------------------------
+RUN echo "========== PPMAN LIST =========="
+RUN node cli/index.js ppman list || true
+
+# ------------------------------------------------------------
+# Start API
+# ------------------------------------------------------------
 WORKDIR /opt/piston/api
 
 EXPOSE 2000
