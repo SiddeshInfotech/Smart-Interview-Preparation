@@ -21,7 +21,7 @@ LANGUAGE_MAP = {
     "py3": {"piston_name": "python", "version": "3.12.0", "filename": "main.py"},
     "c": {"piston_name": "gcc", "version": "10.2.0", "filename": "main.c"},
     "gcc": {"piston_name": "gcc", "version": "10.2.0", "filename": "main.c"},
-    "cpp": {"piston_name": "gcc", "version": "10.2.0", "filename": "main.cpp"},
+    "cpp": {"piston_name": "c++", "version": "10.2.0", "filename": "main.cpp"},
     "c++": {"piston_name": "gcc", "version": "10.2.0", "filename": "main.cpp"},
     "java": {"piston_name": "java", "version": "15.0.2", "filename": "Main.java"},
     "js": {"piston_name": "javascript", "version": "*", "filename": "main.js"},
