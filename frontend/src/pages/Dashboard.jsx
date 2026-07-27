@@ -483,13 +483,17 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="metric-info-right">
-                {aiIntelligence.metrics.interview_skill > 0 && (
+                {aiIntelligence.metrics.interview_skill > 0 ? (
                   <span className={`metric-status-badge ${
                     aiIntelligence.metrics.interview_skill >= 85 ? "tag-excellent" :
                     aiIntelligence.metrics.interview_skill >= 50 ? "tag-good" : "tag-practice"
                   }`}>
                     {aiIntelligence.metrics.interview_skill >= 85 ? "Excellent" :
                      aiIntelligence.metrics.interview_skill >= 50 ? "Good" : "Needs Practice"}
+                  </span>
+                ) : (
+                  <span className="metric-status-badge tag-unattempted">
+                    Not Attempted
                   </span>
                 )}
                 <div className="score-pill-chip interview-score-chip">
@@ -585,6 +589,10 @@ const Dashboard = () => {
           </div>
 
           <div className="performance-content">
+            <div className="performance-row">
+              <span>Total Interviews</span>
+              <strong>{interviewPerformance.total_interviews || 0}</strong>
+            </div>
             <div className="performance-row">
               <span>Technical Competency</span>
               <strong>{interviewPerformance.technical_skills || 0}%</strong>
