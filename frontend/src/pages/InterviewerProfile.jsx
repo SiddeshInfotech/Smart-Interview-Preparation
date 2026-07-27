@@ -25,7 +25,8 @@ import {
   Building2,
   Award,
   Clock,
-  ArrowLeft
+  ArrowLeft,
+  LayoutDashboard
 } from "lucide-react";
 
 import api from "../api/axios";
@@ -495,17 +496,27 @@ const InterviewerProfile = () => {
           {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
         <span className="ip-mobile-title">PrepMasterAI Profile</span>
-        {canEdit && (
-          isEditing ? (
-            <button className="ip-quick-save-btn" onClick={handleSaveProfile} disabled={saving}>
-              <Save size={16} />
-            </button>
-          ) : (
-            <button className="ip-quick-save-btn" onClick={() => setIsEditing(true)}>
-              <Edit3 size={16} />
-            </button>
-          )
-        )}
+        <div className="ip-mobile-header-right">
+          <button
+            className="ip-mobile-dashboard-btn"
+            onClick={() => navigate("/dashboard")}
+            title="Go to Dashboard"
+          >
+            <LayoutDashboard size={16} />
+            <span>Dashboard</span>
+          </button>
+          {canEdit && (
+            isEditing ? (
+              <button className="ip-quick-save-btn" onClick={handleSaveProfile} disabled={saving}>
+                <Save size={16} />
+              </button>
+            ) : (
+              <button className="ip-quick-save-btn" onClick={() => setIsEditing(true)}>
+                <Edit3 size={16} />
+              </button>
+            )
+          )}
+        </div>
       </header>
 
       {/* Sidebar Backdrop for Mobile */}
@@ -516,7 +527,7 @@ const InterviewerProfile = () => {
       <div className="ip-layout-container">
         {/* Left Navigation Sidebar */}
         <aside className={`ip-sidebar ${sidebarOpen ? "open" : ""}`}>
-          <div className="ip-sidebar-brand">
+          <div className="ip-sidebar-brand" onClick={() => navigate("/dashboard")} title="Go to Dashboard" style={{ cursor: "pointer" }}>
             <div className="ip-brand-icon">
               <Sparkles size={20} />
             </div>
@@ -529,6 +540,17 @@ const InterviewerProfile = () => {
           <div className="ip-sidebar-nav">
             <div className="ip-nav-divider">
               <span>PROFILE NAVIGATION</span>
+            </div>
+
+            {/* Dashboard Navigation Option - Positioned directly above Personal Information */}
+            <div
+              className="ip-nav-item ip-dashboard-nav-item"
+              onClick={() => navigate("/dashboard")}
+              title="Return to main dashboard"
+            >
+              <LayoutDashboard size={18} />
+              <span>Dashboard</span>
+              <ArrowUpRight size={16} className="ip-nav-arrow" />
             </div>
 
             {/* Menu Items */}

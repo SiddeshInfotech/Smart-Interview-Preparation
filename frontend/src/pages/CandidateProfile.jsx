@@ -24,7 +24,8 @@ import {
   Trash2,
   ArrowUpRight,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  LayoutDashboard
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -401,15 +402,25 @@ const CandidateProfile = () => {
           {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
         <span className="cp-mobile-title">PrepMasterAI Profile</span>
-        {isEditing ? (
-          <button className="cp-quick-save-btn" onClick={handleSaveProfile} disabled={saving}>
-            <Save size={16} />
+        <div className="cp-mobile-header-right">
+          <button
+            className="cp-mobile-dashboard-btn"
+            onClick={() => navigate("/dashboard")}
+            title="Go to Dashboard"
+          >
+            <LayoutDashboard size={16} />
+            <span>Dashboard</span>
           </button>
-        ) : (
-          <button className="cp-quick-save-btn" onClick={() => setIsEditing(true)}>
-            <Edit3 size={16} />
-          </button>
-        )}
+          {isEditing ? (
+            <button className="cp-quick-save-btn" onClick={handleSaveProfile} disabled={saving}>
+              <Save size={16} />
+            </button>
+          ) : (
+            <button className="cp-quick-save-btn" onClick={() => setIsEditing(true)}>
+              <Edit3 size={16} />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Sidebar Backdrop for Mobile */}
@@ -420,7 +431,7 @@ const CandidateProfile = () => {
       <div className="cp-layout-container">
         {/* Left Navigation Sidebar */}
         <aside className={`cp-sidebar ${sidebarOpen ? "open" : ""}`}>
-          <div className="cp-sidebar-brand">
+          <div className="cp-sidebar-brand" onClick={() => navigate("/dashboard")} title="Go to Dashboard" style={{ cursor: "pointer" }}>
             <div className="cp-brand-icon">
               <Sparkles size={20} />
             </div>
@@ -433,6 +444,17 @@ const CandidateProfile = () => {
           <div className="cp-sidebar-nav">
             <div className="cp-nav-divider">
               <span>PROFILE NAVIGATION</span>
+            </div>
+
+            {/* Dashboard Navigation Option - Positioned directly above Personal Information */}
+            <div
+              className="cp-nav-item cp-dashboard-nav-item"
+              onClick={() => navigate("/dashboard")}
+              title="Return to main dashboard"
+            >
+              <LayoutDashboard size={18} />
+              <span>Dashboard</span>
+              <ArrowUpRight size={16} className="cp-nav-arrow" />
             </div>
 
             {/* Navigation Menu Items */}

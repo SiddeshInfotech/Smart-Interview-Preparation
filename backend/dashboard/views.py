@@ -21,9 +21,9 @@ def get_dashboard(request):
 @permission_classes([AllowAny])
 def get_daily_progress(request):
     """
-    Returns day-wise performance progress data for the candidate.
+    Returns dynamic day-wise performance progress data for the candidate across:
     - Quiz & Coding: Calculated based on overall performance and daily activity.
-    - Interview: Reflects candidate overall interview performance score (or static 70% baseline).
+    - Interview: Calculated dynamically per-day based on completed feedback assessments. Returns 0% if unattempted.
     """
     user = request.user if request.user and request.user.is_authenticated else None
     candidate_profile = Candidate_Profile.objects.filter(user=user).first() if user else None
@@ -32,18 +32,18 @@ def get_daily_progress(request):
 
     quiz_qs = QuizPerformance.objects.filter(user=user) if user else QuizPerformance.objects.none()
     coding_qs = CodeSubmission.objects.filter(user=user) if user else CodeSubmission.objects.none()
+    int_reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile) if candidate_profile else InterviewFeedbackReview.objects.none()
 
     overall_quiz = round(quiz_qs.aggregate(Avg("score"))["score__avg"] or 0, 1) if quiz_qs.exists() else 0
 
     coding_scores = [s.score for s in coding_qs]
     overall_coding = round(sum(coding_scores) / len(coding_scores), 1) if coding_scores else 0
 
-    int_reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile) if candidate_profile else None
-    if int_reviews and int_reviews.exists():
-        avg_rating = int_reviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 3.5
+    if int_reviews.exists():
+        avg_rating = int_reviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0.0
         overall_interview = round((avg_rating / 5.0) * 100, 1)
     else:
-        overall_interview = 70.0
+        overall_interview = 0.0
 
     daily_data = []
 
@@ -52,27 +52,40 @@ def get_daily_progress(request):
         target_date = today - timedelta(days=i)
         day_name = target_date.strftime("%a")
 
-        day_quizzes = quiz_qs.filter(created_at__date=target_date) if user else []
-        day_codings = coding_qs.filter(submitted_at__date=target_date) if user else []
+        day_quizzes = quiz_qs.filter(created_at__date=target_date) if user else QuizPerformance.objects.none()
+        day_codings = coding_qs.filter(submitted_at__date=target_date) if user else CodeSubmission.objects.none()
+        day_interviews = int_reviews.filter(submitted_at__date=target_date) if candidate_profile else InterviewFeedbackReview.objects.none()
 
         if day_quizzes.exists():
             quiz_val = round(day_quizzes.aggregate(Avg("score"))["score__avg"] or 0, 1)
         else:
             factor = 0.65 + 0.35 * ((7 - i) / 7.0)
-            quiz_val = round(overall_quiz * factor, 1) if overall_quiz > 0 else round(45 + (7 - i) * 6, 1)
+            quiz_val = round(overall_quiz * factor, 1) if overall_quiz > 0 else 0.0
 
         if day_codings.exists():
             coding_val = round(sum([s.score for s in day_codings]) / day_codings.count(), 1)
         else:
             factor = 0.60 + 0.40 * ((7 - i) / 7.0)
-            coding_val = round(overall_coding * factor, 1) if overall_coding > 0 else round(35 + (7 - i) * 7, 1)
+            coding_val = round(overall_coding * factor, 1) if overall_coding > 0 else 0.0
+
+        # Dynamic day-wise Interview Performance evaluation
+        if day_interviews.exists():
+            day_rating = day_interviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0.0
+            interview_val = round((day_rating / 5.0) * 100, 1)
+        else:
+            historical_reviews = int_reviews.filter(submitted_at__date__lte=target_date) if candidate_profile else InterviewFeedbackReview.objects.none()
+            if historical_reviews.exists():
+                hist_rating = historical_reviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0.0
+                interview_val = round((hist_rating / 5.0) * 100, 1)
+            else:
+                interview_val = 0.0
 
         daily_data.append({
             "day": day_name,
             "date": target_date.strftime("%b %d"),
-            "quiz": min(100.0, quiz_val),
-            "coding": min(100.0, coding_val),
-            "interview": overall_interview
+            "quiz": min(100.0, max(0.0, quiz_val)),
+            "coding": min(100.0, max(0.0, coding_val)),
+            "interview": min(100.0, max(0.0, interview_val))
         })
 
     return Response({

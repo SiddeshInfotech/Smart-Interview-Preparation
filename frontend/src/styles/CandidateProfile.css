@@ -255,6 +255,79 @@
   opacity: 0.85;
 }
 
+/* Dashboard Nav Item (Placed directly above Personal Information) */
+.cp-dashboard-nav-item {
+  background: rgba(79, 70, 229, 0.05);
+  border: 1px dashed var(--cp-primary-border);
+  color: var(--cp-primary);
+  margin-bottom: 4px;
+}
+
+.cp-dashboard-nav-item svg {
+  color: var(--cp-primary);
+}
+
+.cp-dashboard-nav-item:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: #ffffff;
+  border-style: solid;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.28);
+}
+
+.cp-dashboard-nav-item:hover svg {
+  color: #ffffff;
+}
+
+/* Mobile Header Right & Mobile Dashboard Btn */
+.cp-mobile-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cp-mobile-dashboard-btn {
+  background: #f1f5f9;
+  color: #4f46e5;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.cp-mobile-dashboard-btn:hover {
+  background: #eef2ff;
+  border-color: #4f46e5;
+}
+
+/* Secondary Dashboard Button in Bottom Bar */
+.cp-btn-secondary.dashboard-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--cp-radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.cp-btn-secondary.dashboard-btn:hover {
+  background: #eef2ff;
+  color: #4f46e5;
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.12);
+}
+
 /* Mode Box in Sidebar */
 .cp-sidebar-mode-card {
   background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);

@@ -27,7 +27,10 @@ const CustomTooltip = ({ active, payload, label }) => {
             const val = item.value;
             let statusText = "Good";
             let statusClass = "status-good";
-            if (val >= 85) {
+            if (val === 0) {
+              statusText = "Not Attempted";
+              statusClass = "status-unattempted";
+            } else if (val >= 85) {
               statusText = "Excellent";
               statusClass = "status-excellent";
             } else if (val < 50) {
@@ -223,19 +226,19 @@ const Dashboard = () => {
         console.warn("Daily Progress API Error:", err);
       }
 
-      // Fallback day-wise calculation based on overall candidate performance
+      // Dynamic day-wise calculation based on overall candidate performance
       const qScore = quizPerformance.overall_score || 0;
       const cScore = codingPerformance.overall_score || 0;
-      const iScore = interviewPerformance.overall_performance || 70;
+      const iScore = interviewPerformance.overall_performance || 0;
       const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
       const computed = days.map((dayName, index) => {
         const progressFactor = 0.65 + 0.35 * ((index + 1) / 7);
         return {
           day: dayName,
-          quiz: qScore > 0 ? Math.min(100, Math.round(qScore * progressFactor)) : Math.round(45 + index * 6),
-          coding: cScore > 0 ? Math.min(100, Math.round(cScore * progressFactor)) : Math.round(35 + index * 7),
-          interview: iScore,
+          quiz: qScore > 0 ? Math.min(100, Math.round(qScore * progressFactor)) : 0,
+          coding: cScore > 0 ? Math.min(100, Math.round(cScore * progressFactor)) : 0,
+          interview: iScore > 0 ? Math.min(100, Math.round(iScore * progressFactor)) : 0,
         };
       });
       setPerformanceData(computed);
