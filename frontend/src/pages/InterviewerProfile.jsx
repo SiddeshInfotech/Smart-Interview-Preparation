@@ -24,8 +24,10 @@ import {
   AlertCircle,
   Building2,
   Award,
-  Clock
+  Clock,
+  ArrowLeft
 } from "lucide-react";
+
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
@@ -106,6 +108,12 @@ const InterviewerProfile = () => {
   const [searchParams] = useSearchParams();
   const { userProfile } = useAuth();
   
+  // --- Ownership & Permission Check ---
+  const targetInterviewerId = searchParams.get("interviewer_id") || searchParams.get("id");
+  const userRole = localStorage.getItem("user_role") || userProfile?.role;
+  // Candidates or users viewing another interviewer's profile are PERMANENTLY restricted to Read-Only
+  const canEdit = !targetInterviewerId && userRole === "interviewer";
+
   // State: Default Read-Only format when viewed from profile icon; Editable when registration setup or Edit clicked
   const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState("profile");
@@ -176,9 +184,15 @@ const InterviewerProfile = () => {
       const isSetupMode = searchParams.get("mode") === "setup";
 
       try {
-        const response = await api.get("/interviewer/profile/");
+        const endpoint = targetInterviewerId
+          ? `/interviewer/profile/${targetInterviewerId}/`
+          : "/interviewer/profile/";
+        const response = await api.get(endpoint);
         const data = response.data;
-        localStorage.setItem("cached_interviewer_profile", JSON.stringify(data));
+
+        if (!targetInterviewerId) {
+          localStorage.setItem("cached_interviewer_profile", JSON.stringify(data));
+        }
 
         // Always populate profile state with fetched data
         setProfile({
@@ -202,7 +216,7 @@ const InterviewerProfile = () => {
           setExpertise(expArray.map((name, idx) => ({ id: `exp-${Date.now()}-${idx}`, name })));
         }
 
-        if (isSetupMode) {
+        if (isSetupMode && canEdit) {
           setIsEditing(true); // 1st Time Registration Setup -> Write mode
         } else {
           setIsEditing(false); // View Profile -> Read-Only mode by default
@@ -220,14 +234,16 @@ const InterviewerProfile = () => {
     };
 
     fetchProfile();
-  }, [navigate, searchParams, userProfile]);
-
+  }, [navigate, searchParams, userProfile, targetInterviewerId, canEdit]);
 
   // --- Fetch Availability Time Slots on Mount ---
   useEffect(() => {
     const fetchSlots = async () => {
       try {
-        const response = await api.get("/interviewer/availability/");
+        const endpoint = targetInterviewerId
+          ? `/interviewer/availability/${targetInterviewerId}/available/`
+          : "/interviewer/availability/";
+        const response = await api.get(endpoint);
         setSlots(response.data);
       } catch (error) {
         console.error("Error fetching availability slots:", error);
@@ -237,7 +253,8 @@ const InterviewerProfile = () => {
     };
 
     fetchSlots();
-  }, []);
+  }, [targetInterviewerId]);
+
 
   // --- Scroll Observer for Active Sidebar Highlighting ---
   useEffect(() => {
@@ -278,6 +295,7 @@ const InterviewerProfile = () => {
 
   // --- Availability Time Slot Handlers ---
   const handleAddSlot = async () => {
+    if (!canEdit || !isEditing) return;
     setSlotError("");
     if (slotDayOfWeek === "" || !slotStartTime || !slotEndTime) {
       setSlotError("Please select Day of Week, Start Time, and End Time.");
@@ -325,6 +343,7 @@ const InterviewerProfile = () => {
   };
 
   const handleDeleteSlot = async (id) => {
+    if (!canEdit || !isEditing) return;
     if (!window.confirm("Are you sure you want to delete this availability slot?")) return;
     setDeletingSlotId(id);
     try {
@@ -357,7 +376,7 @@ const InterviewerProfile = () => {
 
   // --- Expertise Topic Handlers ---
   const addExpertiseTopic = (topicName) => {
-    if (!isEditing) return;
+    if (!canEdit || !isEditing) return;
     const name = typeof topicName === "string" ? topicName.trim() : newTopic.trim();
     if (name && !expertise.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
       setExpertise([...expertise, { id: Date.now() + Math.random(), name }]);
@@ -366,7 +385,7 @@ const InterviewerProfile = () => {
   };
 
   const handleTopicKeyDown = (e) => {
-    if (!isEditing) return;
+    if (!canEdit || !isEditing) return;
     if (e.key === "Enter" && newTopic.trim()) {
       e.preventDefault();
       addExpertiseTopic(newTopic.trim());
@@ -374,13 +393,13 @@ const InterviewerProfile = () => {
   };
 
   const removeExpertiseTopic = (id) => {
-    if (!isEditing) return;
+    if (!canEdit || !isEditing) return;
     setExpertise(expertise.filter((t) => t.id !== id));
   };
 
   // --- Profile Picture File Selection ---
   const handleFileChange = (e) => {
-    if (!isEditing) return;
+    if (!canEdit || !isEditing) return;
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const reader = new FileReader();
@@ -393,7 +412,9 @@ const InterviewerProfile = () => {
 
   // --- Save Interviewer Profile with Mandatory Field Validation ---
   const handleSaveProfile = async () => {
+    if (!canEdit || !isEditing) return;
     setValidationError("");
+
 
     // Validate Mandatory Fields: Name (*), Email (*), Designation (*), Company (*), Years of Experience (*)
     const missing = [];
@@ -474,14 +495,16 @@ const InterviewerProfile = () => {
           {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
         <span className="ip-mobile-title">PrepMasterAI Profile</span>
-        {isEditing ? (
-          <button className="ip-quick-save-btn" onClick={handleSaveProfile} disabled={saving}>
-            <Save size={16} />
-          </button>
-        ) : (
-          <button className="ip-quick-save-btn" onClick={() => setIsEditing(true)}>
-            <Edit3 size={16} />
-          </button>
+        {canEdit && (
+          isEditing ? (
+            <button className="ip-quick-save-btn" onClick={handleSaveProfile} disabled={saving}>
+              <Save size={16} />
+            </button>
+          ) : (
+            <button className="ip-quick-save-btn" onClick={() => setIsEditing(true)}>
+              <Edit3 size={16} />
+            </button>
+          )
         )}
       </header>
 
@@ -559,18 +582,21 @@ const InterviewerProfile = () => {
           {/* Mode Card */}
           <div className="ip-sidebar-mode-card">
             <div className="ip-mode-badge-wrapper">
-              <span className={`ip-mode-dot ${isEditing ? "editing" : "readonly"}`}></span>
+              <span className={`ip-mode-dot ${canEdit && isEditing ? "editing" : "readonly"}`}></span>
               <span className="ip-mode-title">
-                {isEditing ? "Editing Mode" : "Read-Only Mode"}
+                {canEdit ? (isEditing ? "Editing Mode" : "Read-Only Mode") : "Read-Only Profile"}
               </span>
             </div>
             <p className="ip-mode-hint">
-              {isEditing
-                ? "Make your updates and click Save Profile at the bottom."
-                : "Click Edit Profile at the bottom to update details."}
+              {canEdit
+                ? isEditing
+                  ? "Make your updates and click Save Profile at the bottom."
+                  : "Click Edit Profile at the bottom to update details."
+                : "Viewing interviewer details in read-only format."}
             </p>
           </div>
         </aside>
+
 
         {/* Main Content Panel */}
         <main className="ip-main-content" ref={mainContentRef}>
@@ -1157,19 +1183,32 @@ const InterviewerProfile = () => {
             {/* Bottom Action Footer Panel */}
             <div className="ip-bottom-bar">
               <div className="ip-bottom-bar-info">
-                {isEditing ? (
+                {canEdit && isEditing ? (
                   <span className="ip-save-status editing">
                     <Sparkles size={16} className="ip-status-icon" /> Make changes and click Save Profile
                   </span>
-                ) : (
+                ) : canEdit ? (
                   <span className="ip-save-status readonly">
                     <ShieldCheck size={16} className="ip-status-icon" /> Profile shown in Read-Only format
+                  </span>
+                ) : (
+                  <span className="ip-save-status readonly">
+                    <ShieldCheck size={16} className="ip-status-icon" /> Viewing Interviewer Profile (Read-Only)
                   </span>
                 )}
               </div>
 
               <div className="ip-bottom-bar-actions">
-                {isEditing ? (
+                {!canEdit ? (
+                  <button
+                    type="button"
+                    className="ip-btn-primary edit-mode-btn"
+                    onClick={() => navigate(-1)}
+                  >
+                    <ArrowLeft size={18} />
+                    <span>Back to Scheduling</span>
+                  </button>
+                ) : isEditing ? (
                   <button
                     type="button"
                     className="ip-btn-primary"
@@ -1191,6 +1230,7 @@ const InterviewerProfile = () => {
                 )}
               </div>
             </div>
+
 
           </div>
         </main>
