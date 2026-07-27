@@ -52,6 +52,22 @@ const ResumeUpload = () => {
     };
   }, []);
 
+  // Lock page scrolling when analysis result modal popup is open
+  useEffect(() => {
+    if (showScoreModal) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    };
+  }, [showScoreModal]);
+
   const handleFileSelect = (selectedFile) => {
     if (!selectedFile) return;
 
@@ -319,27 +335,26 @@ const ResumeUpload = () => {
 
           {/* INSIGHTS CARDS */}
           {analysisResult && (
-            <div className="results-container" ref={resultsRef}>
+            <div className="ru-results-container" ref={resultsRef}>
               <div className="analysis-section-title">
                 <h3>Resume Insights & Breakdown</h3>
                 <p>Mapped backend evaluation from resume analysis, candidate profile, and technical skills.</p>
               </div>
 
-              <div className="result-grid">
+              <div className="ru-result-grid">
                 
                 {/* CARD 1: Summary */}
-                <section className="result-card result-card--summary">
-                  <div className="result-card-accent-bar summary"></div>
-                  <div className="result-header">
-                    <div className="result-icon-badge summary">
+                <section className="ru-result-card ru-result-card--summary">
+                  <div className="ru-result-header">
+                    <div className="ru-result-icon-badge summary">
                       <FileText size={20} />
                     </div>
                     <div>
                       <h4>Resume Summary & Rating</h4>
-                      <p className="result-card-sub">Overview of your target designation & resume score</p>
+                      <p className="ru-result-card-sub">Overview of your target designation & resume score</p>
                     </div>
                   </div>
-                  <div className="result-body">
+                  <div className="ru-result-body">
                     <div className="analysis-row">
                       <div className="analysis-field">
                         <span className="analysis-field__label">Target Role / Title</span>
@@ -360,18 +375,17 @@ const ResumeUpload = () => {
                 </section>
 
                 {/* CARD 2: Candidate Profile */}
-                <section className="result-card result-card--profile">
-                  <div className="result-card-accent-bar profile"></div>
-                  <div className="result-header">
-                    <div className="result-icon-badge profile">
+                <section className="ru-result-card ru-result-card--profile">
+                  <div className="ru-result-header">
+                    <div className="ru-result-icon-badge profile">
                       <User size={20} />
                     </div>
                     <div>
                       <h4>Candidate Profile</h4>
-                      <p className="result-card-sub">Personal credentials and digital platform links</p>
+                      <p className="ru-result-card-sub">Personal credentials and digital platform links</p>
                     </div>
                   </div>
-                  <div className="result-body">
+                  <div className="ru-result-body">
                     <div className="analysis-row analysis-row--wrap">
                       {["Name", "Email", "Role", "Location", "Education", "Experience", "LinkedIn", "GitHub", "Portfolio"].map(
                         (label) => (
@@ -394,18 +408,17 @@ const ResumeUpload = () => {
                 </section>
 
                 {/* CARD 3: Education, Experience and Skill */}
-                <section className="result-card result-card--skills">
-                  <div className="result-card-accent-bar skills"></div>
-                  <div className="result-header">
-                    <div className="result-icon-badge skills">
+                <section className="ru-result-card ru-result-card--skills">
+                  <div className="ru-result-header">
+                    <div className="ru-result-icon-badge skills">
                       <Sparkles size={20} />
                     </div>
                     <div>
                       <h4>Education, Experience & Skill Breakdown</h4>
-                      <p className="result-card-sub">Matched skills and category mapping</p>
+                      <p className="ru-result-card-sub">Matched skills and category mapping</p>
                     </div>
                   </div>
-                  <div className="result-body">
+                  <div className="ru-result-body">
                     <div className="analysis-row analysis-row--wrap">
                       <div className="analysis-field analysis-field--skill">
                         <span className="analysis-field__label">Education</span>
@@ -459,18 +472,17 @@ const ResumeUpload = () => {
                 </section>
 
                 {/* CARD 4: Recommendation and Suggestions */}
-                <section className="result-card result-card--recommendations">
-                  <div className="result-card-accent-bar recommendations"></div>
-                  <div className="result-header">
-                    <div className="result-icon-badge recommendations">
+                <section className="ru-result-card ru-result-card--recommendations">
+                  <div className="ru-result-header">
+                    <div className="ru-result-icon-badge recommendations">
                       <Target size={20} />
                     </div>
                     <div>
                       <h4>Actionable Recommendations & Next Steps</h4>
-                      <p className="result-card-sub">Expert advice to enhance your candidate resume</p>
+                      <p className="ru-result-card-sub">Expert advice to enhance your candidate resume</p>
                     </div>
                   </div>
-                  <div className="result-body">
+                  <div className="ru-result-body">
                     <div className="recommendations-list">
                       {analysisResult.suggestion_1 && (
                         <div className="recommendation-item-card">

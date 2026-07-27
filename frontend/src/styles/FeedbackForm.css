@@ -191,3 +191,42 @@
     }
 
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR FEEDBACK FORM PAGE
+   ========================================================================== */
+[data-theme="dark"] .feedback-page,
+body.dark-theme .feedback-page {
+  background: #090d16;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .feedback-container,
+body.dark-theme .feedback-container {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .feedback-header h1,
+[data-theme="dark"] .form-group label,
+body.dark-theme .feedback-header h1,
+body.dark-theme .form-group label {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .feedback-header p,
+body.dark-theme .feedback-header p {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea,
+body.dark-theme .form-group input,
+body.dark-theme .form-group select,
+body.dark-theme .form-group textarea {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}

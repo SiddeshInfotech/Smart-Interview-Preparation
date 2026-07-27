@@ -620,3 +620,49 @@ body::-webkit-scrollbar {
     min-width: 60px;
   }
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR ACTIVE QUIZ PAGE
+   ========================================================================== */
+[data-theme="dark"] .quiz-page,
+[data-theme="dark"] .quiz-layout,
+body.dark-theme .quiz-page,
+body.dark-theme .quiz-layout {
+  background: #090d16;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .quiz-header,
+[data-theme="dark"] .question-box,
+[data-theme="dark"] .option-btn,
+[data-theme="dark"] .topic-sidebar,
+[data-theme="dark"] .quiz-footer,
+body.dark-theme .quiz-header,
+body.dark-theme .question-box,
+body.dark-theme .option-btn,
+body.dark-theme .topic-sidebar,
+body.dark-theme .quiz-footer {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .question-text,
+[data-theme="dark"] .option-text,
+body.dark-theme .question-text,
+body.dark-theme .option-text {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .option-btn:hover,
+body.dark-theme .option-btn:hover {
+  background: #1e293b;
+  border-color: #3b82f6;
+}
+
+[data-theme="dark"] .option-btn.selected,
+body.dark-theme .option-btn.selected {
+  background: #1e1b4b;
+  border-color: #6366f1;
+  color: #f8fafc;
+}

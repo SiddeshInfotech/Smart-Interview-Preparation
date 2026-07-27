@@ -712,3 +712,52 @@ p { margin: 0; }
 html {
   scroll-behavior: smooth;
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR HOME LANDING PAGE
+   ========================================================================== */
+[data-theme="dark"] .home-shell,
+[data-theme="dark"] .landing-body,
+body.dark-theme .home-shell,
+body.dark-theme .landing-body {
+  background-color: #090d16;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .hero h1,
+[data-theme="dark"] .section-header h2,
+[data-theme="dark"] .about-title,
+body.dark-theme .hero h1,
+body.dark-theme .section-header h2,
+body.dark-theme .about-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .hero p,
+[data-theme="dark"] .section-header p,
+[data-theme="dark"] .about-subtitle,
+body.dark-theme .hero p,
+body.dark-theme .section-header p,
+body.dark-theme .about-subtitle {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .feature-card,
+[data-theme="dark"] .stat-card-box,
+[data-theme="dark"] .about-card-box,
+[data-theme="dark"] .testimonial-card,
+body.dark-theme .feature-card,
+body.dark-theme .stat-card-box,
+body.dark-theme .about-card-box,
+body.dark-theme .testimonial-card {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .feature-card h3,
+[data-theme="dark"] .testimonial-author,
+body.dark-theme .feature-card h3,
+body.dark-theme .testimonial-author {
+  color: #f8fafc;
+}

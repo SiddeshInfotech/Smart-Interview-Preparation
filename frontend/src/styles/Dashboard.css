@@ -619,3 +619,76 @@
     font-size: 12px;
   }
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR DASHBOARD PAGE
+   ========================================================================== */
+[data-theme="dark"] .dashboard-container,
+body.dark-theme .dashboard-container {
+  background: linear-gradient(135deg, #090d16, #0f172a);
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .dashboard-header h1,
+body.dark-theme .dashboard-header h1 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .dashboard-header h2,
+body.dark-theme .dashboard-header h2 {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .dashboard-header p,
+body.dark-theme .dashboard-header p {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .graph-card,
+[data-theme="dark"] .metrics-side-wrapper,
+[data-theme="dark"] .action-card,
+[data-theme="dark"] .overall-card,
+[data-theme="dark"] .metric-tile,
+[data-theme="dark"] .stat-mini-card,
+body.dark-theme .graph-card,
+body.dark-theme .metrics-side-wrapper,
+body.dark-theme .action-card,
+body.dark-theme .overall-card,
+body.dark-theme .metric-tile,
+body.dark-theme .stat-mini-card {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .metric-label,
+[data-theme="dark"] .mini-label,
+body.dark-theme .metric-label,
+body.dark-theme .mini-label {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .metric-value,
+[data-theme="dark"] .mini-value,
+body.dark-theme .metric-value,
+body.dark-theme .mini-value {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .table-card,
+body.dark-theme .table-card {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .history-table th,
+body.dark-theme .history-table th {
+  background: #1e293b;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .history-table td,
+body.dark-theme .history-table td {
+  border-bottom-color: #1e293b;
+  color: #e2e8f0;
+}

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock, HelpCircle } from "lucide-react";
+import { Sun, Moon, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock, HelpCircle } from "lucide-react";
 import NotificationPopup from "./NotificationPopup";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import "../styles/NotificationPopup.css";
 
 export default function PageNavbar({
@@ -24,6 +25,7 @@ export default function PageNavbar({
   const dropdownRef = useRef(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const { userProfile, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -68,8 +70,14 @@ export default function PageNavbar({
 
         <div className="navbar-actions">
           <NotificationPopup />
-          <button className="icon-btn" type="button" aria-label="Settings">
-            <Settings size={19} />
+          <button
+            className="icon-btn theme-toggle-btn"
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
           </button>
 
           <div className="profile-menu-container" ref={dropdownRef}>

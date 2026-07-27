@@ -61,4 +61,8 @@ urlpatterns = [
     # ── 14. Coding Questions ───────────────────────────────────
     path("coding-questions/",                   views.coding_questions_list,     name="admin_coding_questions_list"),
     path("coding-questions/<int:pk>/",          views.coding_question_detail,    name="admin_coding_question_detail"),
+
+    # ── 15. Quiz Performances ─────────────────────────────────
+    path("quiz-performances/",                  views.quiz_performances_list,    name="admin_quiz_performances_list"),
+    path("quiz-performances/<int:pk>/",         views.quiz_performance_detail,   name="admin_quiz_performance_detail"),
 ]

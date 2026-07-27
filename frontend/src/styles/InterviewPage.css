@@ -863,6 +863,43 @@ body {
   overflow: hidden !important;
 }
 
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR INTERVIEW PAGE
+   ========================================================================== */
+[data-theme="dark"] .interview-page,
+[data-theme="dark"] .interview-lobby,
+body.dark-theme .interview-page,
+body.dark-theme .interview-lobby {
+  background: #090d16;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .ready-card,
+[data-theme="dark"] .lobby-card,
+[data-theme="dark"] .controls-card,
+[data-theme="dark"] .ai-chat-panel,
+body.dark-theme .ready-card,
+body.dark-theme .lobby-card,
+body.dark-theme .controls-card,
+body.dark-theme .ai-chat-panel {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .detail-item .value,
+[data-theme="dark"] .ready-card h2,
+body.dark-theme .detail-item .value,
+body.dark-theme .ready-card h2 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .detail-item .label,
+body.dark-theme .detail-item .label {
+  color: #94a3b8;
+}
+
+
 .livekit-fullscreen-overlay .interview-container,
 .livekit-fullscreen-overlay .interview-content,
 .livekit-fullscreen-overlay .livekit-room-container {

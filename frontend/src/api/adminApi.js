@@ -138,5 +138,12 @@ export const createCodingQuestion    = (data)    => adminApi.post("/admin_panel/
 export const updateCodingQuestion    = (id, data)=> adminApi.put(`/admin_panel/coding-questions/${id}/`, data);
 export const deleteCodingQuestion    = (id)      => adminApi.delete(`/admin_panel/coding-questions/${id}/`);
 
+// ── 15. Quiz Performances ─────────────────────────────────
+export const getQuizPerformances    = ()        => adminApi.get("/admin_panel/quiz-performances/");
+export const getQuizPerformance     = (id)      => adminApi.get(`/admin_panel/quiz-performances/${id}/`);
+export const createQuizPerformance  = (data)    => adminApi.post("/admin_panel/quiz-performances/", data);
+export const updateQuizPerformance  = (id, data)=> adminApi.put(`/admin_panel/quiz-performances/${id}/`, data);
+export const deleteQuizPerformance  = (id)      => adminApi.delete(`/admin_panel/quiz-performances/${id}/`);
+
 export default adminApi;
 

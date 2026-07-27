@@ -1957,3 +1957,34 @@ body {
 .eval-close-btn:hover {
     background: #1e293b;
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR CODING WORKSPACE PAGE
+   ========================================================================== */
+[data-theme="dark"] .coding-container,
+[data-theme="dark"] .coding-workspace,
+body.dark-theme .coding-container,
+body.dark-theme .coding-workspace {
+  background: #090d16;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .problem-panel,
+[data-theme="dark"] .editor-panel,
+[data-theme="dark"] .console-panel,
+[data-theme="dark"] .coding-header,
+body.dark-theme .problem-panel,
+body.dark-theme .editor-panel,
+body.dark-theme .console-panel,
+body.dark-theme .coding-header {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .problem-title,
+[data-theme="dark"] .tab-btn,
+body.dark-theme .problem-title,
+body.dark-theme .tab-btn {
+  color: #f8fafc;
+}

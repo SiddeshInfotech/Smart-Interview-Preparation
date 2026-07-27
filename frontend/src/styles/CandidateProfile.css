@@ -1112,3 +1112,54 @@
     justify-content: center;
   }
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR CANDIDATE PROFILE PAGE
+   ========================================================================== */
+[data-theme="dark"] .cp-app-wrapper,
+body.dark-theme .cp-app-wrapper {
+  background-color: #090d16;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .cp-sidebar,
+[data-theme="dark"] .cp-card,
+[data-theme="dark"] .cp-header,
+[data-theme="dark"] .cp-bottom-bar,
+body.dark-theme .cp-sidebar,
+body.dark-theme .cp-card,
+body.dark-theme .cp-header,
+body.dark-theme .cp-bottom-bar {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .cp-card-title,
+[data-theme="dark"] .cp-nav-item,
+body.dark-theme .cp-card-title,
+body.dark-theme .cp-nav-item {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .cp-nav-item:hover,
+body.dark-theme .cp-nav-item:hover {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .cp-input-field,
+[data-theme="dark"] .cp-select-field,
+[data-theme="dark"] .cp-textarea-field,
+body.dark-theme .cp-input-field,
+body.dark-theme .cp-select-field,
+body.dark-theme .cp-textarea-field {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .cp-input-label,
+body.dark-theme .cp-input-label {
+  color: #94a3b8;
+}
+

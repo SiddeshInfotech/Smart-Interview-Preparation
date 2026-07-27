@@ -634,3 +634,47 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR QUIZ RESULT PAGE
+   ========================================================================== */
+[data-theme="dark"] .score-container,
+[data-theme="dark"] .score-content,
+body.dark-theme .score-container,
+body.dark-theme .score-content {
+  background: #090d16;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .quiz-header,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .questions-container,
+[data-theme="dark"] .question-card,
+[data-theme="dark"] .analysis-card,
+[data-theme="dark"] .option-card,
+body.dark-theme .quiz-header,
+body.dark-theme .stat-card,
+body.dark-theme .questions-container,
+body.dark-theme .question-card,
+body.dark-theme .analysis-card,
+body.dark-theme .option-card {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .quiz-title,
+[data-theme="dark"] .stat-label,
+[data-theme="dark"] .question-text,
+body.dark-theme .quiz-title,
+body.dark-theme .stat-label,
+body.dark-theme .question-text {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .quiz-subtitle,
+[data-theme="dark"] .stat-sub,
+body.dark-theme .quiz-subtitle,
+body.dark-theme .stat-sub {
+  color: #94a3b8;
+}

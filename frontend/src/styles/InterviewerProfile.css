@@ -1081,3 +1081,53 @@
     justify-content: center;
   }
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR INTERVIEWER PROFILE PAGE
+   ========================================================================== */
+[data-theme="dark"] .ip-app-wrapper,
+body.dark-theme .ip-app-wrapper {
+  background-color: #090d16;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .ip-sidebar,
+[data-theme="dark"] .ip-card,
+[data-theme="dark"] .ip-header,
+[data-theme="dark"] .ip-bottom-bar,
+body.dark-theme .ip-sidebar,
+body.dark-theme .ip-card,
+body.dark-theme .ip-header,
+body.dark-theme .ip-bottom-bar {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .ip-card-title,
+[data-theme="dark"] .ip-nav-item,
+body.dark-theme .ip-card-title,
+body.dark-theme .ip-nav-item {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .ip-nav-item:hover,
+body.dark-theme .ip-nav-item:hover {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .ip-input-field,
+[data-theme="dark"] .ip-select-field,
+[data-theme="dark"] .ip-textarea-field,
+body.dark-theme .ip-input-field,
+body.dark-theme .ip-select-field,
+body.dark-theme .ip-textarea-field {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .ip-input-label,
+body.dark-theme .ip-input-label {
+  color: #94a3b8;
+}
