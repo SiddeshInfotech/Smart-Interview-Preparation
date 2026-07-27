@@ -919,72 +919,91 @@ body.dark-theme .file-name {
   color: #f8fafc;
 }
 
+[data-theme="dark"] .resume-page-wrapper,
+[data-theme="dark"] .resume-card,
+body.dark-theme .resume-page-wrapper,
+body.dark-theme .resume-card {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
 [data-theme="dark"] .ru-result-card,
 body.dark-theme .ru-result-card {
   background: #0f172a !important;
-  border-color: #1e293b;
+  border-color: #1e293b !important;
 }
 
 [data-theme="dark"] .analysis-field,
 body.dark-theme .analysis-field {
-  background: #1e293b;
-  border-color: #334155;
+  background: #1e293b !important;
+  border-color: #334155 !important;
 }
 
 [data-theme="dark"] .analysis-field__value,
 body.dark-theme .analysis-field__value {
-  color: #e2e8f0;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .analysis-field__label,
+[data-theme="dark"] .ru-result-card-sub,
+[data-theme="dark"] .analysis-section-title p,
+body.dark-theme .analysis-field__label,
+body.dark-theme .ru-result-card-sub,
+body.dark-theme .analysis-section-title p {
+  color: #94a3b8 !important;
 }
 
 [data-theme="dark"] .analysis-section-title h3,
 body.dark-theme .analysis-section-title h3 {
-  color: #f8fafc;
+  color: #f8fafc !important;
 }
 
 [data-theme="dark"] .analysis-section-title,
 body.dark-theme .analysis-section-title {
-  border-bottom-color: #1e293b;
+  border-bottom-color: #1e293b !important;
 }
 
 [data-theme="dark"] .ru-result-header h4,
 body.dark-theme .ru-result-header h4 {
-  color: #f8fafc;
+  color: #f8fafc !important;
 }
 
 [data-theme="dark"] .recommendation-item-card,
 body.dark-theme .recommendation-item-card {
-  background: #1e293b;
-  border-color: #334155;
+  background: #1e293b !important;
+  border-color: #334155 !important;
 }
 
 [data-theme="dark"] .rec-text-content strong,
 body.dark-theme .rec-text-content strong {
-  color: #f8fafc;
+  color: #f8fafc !important;
 }
 
 [data-theme="dark"] .rec-text-content p,
 body.dark-theme .rec-text-content p {
-  color: #94a3b8;
+  color: #94a3b8 !important;
 }
 
 [data-theme="dark"] .resume-score-modal,
 body.dark-theme .resume-score-modal {
-  background: #0f172a;
-  border-color: #1e293b;
+  background: #0f172a !important;
+  border-color: #1e293b !important;
 }
 
 [data-theme="dark"] .modal-title,
 body.dark-theme .modal-title {
-  color: #f8fafc;
+  color: #f8fafc !important;
 }
 
 [data-theme="dark"] .modal-metric-card,
 body.dark-theme .modal-metric-card {
-  background: #1e293b;
-  border-color: #334155;
+  background: #1e293b !important;
+  border-color: #334155 !important;
 }
 
 [data-theme="dark"] .modal-metric-card .metric-val,
 body.dark-theme .modal-metric-card .metric-val {
-  color: #f8fafc;
-}
+  color: #f8fafc !important;
+}
+

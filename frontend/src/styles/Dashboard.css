@@ -644,51 +644,88 @@ body.dark-theme .dashboard-header p {
   color: #94a3b8;
 }
 
+[data-theme="dark"] .dashboard-container,
+body.dark-theme .dashboard-container {
+  background: #090d16 !important;
+  color: #f8fafc !important;
+}
+
 [data-theme="dark"] .graph-card,
 [data-theme="dark"] .metrics-side-wrapper,
 [data-theme="dark"] .action-card,
 [data-theme="dark"] .overall-card,
 [data-theme="dark"] .metric-tile,
 [data-theme="dark"] .stat-mini-card,
+[data-theme="dark"] .performance-card,
 body.dark-theme .graph-card,
 body.dark-theme .metrics-side-wrapper,
 body.dark-theme .action-card,
 body.dark-theme .overall-card,
 body.dark-theme .metric-tile,
-body.dark-theme .stat-mini-card {
-  background: #0f172a;
-  border-color: #1e293b;
-  color: #f8fafc;
+body.dark-theme .stat-mini-card,
+body.dark-theme .performance-card {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
 }
 
+[data-theme="dark"] .dashboard-header h1,
+[data-theme="dark"] .dashboard-header h2,
+[data-theme="dark"] .card-header h3,
+body.dark-theme .dashboard-header h1,
+body.dark-theme .dashboard-header h2,
+body.dark-theme .card-header h3 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .dashboard-header p,
 [data-theme="dark"] .metric-label,
 [data-theme="dark"] .mini-label,
+body.dark-theme .dashboard-header p,
 body.dark-theme .metric-label,
 body.dark-theme .mini-label {
-  color: #94a3b8;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .chart-filter-pills,
+body.dark-theme .chart-filter-pills {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .filter-pill,
+body.dark-theme .filter-pill {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .filter-pill.active,
+body.dark-theme .filter-pill.active {
+  background: #334155 !important;
+  color: #f8fafc !important;
 }
 
 [data-theme="dark"] .metric-value,
 [data-theme="dark"] .mini-value,
 body.dark-theme .metric-value,
 body.dark-theme .mini-value {
-  color: #f8fafc;
+  color: #f8fafc !important;
 }
 
 [data-theme="dark"] .table-card,
 body.dark-theme .table-card {
-  background: #0f172a;
-  border-color: #1e293b;
+  background: #0f172a !important;
+  border-color: #1e293b !important;
 }
 
 [data-theme="dark"] .history-table th,
 body.dark-theme .history-table th {
-  background: #1e293b;
-  color: #cbd5e1;
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
 }
 
 [data-theme="dark"] .history-table td,
 body.dark-theme .history-table td {
-  border-bottom-color: #1e293b;
-  color: #e2e8f0;
-}
+  border-bottom-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+

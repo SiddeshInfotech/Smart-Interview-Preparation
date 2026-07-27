@@ -868,36 +868,55 @@ body {
    ========================================================================== */
 [data-theme="dark"] .interview-page,
 [data-theme="dark"] .interview-lobby,
+[data-theme="dark"] .pre-interview-container,
 body.dark-theme .interview-page,
-body.dark-theme .interview-lobby {
-  background: #090d16;
-  color: #f8fafc;
+body.dark-theme .interview-lobby,
+body.dark-theme .pre-interview-container {
+  background: #090d16 !important;
+  color: #f8fafc !important;
 }
 
 [data-theme="dark"] .ready-card,
 [data-theme="dark"] .lobby-card,
 [data-theme="dark"] .controls-card,
 [data-theme="dark"] .ai-chat-panel,
+[data-theme="dark"] .device-card,
+[data-theme="dark"] .device-item,
+[data-theme="dark"] .encrypted-banner,
+[data-theme="dark"] .session-details-card,
 body.dark-theme .ready-card,
 body.dark-theme .lobby-card,
 body.dark-theme .controls-card,
-body.dark-theme .ai-chat-panel {
-  background: #0f172a;
-  border-color: #1e293b;
-  color: #f8fafc;
+body.dark-theme .ai-chat-panel,
+body.dark-theme .device-card,
+body.dark-theme .device-item,
+body.dark-theme .encrypted-banner,
+body.dark-theme .session-details-card {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
 }
 
 [data-theme="dark"] .detail-item .value,
 [data-theme="dark"] .ready-card h2,
+[data-theme="dark"] .lobby-card h3,
+[data-theme="dark"] .device-item h4,
+[data-theme="dark"] .device-item span,
 body.dark-theme .detail-item .value,
-body.dark-theme .ready-card h2 {
-  color: #f8fafc;
+body.dark-theme .ready-card h2,
+body.dark-theme .lobby-card h3,
+body.dark-theme .device-item h4,
+body.dark-theme .device-item span {
+  color: #f8fafc !important;
 }
 
 [data-theme="dark"] .detail-item .label,
-body.dark-theme .detail-item .label {
-  color: #94a3b8;
+[data-theme="dark"] .device-item p,
+body.dark-theme .detail-item .label,
+body.dark-theme .device-item p {
+  color: #94a3b8 !important;
 }
+
 
 
 .livekit-fullscreen-overlay .interview-container,
