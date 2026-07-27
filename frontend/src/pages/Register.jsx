@@ -136,9 +136,9 @@ export default function Register() {
         await loginUser(loginResponse.data);
         
         if (role === "interviewer") {
-          navigate("/interviewer-profile");
+          navigate("/interviewer-profile?mode=setup");
         } else {
-          navigate("/candidate-profile");
+          navigate("/candidate-profile?mode=setup");
         }
       } catch (loginErr) {
         console.error("Auto-login failed:", loginErr);

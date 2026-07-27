@@ -105,71 +105,54 @@ const InterviewerProfile = () => {
     const fetchProfile = async () => {
       const isSetupMode = searchParams.get("mode") === "setup";
 
-      // Instant load from cache
-      const cachedStr = localStorage.getItem("cached_interviewer_profile");
-      if (cachedStr) {
-        try {
-          const cachedData = JSON.parse(cachedStr);
-          setProfile({
-            full_name: cachedData.full_name || "",
-            email: cachedData.email || "",
-            designation: cachedData.designation || "",
-            company: cachedData.company || "",
-            department: cachedData.department || "",
-            years_of_experience: Math.round(cachedData.years_of_experience || cachedData.experience_years || 0),
-            linkedin_url: cachedData.linkedin_url || "",
-            github_url: cachedData.github_url || "",
-            website_url: cachedData.website_url || cachedData.portfolio_url || "",
-          });
-          setProfilePicture(cachedData.profile_picture || null);
-          if (cachedData.expertise) {
-            const expArray = Array.isArray(cachedData.expertise)
-              ? cachedData.expertise
-              : cachedData.expertise.split(",").map((s) => s.trim()).filter(Boolean);
-            setExpertise(expArray.map((name, idx) => ({ id: `exp-${idx}`, name })));
-          }
-          setLoading(false);
-
-          if (isSetupMode || !cachedData.designation || !cachedData.company) {
-            setIsEditing(true);
-          } else {
-            setIsEditing(false); // Read-only mode by default
-          }
-        } catch (e) {
-          console.error("Error parsing interviewer cache", e);
-        }
-      }
-
       try {
         const response = await api.get("/interviewer/profile/");
         const data = response.data;
         localStorage.setItem("cached_interviewer_profile", JSON.stringify(data));
 
-        setProfile({
-          full_name: data.full_name || "",
-          email: data.email || "",
-          designation: data.designation || "",
-          company: data.company || "",
-          department: data.department || "",
-          years_of_experience: Math.round(data.years_of_experience || data.experience_years || 0),
-          linkedin_url: data.linkedin_url || "",
-          github_url: data.github_url || "",
-          website_url: data.website_url || data.portfolio_url || "",
-        });
+        const hasSavedProfile = Boolean(
+          data.designation || data.company || data.department || (data.expertise_area && data.expertise_area.length > 0)
+        );
 
-        setProfilePicture(data.profile_picture || null);
-
-        if (data.expertise) {
-          const expArray = Array.isArray(data.expertise)
-            ? data.expertise
-            : data.expertise.split(",").map((s) => s.trim()).filter(Boolean);
-          setExpertise(expArray.map((name, idx) => ({ id: `exp-${Date.now()}-${idx}`, name })));
-        }
-
-        if (isSetupMode || !data.designation || !data.company) {
-          setIsEditing(true);
+        if (isSetupMode || !hasSavedProfile) {
+          // 1st Time Registration Setup: Empty editable fields (only name & email pre-populated)
+          setProfile({
+            full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
+            email: data.email || userProfile?.email || "",
+            designation: "",
+            company: "",
+            department: "",
+            years_of_experience: 0,
+            linkedin_url: "",
+            github_url: "",
+            website_url: "",
+          });
+          setProfilePicture(data.profile_picture || null);
+          setExpertise([]);
+          setIsEditing(true); // Edit/Setup mode with "Save Profile" footer button
         } else {
-          setIsEditing(false);
+          // Revisiting via View Profile: Pre-fill all fields & load in Read-Only mode
+          setProfile({
+            full_name: data.full_name || "",
+            email: data.email || "",
+            designation: data.designation || "",
+            company: data.company || "",
+            department: data.department || "",
+            years_of_experience: Math.round(data.years_of_experience || data.experience_years || 0),
+            linkedin_url: data.linkedin_url || "",
+            github_url: data.github_url || "",
+            website_url: data.website_url || data.portfolio_url || "",
+          });
+          setProfilePicture(data.profile_picture || null);
+
+          const rawExp = data.expertise_area || data.expertise;
+          if (rawExp) {
+            const expArray = typeof rawExp === "string"
+              ? rawExp.split(",").map((s) => s.trim()).filter(Boolean)
+              : Array.isArray(rawExp) ? rawExp : [];
+            setExpertise(expArray.map((name, idx) => ({ id: `exp-${Date.now()}-${idx}`, name })));
+          }
+          setIsEditing(false); // Read-Only mode with "Edit Profile" footer button
         }
       } catch (error) {
         console.error("Error fetching interviewer profile:", error);
@@ -184,7 +167,7 @@ const InterviewerProfile = () => {
     };
 
     fetchProfile();
-  }, [navigate, searchParams]);
+  }, [navigate, searchParams, userProfile]);
 
   // --- Scroll Observer for Active Sidebar Highlighting ---
   useEffect(() => {
@@ -319,6 +302,13 @@ const InterviewerProfile = () => {
       setShowSuccessToast(true);
       setIsEditing(false); // Switch back to Read-Only format
       setTimeout(() => setShowSuccessToast(false), 4000);
+
+      const isSetupMode = searchParams.get("mode") === "setup";
+      if (isSetupMode) {
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1000);
+      }
     } catch (error) {
       console.error("Error saving interviewer profile:", error);
       if (error.response?.status === 401) {

@@ -127,81 +127,60 @@ const CandidateProfile = () => {
       // Check query param e.g. ?mode=setup (registration flow)
       const isSetupMode = searchParams.get("mode") === "setup";
 
-      // Load instant cached data
-      const cachedStr = localStorage.getItem("cached_candidate_profile");
-      if (cachedStr) {
-        try {
-          const cachedData = JSON.parse(cachedStr);
-          setProfile({
-            full_name: cachedData.full_name || "",
-            email: cachedData.email || "",
-            date_of_birth: cachedData.date_of_birth ? new Date(cachedData.date_of_birth) : null,
-            gender: cachedData.gender || "",
-            location: cachedData.location || "",
-            education: cachedData.education || "",
-            experience_years: Math.round(cachedData.experience_years || 0),
-            linkedin_url: cachedData.linkedin_url || "",
-            github_url: cachedData.github_url || "",
-            portfolio_url: cachedData.portfolio_url || "",
-          });
-          setProfilePicture(cachedData.profile_picture || null);
-          if (cachedData.skills) {
-            const skillNames = cachedData.skills.split(",").map((s) => s.trim()).filter(Boolean);
-            setSkills(
-              skillNames.map((name, index) => ({
-                id: `existing-${index}`,
-                skill_name: name,
-              }))
-            );
-          }
-          setLoading(false);
-
-          // Determine edit mode: registration mode or incomplete mandatory fields opens in Edit mode directly
-          if (isSetupMode || !cachedData.location || !cachedData.education) {
-            setIsEditing(true);
-          } else {
-            setIsEditing(false); // Read only when opened from dashboard profile link
-          }
-        } catch (e) {
-          console.error("Error parsing profile cache", e);
-        }
-      }
-
       try {
         const response = await api.get("/candidate/profile/");
         const data = response.data;
         localStorage.setItem("cached_candidate_profile", JSON.stringify(data));
 
-        setProfile({
-          full_name: data.full_name || "",
-          email: data.email || "",
-          date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : null,
-          gender: data.gender || "",
-          location: data.location || "",
-          education: data.education || "",
-          experience_years: Math.round(data.experience_years || 0),
-          linkedin_url: data.linkedin_url || "",
-          github_url: data.github_url || "",
-          portfolio_url: data.portfolio_url || "",
-        });
+        const hasSavedData = Boolean(
+          data.location || data.education || data.date_of_birth || (data.skills && data.skills.length > 0)
+        );
 
-        setProfilePicture(data.profile_picture || null);
-
-        if (data.skills) {
-          const skillNames = data.skills.split(",").map((s) => s.trim()).filter(Boolean);
-          setSkills(
-            skillNames.map((name, index) => ({
-              id: `existing-${Date.now()}-${index}`,
-              skill_name: name,
-            }))
-          );
-        }
-
-        // If registration setup or incomplete profile, default to edit mode
-        if (isSetupMode || !data.location || !data.education || !data.date_of_birth) {
-          setIsEditing(true);
+        if (isSetupMode || !hasSavedData) {
+          // 1st Time Registration Setup: Empty editable fields (only name & email pre-populated)
+          setProfile({
+            full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
+            email: data.email || userProfile?.email || "",
+            date_of_birth: null,
+            gender: "",
+            location: "",
+            education: "",
+            experience_years: 0,
+            linkedin_url: "",
+            github_url: "",
+            portfolio_url: "",
+          });
+          setProfilePicture(data.profile_picture || null);
+          setSkills([]);
+          setIsEditing(true); // Edit/Setup mode with "Save Profile" footer button
         } else {
-          setIsEditing(false);
+          // Revisiting via View Profile: Pre-fill all fields & load in Read-Only mode
+          setProfile({
+            full_name: data.full_name || "",
+            email: data.email || "",
+            date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : null,
+            gender: data.gender || "",
+            location: data.location || "",
+            education: data.education || "",
+            experience_years: Math.round(data.experience_years || 0),
+            linkedin_url: data.linkedin_url || "",
+            github_url: data.github_url || "",
+            portfolio_url: data.portfolio_url || "",
+          });
+          setProfilePicture(data.profile_picture || null);
+
+          if (data.skills) {
+            const skillNames = typeof data.skills === "string"
+              ? data.skills.split(",").map((s) => s.trim()).filter(Boolean)
+              : Array.isArray(data.skills) ? data.skills : [];
+            setSkills(
+              skillNames.map((name, index) => ({
+                id: `existing-${Date.now()}-${index}`,
+                skill_name: typeof name === "string" ? name : name.skill_name || name,
+              }))
+            );
+          }
+          setIsEditing(false); // Read-Only mode with "Edit Profile" footer button
         }
       } catch (error) {
         console.error("Error loading candidate profile:", error);
@@ -216,7 +195,7 @@ const CandidateProfile = () => {
     };
 
     fetchProfile();
-  }, [navigate, searchParams]);
+  }, [navigate, searchParams, userProfile]);
 
   // --- Auto Active Highlight via Scroll Observer ---
   useEffect(() => {
@@ -401,6 +380,13 @@ const CandidateProfile = () => {
       setShowSuccessToast(true);
       setIsEditing(false); // Switch to Read-Only format after saving
       setTimeout(() => setShowSuccessToast(false), 4000);
+
+      const isSetupMode = searchParams.get("mode") === "setup";
+      if (isSetupMode) {
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1000);
+      }
     } catch (error) {
       console.error("Save candidate profile error:", error);
       if (error.response?.status === 401) {
