@@ -38,6 +38,8 @@ class CodingQuestion(models.Model):
 class CodeSubmission(models.Model):
 
     STATUS = (
+        ("Passed", "Passed"),
+        ("Failed", "Failed"),
         ("success", "Success"),
         ("failed", "Failed"),
     )
@@ -45,13 +47,24 @@ class CodeSubmission(models.Model):
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
     )
 
 
     question = models.ForeignKey(
         CodingQuestion,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
+
+    question_title = models.CharField(
+        max_length=200,
+        default="",
+        blank=True
     )
 
 
@@ -90,11 +103,18 @@ class CodeSubmission(models.Model):
     )
 
 
+    ai_evaluation = models.JSONField(
+        default=dict,
+        blank=True
+    )
+
+
     submitted_at = models.DateTimeField(
         auto_now_add=True
     )
 
 
     def __str__(self):
-
-        return f"{self.user.username} - {self.question.title}"
+        user_label = self.user.username if self.user else "Anonymous"
+        title_label = self.question.title if self.question else (self.question_title or "Coding Assessment")
+        return f"{user_label} - {title_label} ({self.status} {self.score}%)"

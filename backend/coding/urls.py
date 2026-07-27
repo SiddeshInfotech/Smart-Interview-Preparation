@@ -28,6 +28,11 @@ urlpatterns = [
         views.get_coding_result
     ),
 
+    path(
+        "performance/",
+        views.get_coding_performance
+    ),
+
 
     path(
         "generate/",

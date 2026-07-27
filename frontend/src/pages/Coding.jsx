@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LogOut, Lightbulb, Code2 } from "lucide-react";
+import { LogOut, Lightbulb, Code2, Sparkles } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import api from "../api/axios";
 import "../styles/Coding.css";
@@ -29,6 +29,11 @@ const CodingAssessment = () => {
   const [solution, setSolution] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+
+  // AI Evaluation Submission State
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [evalResult, setEvalResult] = useState(null);
+  const [showEvalModal, setShowEvalModal] = useState(false);
 
   // Active question tab ("problem", "hint")
   const [activeTab, setActiveTab] = useState("problem");
@@ -152,6 +157,35 @@ public class Main {
     }
   };
 
+  const handleSubmitClick = async () => {
+    if (!code.trim()) {
+      alert("Please write your program code before submitting.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const response = await api.post("/coding/submit/", {
+        language: displayLanguage,
+        code: code,
+        input: userInput,
+        question_title: questionData?.title || `${displayLanguage} Coding Task`,
+        problem_statement: questionData?.problem_statement || "Write a program to solve the coding challenge requirement."
+      });
+
+      if (response.data?.success) {
+        setEvalResult(response.data.evaluation);
+        setShowEvalModal(true);
+      } else {
+        alert(response.data?.error || "Submission evaluation failed.");
+      }
+    } catch (err) {
+      console.error("Submission failed:", err);
+      alert("Submission error. Please ensure the backend server is running.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="coding-page">
       {/* ==========================================
@@ -251,9 +285,17 @@ public class Main {
               <div className="toolbar-right">
                 <button
                   type="button"
+                  className="submit-code-btn"
+                  onClick={handleSubmitClick}
+                  disabled={isRunning || isSubmitting}
+                >
+                  {isSubmitting ? "Evaluating..." : "⚡ Submit Solution"}
+                </button>
+                <button
+                  type="button"
                   className="run-btn"
                   onClick={handleRunClick}
-                  disabled={isRunning}
+                  disabled={isRunning || isSubmitting}
                 >
                   {isRunning ? "Running..." : "▶ Run Code"}
                 </button>
@@ -394,6 +436,86 @@ public class Main {
                 disabled={isRunning}
               >
                 {isRunning ? "Running..." : "▶ Run & Execute Program"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI EVALUATION POPUP MODAL */}
+      {showEvalModal && evalResult && (
+        <div className="eval-modal-overlay">
+          <div className="eval-modal">
+            <div className="eval-modal-header">
+              <div className="eval-modal-title">
+                <Sparkles size={22} color="#10b981" />
+                <h3>AI Code Evaluation Result</h3>
+              </div>
+              <button
+                type="button"
+                className="close-modal-btn"
+                onClick={() => setShowEvalModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="eval-modal-body">
+              {/* Overall Score & Status Banner */}
+              <div className={`eval-score-banner ${evalResult.status === 'Passed' ? 'passed' : 'failed'}`}>
+                <div className="score-circle">
+                  <h2>{evalResult.overall_score}%</h2>
+                  <span>Overall Score</span>
+                </div>
+                <div className="score-status-info">
+                  <span className={`status-pill ${evalResult.status === 'Passed' ? 'pill-passed' : 'pill-failed'}`}>
+                    {evalResult.status === 'Passed' ? '✓ Passed' : '✕ Needs Improvement'}
+                  </span>
+                  <p className="eval-summary-text">{evalResult.summary || "Evaluation completed."}</p>
+                  <div className="complexity-tags">
+                    <span className="comp-tag">⏱ Time: {evalResult.time_complexity_notation || "O(N)"}</span>
+                    <span className="comp-tag">💾 Space: {evalResult.space_complexity_notation || "O(1)"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Criteria Breakdown */}
+              <div className="eval-criteria-section">
+                <h4>📊 Criteria Assessment</h4>
+                {evalResult.criteria && Object.entries(evalResult.criteria).map(([key, item]) => (
+                  <div className="criteria-row" key={key}>
+                    <div className="criteria-label-row">
+                      <span className="criteria-name">{key.replace("_", " ").toUpperCase()}</span>
+                      <strong className="criteria-score">{item.score}%</strong>
+                    </div>
+                    <div className="criteria-bar-bg">
+                      <div className="criteria-bar-fill" style={{ width: `${item.score}%` }}></div>
+                    </div>
+                    {item.feedback && <p className="criteria-feedback">{item.feedback}</p>}
+                  </div>
+                ))}
+              </div>
+
+              {/* AI Suggestions */}
+              {evalResult.suggestions && evalResult.suggestions.length > 0 && (
+                <div className="eval-suggestions-section">
+                  <h4>💡 Key Recommendations</h4>
+                  <ul>
+                    {evalResult.suggestions.map((sug, idx) => (
+                      <li key={idx}>{sug}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="eval-modal-footer">
+              <button
+                type="button"
+                className="eval-close-btn"
+                onClick={() => setShowEvalModal(false)}
+              >
+                Close Evaluation Result
               </button>
             </div>
           </div>

@@ -59,6 +59,15 @@ const Dashboard = () => {
     overall_performance: 0,
   });
 
+  const [codingPerformance, setCodingPerformance] = useState({
+    total_submissions: 0,
+    logical_thinking: 0,
+    code_efficiency: 0,
+    language_skills: 0,
+    problem_solving: 0,
+    overall_score: 0,
+  });
+
   useEffect(() => {
     const fetchQuizPerformance = async () => {
       try {
@@ -80,9 +89,20 @@ const Dashboard = () => {
         console.warn("Interview Performance API Error:", err);
       }
     };
+    const fetchCodingPerformance = async () => {
+      try {
+        const res = await api.get("/coding/performance/");
+        if (res.data) {
+          setCodingPerformance(res.data);
+        }
+      } catch (err) {
+        console.warn("Coding Performance API Error:", err);
+      }
+    };
 
     fetchQuizPerformance();
     fetchInterviewPerformance();
+    fetchCodingPerformance();
   }, []);
 
   const performanceData = [
@@ -243,26 +263,26 @@ const Dashboard = () => {
           <div className="performance-content">
             <div className="performance-row">
               <span>Logical Thinking</span>
-              <strong>94%</strong>
+              <strong>{codingPerformance.logical_thinking || 0}%</strong>
             </div>
             <div className="performance-row">
               <span>Code Efficiency</span>
-              <strong>89%</strong>
+              <strong>{codingPerformance.code_efficiency || 0}%</strong>
             </div>
             <div className="performance-row">
               <span>Language Skills</span>
-              <strong>86%</strong>
+              <strong>{codingPerformance.language_skills || 0}%</strong>
             </div>
             <div className="performance-row">
               <span>Problem Solving</span>
-              <strong>91%</strong>
+              <strong>{codingPerformance.problem_solving || 0}%</strong>
             </div>
 
             <hr className="performance-divider" />
 
             <div className="performance-row total-performance">
               <span>Overall Coding Performance</span>
-              <strong className="performance-score">90%</strong>
+              <strong className="performance-score">{codingPerformance.overall_score || 0}%</strong>
             </div>
           </div>
         </div>

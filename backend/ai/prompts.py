@@ -193,3 +193,66 @@ Rules:
 - STRICT COMPLIANCE: If difficulty is Easy, the problem MUST be basic and beginner-friendly.
 - Ensure all JSON fields ("title", "problem_statement", "sample_input", "sample_output", "hint", "solution") are present and non-empty.
 """
+
+
+def code_evaluation_prompt(language, problem_title, problem_statement, code, user_input, execution_output, execution_error):
+    """
+    Generate a prompt for Gemini AI to evaluate code submitted by a candidate based on multiple criteria.
+    """
+    return f"""
+Role:
+You are an expert Lead Software Architect and Technical Interviewer evaluating a candidate's code submission.
+
+Task:
+Evaluate the candidate's code submission based on the problem requirements, execution results, and software engineering best practices across multiple criteria.
+
+Context:
+- Language: {language}
+- Problem Title: {problem_title}
+- Problem Statement: {problem_statement}
+- Submitted Code:
+```
+{code}
+```
+- User Standard Input (stdin):
+{user_input if user_input else "(None)"}
+- Program Output (stdout):
+{execution_output if execution_output else "(None)"}
+- Execution Error (stderr/error):
+{execution_error if execution_error else "(None)"}
+
+Evaluation Criteria:
+1. Correctness: Does the code fulfill the problem requirement and produce correct output? (0-100)
+2. Code Quality & Style: Is the code well-structured, readable, and following idiomatic conventions? (0-100)
+3. Time Complexity: What is the time complexity (e.g. O(N), O(N^2)) and performance efficiency score? (0-100)
+4. Space Complexity: What is the space complexity (e.g. O(1), O(N)) and memory usage score? (0-100)
+5. Edge Cases: Does the code handle potential edge cases or boundary conditions properly? (0-100)
+
+Output Format (JSON Object ONLY):
+{{
+  "overall_score": 85,
+  "status": "Passed",
+  "logical_thinking": 90,
+  "code_efficiency": 85,
+  "language_skills": 88,
+  "problem_solving": 86,
+  "time_complexity_notation": "O(N)",
+  "space_complexity_notation": "O(1)",
+  "criteria": {{
+    "correctness": {{ "score": 90, "feedback": "Detailed feedback on output correctness" }},
+    "code_quality": {{ "score": 85, "feedback": "Feedback on code structure and readability" }},
+    "time_complexity": {{ "score": 85, "feedback": "Assessment of time complexity" }},
+    "space_complexity": {{ "score": 90, "feedback": "Assessment of memory usage" }},
+    "edge_cases": {{ "score": 75, "feedback": "Assessment of boundary/edge case handling" }}
+  }},
+  "summary": "2-3 sentences summarizing the candidate's code quality and performance.",
+  "suggestions": [
+    "First actionable improvement suggestion",
+    "Second actionable improvement suggestion"
+  ]
+}}
+
+Rules:
+- Return ONLY valid raw JSON object without markdown formatting, code block backticks (no ```json), or wrapping.
+- All numbers must be integers. Ensure all keys are present.
+"""
