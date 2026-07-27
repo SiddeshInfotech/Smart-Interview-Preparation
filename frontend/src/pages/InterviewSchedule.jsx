@@ -304,11 +304,11 @@ function ScheduleForm({ onSchedule }) {
               <CalendarClock size={14} className="field__icon" /> Available Interviewers
             </span>
             {loadingSlots ? (
-              <div style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}>
+              <div style={{ textAlign: "center", padding: "20px" }}>
                 Finding available interviewers...
               </div>
             ) : availableInterviewers.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}>
+              <div style={{ textAlign: "center", padding: "20px" }}>
                 No interviewers available for this time slot.
               </div>
             ) : (

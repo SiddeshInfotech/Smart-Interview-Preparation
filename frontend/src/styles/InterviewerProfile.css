@@ -1274,7 +1274,7 @@ body.dark-theme .interviewer-profile-page,
 body.dark-theme .ip-layout-container,
 body.dark-theme .ip-app-wrapper {
   background-color: #090d16 !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .ip-sidebar,
@@ -1293,7 +1293,7 @@ body.dark-theme .ip-bottom-bar,
 body.dark-theme .ip-mobile-header {
   background: #0f172a !important;
   border-color: #1e293b !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .ip-card-title,
@@ -1306,7 +1306,7 @@ body.dark-theme .ip-nav-item,
 body.dark-theme .ip-label,
 body.dark-theme .ip-brand-title,
 body.dark-theme .ip-mode-title {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .ip-card-subtitle,
@@ -1319,12 +1319,13 @@ body.dark-theme .ip-brand-subtitle,
 body.dark-theme .ip-mode-hint,
 body.dark-theme .ip-field-hint,
 body.dark-theme .ip-input-label {
-  color: #94a3b8 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .ip-nav-item:hover,
 body.dark-theme .ip-nav-item:hover {
   background: #1e293b !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .ip-sidebar-mode-card,
@@ -1339,7 +1340,7 @@ body.dark-theme .ip-slots-chips-wrapper,
 body.dark-theme .ip-slot-add-form {
   background: #1e293b !important;
   border-color: #334155 !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .ip-input,
@@ -1354,7 +1355,7 @@ body.dark-theme .ip-select-field,
 body.dark-theme .ip-textarea-field {
   background-color: #0f172a !important;
   border-color: #334155 !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .ip-input.disabled,
@@ -1364,11 +1365,11 @@ body.dark-theme .ip-input.disabled,
 body.dark-theme .ip-input.readonly,
 body.dark-theme .ip-select.readonly {
   background-color: #1e293b !important;
-  color: #cbd5e1 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .ip-empty-expertise-msg,
 body.dark-theme .ip-empty-expertise-msg {
-  color: #94a3b8 !important;
+  color: #ffffff !important;
 }
 

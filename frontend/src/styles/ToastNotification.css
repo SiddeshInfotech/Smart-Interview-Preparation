@@ -172,3 +172,20 @@
     font-size: 12px;
   }
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR TOAST NOTIFICATIONS
+   ========================================================================== */
+[data-theme="dark"] .toast,
+body.dark-theme .toast {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .toast-title,
+[data-theme="dark"] .toast-message,
+body.dark-theme .toast-title,
+body.dark-theme .toast-message {
+  color: #ffffff !important;
+}

@@ -355,3 +355,42 @@ main {
     display: block;
   }
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR PUBLIC LAYOUTS & NAV DROPDOWNS
+   ========================================================================== */
+[data-theme="dark"] .public-header,
+[data-theme="dark"] .nav-dropdown-menu,
+[data-theme="dark"] .sidebar-mobile,
+body.dark-theme .public-header,
+body.dark-theme .nav-dropdown-menu,
+body.dark-theme .sidebar-mobile {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .nav-link,
+[data-theme="dark"] .dropdown-item-row strong,
+[data-theme="dark"] .dropdown-item-row p,
+[data-theme="dark"] .mobile-nav-link,
+[data-theme="dark"] .mobile-nav-btn,
+[data-theme="dark"] .mobile-nav-section-title,
+body.dark-theme .nav-link,
+body.dark-theme .dropdown-item-row strong,
+body.dark-theme .dropdown-item-row p,
+body.dark-theme .mobile-nav-link,
+body.dark-theme .mobile-nav-btn,
+body.dark-theme .mobile-nav-section-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .dropdown-item-row:hover,
+[data-theme="dark"] .mobile-nav-link:hover,
+[data-theme="dark"] .mobile-nav-btn:hover,
+body.dark-theme .dropdown-item-row:hover,
+body.dark-theme .mobile-nav-link:hover,
+body.dark-theme .mobile-nav-btn:hover {
+  background: #1e293b !important;
+  color: #ffffff !important;
+}

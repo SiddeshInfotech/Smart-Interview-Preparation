@@ -249,7 +249,7 @@
 body.dark-theme .notif-panel {
   background: #0f172a;
   border-color: #1e293b;
-  color: #f8fafc;
+  color: #ffffff;
   box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.5);
 }
 
@@ -259,10 +259,20 @@ body.dark-theme .notif-header {
 }
 
 [data-theme="dark"] .notif-header__title,
+[data-theme="dark"] .notif-panel__header h4,
 [data-theme="dark"] .notif-item__title,
+[data-theme="dark"] .notif-item__desc,
+[data-theme="dark"] .notif-item__time,
+[data-theme="dark"] .notif-tab:not(.notif-tab--active),
+[data-theme="dark"] .notif-empty,
 body.dark-theme .notif-header__title,
-body.dark-theme .notif-item__title {
-  color: #f8fafc;
+body.dark-theme .notif-panel__header h4,
+body.dark-theme .notif-item__title,
+body.dark-theme .notif-item__desc,
+body.dark-theme .notif-item__time,
+body.dark-theme .notif-tab:not(.notif-tab--active),
+body.dark-theme .notif-empty {
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .notif-item:hover,

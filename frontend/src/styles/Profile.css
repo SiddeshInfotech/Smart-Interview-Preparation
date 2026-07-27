@@ -538,7 +538,7 @@
 [data-theme="dark"] .profile-page,
 body.dark-theme .profile-page {
   background: #090d16;
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .profile-header-card,
@@ -549,28 +549,26 @@ body.dark-theme .profile-card,
 body.dark-theme .info-card {
   background: #0f172a;
   border-color: #1e293b;
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .profile-name,
 [data-theme="dark"] .card-title,
-body.dark-theme .profile-name,
-body.dark-theme .card-title {
-  color: #f8fafc;
-}
-
 [data-theme="dark"] .profile-role,
 [data-theme="dark"] .profile-email,
 [data-theme="dark"] .info-label,
+[data-theme="dark"] .info-value,
+[data-theme="dark"] .social-link,
+[data-theme="dark"] .stat-label,
+body.dark-theme .profile-name,
+body.dark-theme .card-title,
 body.dark-theme .profile-role,
 body.dark-theme .profile-email,
-body.dark-theme .info-label {
-  color: #94a3b8;
-}
-
-[data-theme="dark"] .info-value,
-body.dark-theme .info-value {
-  color: #e2e8f0;
+body.dark-theme .info-label,
+body.dark-theme .info-value,
+body.dark-theme .social-link,
+body.dark-theme .stat-label {
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .profile-input,
@@ -579,5 +577,5 @@ body.dark-theme .profile-input,
 body.dark-theme .profile-select {
   background: #1e293b;
   border-color: #334155;
-  color: #f8fafc;
+  color: #ffffff;
 }

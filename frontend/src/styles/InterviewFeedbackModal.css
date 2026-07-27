@@ -488,28 +488,61 @@
    ========================================================================== */
 [data-theme="dark"] .feedback-modal,
 [data-theme="dark"] .modal-content,
+[data-theme="dark"] .feedback-modal-card,
+[data-theme="dark"] .candidate-waiting-card,
 body.dark-theme .feedback-modal,
-body.dark-theme .modal-content {
-  background: #0f172a;
-  border-color: #1e293b;
-  color: #f8fafc;
+body.dark-theme .modal-content,
+body.dark-theme .feedback-modal-card,
+body.dark-theme .candidate-waiting-card {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .modal-title,
 [data-theme="dark"] .field-label,
+[data-theme="dark"] .section-title,
+[data-theme="dark"] .rating-label,
+[data-theme="dark"] .score-banner-label,
+[data-theme="dark"] .score-max,
+[data-theme="dark"] .waiting-title,
+[data-theme="dark"] .waiting-msg,
+[data-theme="dark"] .score-title,
 body.dark-theme .modal-title,
-body.dark-theme .field-label {
-  color: #f8fafc;
+body.dark-theme .field-label,
+body.dark-theme .section-title,
+body.dark-theme .rating-label,
+body.dark-theme .score-banner-label,
+body.dark-theme .score-max,
+body.dark-theme .waiting-title,
+body.dark-theme .waiting-msg,
+body.dark-theme .score-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .rating-row,
+[data-theme="dark"] .overall-score-banner,
+[data-theme="dark"] .result-score-badge,
+[data-theme="dark"] .feedback-modal-footer,
+body.dark-theme .rating-row,
+body.dark-theme .overall-score-banner,
+body.dark-theme .result-score-badge,
+body.dark-theme .feedback-modal-footer {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .feedback-input,
 [data-theme="dark"] .feedback-textarea,
 [data-theme="dark"] .feedback-select,
+[data-theme="dark"] .btn-cancel-feedback,
 body.dark-theme .feedback-input,
 body.dark-theme .feedback-textarea,
-body.dark-theme .feedback-select {
-  background: #1e293b;
-  border-color: #334155;
-  color: #f8fafc;
+body.dark-theme .feedback-select,
+body.dark-theme .btn-cancel-feedback {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
 }
 

@@ -271,7 +271,7 @@ const Dashboard = () => {
           <div className="card-header">
             <div>
               <h3>Performance Analytics</h3>
-              <p style={{ margin: "4px 0 0 0", color: "#64748B", fontSize: "14px" }}>
+              <p style={{ margin: "4px 0 0 0", fontSize: "14px" }}>
                 Candidate daily progress tracking & skill trends
               </p>
             </div>

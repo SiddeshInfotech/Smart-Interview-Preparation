@@ -1968,7 +1968,7 @@ body.dark-theme .coding-container,
 body.dark-theme .coding-workspace,
 body.dark-theme .coding-page-wrapper {
   background: #090d16 !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .problem-panel,
@@ -1981,6 +1981,7 @@ body.dark-theme .coding-page-wrapper {
 [data-theme="dark"] .sample-card,
 [data-theme="dark"] .stdin-modal-content,
 [data-theme="dark"] .eval-modal-content,
+[data-theme="dark"] .input-modal,
 body.dark-theme .problem-panel,
 body.dark-theme .editor-panel,
 body.dark-theme .console-panel,
@@ -1990,10 +1991,11 @@ body.dark-theme .editor-card,
 body.dark-theme .sample-box,
 body.dark-theme .sample-card,
 body.dark-theme .stdin-modal-content,
-body.dark-theme .eval-modal-content {
+body.dark-theme .eval-modal-content,
+body.dark-theme .input-modal {
   background: #0f172a !important;
   border-color: #1e293b !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .problem-title,
@@ -2004,6 +2006,11 @@ body.dark-theme .eval-modal-content {
 [data-theme="dark"] .eval-modal-header h3,
 [data-theme="dark"] .stdin-modal-header h3,
 [data-theme="dark"] .eval-modal-header h2,
+[data-theme="dark"] .input-card-title-group h4,
+[data-theme="dark"] .input-card-desc,
+[data-theme="dark"] .criteria-label,
+[data-theme="dark"] .criteria-feedback,
+[data-theme="dark"] .eval-suggestions-section ul,
 body.dark-theme .problem-title,
 body.dark-theme .tab-btn,
 body.dark-theme .question-header h2,
@@ -2011,8 +2018,13 @@ body.dark-theme .question-body p,
 body.dark-theme .sample-title,
 body.dark-theme .eval-modal-header h3,
 body.dark-theme .stdin-modal-header h3,
-body.dark-theme .eval-modal-header h2 {
-  color: #f8fafc !important;
+body.dark-theme .eval-modal-header h2,
+body.dark-theme .input-card-title-group h4,
+body.dark-theme .input-card-desc,
+body.dark-theme .criteria-label,
+body.dark-theme .criteria-feedback,
+body.dark-theme .eval-suggestions-section ul {
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .question-body,
@@ -2021,7 +2033,7 @@ body.dark-theme .eval-modal-header h2 {
 body.dark-theme .question-body,
 body.dark-theme .constraints-section,
 body.dark-theme .format-section {
-  color: #e2e8f0 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .editor-toolbar,
@@ -2031,15 +2043,19 @@ body.dark-theme .format-section {
 [data-theme="dark"] .eval-modal-footer,
 [data-theme="dark"] .sample-input-box,
 [data-theme="dark"] .sample-output-box,
+[data-theme="dark"] .input-box,
+[data-theme="dark"] .input-card,
 body.dark-theme .editor-toolbar,
 body.dark-theme .language-select,
 body.dark-theme .stdin-info-banner,
 body.dark-theme .eval-modal-header,
 body.dark-theme .eval-modal-footer,
 body.dark-theme .sample-input-box,
-body.dark-theme .sample-output-box {
+body.dark-theme .sample-output-box,
+body.dark-theme .input-box,
+body.dark-theme .input-card {
   background: #1e293b !important;
   border-color: #334155 !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 

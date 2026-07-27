@@ -236,10 +236,10 @@ public class Main {
             <div className="question-body">
               {activeTab === 'problem' && (
                 <>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#0f172a' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px' }}>
                     {questionData?.title || `${displayLanguage} Coding Task`}
                   </h3>
-                  <p style={{ whiteSpace: "pre-wrap", lineHeight: '1.6', color: '#334155' }}>
+                  <p style={{ whiteSpace: "pre-wrap", lineHeight: '1.6' }}>
                     {questionData?.problem_statement || "Write a program to solve the coding challenge requirement."}
                   </p>
 
@@ -265,7 +265,7 @@ public class Main {
               {activeTab === 'hint' && (
                 <div className="hint-container">
                   <h4>💡 Hint &amp; Approach</h4>
-                  <p style={{ whiteSpace: "pre-wrap", lineHeight: '1.6', color: '#1e293b' }}>
+                  <p style={{ whiteSpace: "pre-wrap", lineHeight: '1.6' }}>
                     {questionData?.hint || "Think about standard data structures and algorithmic steps to solve this problem effectively."}
                   </p>
                 </div>

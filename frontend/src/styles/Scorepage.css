@@ -535,7 +535,7 @@ body {
 body.dark-theme .score-container,
 body.dark-theme .score-content {
   background: #090d16;
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .quiz-header,
@@ -554,21 +554,24 @@ body.dark-theme .option-card,
 body.dark-theme .option-item {
   background: #0f172a;
   border-color: #1e293b;
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .quiz-title,
 [data-theme="dark"] .stat-label,
 [data-theme="dark"] .question-text,
-body.dark-theme .quiz-title,
-body.dark-theme .stat-label,
-body.dark-theme .question-text {
-  color: #f8fafc;
-}
-
 [data-theme="dark"] .quiz-subtitle,
 [data-theme="dark"] .stat-description,
+[data-theme="dark"] .stat-value,
+[data-theme="dark"] .question-number,
+[data-theme="dark"] .explanation-box,
+body.dark-theme .quiz-title,
+body.dark-theme .stat-label,
+body.dark-theme .question-text,
 body.dark-theme .quiz-subtitle,
-body.dark-theme .stat-description {
-  color: #94a3b8;
+body.dark-theme .stat-description,
+body.dark-theme .stat-value,
+body.dark-theme .question-number,
+body.dark-theme .explanation-box {
+  color: #ffffff !important;
 }

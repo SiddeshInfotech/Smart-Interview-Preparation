@@ -1196,7 +1196,7 @@ body.dark-theme .candidate-profile-page,
 body.dark-theme .cp-layout-container,
 body.dark-theme .cp-app-wrapper {
   background-color: #090d16 !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .cp-sidebar,
@@ -1215,7 +1215,7 @@ body.dark-theme .cp-bottom-bar,
 body.dark-theme .cp-mobile-header {
   background: #0f172a !important;
   border-color: #1e293b !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .cp-card-title,
@@ -1228,7 +1228,7 @@ body.dark-theme .cp-nav-item,
 body.dark-theme .cp-label,
 body.dark-theme .cp-brand-title,
 body.dark-theme .cp-mode-title {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .cp-card-subtitle,
@@ -1241,12 +1241,13 @@ body.dark-theme .cp-brand-subtitle,
 body.dark-theme .cp-mode-hint,
 body.dark-theme .cp-field-hint,
 body.dark-theme .cp-input-label {
-  color: #94a3b8 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .cp-nav-item:hover,
 body.dark-theme .cp-nav-item:hover {
   background: #1e293b !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .cp-sidebar-mode-card,
@@ -1257,7 +1258,7 @@ body.dark-theme .cp-avatar-upload-area,
 body.dark-theme .cp-skills-chips-wrapper {
   background: #1e293b !important;
   border-color: #334155 !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .cp-input,
@@ -1272,7 +1273,7 @@ body.dark-theme .cp-select-field,
 body.dark-theme .cp-textarea-field {
   background-color: #0f172a !important;
   border-color: #334155 !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .cp-input.disabled,
@@ -1282,7 +1283,7 @@ body.dark-theme .cp-input.disabled,
 body.dark-theme .cp-input.readonly,
 body.dark-theme .cp-select.readonly {
   background-color: #1e293b !important;
-  color: #cbd5e1 !important;
+  color: #ffffff !important;
 }
 
 

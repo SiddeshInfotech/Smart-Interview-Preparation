@@ -873,7 +873,7 @@ body.dark-theme .interview-page,
 body.dark-theme .interview-lobby,
 body.dark-theme .pre-interview-container {
   background: #090d16 !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .ready-card,
@@ -894,7 +894,7 @@ body.dark-theme .encrypted-banner,
 body.dark-theme .session-details-card {
   background: #0f172a !important;
   border-color: #1e293b !important;
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .detail-item .value,
@@ -902,19 +902,27 @@ body.dark-theme .session-details-card {
 [data-theme="dark"] .lobby-card h3,
 [data-theme="dark"] .device-item h4,
 [data-theme="dark"] .device-item span,
+[data-theme="dark"] .ready-subtitle,
+[data-theme="dark"] .device-name,
+[data-theme="dark"] .device-detail,
+[data-theme="dark"] .security-badge,
 body.dark-theme .detail-item .value,
 body.dark-theme .ready-card h2,
 body.dark-theme .lobby-card h3,
 body.dark-theme .device-item h4,
-body.dark-theme .device-item span {
-  color: #f8fafc !important;
+body.dark-theme .device-item span,
+body.dark-theme .ready-subtitle,
+body.dark-theme .device-name,
+body.dark-theme .device-detail,
+body.dark-theme .security-badge {
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .detail-item .label,
 [data-theme="dark"] .device-item p,
 body.dark-theme .detail-item .label,
 body.dark-theme .device-item p {
-  color: #94a3b8 !important;
+  color: #ffffff !important;
 }
 
 

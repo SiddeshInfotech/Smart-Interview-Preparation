@@ -742,3 +742,74 @@
     font-size: 12px;
   }
 }
+
+/* ===============================
+   DARK THEME OVERRIDES FOR DASHBOARD
+================================== */
+[data-theme="dark"] .dashboard-container,
+body.dark-theme .dashboard-container {
+  background: #090d16 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .dashboard-header h1,
+[data-theme="dark"] .dashboard-header h2,
+[data-theme="dark"] .dashboard-header p,
+[data-theme="dark"] .card-header h3,
+[data-theme="dark"] .overall-header h3,
+[data-theme="dark"] .overall-subtitle,
+[data-theme="dark"] .performance-title h3,
+[data-theme="dark"] .metric-title,
+[data-theme="dark"] .metric-subtitle,
+[data-theme="dark"] .performance-row span,
+[data-theme="dark"] .performance-row strong,
+[data-theme="dark"] .score-large,
+[data-theme="dark"] .overall-description,
+[data-theme="dark"] .tooltip-day,
+[data-theme="dark"] .filter-pill,
+body.dark-theme .dashboard-header h1,
+body.dark-theme .dashboard-header h2,
+body.dark-theme .dashboard-header p,
+body.dark-theme .card-header h3,
+body.dark-theme .overall-header h3,
+body.dark-theme .overall-subtitle,
+body.dark-theme .performance-title h3,
+body.dark-theme .metric-title,
+body.dark-theme .metric-subtitle,
+body.dark-theme .performance-row span,
+body.dark-theme .performance-row strong,
+body.dark-theme .score-large,
+body.dark-theme .overall-description,
+body.dark-theme .tooltip-day,
+body.dark-theme .filter-pill {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .graph-card,
+[data-theme="dark"] .overall-card,
+[data-theme="dark"] .performance-card,
+[data-theme="dark"] .metric-card-row,
+[data-theme="dark"] .custom-chart-tooltip,
+body.dark-theme .graph-card,
+body.dark-theme .overall-card,
+body.dark-theme .performance-card,
+body.dark-theme .metric-card-row,
+body.dark-theme .custom-chart-tooltip {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .chart-filter-pills,
+body.dark-theme .chart-filter-pills {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .filter-pill:hover,
+[data-theme="dark"] .filter-pill.active,
+body.dark-theme .filter-pill:hover,
+body.dark-theme .filter-pill.active {
+  background: #334155 !important;
+  color: #ffffff !important;
+}

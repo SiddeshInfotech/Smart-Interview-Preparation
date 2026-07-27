@@ -758,43 +758,74 @@
    ========================================================================== */
 [data-theme="dark"] .quiz-page-container,
 [data-theme="dark"] .quiz-container,
+[data-theme="dark"] .practice-container,
 body.dark-theme .quiz-page-container,
-body.dark-theme .quiz-container {
+body.dark-theme .quiz-container,
+body.dark-theme .practice-container {
   background: #090d16;
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .quiz-card,
 [data-theme="dark"] .subject-card,
+[data-theme="dark"] .subject-item,
+[data-theme="dark"] .difficulty-item,
+[data-theme="dark"] .question-type-item,
 [data-theme="dark"] .setup-card,
 [data-theme="dark"] .difficulty-card,
 [data-theme="dark"] .type-card,
+[data-theme="dark"] .prompt-box-textarea,
+[data-theme="dark"] .step-card,
 body.dark-theme .quiz-card,
 body.dark-theme .subject-card,
+body.dark-theme .subject-item,
+body.dark-theme .difficulty-item,
+body.dark-theme .question-type-item,
 body.dark-theme .setup-card,
 body.dark-theme .difficulty-card,
-body.dark-theme .type-card {
+body.dark-theme .type-card,
+body.dark-theme .prompt-box-textarea,
+body.dark-theme .step-card {
   background: #0f172a;
   border-color: #1e293b;
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .subject-name,
 [data-theme="dark"] .setup-header h2,
 [data-theme="dark"] .content-header h1,
+[data-theme="dark"] .content-header p,
+[data-theme="dark"] .step-title,
+[data-theme="dark"] .step-subtitle,
+[data-theme="dark"] .subject-item,
+[data-theme="dark"] .difficulty-item,
+[data-theme="dark"] .question-type-item,
 body.dark-theme .subject-name,
 body.dark-theme .setup-header h2,
-body.dark-theme .content-header h1 {
-  color: #f8fafc;
+body.dark-theme .content-header h1,
+body.dark-theme .content-header p,
+body.dark-theme .step-title,
+body.dark-theme .step-subtitle,
+body.dark-theme .subject-item,
+body.dark-theme .difficulty-item,
+body.dark-theme .question-type-item {
+  color: #ffffff;
 }
 
 [data-theme="dark"] .subject-card:hover,
+[data-theme="dark"] .subject-item:hover,
 [data-theme="dark"] .difficulty-card:hover,
+[data-theme="dark"] .difficulty-item:hover,
 [data-theme="dark"] .type-card:hover,
+[data-theme="dark"] .question-type-item:hover,
 body.dark-theme .subject-card:hover,
+body.dark-theme .subject-item:hover,
 body.dark-theme .difficulty-card:hover,
-body.dark-theme .type-card:hover {
+body.dark-theme .difficulty-item:hover,
+body.dark-theme .type-card:hover,
+body.dark-theme .question-type-item:hover {
   background: #1e293b;
   border-color: #3b82f6;
+  color: #ffffff;
 }
 
