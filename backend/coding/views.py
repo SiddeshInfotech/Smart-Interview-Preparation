@@ -1,21 +1,19 @@
+import json
+import re
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-
 
 from .models import (
     CodingQuestion,
     CodeSubmission
 )
-
-
 from .serializers import (
     CodingQuestionSerializer
 )
-
-
 from .services.executor_client import execute_code
-
+from ai.gemini_service import generate_content
+from ai.prompts import coding_challenge_prompt, code_evaluation_prompt
 
 
 @api_view(["GET"])
@@ -32,21 +30,13 @@ def get_questions(request):
     })
 
 
-
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def run_code(request):
-
     language = request.data.get("language")
-
     code = request.data.get("code")
+    user_input = request.data.get("input", "")
 
-    user_input = request.data.get(
-        "input",
-        ""
-      
-    )
-    print("USER INPUT =", repr(user_input))
     if not code:
         return Response({
             "status": "error",
@@ -55,105 +45,112 @@ def run_code(request):
             "solution": "Please write or paste your program code in the editor before running."
         })
 
-
-    result = execute_code(
-
-        language,
-
-        code,
-
-        user_input
-
-    )
-
-
+    result = execute_code(language, code, user_input)
     return Response(result)
-
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def submit_code(request):
-    question_id = request.data.get("question_id")
-    question_title = request.data.get("question_title", "")
-    problem_statement = request.data.get("problem_statement", "")
-    language = request.data.get("language", "Python")
-    code = request.data.get("code", "")
-    user_input = request.data.get("input", "")
+    try:
+        question_id = request.data.get("question_id")
+        question_title = request.data.get("question_title", "")
+        problem_statement = request.data.get("problem_statement", "")
+        language = request.data.get("language", "Python")
+        code = request.data.get("code", "")
+        user_input = request.data.get("input", "")
 
-    if not code.strip():
+        if not code or not code.strip():
+            return Response({
+                "success": False,
+                "error": "No code provided for submission."
+            }, status=400)
+
+        # 1. Execute Code via Piston
+        exec_result = execute_code(language, code, user_input)
+        if not isinstance(exec_result, dict):
+            exec_result = {"status": "error", "output": "", "error": str(exec_result)}
+
+        # 2. Evaluate Code via Gemini AI
+        prompt = code_evaluation_prompt(
+            language,
+            question_title or f"{language} Coding Challenge",
+            problem_statement or "Solve the coding task.",
+            code,
+            user_input,
+            exec_result.get("output", ""),
+            exec_result.get("error", "")
+        )
+
+        eval_data = None
+        try:
+            raw_response = generate_content(prompt)
+            cleaned = re.sub(r"^```(json)?|```$", "", raw_response.strip(), flags=re.MULTILINE).strip()
+            eval_data = json.loads(cleaned)
+        except Exception as e:
+            print("Gemini Evaluation Exception:", e)
+            is_success = exec_result.get("status") == "success" and not exec_result.get("error")
+            eval_data = {
+                "overall_score": 85 if is_success else 40,
+                "status": "Passed" if is_success else "Failed",
+                "logical_thinking": 85 if is_success else 45,
+                "code_efficiency": 80 if is_success else 40,
+                "language_skills": 85 if is_success else 50,
+                "problem_solving": 85 if is_success else 40,
+                "time_complexity_notation": "O(N)",
+                "space_complexity_notation": "O(1)",
+                "criteria": {
+                    "correctness": { "score": 90 if is_success else 30, "feedback": "Code compiled & executed successfully." if is_success else "Execution encountered runtime error." },
+                    "code_quality": { "score": 85, "feedback": "Code structure and syntax are valid." },
+                    "time_complexity": { "score": 80, "feedback": "Standard execution efficiency." },
+                    "space_complexity": { "score": 85, "feedback": "Memory footprint is within limits." },
+                    "edge_cases": { "score": 75, "feedback": "Verify handling for empty or extreme inputs." }
+                },
+                "summary": "Program evaluated successfully based on execution results.",
+                "suggestions": [
+                    "Include concise inline comments for key algorithmic steps.",
+                    "Add boundary validation checks for user inputs."
+                ]
+            }
+
+        # 3. Question Lookup
+        question_obj = None
+        if question_id:
+            try:
+                question_obj = CodingQuestion.objects.get(id=question_id)
+            except Exception:
+                question_obj = None
+
+        # 4. Store in Database
+        user_obj = request.user if request.user and request.user.is_authenticated else None
+        submission = CodeSubmission.objects.create(
+            user=user_obj,
+            question=question_obj,
+            question_title=question_title or (question_obj.title if question_obj else f"{language} Assessment"),
+            language=language,
+            code=code,
+            input_data=user_input,
+            output=exec_result.get("output", ""),
+            error=exec_result.get("error", ""),
+            status=eval_data.get("status", "Failed"),
+            score=int(eval_data.get("overall_score", 0)),
+            ai_evaluation=eval_data
+        )
+
+        return Response({
+            "success": True,
+            "submission_id": submission.id,
+            "execution_result": exec_result,
+            "evaluation": eval_data
+        })
+    except Exception as outer_err:
+        print("submit_code fatal error:", outer_err)
+        import traceback
+        traceback.print_exc()
         return Response({
             "success": False,
-            "error": "No code provided for submission."
-        }, status=400)
-
-    # 1. Execute Code via Piston
-    exec_result = execute_code(language, code, user_input)
-
-    # 2. Evaluate Code via Gemini AI
-    prompt = code_evaluation_prompt(
-        language,
-        question_title or f"{language} Coding Challenge",
-        problem_statement or "Solve the coding task.",
-        code,
-        user_input,
-        exec_result.get("output", ""),
-        exec_result.get("error", "")
-    )
-
-    eval_data = None
-    try:
-        raw_response = generate_content(prompt)
-        cleaned = re.sub(r"^```(json)?|```$", "", raw_response.strip(), flags=re.MULTILINE).strip()
-        eval_data = json.loads(cleaned)
-    except Exception as e:
-        print("Gemini Evaluation Exception:", e)
-        is_success = exec_result.get("status") == "success" and not exec_result.get("error")
-        eval_data = {
-            "overall_score": 85 if is_success else 40,
-            "status": "Passed" if is_success else "Failed",
-            "logical_thinking": 85 if is_success else 45,
-            "code_efficiency": 80 if is_success else 40,
-            "language_skills": 85 if is_success else 50,
-            "problem_solving": 85 if is_success else 40,
-            "time_complexity_notation": "O(N)",
-            "space_complexity_notation": "O(1)",
-            "criteria": {
-                "correctness": { "score": 90 if is_success else 30, "feedback": "Code compiled & executed successfully." if is_success else "Execution encountered runtime error." },
-                "code_quality": { "score": 85, "feedback": "Code structure and syntax are valid." },
-                "time_complexity": { "score": 80, "feedback": "Standard execution efficiency." },
-                "space_complexity": { "score": 85, "feedback": "Memory footprint is within limits." },
-                "edge_cases": { "score": 75, "feedback": "Verify handling for empty or extreme inputs." }
-            },
-            "summary": "Program evaluated successfully based on execution results.",
-            "suggestions": [
-                "Include concise inline comments for key algorithmic steps.",
-                "Add boundary validation checks for user inputs."
-            ]
-        }
-
-    # 3. Store in Database
-    user_obj = request.user if request.user and request.user.is_authenticated else None
-    submission = CodeSubmission.objects.create(
-        user=user_obj,
-        question_id=question_id if question_id else None,
-        question_title=question_title or f"{language} Assessment",
-        language=language,
-        code=code,
-        input_data=user_input,
-        output=exec_result.get("output", ""),
-        error=exec_result.get("error", ""),
-        status=eval_data.get("status", "Failed"),
-        score=int(eval_data.get("overall_score", 0)),
-        ai_evaluation=eval_data
-    )
-
-    return Response({
-        "success": True,
-        "submission_id": submission.id,
-        "execution_result": exec_result,
-        "evaluation": eval_data
-    })
+            "error": f"Submission error: {str(outer_err)}"
+        }, status=500)
 
 
 @api_view(["GET"])
@@ -223,11 +220,6 @@ def get_coding_result(request):
         "results": data
     })
 
-
-import json
-import re
-from ai.gemini_service import generate_content
-from ai.prompts import coding_challenge_prompt
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
