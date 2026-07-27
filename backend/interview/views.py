@@ -495,7 +495,6 @@ def interview_performance(request):
             "communication_skills": 0,
             "problem_solving": 0,
             "soft_skills": 0,
-            "code_quality": 0,
             "overall_performance": 0,
         })
 
@@ -508,37 +507,38 @@ def interview_performance(request):
             "communication_skills": 0,
             "problem_solving": 0,
             "soft_skills": 0,
-            "code_quality": 0,
             "overall_performance": 0,
         })
 
-    from .models import InterviewFeedbackReview
+    from .models import InterviewFeedbackReview, InterviewSchedule
     reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile)
+    schedules = InterviewSchedule.objects.filter(candidate=candidate_profile)
+
+    completed_schedules_count = schedules.filter(status='Completed').count()
+    total_reviews_count = reviews.count()
+    total_interviews = max(completed_schedules_count, total_reviews_count)
+
     if not reviews.exists():
         return Response({
-            "total_interviews": 0,
+            "total_interviews": total_interviews,
             "technical_skills": 0,
             "communication_skills": 0,
             "problem_solving": 0,
             "soft_skills": 0,
-            "code_quality": 0,
             "overall_performance": 0,
         })
 
-    total = reviews.count()
     tech_avg = reviews.aggregate(Avg('technical_skills'))['technical_skills__avg'] or 0
     comm_avg = reviews.aggregate(Avg('communication_skills'))['communication_skills__avg'] or 0
     prob_avg = reviews.aggregate(Avg('problem_solving'))['problem_solving__avg'] or 0
     soft_avg = reviews.aggregate(Avg('soft_skills'))['soft_skills__avg'] or 0
-    code_avg = reviews.aggregate(Avg('code_quality'))['code_quality__avg'] or 0
     overall_avg = reviews.aggregate(Avg('overall_rating'))['overall_rating__avg'] or 0
 
     return Response({
-        "total_interviews": total,
+        "total_interviews": total_interviews,
         "technical_skills": round((tech_avg / 5.0) * 100),
         "communication_skills": round((comm_avg / 5.0) * 100),
         "problem_solving": round((prob_avg / 5.0) * 100),
         "soft_skills": round((soft_avg / 5.0) * 100),
-        "code_quality": round((code_avg / 5.0) * 100),
         "overall_performance": round((overall_avg / 5.0) * 100),
     })

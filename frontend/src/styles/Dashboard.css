@@ -479,6 +479,12 @@
   border-radius: 20px;
 }
 
+.tag-unattempted {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
 .score-pill-chip {
   font-size: 15px;
   font-weight: 800;
