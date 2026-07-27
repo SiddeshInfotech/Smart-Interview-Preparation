@@ -115,6 +115,9 @@ class CodeSubmission(models.Model):
 
 
     def __str__(self):
-        user_label = self.user.username if self.user else "Anonymous"
-        title_label = self.question.title if self.question else (self.question_title or "Coding Assessment")
+        user_label = getattr(self.user, 'full_name', None) or getattr(self.user, 'email', 'Anonymous') if self.user else "Anonymous"
+        try:
+            title_label = self.question.title if self.question else (self.question_title or "Coding Assessment")
+        except Exception:
+            title_label = self.question_title or "Coding Assessment"
         return f"{user_label} - {title_label} ({self.status} {self.score}%)"

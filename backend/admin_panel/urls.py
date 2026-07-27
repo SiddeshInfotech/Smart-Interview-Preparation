@@ -53,4 +53,12 @@ urlpatterns = [
     # ── 12. Interview Feedback Reviews ────────────────────────
     path("interview-feedback-reviews/",         views.interview_feedback_reviews_list,   name="admin_interview_feedback_reviews_list"),
     path("interview-feedback-reviews/<int:pk>/",views.interview_feedback_review_detail, name="admin_interview_feedback_review_detail"),
+
+    # ── 13. Coding Submissions ─────────────────────────────────
+    path("coding-submissions/",                 views.coding_submissions_list,   name="admin_coding_submissions_list"),
+    path("coding-submissions/<int:pk>/",        views.coding_submission_detail,  name="admin_coding_submission_detail"),
+
+    # ── 14. Coding Questions ───────────────────────────────────
+    path("coding-questions/",                   views.coding_questions_list,     name="admin_coding_questions_list"),
+    path("coding-questions/<int:pk>/",          views.coding_question_detail,    name="admin_coding_question_detail"),
 ]

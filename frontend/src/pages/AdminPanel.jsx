@@ -16,6 +16,7 @@ import AdminResumeAnalysis  from "./admin/AdminResumeAnalysis";
 import AdminNotifications   from "./admin/AdminNotifications";
 import AdminOTPs            from "./admin/AdminOTPs";
 import AdminInterviewFeedbackReviews from "./admin/AdminInterviewFeedbackReviews";
+import AdminCodingSubmissions from "./admin/AdminCodingSubmissions";
 
 // ── Sidebar nav config ─────────────────────────────────────
 const NAV = [
@@ -43,8 +44,9 @@ const NAV = [
     ],
   },
   {
-    section: "Resumes & Content",
+    section: "Resumes & Assessments",
     items: [
+      { label: "Coding Submissions", path: "/my_admin_panel/coding-submissions", icon: <IconBook /> },
       { label: "Resumes",          path: "/my_admin_panel/resumes",         icon: <IconFile /> },
       { label: "Resume Analysis",  path: "/my_admin_panel/resume-analysis", icon: <IconSearch /> },
       { label: "Skills",           path: "/my_admin_panel/skills",          icon: <IconBook /> },
@@ -69,6 +71,7 @@ const PAGE_TITLES = {
   "/my_admin_panel/interviews":      "Interview Schedules",
   "/my_admin_panel/feedback":        "User Feedback",
   "/my_admin_panel/interview-feedback-reviews": "Interview Feedback Reviews",
+  "/my_admin_panel/coding-submissions": "Coding Submissions",
   "/my_admin_panel/resumes":         "Resumes",
   "/my_admin_panel/resume-analysis": "Resume Analysis",
   "/my_admin_panel/skills":          "Skills",
@@ -186,6 +189,7 @@ export default function AdminPanel() {
             <Route path="interviews"      element={<AdminInterviews />} />
             <Route path="feedback"        element={<AdminFeedback />} />
             <Route path="interview-feedback-reviews" element={<AdminInterviewFeedbackReviews />} />
+            <Route path="coding-submissions" element={<AdminCodingSubmissions />} />
             <Route path="skills"          element={<AdminSkills />} />
 
             <Route path="resumes"         element={<AdminResumes />} />

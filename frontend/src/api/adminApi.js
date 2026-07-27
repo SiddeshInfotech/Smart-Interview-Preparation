@@ -124,5 +124,19 @@ export const createInterviewFeedbackReview  = (data)    => adminApi.post("/admin
 export const updateInterviewFeedbackReview  = (id, data)=> adminApi.put(`/admin_panel/interview-feedback-reviews/${id}/`, data);
 export const deleteInterviewFeedbackReview  = (id, data)=> adminApi.delete(`/admin_panel/interview-feedback-reviews/${id}/`);
 
+// ── 13. Coding Submissions ─────────────────────────────────
+export const getCodingSubmissions    = ()        => adminApi.get("/admin_panel/coding-submissions/");
+export const getCodingSubmission     = (id)      => adminApi.get(`/admin_panel/coding-submissions/${id}/`);
+export const createCodingSubmission  = (data)    => adminApi.post("/admin_panel/coding-submissions/", data);
+export const updateCodingSubmission  = (id, data)=> adminApi.put(`/admin_panel/coding-submissions/${id}/`, data);
+export const deleteCodingSubmission  = (id)      => adminApi.delete(`/admin_panel/coding-submissions/${id}/`);
+
+// ── 14. Coding Questions ───────────────────────────────────
+export const getCodingQuestions      = ()        => adminApi.get("/admin_panel/coding-questions/");
+export const getCodingQuestion       = (id)      => adminApi.get(`/admin_panel/coding-questions/${id}/`);
+export const createCodingQuestion    = (data)    => adminApi.post("/admin_panel/coding-questions/", data);
+export const updateCodingQuestion    = (id, data)=> adminApi.put(`/admin_panel/coding-questions/${id}/`, data);
+export const deleteCodingQuestion    = (id)      => adminApi.delete(`/admin_panel/coding-questions/${id}/`);
+
 export default adminApi;
 

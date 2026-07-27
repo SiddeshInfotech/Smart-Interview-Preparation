@@ -206,3 +206,40 @@ class InterviewFeedbackReviewAdminSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
+
+# ── Coding Models ───────────────────────────────────────────
+from coding.models import CodingQuestion, CodeSubmission
+
+class CodingQuestionAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CodingQuestion
+        fields = '__all__'
+
+
+class CodeSubmissionAdminSerializer(serializers.ModelSerializer):
+    candidate_name = serializers.SerializerMethodField(read_only=True)
+    candidate_email = serializers.SerializerMethodField(read_only=True)
+    question_title_display = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = CodeSubmission
+        fields = '__all__'
+
+    def get_candidate_name(self, obj):
+        if obj.user:
+            return getattr(obj.user, 'full_name', obj.user.email)
+        return "Anonymous Candidate"
+
+    def get_candidate_email(self, obj):
+        if obj.user:
+            return obj.user.email
+        return "N/A"
+
+    def get_question_title_display(self, obj):
+        try:
+            if obj.question:
+                return obj.question.title
+        except Exception:
+            pass
+        return obj.question_title or "Coding Assessment"
+

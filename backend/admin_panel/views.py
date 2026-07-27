@@ -22,6 +22,7 @@ from feedback.models import Feedback
 from common.models import Skill
 from resume.models import Resume, ResumeAnalysis
 from notifications.models import Notification
+from coding.models import CodingQuestion, CodeSubmission
 
 # ── Serializers ───────────────────────────────────────────────
 from admin_panel.serializers import (
@@ -37,6 +38,8 @@ from admin_panel.serializers import (
     NotificationSerializer,
     OtpVerificationSerializer,
     InterviewFeedbackReviewAdminSerializer,
+    CodingQuestionAdminSerializer,
+    CodeSubmissionAdminSerializer,
 )
 
 
@@ -125,6 +128,8 @@ def admin_stats(request):
             "total_resume_analyses": ResumeAnalysis.objects.count(),
             "total_notifications": Notification.objects.count(),
             "total_otps": OtpVerification.objects.count(),
+            "total_coding_submissions": CodeSubmission.objects.count(),
+            "total_coding_questions": CodingQuestion.objects.count(),
         }
         return success(data)
     except Exception as exc:
@@ -430,3 +435,33 @@ def interview_feedback_reviews_list(request):
 @permission_classes([IsAdminOrSuperUser])
 def interview_feedback_review_detail(request, pk):
     return retrieve_update_delete(request, InterviewFeedbackReview, InterviewFeedbackReviewAdminSerializer, pk)
+
+
+# ─────────────────────────────────────────────────────────────
+# 13. Coding Submissions
+# ─────────────────────────────────────────────────────────────
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminOrSuperUser])
+def coding_submissions_list(request):
+    return list_create(request, CodeSubmission, CodeSubmissionAdminSerializer, "-submitted_at")
+
+
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
+@permission_classes([IsAdminOrSuperUser])
+def coding_submission_detail(request, pk):
+    return retrieve_update_delete(request, CodeSubmission, CodeSubmissionAdminSerializer, pk)
+
+
+# ─────────────────────────────────────────────────────────────
+# 14. Coding Questions
+# ─────────────────────────────────────────────────────────────
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminOrSuperUser])
+def coding_questions_list(request):
+    return list_create(request, CodingQuestion, CodingQuestionAdminSerializer, "-created_at")
+
+
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
+@permission_classes([IsAdminOrSuperUser])
+def coding_question_detail(request, pk):
+    return retrieve_update_delete(request, CodingQuestion, CodingQuestionAdminSerializer, pk)
