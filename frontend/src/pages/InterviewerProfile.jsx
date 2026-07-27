@@ -180,49 +180,32 @@ const InterviewerProfile = () => {
         const data = response.data;
         localStorage.setItem("cached_interviewer_profile", JSON.stringify(data));
 
-        const hasSavedProfile = Boolean(
-          data.designation || data.company || data.department || (data.expertise_area && data.expertise_area.length > 0)
-        );
+        // Always populate profile state with fetched data
+        setProfile({
+          full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
+          email: data.email || userProfile?.email || "",
+          designation: data.designation || "",
+          company: data.company || "",
+          department: data.department || "",
+          years_of_experience: Math.round(data.years_of_experience || data.experience_years || 0),
+          linkedin_url: data.linkedin_url || "",
+          github_url: data.github_url || "",
+          website_url: data.website_url || data.portfolio_url || "",
+        });
+        setProfilePicture(data.profile_picture || null);
 
-        if (isSetupMode || !hasSavedProfile) {
-          // 1st Time Registration Setup: Empty editable fields (only name & email pre-populated)
-          setProfile({
-            full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
-            email: data.email || userProfile?.email || "",
-            designation: "",
-            company: "",
-            department: "",
-            years_of_experience: 0,
-            linkedin_url: "",
-            github_url: "",
-            website_url: "",
-          });
-          setProfilePicture(data.profile_picture || null);
-          setExpertise([]);
-          setIsEditing(true); // Edit/Setup mode with "Save Profile" footer button
+        const rawExp = data.expertise_area || data.expertise;
+        if (rawExp) {
+          const expArray = typeof rawExp === "string"
+            ? rawExp.split(",").map((s) => s.trim()).filter(Boolean)
+            : Array.isArray(rawExp) ? rawExp : [];
+          setExpertise(expArray.map((name, idx) => ({ id: `exp-${Date.now()}-${idx}`, name })));
+        }
+
+        if (isSetupMode) {
+          setIsEditing(true); // 1st Time Registration Setup -> Write mode
         } else {
-          // Revisiting via View Profile: Pre-fill all fields & load in Read-Only mode
-          setProfile({
-            full_name: data.full_name || "",
-            email: data.email || "",
-            designation: data.designation || "",
-            company: data.company || "",
-            department: data.department || "",
-            years_of_experience: Math.round(data.years_of_experience || data.experience_years || 0),
-            linkedin_url: data.linkedin_url || "",
-            github_url: data.github_url || "",
-            website_url: data.website_url || data.portfolio_url || "",
-          });
-          setProfilePicture(data.profile_picture || null);
-
-          const rawExp = data.expertise_area || data.expertise;
-          if (rawExp) {
-            const expArray = typeof rawExp === "string"
-              ? rawExp.split(",").map((s) => s.trim()).filter(Boolean)
-              : Array.isArray(rawExp) ? rawExp : [];
-            setExpertise(expArray.map((name, idx) => ({ id: `exp-${Date.now()}-${idx}`, name })));
-          }
-          setIsEditing(false); // Read-Only mode with "Edit Profile" footer button
+          setIsEditing(false); // View Profile -> Read-Only mode by default
         }
       } catch (error) {
         console.error("Error fetching interviewer profile:", error);
@@ -238,6 +221,7 @@ const InterviewerProfile = () => {
 
     fetchProfile();
   }, [navigate, searchParams, userProfile]);
+
 
   // --- Fetch Availability Time Slots on Mount ---
   useEffect(() => {

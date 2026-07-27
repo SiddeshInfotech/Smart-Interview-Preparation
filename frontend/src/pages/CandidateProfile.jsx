@@ -132,55 +132,37 @@ const CandidateProfile = () => {
         const data = response.data;
         localStorage.setItem("cached_candidate_profile", JSON.stringify(data));
 
-        const hasSavedData = Boolean(
-          data.location || data.education || data.date_of_birth || (data.skills && data.skills.length > 0)
-        );
+        // Always populate profile state with fetched data
+        setProfile({
+          full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
+          email: data.email || userProfile?.email || "",
+          date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : null,
+          gender: data.gender || "",
+          location: data.location || "",
+          education: data.education || "",
+          experience_years: Math.round(data.experience_years || 0),
+          linkedin_url: data.linkedin_url || "",
+          github_url: data.github_url || "",
+          portfolio_url: data.portfolio_url || "",
+        });
+        setProfilePicture(data.profile_picture || null);
 
-        if (isSetupMode || !hasSavedData) {
-          // 1st Time Registration Setup: Empty editable fields (only name & email pre-populated)
-          setProfile({
-            full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
-            email: data.email || userProfile?.email || "",
-            date_of_birth: null,
-            gender: "",
-            location: "",
-            education: "",
-            experience_years: 0,
-            linkedin_url: "",
-            github_url: "",
-            portfolio_url: "",
-          });
-          setProfilePicture(data.profile_picture || null);
-          setSkills([]);
-          setIsEditing(true); // Edit/Setup mode with "Save Profile" footer button
+        if (data.skills) {
+          const skillNames = typeof data.skills === "string"
+            ? data.skills.split(",").map((s) => s.trim()).filter(Boolean)
+            : Array.isArray(data.skills) ? data.skills : [];
+          setSkills(
+            skillNames.map((name, index) => ({
+              id: `existing-${Date.now()}-${index}`,
+              skill_name: typeof name === "string" ? name : name.skill_name || name,
+            }))
+          );
+        }
+
+        if (isSetupMode) {
+          setIsEditing(true); // 1st Time Registration Setup -> Write mode
         } else {
-          // Revisiting via View Profile: Pre-fill all fields & load in Read-Only mode
-          setProfile({
-            full_name: data.full_name || "",
-            email: data.email || "",
-            date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : null,
-            gender: data.gender || "",
-            location: data.location || "",
-            education: data.education || "",
-            experience_years: Math.round(data.experience_years || 0),
-            linkedin_url: data.linkedin_url || "",
-            github_url: data.github_url || "",
-            portfolio_url: data.portfolio_url || "",
-          });
-          setProfilePicture(data.profile_picture || null);
-
-          if (data.skills) {
-            const skillNames = typeof data.skills === "string"
-              ? data.skills.split(",").map((s) => s.trim()).filter(Boolean)
-              : Array.isArray(data.skills) ? data.skills : [];
-            setSkills(
-              skillNames.map((name, index) => ({
-                id: `existing-${Date.now()}-${index}`,
-                skill_name: typeof name === "string" ? name : name.skill_name || name,
-              }))
-            );
-          }
-          setIsEditing(false); // Read-Only mode with "Edit Profile" footer button
+          setIsEditing(false); // View Profile -> Read-Only mode by default
         }
       } catch (error) {
         console.error("Error loading candidate profile:", error);
@@ -196,6 +178,7 @@ const CandidateProfile = () => {
 
     fetchProfile();
   }, [navigate, searchParams, userProfile]);
+
 
   // --- Auto Active Highlight via Scroll Observer ---
   useEffect(() => {
