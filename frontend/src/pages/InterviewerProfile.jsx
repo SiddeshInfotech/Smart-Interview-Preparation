@@ -1,119 +1,178 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import "../styles/CandidateProfile.css";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import "../styles/InterviewerProfile.css";
 import {
-  LayoutDashboard,
-  Brain,
-  UserCircle,
   User,
   Briefcase,
+  Globe,
   Save,
-  Plus,
-  Clock,
+  Edit3,
+  Menu,
   X,
-  ArrowLeft,
+  Plus,
+  Mail,
+  UserCircle,
+  Camera,
+  Sparkles,
+  Lock,
+  ShieldCheck,
+  Check,
+  CheckCircle2,
+  Trash2,
+  ArrowUpRight,
+  ChevronRight,
+  AlertCircle,
+  Building2,
+  Award
 } from "lucide-react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
-// --- Helper to generate 30‑min interval time options ---
-const generateTimeOptions = () => {
-  const times = [];
-  for (let h = 0; h < 24; h++) {
-    for (let m = 0; m < 60; m += 30) {
-      const hour = String(h).padStart(2, "0");
-      const min = String(m).padStart(2, "0");
-      const ampm = h < 12 ? "AM" : "PM";
-      const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
-      const label = `${String(displayHour).padStart(2, "0")}:${min} ${ampm}`;
-      times.push({ value: `${hour}:${min}`, label });
-    }
-  }
-  return times;
-};
+// Custom GitHub Icon Component
+const GitHubIcon = ({ size = 18, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.15 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.62.24 2.85.12 3.15.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+  </svg>
+);
 
-const TIME_OPTIONS = generateTimeOptions();
+// Custom LinkedIn Icon Component
+const LinkedInIcon = ({ size = 18, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+  </svg>
+);
 
 const InterviewerProfile = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { userProfile } = useAuth();
+  
+  // State: Default Read-Only format when viewed from profile icon; Editable when registration setup or Edit clicked
+  const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState("profile");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isProgrammaticScroll, setIsProgrammaticScroll] = useState(false);
-  const scrollTimeoutRef = useRef(null);
+  const isProgrammaticScroll = useRef(false);
 
-  // --- Profile form state ---
+  // --- Interviewer Profile State ---
   const [profile, setProfile] = useState({
-    department: "",
+    full_name: "",
+    email: "",
     designation: "",
-    years_of_experience: 0.0,
+    company: "",
+    department: "",
+    years_of_experience: 0, // Integer round figure
+    linkedin_url: "",
+    github_url: "",
+    website_url: "",
   });
 
-  // --- Profile picture state ---
+  // --- Profile Picture State ---
   const [profilePicture, setProfilePicture] = useState(null);
 
-  // --- Expertise / Skills state ---
+  // --- Expertise / Topics State ---
   const [expertise, setExpertise] = useState([]);
-  const [newArea, setNewArea] = useState("");
-  const [areaSuggestions, setAreaSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [newTopic, setNewTopic] = useState("");
 
-  // --- Time slots state ---
-  const [slots, setSlots] = useState([]);
-  const [slotStartTime, setSlotStartTime] = useState("");
-  const [slotEndTime, setSlotEndTime] = useState("");
-  const [slotDayOfWeek, setSlotDayOfWeek] = useState("");
-  const [slotError, setSlotError] = useState("");
-  const [addingSlot, setAddingSlot] = useState(false);
-  const [deletingSlotId, setDeletingSlotId] = useState(null);
-  const [loadingSlots, setLoadingSlots] = useState(true);
-
-  // --- UI state ---
+  // --- UI Feedback States ---
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [validationError, setValidationError] = useState("");
 
-  // --- Refs ---
+  // --- Popular Interview Topics ---
+  const popularTopics = [
+    "System Design & Architecture",
+    "Data Structures & Algorithms",
+    "Frontend Development (React/TS)",
+    "Backend Systems (Node/Python)",
+    "Cloud & DevOps (AWS/Docker)",
+    "Object-Oriented Programming",
+    "Database Engineering (SQL/NoSQL)",
+    "Behavioral & Leadership"
+  ];
+
+  // --- Section Refs ---
+  const mainContentRef = useRef(null);
   const profileRef = useRef(null);
-  const experienceRef = useRef(null);
+  const backgroundRef = useRef(null);
   const expertiseRef = useRef(null);
-  const slotsRef = useRef(null);
-  const suggestionRef = useRef(null);
+  const digitalPresenceRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const searchParams = new URLSearchParams(window.location.search);
-  const interviewerId = searchParams.get("interviewer_id");
-  const isReadOnly = !!interviewerId;
-
-  // --- Fetch profile on mount ---
+  // --- Fetch Profile Data on Mount ---
   useEffect(() => {
     const fetchProfile = async () => {
+      const isSetupMode = searchParams.get("mode") === "setup";
+
+      // Instant load from cache
+      const cachedStr = localStorage.getItem("cached_interviewer_profile");
+      if (cachedStr) {
+        try {
+          const cachedData = JSON.parse(cachedStr);
+          setProfile({
+            full_name: cachedData.full_name || "",
+            email: cachedData.email || "",
+            designation: cachedData.designation || "",
+            company: cachedData.company || "",
+            department: cachedData.department || "",
+            years_of_experience: Math.round(cachedData.years_of_experience || cachedData.experience_years || 0),
+            linkedin_url: cachedData.linkedin_url || "",
+            github_url: cachedData.github_url || "",
+            website_url: cachedData.website_url || cachedData.portfolio_url || "",
+          });
+          setProfilePicture(cachedData.profile_picture || null);
+          if (cachedData.expertise) {
+            const expArray = Array.isArray(cachedData.expertise)
+              ? cachedData.expertise
+              : cachedData.expertise.split(",").map((s) => s.trim()).filter(Boolean);
+            setExpertise(expArray.map((name, idx) => ({ id: `exp-${idx}`, name })));
+          }
+          setLoading(false);
+
+          if (isSetupMode || !cachedData.designation || !cachedData.company) {
+            setIsEditing(true);
+          } else {
+            setIsEditing(false); // Read-only mode by default
+          }
+        } catch (e) {
+          console.error("Error parsing interviewer cache", e);
+        }
+      }
+
       try {
-        const endpoint = interviewerId ? `/interviewer/profile/${interviewerId}/` : "/interviewer/profile/";
-        const response = await api.get(endpoint);
+        const response = await api.get("/interviewer/profile/");
         const data = response.data;
+        localStorage.setItem("cached_interviewer_profile", JSON.stringify(data));
 
         setProfile({
-          department: data.department || "",
-          designation: data.designation || "",
-          years_of_experience: data.years_of_experience ? parseFloat(data.years_of_experience) : 0.0,
           full_name: data.full_name || "",
           email: data.email || "",
+          designation: data.designation || "",
+          company: data.company || "",
+          department: data.department || "",
+          years_of_experience: Math.round(data.years_of_experience || data.experience_years || 0),
+          linkedin_url: data.linkedin_url || "",
+          github_url: data.github_url || "",
+          website_url: data.website_url || data.portfolio_url || "",
         });
 
         setProfilePicture(data.profile_picture || null);
 
-        if (data.expertise_area) {
-          const areaNames = data.expertise_area.split(",").map((s) => s.trim()).filter(Boolean);
-          setExpertise(
-            areaNames.map((name, index) => ({
-              id: `existing-${Date.now()}-${index}`,
-              skill_name: name,
-            }))
-          );
+        if (data.expertise) {
+          const expArray = Array.isArray(data.expertise)
+            ? data.expertise
+            : data.expertise.split(",").map((s) => s.trim()).filter(Boolean);
+          setExpertise(expArray.map((name, idx) => ({ id: `exp-${Date.now()}-${idx}`, name })));
+        }
+
+        if (isSetupMode || !data.designation || !data.company) {
+          setIsEditing(true);
+        } else {
+          setIsEditing(false);
         }
       } catch (error) {
-        console.error("Error loading interviewer profile:", error);
+        console.error("Error fetching interviewer profile:", error);
         if (error.response?.status === 401) {
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
@@ -125,294 +184,125 @@ const InterviewerProfile = () => {
     };
 
     fetchProfile();
-  }, [interviewerId]);
+  }, [navigate, searchParams]);
 
-  // --- Fetch time slots on mount ---
+  // --- Scroll Observer for Active Sidebar Highlighting ---
   useEffect(() => {
-    const fetchSlots = async () => {
-      try {
-        const endpoint = interviewerId
-          ? `/interviewer/availability/${interviewerId}/available/`
-          : "/interviewer/availability/";
-        const response = await api.get(endpoint);
-        setSlots(response.data);
-      } catch (error) {
-        console.error("Error fetching slots:", error);
-      } finally {
-        setLoadingSlots(false);
-      }
+    const observerOptions = {
+      root: mainContentRef.current,
+      rootMargin: "-15% 0px -50% 0px",
+      threshold: 0.1,
     };
-    fetchSlots();
-  }, [interviewerId]);
 
-  // --- Resize handler for sidebar ---
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 769) {
-        setSidebarOpen(false);
-      }
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // --- Click outside to close suggestions ---
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (suggestionRef.current && !suggestionRef.current.contains(event.target)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // --- Debounced expertise area suggestions ---
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      if (newArea.trim().length >= 1) {
-        fetchAreaSuggestions(newArea.trim());
-      } else {
-        setAreaSuggestions([]);
-        setShowSuggestions(false);
-      }
-    }, 300);
-    return () => clearTimeout(delayDebounce);
-  }, [newArea]);
-
-  // --- Auto-highlight sidebar on scroll ---
-  useEffect(() => {
-    const sections = [
-      { ref: profileRef, name: "profile" },
-      { ref: experienceRef, name: "experience" },
-      { ref: expertiseRef, name: "expertise" },
-      { ref: slotsRef, name: "slots" },
+    const sectionRefs = [
+      { id: "profile", ref: profileRef },
+      { id: "background", ref: backgroundRef },
+      { id: "expertise", ref: expertiseRef },
+      { id: "digitalPresence", ref: digitalPresenceRef },
     ];
 
-    const updateActiveSection = () => {
-      if (isProgrammaticScroll) return;
-      const scrollY = window.scrollY + 120;
-      let newActive = "profile";
-      let minDistance = Infinity;
-
-      sections.forEach(({ ref, name }) => {
-        const el = ref.current;
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        const top = rect.top + window.scrollY;
-        const bottom = rect.bottom + window.scrollY;
-
-        if (scrollY >= top && scrollY < bottom) {
-          const distance = Math.abs(scrollY - top);
-          if (distance < minDistance) {
-            minDistance = distance;
-            newActive = name;
+    const observer = new IntersectionObserver((entries) => {
+      if (isProgrammaticScroll.current) return;
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const found = sectionRefs.find((item) => item.ref.current === entry.target);
+          if (found) {
+            setActiveSection(found.id);
           }
         }
       });
-      setActiveSection((prev) => (prev !== newActive ? newActive : prev));
-    };
+    }, observerOptions);
 
-    const handleScroll = () => {
-      if (scrollTimeoutRef.current) {
-        cancelAnimationFrame(scrollTimeoutRef.current);
+    sectionRefs.forEach((item) => {
+      if (item.ref.current) {
+        observer.observe(item.ref.current);
       }
-      scrollTimeoutRef.current = requestAnimationFrame(updateActiveSection);
-    };
+    });
 
-    window.addEventListener("scroll", handleScroll);
-    updateActiveSection();
+    return () => observer.disconnect();
+  }, [loading]);
 
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollTimeoutRef.current) {
-        cancelAnimationFrame(scrollTimeoutRef.current);
-      }
-    };
-  }, [isProgrammaticScroll]);
-
-  // --- Navigation functions ---
-  const scrollToSection = (ref) => {
-    if (ref.current) {
-      setIsProgrammaticScroll(true);
+  // --- Smooth Scroll Navigation ---
+  const handleNavClick = (sectionId, ref) => {
+    setActiveSection(sectionId);
+    isProgrammaticScroll.current = true;
+    if (ref && ref.current) {
       ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      setTimeout(() => {
-        setIsProgrammaticScroll(false);
-      }, 700);
     }
-  };
+    setTimeout(() => {
+      isProgrammaticScroll.current = false;
+    }, 800);
 
-  const handleNavClick = (section) => {
-    setActiveSection(section);
-    const refs = {
-      profile: profileRef,
-      experience: experienceRef,
-      expertise: expertiseRef,
-      slots: slotsRef,
-    };
-    scrollToSection(refs[section]);
     if (window.innerWidth <= 768) {
       setSidebarOpen(false);
     }
   };
 
-  // --- Expertise suggestions API ---
-  const fetchAreaSuggestions = async (query) => {
-    setLoadingSuggestions(true);
-    try {
-      const response = await api.get(`/common/skills/?search=${encodeURIComponent(query)}`);
-      setAreaSuggestions(response.data);
-      setShowSuggestions(response.data.length > 0);
-    } catch (error) {
-      console.error("Error fetching expertise suggestions:", error);
-      setAreaSuggestions([]);
-      setShowSuggestions(false);
-    } finally {
-      setLoadingSuggestions(false);
+  // --- Expertise Topic Handlers ---
+  const addExpertiseTopic = (topicName) => {
+    if (!isEditing) return;
+    const name = typeof topicName === "string" ? topicName.trim() : newTopic.trim();
+    if (name && !expertise.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+      setExpertise([...expertise, { id: Date.now() + Math.random(), name }]);
+    }
+    setNewTopic("");
+  };
+
+  const handleTopicKeyDown = (e) => {
+    if (!isEditing) return;
+    if (e.key === "Enter" && newTopic.trim()) {
+      e.preventDefault();
+      addExpertiseTopic(newTopic.trim());
     }
   };
 
-  const addAreaFromSuggestion = (area) => {
-    if (!expertise.some((s) => s.skill_name.toLowerCase() === area.skill_name.toLowerCase())) {
-      setExpertise([...expertise, { id: area.id, skill_name: area.skill_name }]);
-    }
-    setNewArea("");
-    setShowSuggestions(false);
+  const removeExpertiseTopic = (id) => {
+    if (!isEditing) return;
+    setExpertise(expertise.filter((t) => t.id !== id));
   };
 
-  const handleAddArea = (e) => {
-    if (e.key === "Enter" && newArea.trim()) {
-      const trimmed = newArea.trim();
-      const matched = areaSuggestions.find(
-        (s) => s.skill_name.toLowerCase() === trimmed.toLowerCase()
-      );
-      if (matched) {
-        addAreaFromSuggestion(matched);
-      } else {
-        if (!expertise.some((s) => s.skill_name.toLowerCase() === trimmed.toLowerCase())) {
-          setExpertise([...expertise, { id: Date.now(), skill_name: trimmed }]);
-        }
-        setNewArea("");
-        setShowSuggestions(false);
-      }
-    }
-  };
-
-  const removeArea = (id) => {
-    setExpertise(expertise.filter((s) => s.id !== id));
-  };
-
-  // --- Helper: format time for display ---
-  const formatSlotTime = (timeString) => {
-    if (!timeString) return "";
-    let date = new Date(timeString);
-    if (isNaN(date.getTime())) {
-      date = new Date(`2000-01-01T${timeString}`);
-    }
-    if (isNaN(date.getTime())) {
-      const parts = String(timeString).split(":");
-      if (parts.length >= 2) {
-        let h = parseInt(parts[0], 10);
-        let m = parseInt(parts[1], 10);
-        if (!isNaN(h) && !isNaN(m)) {
-          const ampm = h >= 12 ? "PM" : "AM";
-          const displayHour = h % 12 === 0 ? 12 : h % 12;
-          const displayMin = String(m).padStart(2, "0");
-          return `${String(displayHour).padStart(2, "0")}:${displayMin} ${ampm}`;
-        }
-      }
-      return timeString;
-    }
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  // --- Time slots functions ---
-  const handleAddSlot = async () => {
-    setSlotError("");
-
-    if (slotDayOfWeek === "" || !slotStartTime || !slotEndTime) {
-      setSlotError("Please select day of week, start time, and end time.");
-      return;
-    }
-
-    const day_val = parseInt(slotDayOfWeek, 10);
-
-    // Validate that end time is after start time (basic check)
-    const startParts = slotStartTime.split(":").map(Number);
-    const endParts = slotEndTime.split(":").map(Number);
-    const startMinutes = startParts[0] * 60 + startParts[1];
-    const endMinutes = endParts[0] * 60 + endParts[1];
-    if (endMinutes <= startMinutes) {
-      setSlotError("End time must be after start time.");
-      return;
-    }
-
-    setAddingSlot(true);
-    try {
-      const response = await api.post("/interviewer/availability/", {
-        day_of_week: day_val,
-        start_time: slotStartTime,      // "HH:MM"
-        end_time: slotEndTime,
-        status: "available",
-      });
-      setSlots([...slots, response.data]);
-      setSlotStartTime("");
-      setSlotEndTime("");
-      setSlotDayOfWeek("");
-      setSlotError("");
-      setTimeout(() => slotsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
-    } catch (error) {
-      console.error("Error adding slot:", error);
-      let errorMsg = "Failed to add slot. Please check for overlaps.";
-      if (error.response?.data) {
-        errorMsg =
-          error.response.data.non_field_errors?.[0] ||
-          error.response.data.detail ||
-          JSON.stringify(error.response.data);
-      }
-      setSlotError(errorMsg);
-    } finally {
-      setAddingSlot(false);
-    }
-  };
-
-  const handleDeleteSlot = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this slot?")) return;
-    setDeletingSlotId(id);
-    try {
-      await api.delete(`/interviewer/availability/${id}/`);
-      setSlots(slots.filter((slot) => slot.availability_id !== id));
-    } catch (error) {
-      console.error("Error deleting slot:", error);
-      alert("Failed to delete slot. Please try again.");
-    } finally {
-      setDeletingSlotId(null);
-    }
-  };
-
-  // --- Handle file selection (preview) ---
+  // --- Profile Picture File Selection ---
   const handleFileChange = (e) => {
+    if (!isEditing) return;
     if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
       const reader = new FileReader();
       reader.onload = (ev) => {
         setProfilePicture(ev.target.result);
       };
-      reader.readAsDataURL(e.target.files[0]);
+      reader.readAsDataURL(file);
     }
   };
 
-  // --- Save profile ---
+  // --- Save Interviewer Profile with Mandatory Field Validation ---
   const handleSaveProfile = async () => {
+    setValidationError("");
+
+    // Validate Mandatory Fields: Name (*), Email (*), Designation (*), Company (*), Years of Experience (*)
+    const missing = [];
+    if (!profile.full_name && !userProfile?.name) missing.push("Name");
+    if (!profile.email && !userProfile?.email) missing.push("Email");
+    if (!profile.designation || !profile.designation.trim()) missing.push("Designation / Title");
+    if (!profile.company || !profile.company.trim()) missing.push("Company / Organization");
+    if (profile.years_of_experience === undefined || profile.years_of_experience === null || profile.years_of_experience < 0) {
+      missing.push("Years of Experience");
+    }
+
+    if (missing.length > 0) {
+      setValidationError(`Mandatory fields required: ${missing.join(", ")}`);
+      return;
+    }
+
     setSaving(true);
     const formData = new FormData();
-    formData.append("department", profile.department);
-    formData.append("designation", profile.designation);
-    formData.append("years_of_experience", profile.years_of_experience);
-    formData.append("expertise_area", expertise.map((s) => s.skill_name).join(","));
+    formData.append("designation", profile.designation.trim());
+    formData.append("company", profile.company.trim());
+    formData.append("department", profile.department.trim());
+    formData.append("years_of_experience", Math.round(profile.years_of_experience || 0));
+    formData.append("expertise", expertise.map((t) => t.name).join(","));
+    formData.append("linkedin_url", profile.linkedin_url);
+    formData.append("github_url", profile.github_url);
+    formData.append("website_url", profile.website_url);
 
     if (fileInputRef.current && fileInputRef.current.files && fileInputRef.current.files[0]) {
       formData.append("profile_picture", fileInputRef.current.files[0]);
@@ -422,16 +312,21 @@ const InterviewerProfile = () => {
       const response = await api.put("/interviewer/profile/", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("Profile updated successfully!");
-      setProfilePicture(response.data.profile_picture || null);
+      localStorage.setItem("cached_interviewer_profile", JSON.stringify(response.data));
+      setProfilePicture(response.data.profile_picture || profilePicture);
+
+      setToastMessage("Interviewer profile updated successfully!");
+      setShowSuccessToast(true);
+      setIsEditing(false); // Switch back to Read-Only format
+      setTimeout(() => setShowSuccessToast(false), 4000);
     } catch (error) {
-      console.error("Save error:", error);
+      console.error("Error saving interviewer profile:", error);
       if (error.response?.status === 401) {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         navigate("/login");
       } else {
-        alert("Error: " + JSON.stringify(error.response?.data || error.message));
+        alert("Error saving profile: " + (error.response?.data?.detail || error.message));
       }
     } finally {
       setSaving(false);
@@ -439,403 +334,575 @@ const InterviewerProfile = () => {
   };
 
   if (loading) {
-    return <div className="loading-spinner">Loading profile...</div>;
+    return (
+      <div className="ip-loading-screen">
+        <div className="ip-spinner"></div>
+        <p className="ip-loading-text">Loading interviewer profile...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="candidate-profile">
-      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
+    <div className="interviewer-profile-page">
+      {/* Mobile Top Header */}
+      <header className="ip-mobile-header">
+        <button className="ip-menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+          {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+        <span className="ip-mobile-title">PrepMasterAI Profile</span>
+        {isEditing ? (
+          <button className="ip-quick-save-btn" onClick={handleSaveProfile} disabled={saving}>
+            <Save size={16} />
+          </button>
+        ) : (
+          <button className="ip-quick-save-btn" onClick={() => setIsEditing(true)}>
+            <Edit3 size={16} />
+          </button>
+        )}
+      </header>
 
-      <div className="main-container" style={{ paddingTop: 0 }}>
-        {/* Sidebar */}
-        <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-          <div className="profile-nav">
-            <div
-              className="nav-item"
-              onClick={() => navigate("/dashboard")}
-              style={{ color: "var(--color-primary)", fontWeight: "600" }}
-            >
-              <LayoutDashboard size={18} /> <span>Back to Dashboard</span>
-            </div>
-            <div style={{ margin: "4px 0", borderBottom: "1px solid var(--color-border)" }} />
+      {/* Sidebar Backdrop for Mobile */}
+      {sidebarOpen && (
+        <div className="ip-sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
 
-            <div
-              className={`nav-item ${activeSection === "profile" ? "active" : ""}`}
-              onClick={() => handleNavClick("profile")}
-            >
-              <User size={18} /> <span>Personal Info</span>
+      <div className="ip-layout-container">
+        {/* Left Navigation Sidebar */}
+        <aside className={`ip-sidebar ${sidebarOpen ? "open" : ""}`}>
+          <div className="ip-sidebar-brand">
+            <div className="ip-brand-icon">
+              <Sparkles size={20} />
             </div>
+            <div className="ip-brand-text">
+              <span className="ip-brand-title">PrepMasterAI</span>
+              <span className="ip-brand-subtitle">Interviewer Profile</span>
+            </div>
+          </div>
 
-            <div
-              className={`nav-item ${activeSection === "experience" ? "active" : ""}`}
-              onClick={() => handleNavClick("experience")}
-            >
-              <Briefcase size={18} /> <span>Experience</span>
+          <div className="ip-sidebar-nav">
+            <div className="ip-nav-divider">
+              <span>PROFILE NAVIGATION</span>
             </div>
 
+            {/* Menu Items */}
             <div
-              className={`nav-item ${activeSection === "expertise" ? "active" : ""}`}
-              onClick={() => handleNavClick("expertise")}
+              className={`ip-nav-item ${activeSection === "profile" ? "active" : ""}`}
+              onClick={() => handleNavClick("profile", profileRef)}
             >
-              <Brain size={18} /> <span>Expertise</span>
+              <User size={18} />
+              <span>Personal Information</span>
+              {activeSection === "profile" && <ChevronRight size={16} className="ip-nav-arrow" />}
             </div>
 
             <div
-              className={`nav-item ${activeSection === "slots" ? "active" : ""}`}
-              onClick={() => handleNavClick("slots")}
+              className={`ip-nav-item ${activeSection === "background" ? "active" : ""}`}
+              onClick={() => handleNavClick("background", backgroundRef)}
             >
-              <Clock size={18} /> <span>Time Slots</span>
+              <Briefcase size={18} />
+              <span>Professional Background</span>
+              {activeSection === "background" && <ChevronRight size={16} className="ip-nav-arrow" />}
             </div>
+
+            <div
+              className={`ip-nav-item ${activeSection === "expertise" ? "active" : ""}`}
+              onClick={() => handleNavClick("expertise", expertiseRef)}
+            >
+              <Sparkles size={18} />
+              <span>Interview Expertise</span>
+              {activeSection === "expertise" && <ChevronRight size={16} className="ip-nav-arrow" />}
+            </div>
+
+            <div
+              className={`ip-nav-item ${activeSection === "digitalPresence" ? "active" : ""}`}
+              onClick={() => handleNavClick("digitalPresence", digitalPresenceRef)}
+            >
+              <Globe size={18} />
+              <span>Digital Presence</span>
+              {activeSection === "digitalPresence" && <ChevronRight size={16} className="ip-nav-arrow" />}
+            </div>
+          </div>
+
+          {/* Mode Card */}
+          <div className="ip-sidebar-mode-card">
+            <div className="ip-mode-badge-wrapper">
+              <span className={`ip-mode-dot ${isEditing ? "editing" : "readonly"}`}></span>
+              <span className="ip-mode-title">
+                {isEditing ? "Editing Mode" : "Read-Only Mode"}
+              </span>
+            </div>
+            <p className="ip-mode-hint">
+              {isEditing
+                ? "Make your updates and click Save Profile at the bottom."
+                : "Click Edit Profile at the bottom to update details."}
+            </p>
           </div>
         </aside>
 
-        {/* Content */}
-        <main className="content">
-          <div className="profile-section" id="profile">
-            <div className="section-header">
-              <h2>{isReadOnly ? "Interviewer Profile" : "Interviewer Profile Setup"}</h2>
-            </div>
+        {/* Main Content Panel */}
+        <main className="ip-main-content" ref={mainContentRef}>
+          <div className="ip-content-wrapper">
 
-            {/* Personal Info */}
-            <div className="personal-info" ref={profileRef}>
-              <h3>Personal Information</h3>
-              <div className="info-grid-vertical">
-                <div className="form-group profile-picture-group">
-                  <label>Profile Picture</label>
-                  <div className="profile-picture-upload">
-                    <div className="profile-pic-wrapper">
+            {/* Success Toast */}
+            {showSuccessToast && (
+              <div className="ip-toast-notification">
+                <CheckCircle2 size={20} />
+                <span>{toastMessage}</span>
+              </div>
+            )}
+
+            {/* Validation Error Toast */}
+            {validationError && (
+              <div className="ip-error-notification">
+                <AlertCircle size={20} />
+                <span>{validationError}</span>
+              </div>
+            )}
+
+            {/* SECTION 1: Personal Information */}
+            <section className="ip-card-section" id="profile" ref={profileRef}>
+              <div className="ip-card-header">
+                <div className="ip-card-header-icon profile">
+                  <User size={20} />
+                </div>
+                <div>
+                  <h2 className="ip-card-title">Personal Information</h2>
+                  <p className="ip-card-subtitle">Manage your account identity and avatar photo</p>
+                </div>
+              </div>
+
+              <div className="ip-card-body">
+                {/* Profile Picture Upload Zone */}
+                <div className="ip-avatar-upload-area">
+                  <div className="ip-avatar-container">
+                    <div className="ip-avatar-ring">
                       {profilePicture ? (
-                        <img src={profilePicture} alt="Profile" className="profile-pic-img" />
+                        <img src={profilePicture} alt="Interviewer Profile" className="ip-avatar-image" />
                       ) : (
-                        <UserCircle size={56} className="default-avatar" />
-                      )}
-                    </div>
-                    {!isReadOnly && (
-                      <>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          id="profile-pic-input"
-                          ref={fileInputRef}
-                          style={{ display: "none" }}
-                          onChange={handleFileChange}
-                        />
-                        <label htmlFor="profile-pic-input" className="profile-pic-label">
-                          {profilePicture ? "Change Picture" : "Upload Picture"}
-                        </label>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Name</label>
-                  <input
-                    type="text"
-                    value={profile.full_name || userProfile?.name || ""}
-                    disabled
-                    className="disabled-input"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="text"
-                    value={profile.email || userProfile?.email || ""}
-                    disabled
-                    className="disabled-input"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Designation / Role</label>
-                  <input
-                    type="text"
-                    value={profile.designation}
-                    disabled={isReadOnly}
-                    onChange={(e) => setProfile({ ...profile, designation: e.target.value })}
-                    placeholder="e.g., Senior Software Engineer"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Department</label>
-                  <select
-                    value={profile.department}
-                    disabled={isReadOnly}
-                    onChange={(e) => setProfile({ ...profile, department: e.target.value })}
-                  >
-                    <option value="">Select Department</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Product">Product</option>
-                    <option value="QA">QA</option>
-                    <option value="Design">Design</option>
-                    <option value="HR">HR</option>
-                    <option value="Operations">Operations</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Experience */}
-            <div className="education-section" ref={experienceRef}>
-              <h3>Experience</h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Years of Experience</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={profile.years_of_experience}
-                    disabled={isReadOnly}
-                    onChange={(e) =>
-                      setProfile({ ...profile, years_of_experience: parseFloat(e.target.value) || 0.0 })
-                    }
-                    placeholder="e.g., 5.0"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Areas of Expertise */}
-            <div className="skills-experience-section" ref={expertiseRef}>
-              <h3>Areas of Expertise</h3>
-              <div className="skills-container">
-                <label>Technical Domains & Technologies</label>
-                {expertise.length > 0 && (
-                  <div className="skill-tags">
-                    {expertise.map((area) => (
-                      <span key={area.id} className="skill-tag">
-                        {area.skill_name}
-                        {!isReadOnly && (
-                          <button
-                            type="button"
-                            className="skill-remove"
-                            onClick={() => removeArea(area.id)}
-                          >
-                            ×
-                          </button>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {!isReadOnly && (
-                  <>
-                    <div className="skill-input-wrapper" ref={suggestionRef}>
-                      <input
-                        type="text"
-                        placeholder="Type an expertise area and press Enter or select from suggestions..."
-                        value={newArea}
-                        onChange={(e) => setNewArea(e.target.value)}
-                        onKeyDown={handleAddArea}
-                        onFocus={() =>
-                          newArea.trim().length >= 1 && setShowSuggestions(areaSuggestions.length > 0)
-                        }
-                      />
-                      <Plus size={18} className="skill-input-icon" />
-                      {showSuggestions && (
-                        <div className="skill-suggestions-dropdown">
-                          {loadingSuggestions ? (
-                            <div className="suggestion-loading">Loading...</div>
-                          ) : (
-                            areaSuggestions.map((area) => (
-                              <div
-                                key={area.id}
-                                className="suggestion-item"
-                                onClick={() => addAreaFromSuggestion(area)}
-                              >
-                                <span className="suggestion-name">{area.skill_name}</span>
-                                <span className="suggestion-category">{area.category}</span>
-                              </div>
-                            ))
-                          )}
+                        <div className="ip-avatar-placeholder">
+                          <UserCircle size={68} />
+                          <span className="ip-avatar-placeholder-text">Interviewer</span>
                         </div>
                       )}
                     </div>
-                    <div className="suggestions-hint">
-                      Suggested: System Design, Backend, AI / ML, Cloud, Frontend, Cyber Security
+                    {isEditing && (
+                      <label htmlFor="ip-avatar-input" className="ip-avatar-camera-badge" title="Change Avatar">
+                        <Camera size={16} />
+                      </label>
+                    )}
+                  </div>
+
+                  {isEditing ? (
+                    <div className="ip-avatar-actions">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="ip-avatar-input"
+                        ref={fileInputRef}
+                        style={{ display: "none" }}
+                        onChange={handleFileChange}
+                      />
+                      <label htmlFor="ip-avatar-input" className="ip-btn-secondary">
+                        <Camera size={16} />
+                        <span>{profilePicture ? "Change Picture" : "Upload Picture"}</span>
+                      </label>
+
+                      {profilePicture && (
+                        <button
+                          type="button"
+                          className="ip-btn-text-danger"
+                          onClick={() => setProfilePicture(null)}
+                        >
+                          <Trash2 size={15} />
+                          <span>Remove</span>
+                        </button>
+                      )}
                     </div>
-                  </>
+                  ) : (
+                    <span className="ip-field-hint">Profile photo saved</span>
+                  )}
+                </div>
+
+                {/* Form Fields Grid */}
+                <div className="ip-form-grid">
+                  {/* Name (Mandatory & Locked) */}
+                  <div className="ip-field-group">
+                    <label className="ip-label">
+                      <span>Full Name <span className="ip-required-star">*</span></span>
+                      <span className="ip-locked-badge"><Lock size={12} /> Locked</span>
+                    </label>
+                    <div className="ip-input-wrapper disabled">
+                      <User size={18} className="ip-input-icon" />
+                      <input
+                        type="text"
+                        value={profile.full_name || userProfile?.name || ""}
+                        disabled
+                        className="ip-input disabled"
+                      />
+                      <Lock size={15} className="ip-lock-icon" />
+                    </div>
+                  </div>
+
+                  {/* Email (Mandatory & Locked) */}
+                  <div className="ip-field-group">
+                    <label className="ip-label">
+                      <span>Email Address <span className="ip-required-star">*</span></span>
+                      <span className="ip-locked-badge"><Lock size={12} /> Locked</span>
+                    </label>
+                    <div className="ip-input-wrapper disabled">
+                      <Mail size={18} className="ip-input-icon" />
+                      <input
+                        type="text"
+                        value={profile.email || userProfile?.email || ""}
+                        disabled
+                        className="ip-input disabled"
+                      />
+                      <Lock size={15} className="ip-lock-icon" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 2: Professional Background */}
+            <section className="ip-card-section" id="background" ref={backgroundRef}>
+              <div className="ip-card-header">
+                <div className="ip-card-header-icon background">
+                  <Briefcase size={20} />
+                </div>
+                <div>
+                  <h2 className="ip-card-title">Professional Background</h2>
+                  <p className="ip-card-subtitle">Highlight your job designation, company, and industry experience</p>
+                </div>
+              </div>
+
+              <div className="ip-card-body">
+                <div className="ip-form-grid">
+                  {/* Designation / Title (Mandatory) */}
+                  <div className="ip-field-group">
+                    <label className="ip-label">
+                      <span>Designation / Title <span className="ip-required-star">*</span></span>
+                    </label>
+                    <div className="ip-input-wrapper">
+                      <Briefcase size={18} className="ip-input-icon" />
+                      <input
+                        type="text"
+                        disabled={!isEditing}
+                        className={`ip-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.designation}
+                        onChange={(e) => setProfile({ ...profile, designation: e.target.value })}
+                        placeholder="e.g., Senior Software Engineer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Company / Organization (Mandatory) */}
+                  <div className="ip-field-group">
+                    <label className="ip-label">
+                      <span>Company / Organization <span className="ip-required-star">*</span></span>
+                    </label>
+                    <div className="ip-input-wrapper">
+                      <Building2 size={18} className="ip-input-icon" />
+                      <input
+                        type="text"
+                        disabled={!isEditing}
+                        className={`ip-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.company}
+                        onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                        placeholder="e.g., Google / Microsoft / PrepMasterAI"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Department */}
+                  <div className="ip-field-group">
+                    <label className="ip-label">Department / Domain</label>
+                    <div className="ip-input-wrapper">
+                      <Award size={18} className="ip-input-icon" />
+                      <input
+                        type="text"
+                        disabled={!isEditing}
+                        className={`ip-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.department}
+                        onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+                        placeholder="e.g., Software Engineering / AI & ML"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Years of Experience (Mandatory - Round Integer) */}
+                  <div className="ip-field-group">
+                    <label className="ip-label">
+                      <span>Years of Experience <span className="ip-required-star">*</span></span>
+                    </label>
+                    <div className="ip-input-wrapper">
+                      <Briefcase size={18} className="ip-input-icon" />
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        max="50"
+                        disabled={!isEditing}
+                        className={`ip-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.years_of_experience}
+                        onChange={(e) =>
+                          setProfile({
+                            ...profile,
+                            years_of_experience: Math.max(0, parseInt(e.target.value, 10) || 0),
+                          })
+                        }
+                        placeholder="e.g., 5"
+                      />
+                      <span className="ip-input-suffix">Years</span>
+                    </div>
+
+                    {isEditing && (
+                      <div className="ip-quick-suggestions-pills">
+                        {[1, 3, 5, 8, 10].map((yr) => (
+                          <button
+                            key={yr}
+                            type="button"
+                            className={`ip-pill-btn ${profile.years_of_experience === yr ? "active" : ""}`}
+                            onClick={() => setProfile({ ...profile, years_of_experience: yr })}
+                          >
+                            {yr}+ Years
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 3: Interview Expertise */}
+            <section className="ip-card-section" id="expertise" ref={expertiseRef}>
+              <div className="ip-card-header">
+                <div className="ip-card-header-icon expertise">
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h2 className="ip-card-title">Interview Expertise</h2>
+                  <p className="ip-card-subtitle">Technical topics and domains you conduct interviews for</p>
+                </div>
+              </div>
+
+              <div className="ip-card-body">
+                <div className="ip-expertise-manager">
+                  <div className="ip-expertise-header-row">
+                    <label className="ip-label">Interview Topics & Tech Stack</label>
+                    <span className="ip-expertise-count-badge">{expertise.length} Topics</span>
+                  </div>
+
+                  {/* Active Expertise Chips */}
+                  <div className="ip-expertise-chips-wrapper">
+                    {expertise.length === 0 ? (
+                      <div className="ip-empty-expertise-msg">
+                        {isEditing
+                          ? "No topics added yet. Type below or pick from recommended interview topics."
+                          : "No interview topics specified yet."}
+                      </div>
+                    ) : (
+                      expertise.map((item) => (
+                        <div key={item.id} className="ip-expertise-chip">
+                          <span>{item.name}</span>
+                          {isEditing && (
+                            <button
+                              type="button"
+                              className="ip-expertise-remove-btn"
+                              onClick={() => removeExpertiseTopic(item.id)}
+                              title="Remove topic"
+                            >
+                              <X size={13} />
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Always Visible Input Textfield */}
+                  <div className="ip-expertise-input-container">
+                    <div className="ip-input-wrapper">
+                      <Plus size={18} className="ip-input-icon" />
+                      <input
+                        type="text"
+                        className={`ip-input ${!isEditing ? "readonly" : ""}`}
+                        disabled={!isEditing}
+                        placeholder={
+                          isEditing
+                            ? "Type an interview topic (e.g. System Design) and press Enter..."
+                            : "Click 'Edit Profile' below to add or edit interview topics..."
+                        }
+                        value={newTopic}
+                        onChange={(e) => setNewTopic(e.target.value)}
+                        onKeyDown={handleTopicKeyDown}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Recommended Interview Topics */}
+                  <div className="ip-popular-expertise-section">
+                    <span className="ip-pills-label">Suggested Interview Topics:</span>
+                    <div className="ip-popular-pills-grid">
+                      {popularTopics.map((popTopic, idx) => {
+                        const isAdded = expertise.some(
+                          (t) => t.name.toLowerCase() === popTopic.toLowerCase()
+                        );
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            className={`ip-pill-btn ${isAdded ? "added" : ""}`}
+                            onClick={() => isEditing && addExpertiseTopic(popTopic)}
+                            disabled={!isEditing || isAdded}
+                          >
+                            {isAdded ? <Check size={12} /> : <Plus size={12} />}
+                            <span>{popTopic}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 4: Digital Presence */}
+            <section className="ip-card-section" id="digitalPresence" ref={digitalPresenceRef}>
+              <div className="ip-card-header">
+                <div className="ip-card-header-icon digital">
+                  <Globe size={20} />
+                </div>
+                <div>
+                  <h2 className="ip-card-title">Digital Presence</h2>
+                  <p className="ip-card-subtitle">Connect your professional LinkedIn, GitHub, or Website</p>
+                </div>
+              </div>
+
+              <div className="ip-card-body">
+                <div className="ip-form-grid">
+                  {/* LinkedIn */}
+                  <div className="ip-field-group full-span">
+                    <label className="ip-label">LinkedIn Profile URL</label>
+                    <div className="ip-input-wrapper">
+                      <LinkedInIcon size={18} className="ip-input-icon linkedin" />
+                      <input
+                        type="url"
+                        disabled={!isEditing}
+                        className={`ip-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.linkedin_url}
+                        onChange={(e) => setProfile({ ...profile, linkedin_url: e.target.value })}
+                        placeholder="https://www.linkedin.com/in/interviewer"
+                      />
+                      {profile.linkedin_url && (
+                        <a
+                          href={profile.linkedin_url.startsWith("http") ? profile.linkedin_url : `https://${profile.linkedin_url}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ip-link-preview-btn"
+                          title="Open Link"
+                        >
+                          <ArrowUpRight size={16} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* GitHub */}
+                  <div className="ip-field-group full-span">
+                    <label className="ip-label">GitHub Profile URL</label>
+                    <div className="ip-input-wrapper">
+                      <GitHubIcon size={18} className="ip-input-icon github" />
+                      <input
+                        type="url"
+                        disabled={!isEditing}
+                        className={`ip-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.github_url}
+                        onChange={(e) => setProfile({ ...profile, github_url: e.target.value })}
+                        placeholder="https://github.com/interviewer"
+                      />
+                      {profile.github_url && (
+                        <a
+                          href={profile.github_url.startsWith("http") ? profile.github_url : `https://${profile.github_url}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ip-link-preview-btn"
+                          title="Open Link"
+                        >
+                          <ArrowUpRight size={16} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Portfolio Website */}
+                  <div className="ip-field-group full-span">
+                    <label className="ip-label">Personal / Company Website URL</label>
+                    <div className="ip-input-wrapper">
+                      <Globe size={18} className="ip-input-icon portfolio" />
+                      <input
+                        type="url"
+                        disabled={!isEditing}
+                        className={`ip-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.website_url}
+                        onChange={(e) => setProfile({ ...profile, website_url: e.target.value })}
+                        placeholder="https://interviewer.dev"
+                      />
+                      {profile.website_url && (
+                        <a
+                          href={profile.website_url.startsWith("http") ? profile.website_url : `https://${profile.website_url}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ip-link-preview-btn"
+                          title="Open Link"
+                        >
+                          <ArrowUpRight size={16} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Bottom Action Footer Panel */}
+            <div className="ip-bottom-bar">
+              <div className="ip-bottom-bar-info">
+                {isEditing ? (
+                  <span className="ip-save-status editing">
+                    <Sparkles size={16} className="ip-status-icon" /> Make changes and click Save Profile
+                  </span>
+                ) : (
+                  <span className="ip-save-status readonly">
+                    <ShieldCheck size={16} className="ip-status-icon" /> Profile shown in Read-Only format
+                  </span>
+                )}
+              </div>
+
+              <div className="ip-bottom-bar-actions">
+                {isEditing ? (
+                  <button
+                    type="button"
+                    className="ip-btn-primary"
+                    onClick={handleSaveProfile}
+                    disabled={saving}
+                  >
+                    <Save size={18} />
+                    <span>{saving ? "Saving Profile..." : "Save Profile"}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="ip-btn-primary edit-mode-btn"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Edit3 size={18} />
+                    <span>Edit Profile</span>
+                  </button>
                 )}
               </div>
             </div>
 
-            {/* Time Slots – restructured: slots tags above form */}
-            <div className="education-section" ref={slotsRef}>
-              <h3>{isReadOnly ? "Interviewer Availability Slots" : "Your Availability Slots"}</h3>
-
-              {/* Slots tags (same style as skill tags) – shown above the form */}
-              {loadingSlots ? (
-                <div className="slots-loading">Loading slots...</div>
-              ) : slots.length > 0 ? (
-                <div className="skill-tags" style={{ marginBottom: "16px" }}>
-                  {slots.map((slot) => {
-                    const isDeleting = deletingSlotId === slot.availability_id;
-                    return (
-                      <span key={slot.availability_id} className="skill-tag">
-                        {slot.day_label ? `${slot.day_label}: ` : ""}{formatSlotTime(slot.start_time)} – {formatSlotTime(slot.end_time)}
-                        {!isReadOnly && (
-                          <button
-                            type="button"
-                            className="skill-remove"
-                            onClick={() => handleDeleteSlot(slot.availability_id)}
-                            disabled={isDeleting}
-                            title="Delete Slot"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </span>
-                    );
-                  })}
-                </div>
-              ) : null}
-
-              {/* Add slot form */}
-              {!isReadOnly && (
-                <div className="slot-add-form">
-                  <div
-                    className="form-row"
-                    style={{
-                      display: "flex",
-                      gap: "16px",
-                      flexWrap: "wrap",
-                      alignItems: "flex-end",
-                    }}
-                  >
-                    {/* Day of Week dropdown */}
-                    <div className="form-group" style={{ flex: "1 1 180px", minWidth: "160px" }}>
-                      <label>
-                        <Clock size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
-                        Day of Week
-                      </label>
-                      <select
-                        value={slotDayOfWeek}
-                        onChange={(e) => {
-                          setSlotDayOfWeek(e.target.value);
-                          setSlotError("");
-                        }}
-                      >
-                        <option value="">Select day</option>
-                        <option value="0">Monday</option>
-                        <option value="1">Tuesday</option>
-                        <option value="2">Wednesday</option>
-                        <option value="3">Thursday</option>
-                        <option value="4">Friday</option>
-                        <option value="5">Saturday</option>
-                        <option value="6">Sunday</option>
-                      </select>
-                    </div>
-
-                    {/* Start time dropdown */}
-                    <div className="form-group" style={{ flex: "1 1 180px", minWidth: "160px" }}>
-                      <label>
-                        <Clock size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
-                        Start Time
-                      </label>
-                      <select
-                        value={slotStartTime}
-                        onChange={(e) => {
-                          setSlotStartTime(e.target.value);
-                          setSlotEndTime("");
-                          setSlotError("");
-                        }}
-                      >
-                        <option value="">Select start</option>
-                        {TIME_OPTIONS.map((t) => (
-                          <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* End time dropdown */}
-                    <div className="form-group" style={{ flex: "1 1 180px", minWidth: "160px" }}>
-                      <label>
-                        <Clock size={13} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
-                        End Time
-                      </label>
-                      <select
-                        value={slotEndTime}
-                        onChange={(e) => {
-                          setSlotEndTime(e.target.value);
-                          setSlotError("");
-                        }}
-                      >
-                        <option value="">Select end</option>
-                        {TIME_OPTIONS.map((t) => (
-                          <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Add button – now using proper button classes */}
-                    <div className="form-group slot-add-btn-wrapper" style={{ flex: "none" }}>
-                      <button
-                        className="btn btn--primary btn-add-slot"
-                        onClick={handleAddSlot}
-                        disabled={addingSlot || !slotDayOfWeek || !slotStartTime || !slotEndTime}
-                        type="button"
-                      >
-                        <Plus size={16} />
-                        {addingSlot ? "Adding..." : "Add Slot"}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Inline validation error */}
-                  {slotError && (
-                    <div
-                      className="slot-error-msg"
-                      style={{
-                        marginTop: "10px",
-                        padding: "10px 14px",
-                        background: "#fef2f2",
-                        border: "1px solid #fecaca",
-                        borderRadius: "8px",
-                        color: "#dc2626",
-                        fontSize: "0.875rem",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <X size={15} style={{ flexShrink: 0 }} />
-                      {slotError}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Empty message – shown at the bottom when no slots exist */}
-              {!loadingSlots && slots.length === 0 && (
-                <div className="suggestions-hint empty-slots-message" style={{ marginTop: "16px" }}>
-                  No slots added yet.
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="action-buttons">
-              {isReadOnly ? (
-                <button
-                  className="btn btn--primary"
-                  onClick={() => navigate("/interview")}
-                  type="button"
-                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
-                >
-                  <ArrowLeft size={16} />
-                  Back to Interview Scheduling
-                </button>
-              ) : (
-                <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
-                  <Save size={17} />
-                  {saving ? "Saving..." : "Save Profile"}
-                </button>
-              )}
-            </div>
           </div>
         </main>
       </div>
