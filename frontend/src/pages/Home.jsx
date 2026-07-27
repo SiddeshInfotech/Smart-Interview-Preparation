@@ -15,6 +15,9 @@ export default function Home() {
             <Sparkles size={14} className="pill-icon" />
             <span>AI-POWERED INTERVIEW PLATFORM</span>
             <span className="pill-live-dot"></span>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "#10b981", marginLeft: "6px" }}>
+              • 10k+ Live Interviews
+            </span>
           </span>
           
           <h1 className="hero-title">

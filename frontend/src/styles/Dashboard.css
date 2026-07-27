@@ -49,7 +49,7 @@
 ================================== */
 .overview-section {
   display: grid;
-  grid-template-columns: 2.4fr 1fr;
+  grid-template-columns: 2.3fr 1.2fr;
   gap: 28px;
   margin-bottom: 35px;
 }
@@ -66,11 +66,11 @@
   box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
   transition: .35s ease;
   position: relative;
+  border: 1px solid #e2e8f0;
 }
 
 .graph-card {
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
 }
 
 .graph-card::before {
@@ -267,17 +267,28 @@
 }
 
 /* ===============================
-   AI PROFILE INTELLIGENCE CARD (PORTAL THEME)
+   AI PROFILE INTELLIGENCE CARD
 ================================== */
 .overall-card {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  background: #ffffff;
+  gap: 20px;
+  background: linear-gradient(160deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 24px;
-  padding: 28px;
+  padding: 26px;
   box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
   transition: .35s ease;
+}
+
+.overall-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 4px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(90deg, #2563eb, #10b981, #7c3aed);
 }
 
 .overall-card:hover {
@@ -287,133 +298,206 @@
 
 .ai-profile-header h3 {
   margin: 0;
-  font-size: 24px;
+  font-size: 23px;
   font-weight: 700;
   color: #0f172a;
 }
 
 .ai-profile-header p {
-  margin-top: 6px;
-  color: #64748b;
-  font-size: 14px;
-}
-
-.main-readiness-score {
-  text-align: center;
-  padding: 10px 0;
-}
-
-.main-readiness-score h1 {
-  margin: 0;
-  font-size: 68px;
-  font-weight: 800;
-  line-height: 1;
-  color: #2563eb;
-}
-
-.main-readiness-score span {
-  display: block;
-  margin-top: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #64748b;
-}
-
-/* ===============================
-   STATUS BOXES
-================================== */
-.ai-status-box {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.status-card {
-  background: #f8fbff;
-  border: 1px solid #dbeafe;
-  border-radius: 18px;
-  padding: 16px;
-  text-align: center;
-  transition: .3s ease;
-}
-
-.status-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(37, 99, 235, .12);
-}
-
-.status-card strong {
-  display: block;
-  font-size: 19px;
-  font-weight: 700;
-  color: #2563eb;
-}
-
-.status-card span {
-  display: block;
   margin-top: 4px;
   color: #64748b;
-  font-size: 14px;
+  font-size: 13.5px;
+  font-weight: 500;
 }
 
 /* ===============================
-   AI METRICS ROWS & PROGRESS BARS
+   CIRCULAR PROGRESS GAUGE
+================================== */
+.ai-gauge-container {
+  position: relative;
+  width: 165px;
+  height: 165px;
+  margin: 2px auto 6px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ai-gauge-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.gauge-track {
+  fill: none;
+  stroke: #e2e8f0;
+}
+
+.gauge-fill {
+  fill: none;
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 4px 12px rgba(37, 99, 235, 0.35));
+}
+
+.gauge-center-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.gauge-score-num {
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gauge-score-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-top: 4px;
+}
+
+/* ===============================
+   ATTRACTIVE METRIC STAT BADGE ROWS
 ================================== */
 .ai-metrics {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
-.metric-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #edf2f7;
-}
-
-.metric-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.metric-row-header {
+.metric-card-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: #ffffff;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid #edf2f7;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+  transition: all 0.25s ease;
 }
 
-.metric-row-header span {
+.metric-card-row:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.metric-info-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.metric-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quiz-icon-bg {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.quiz-icon-bg svg {
+  stroke: #1d4ed8 !important;
+}
+
+.coding-icon-bg {
+  background: #d1fae5 !important;
+  color: #047857 !important;
+}
+
+.coding-icon-bg svg {
+  stroke: #047857 !important;
+}
+
+.interview-icon-bg {
+  background: #ede9fe !important;
+  color: #6d28d9 !important;
+}
+
+.interview-icon-bg svg {
+  stroke: #6d28d9 !important;
+}
+
+.metric-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-title {
   font-size: 14.5px;
-  color: #475569;
-  font-weight: 500;
-}
-
-.metric-row-header strong {
-  font-size: 16px;
   font-weight: 700;
   color: #0f172a;
 }
 
-.portal-progress-bar {
-  width: 100%;
-  height: 7px;
-  background: #edf2f7;
-  border-radius: 10px;
-  overflow: hidden;
+.metric-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
 }
 
-.portal-progress-fill {
-  height: 100%;
-  border-radius: 10px;
-  transition: width 0.6s ease;
+.metric-info-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.fill-resume { background: #2563eb; }
-.fill-quiz { background: #6366f1; }
-.fill-coding { background: #10b981; }
-.fill-interview { background: #7c3aed; }
+.metric-status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.score-pill-chip {
+  font-size: 15px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 20px;
+  line-height: 1;
+}
+
+.quiz-score-chip {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.coding-score-chip {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.interview-score-chip {
+  background: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
 
 /* ===============================
    PERFORMANCE SECTION
@@ -428,9 +512,20 @@
   position: relative;
   overflow: hidden;
   cursor: pointer;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
+  border: 1px solid #e2e8f0;
+  transition: .35s ease;
 }
 
-.performance-card::before {
+.performance-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 25px 55px rgba(37, 99, 235, .15);
+}
+
+.quiz-card::before {
   content: "";
   position: absolute;
   top: 0;
@@ -438,6 +533,26 @@
   width: 100%;
   height: 5px;
   background: linear-gradient(90deg, #2563eb, #60a5fa);
+}
+
+.coding-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, #059669, #34d399);
+}
+
+.interview-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
 }
 
 .performance-title {
@@ -453,42 +568,40 @@
   color: #0f172a;
 }
 
+/* VIVID COLOR CATEGORY BADGES */
 .category-badge {
-  width: 45px;
-  height: 45px;
+  width: 48px;
+  height: 48px;
   border-radius: 14px;
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #fff;
-  font-size: 18px;
-  font-weight: 700;
   flex-shrink: 0;
 }
 
-/* ===== FIX: Force SVG styles for all Lucide icons in badges ===== */
 .category-badge svg {
   display: block !important;
-  width: 22px !important;
-  height: 22px !important;
-  min-width: 22px;
-  min-height: 22px;
+  width: 24px !important;
+  height: 24px !important;
   stroke: #ffffff !important;
-  stroke-width: 2;
+  stroke-width: 2.2 !important;
   fill: none !important;
   flex-shrink: 0;
 }
 
 .quiz-badge {
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4) !important;
 }
 
 .coding-badge {
-  background: linear-gradient(135deg, #059669, #34d399);
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  box-shadow: 0 6px 18px rgba(5, 150, 105, 0.4) !important;
 }
 
 .interview-badge {
-  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.4) !important;
 }
 
 .performance-content {
@@ -519,8 +632,20 @@
   font-size: 16px;
 }
 
-.performance-score {
+.quiz-card .performance-score {
   color: #2563eb !important;
+  font-size: 20px !important;
+  font-weight: 700;
+}
+
+.coding-card .performance-score {
+  color: #059669 !important;
+  font-size: 20px !important;
+  font-weight: 700;
+}
+
+.interview-card .performance-score {
+  color: #7c3aed !important;
   font-size: 20px !important;
   font-weight: 700;
 }
@@ -575,14 +700,6 @@
 
   .performance-section {
     grid-template-columns: 1fr;
-  }
-
-  .ai-status-box {
-    grid-template-columns: 1fr;
-  }
-
-  .main-readiness-score h1 {
-    font-size: 58px;
   }
 }
 

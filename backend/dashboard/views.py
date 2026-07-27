@@ -9,7 +9,6 @@ from quiz.models import QuizPerformance
 from coding.models import CodeSubmission
 from candidate.models import Candidate_Profile
 from interview.models import InterviewFeedbackReview
-from resume.models import Resume, ResumeAnalysis
 
 
 @api_view(["GET"])
@@ -86,34 +85,26 @@ def get_daily_progress(request):
 @permission_classes([AllowAny])
 def get_ai_intelligence(request):
     """
-    Computes AI Profile Intelligence metrics 100% dynamically based on real candidate activity:
-    - Resume Quality (from analyzed resume ATS score)
+    Computes AI Profile Intelligence metrics 100% dynamically based on candidate tasks:
     - Quiz Mastery (from quiz results)
     - Coding Ability (from coding submissions)
     - Interview Skill (from completed interview feedback)
     - Overall Readiness (computed dynamic average)
+    - Completed Modules & Strongest Skill Area
     """
     user = request.user if request.user and request.user.is_authenticated else None
     candidate_profile = Candidate_Profile.objects.filter(user=user).first() if user else None
 
-    # 1. Resume Score (0-100)
-    resume_score = 0
-    if candidate_profile:
-        resumes = Resume.objects.filter(candidate_id=candidate_profile.candidate_id)
-        latest_analysis = ResumeAnalysis.objects.filter(resume__in=resumes).order_by("-analyzed_at").first()
-        if latest_analysis and latest_analysis.resume_score:
-            resume_score = int(latest_analysis.resume_score)
-
-    # 2. Quiz Score (0-100)
+    # 1. Quiz Score (0-100)
     quiz_qs = QuizPerformance.objects.filter(user=user) if user else QuizPerformance.objects.none()
     quiz_score = round(quiz_qs.aggregate(Avg("score"))["score__avg"] or 0) if quiz_qs.exists() else 0
 
-    # 3. Coding Score (0-100)
+    # 2. Coding Score (0-100)
     coding_qs = CodeSubmission.objects.filter(user=user) if user else CodeSubmission.objects.none()
     coding_scores = [s.score for s in coding_qs]
     coding_score = round(sum(coding_scores) / len(coding_scores)) if coding_scores else 0
 
-    # 4. Interview Score (0-100)
+    # 3. Interview Score (0-100)
     int_reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile) if candidate_profile else None
     if int_reviews and int_reviews.exists():
         avg_rating = int_reviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0
@@ -121,35 +112,30 @@ def get_ai_intelligence(request):
     else:
         interview_score = 0
 
-    # Dynamic Overall Readiness calculation based on active scores
-    all_scores = [resume_score, quiz_score, coding_score, interview_score]
-    active_scores = [s for s in all_scores if s > 0]
-    
-    if active_scores:
-        overall_readiness = round(sum(active_scores) / len(active_scores))
+    # Dynamic Overall Readiness & Module Analytics
+    tasks = [
+        {"name": "Quiz", "score": quiz_score},
+        {"name": "Coding", "score": coding_score},
+        {"name": "Interview", "score": interview_score},
+    ]
+    active_tasks = [t for t in tasks if t["score"] > 0]
+
+    if active_tasks:
+        overall_readiness = round(sum(t["score"] for t in active_tasks) / len(active_tasks))
+        active_tasks.sort(key=lambda x: x["score"], reverse=True)
+        top_skill = active_tasks[0]["name"]
     else:
         overall_readiness = 0
+        top_skill = "N/A"
 
-    if overall_readiness >= 80:
-        skill_status = "Strong"
-        readiness_status = "Ready"
-    elif overall_readiness >= 50:
-        skill_status = "Growing"
-        readiness_status = "In Prep"
-    elif overall_readiness > 0:
-        skill_status = "Building"
-        readiness_status = "Started"
-    else:
-        skill_status = "Pending"
-        readiness_status = "Not Started"
+    completed_modules = f"{len(active_tasks)} / 3"
 
     return Response({
         "success": True,
         "overall_readiness": overall_readiness,
-        "skill_status": skill_status,
-        "readiness_status": readiness_status,
+        "completed_modules": completed_modules,
+        "top_skill": top_skill,
         "metrics": {
-            "resume_quality": resume_score,
             "quiz_mastery": quiz_score,
             "coding_ability": coding_score,
             "interview_skill": interview_score,

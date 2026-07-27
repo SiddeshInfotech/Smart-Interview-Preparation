@@ -114,10 +114,7 @@ const Dashboard = () => {
 
   const [aiIntelligence, setAiIntelligence] = useState({
     overall_readiness: 0,
-    skill_status: "Pending",
-    readiness_status: "Not Started",
     metrics: {
-      resume_quality: 0,
       quiz_mastery: 0,
       coding_ability: 0,
       interview_skill: 0,
@@ -184,6 +181,34 @@ const Dashboard = () => {
     fetchCodingPerformance();
     fetchAiIntelligence();
   }, []);
+
+  // Synchronize AI Profile Intelligence metrics live whenever Candidate Task results update
+  useEffect(() => {
+    const qScore = quizPerformance.overall_score || 0;
+    const cScore = codingPerformance.overall_score || 0;
+    const iScore = interviewPerformance.overall_performance || 0;
+
+    const scoresMap = [
+      { name: "Quiz", score: qScore },
+      { name: "Coding", score: cScore },
+      { name: "Interview", score: iScore },
+    ];
+
+    const activeScores = scoresMap.filter((s) => s.score > 0);
+    const overallReadiness =
+      activeScores.length > 0
+        ? Math.round(activeScores.reduce((acc, curr) => acc + curr.score, 0) / activeScores.length)
+        : 0;
+
+    setAiIntelligence({
+      overall_readiness: overallReadiness,
+      metrics: {
+        quiz_mastery: qScore,
+        coding_ability: cScore,
+        interview_skill: iScore,
+      },
+    });
+  }, [quizPerformance.overall_score, codingPerformance.overall_score, interviewPerformance.overall_performance]);
 
   // Day-wise performance data calculation & backend API integration
   useEffect(() => {
@@ -356,75 +381,117 @@ const Dashboard = () => {
         <div className="overall-card">
           <div className="ai-profile-header">
             <h3>🤖 AI Profile Intelligence</h3>
-            <p>Smart Candidate Analysis</p>
+            <p>Smart Candidate Performance Analysis</p>
           </div>
 
-          <div className="main-readiness-score">
-            <h1>{aiIntelligence.overall_readiness}%</h1>
-            <span>Overall Readiness</span>
-          </div>
-
-          <div className="ai-status-box">
-            <div className="status-card">
-              <strong>{aiIntelligence.skill_status}</strong>
-              <span>Skills</span>
-            </div>
-            <div className="status-card">
-              <strong>{aiIntelligence.readiness_status}</strong>
-              <span>Status</span>
+          {/* Ultra-Attractive Circular SVG Gauge */}
+          <div className="ai-gauge-container">
+            <svg className="ai-gauge-svg" viewBox="0 0 120 120">
+              <defs>
+                <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#2563eb" />
+                  <stop offset="50%" stopColor="#7c3aed" />
+                  <stop offset="100%" stopColor="#ec4899" />
+                </linearGradient>
+              </defs>
+              <circle cx="60" cy="60" r="50" className="gauge-track" strokeWidth="9" />
+              <circle
+                cx="60"
+                cy="60"
+                r="50"
+                className="gauge-fill"
+                strokeWidth="9"
+                stroke="url(#gaugeGrad)"
+                strokeDasharray={314.159}
+                strokeDashoffset={314.159 - (314.159 * aiIntelligence.overall_readiness) / 100}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="gauge-center-text">
+              <span className="gauge-score-num">{aiIntelligence.overall_readiness}%</span>
+              <span className="gauge-score-label">Readiness</span>
             </div>
           </div>
 
           <div className="ai-metrics">
-            <div className="metric-row">
-              <div className="metric-row-header">
-                <span>Resume Quality</span>
-                <strong>{aiIntelligence.metrics.resume_quality}%</strong>
+            {/* Quiz Mastery */}
+            <div className="metric-card-row">
+              <div className="metric-info-left">
+                <div className="metric-icon-box quiz-icon-bg">
+                  <BookOpen size={18} />
+                </div>
+                <div className="metric-text-group">
+                  <span className="metric-title">Quiz Mastery</span>
+                  <span className="metric-subtitle">Knowledge & Aptitude</span>
+                </div>
               </div>
-              <div className="portal-progress-bar">
-                <div
-                  className="portal-progress-fill fill-resume"
-                  style={{ width: `${aiIntelligence.metrics.resume_quality}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="metric-row">
-              <div className="metric-row-header">
-                <span>Quiz Mastery</span>
-                <strong>{aiIntelligence.metrics.quiz_mastery}%</strong>
-              </div>
-              <div className="portal-progress-bar">
-                <div
-                  className="portal-progress-fill fill-quiz"
-                  style={{ width: `${aiIntelligence.metrics.quiz_mastery}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="metric-row">
-              <div className="metric-row-header">
-                <span>Coding Ability</span>
-                <strong>{aiIntelligence.metrics.coding_ability}%</strong>
-              </div>
-              <div className="portal-progress-bar">
-                <div
-                  className="portal-progress-fill fill-coding"
-                  style={{ width: `${aiIntelligence.metrics.coding_ability}%` }}
-                />
+              <div className="metric-info-right">
+                {aiIntelligence.metrics.quiz_mastery > 0 && (
+                  <span className={`metric-status-badge ${
+                    aiIntelligence.metrics.quiz_mastery >= 85 ? "tag-excellent" :
+                    aiIntelligence.metrics.quiz_mastery >= 50 ? "tag-good" : "tag-practice"
+                  }`}>
+                    {aiIntelligence.metrics.quiz_mastery >= 85 ? "Excellent" :
+                     aiIntelligence.metrics.quiz_mastery >= 50 ? "Good" : "Needs Practice"}
+                  </span>
+                )}
+                <div className="score-pill-chip quiz-score-chip">
+                  {aiIntelligence.metrics.quiz_mastery}%
+                </div>
               </div>
             </div>
 
-            <div className="metric-row">
-              <div className="metric-row-header">
-                <span>Interview Skill</span>
-                <strong>{aiIntelligence.metrics.interview_skill}%</strong>
+            {/* Coding Ability */}
+            <div className="metric-card-row">
+              <div className="metric-info-left">
+                <div className="metric-icon-box coding-icon-bg">
+                  <Code size={18} />
+                </div>
+                <div className="metric-text-group">
+                  <span className="metric-title">Coding Ability</span>
+                  <span className="metric-subtitle">Logic & Execution</span>
+                </div>
               </div>
-              <div className="portal-progress-bar">
-                <div
-                  className="portal-progress-fill fill-interview"
-                  style={{ width: `${aiIntelligence.metrics.interview_skill}%` }}
-                />
+              <div className="metric-info-right">
+                {aiIntelligence.metrics.coding_ability > 0 && (
+                  <span className={`metric-status-badge ${
+                    aiIntelligence.metrics.coding_ability >= 85 ? "tag-excellent" :
+                    aiIntelligence.metrics.coding_ability >= 50 ? "tag-good" : "tag-practice"
+                  }`}>
+                    {aiIntelligence.metrics.coding_ability >= 85 ? "Excellent" :
+                     aiIntelligence.metrics.coding_ability >= 50 ? "Good" : "Needs Practice"}
+                  </span>
+                )}
+                <div className="score-pill-chip coding-score-chip">
+                  {aiIntelligence.metrics.coding_ability}%
+                </div>
+              </div>
+            </div>
+
+            {/* Interview Skill */}
+            <div className="metric-card-row">
+              <div className="metric-info-left">
+                <div className="metric-icon-box interview-icon-bg">
+                  <Video size={18} />
+                </div>
+                <div className="metric-text-group">
+                  <span className="metric-title">Interview Skill</span>
+                  <span className="metric-subtitle">Communication & AI Mock</span>
+                </div>
+              </div>
+              <div className="metric-info-right">
+                {aiIntelligence.metrics.interview_skill > 0 && (
+                  <span className={`metric-status-badge ${
+                    aiIntelligence.metrics.interview_skill >= 85 ? "tag-excellent" :
+                    aiIntelligence.metrics.interview_skill >= 50 ? "tag-good" : "tag-practice"
+                  }`}>
+                    {aiIntelligence.metrics.interview_skill >= 85 ? "Excellent" :
+                     aiIntelligence.metrics.interview_skill >= 50 ? "Good" : "Needs Practice"}
+                  </span>
+                )}
+                <div className="score-pill-chip interview-score-chip">
+                  {aiIntelligence.metrics.interview_skill}%
+                </div>
               </div>
             </div>
           </div>
@@ -434,10 +501,10 @@ const Dashboard = () => {
       {/* Performance Cards */}
       <div className="performance-section">
         {/* Quiz Performance */}
-        <div className="performance-card">
+        <div className="performance-card quiz-card">
           <div className="performance-title">
             <div className="category-badge quiz-badge">
-              <BookOpen size={22} color="#ffffff" />
+              <BookOpen size={22} />
             </div>
             <h3>Quiz Performance</h3>
           </div>
@@ -470,10 +537,10 @@ const Dashboard = () => {
         </div>
 
         {/* Coding Performance */}
-        <div className="performance-card">
+        <div className="performance-card coding-card">
           <div className="performance-title">
             <div className="category-badge coding-badge">
-              <Code size={22} color="#ffffff" />
+              <Code size={22} />
             </div>
             <h3>Coding Performance</h3>
           </div>
@@ -506,10 +573,10 @@ const Dashboard = () => {
         </div>
 
         {/* Interview Performance */}
-        <div className="performance-card">
+        <div className="performance-card interview-card">
           <div className="performance-title">
             <div className="category-badge interview-badge">
-              <Video size={22} color="#ffffff" />
+              <Video size={22} />
             </div>
             <h3>Interview Performance</h3>
           </div>
