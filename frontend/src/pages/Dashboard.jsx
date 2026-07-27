@@ -12,14 +12,59 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
 } from "recharts";
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="custom-chart-tooltip">
+        <div className="tooltip-header">
+          <span className="tooltip-day">{label} Progress</span>
+          <span className="tooltip-badge">Live Score</span>
+        </div>
+        <div className="tooltip-list">
+          {payload.map((item, idx) => {
+            const val = item.value;
+            let statusText = "Good";
+            let statusClass = "status-good";
+            if (val >= 85) {
+              statusText = "Excellent";
+              statusClass = "status-excellent";
+            } else if (val < 50) {
+              statusText = "Needs Focus";
+              statusClass = "status-focus";
+            }
+
+            return (
+              <div key={idx} className="tooltip-item">
+                <div className="tooltip-item-left">
+                  <span
+                    className="tooltip-dot"
+                    style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}` }}
+                  />
+                  <span className="tooltip-name">{item.name}</span>
+                </div>
+                <div className="tooltip-item-right">
+                  <strong className="tooltip-val">{val}%</strong>
+                  <span className={`tooltip-status-tag ${statusClass}`}>{statusText}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 const Dashboard = () => {
   const { userProfile } = useAuth();
   const [fullName, setFullName] = useState(() => {
     return userProfile?.name && userProfile.name !== "User" ? userProfile.name : "User";
   });
+
+  const [activeMetric, setActiveMetric] = useState("all");
 
   useEffect(() => {
     if (userProfile?.name && userProfile.name !== "User") {
@@ -38,7 +83,6 @@ const Dashboard = () => {
 
   const user = {
     username: fullName,
-    overallPerformance: 92,
   };
 
   const [quizPerformance, setQuizPerformance] = useState({
@@ -68,6 +112,28 @@ const Dashboard = () => {
     overall_score: 0,
   });
 
+  const [aiIntelligence, setAiIntelligence] = useState({
+    overall_readiness: 0,
+    skill_status: "Pending",
+    readiness_status: "Not Started",
+    metrics: {
+      resume_quality: 0,
+      quiz_mastery: 0,
+      coding_ability: 0,
+      interview_skill: 0,
+    },
+  });
+
+  const [performanceData, setPerformanceData] = useState([
+    { day: "Mon", quiz: 50, coding: 40, interview: 70 },
+    { day: "Tue", quiz: 58, coding: 48, interview: 70 },
+    { day: "Wed", quiz: 65, coding: 56, interview: 70 },
+    { day: "Thu", quiz: 72, coding: 64, interview: 70 },
+    { day: "Fri", quiz: 80, coding: 74, interview: 70 },
+    { day: "Sat", quiz: 86, coding: 82, interview: 70 },
+    { day: "Sun", quiz: 92, coding: 88, interview: 70 },
+  ]);
+
   useEffect(() => {
     const fetchQuizPerformance = async () => {
       try {
@@ -79,6 +145,7 @@ const Dashboard = () => {
         console.warn("Quiz API Error:", err);
       }
     };
+
     const fetchInterviewPerformance = async () => {
       try {
         const res = await api.get("/interview/performance/");
@@ -89,6 +156,7 @@ const Dashboard = () => {
         console.warn("Interview Performance API Error:", err);
       }
     };
+
     const fetchCodingPerformance = async () => {
       try {
         const res = await api.get("/coding/performance/");
@@ -100,19 +168,60 @@ const Dashboard = () => {
       }
     };
 
+    const fetchAiIntelligence = async () => {
+      try {
+        const res = await api.get("/dashboard/ai-intelligence/");
+        if (res.data && res.data.metrics) {
+          setAiIntelligence(res.data);
+        }
+      } catch (err) {
+        console.warn("AI Intelligence API Error:", err);
+      }
+    };
+
     fetchQuizPerformance();
     fetchInterviewPerformance();
     fetchCodingPerformance();
+    fetchAiIntelligence();
   }, []);
 
-  const performanceData = [
-    { month: "Jan", quiz: 45, coding: 35, interview: 25 },
-    { month: "Feb", quiz: 58, coding: 44, interview: 33 },
-    { month: "Mar", quiz: 69, coding: 53, interview: 40 },
-    { month: "Apr", quiz: 77, coding: 64, interview: 55 },
-    { month: "May", quiz: 88, coding: 76, interview: 70 },
-    { month: "Jun", quiz: 97, coding: 89, interview: 83 },
-  ];
+  // Day-wise performance data calculation & backend API integration
+  useEffect(() => {
+    const fetchDailyProgress = async () => {
+      try {
+        const res = await api.get("/dashboard/daily-progress/");
+        if (res.data && res.data.daily_progress && res.data.daily_progress.length > 0) {
+          setPerformanceData(res.data.daily_progress);
+          return;
+        }
+      } catch (err) {
+        console.warn("Daily Progress API Error:", err);
+      }
+
+      // Fallback day-wise calculation based on overall candidate performance
+      const qScore = quizPerformance.overall_score || 0;
+      const cScore = codingPerformance.overall_score || 0;
+      const iScore = interviewPerformance.overall_performance || 70;
+      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+      const computed = days.map((dayName, index) => {
+        const progressFactor = 0.65 + 0.35 * ((index + 1) / 7);
+        return {
+          day: dayName,
+          quiz: qScore > 0 ? Math.min(100, Math.round(qScore * progressFactor)) : Math.round(45 + index * 6),
+          coding: cScore > 0 ? Math.min(100, Math.round(cScore * progressFactor)) : Math.round(35 + index * 7),
+          interview: iScore,
+        };
+      });
+      setPerformanceData(computed);
+    };
+
+    fetchDailyProgress();
+  }, [quizPerformance.overall_score, codingPerformance.overall_score, interviewPerformance.overall_performance]);
+
+  const showQuiz = activeMetric === "all" || activeMetric === "quiz";
+  const showCoding = activeMetric === "all" || activeMetric === "coding";
+  const showInterview = activeMetric === "all" || activeMetric === "interview";
 
   return (
     <div className="dashboard-container">
@@ -129,46 +238,116 @@ const Dashboard = () => {
 
       {/* Analytics Section */}
       <div className="overview-section">
-        {/* Performance Analytics Graph */}
+        {/* Day-Wise Performance Analytics Graph */}
         <div className="graph-card">
           <div className="card-header">
-            <h3>Performance Analytics</h3>
+            <div>
+              <h3>Performance Analytics</h3>
+              <p style={{ margin: "4px 0 0 0", color: "#64748B", fontSize: "14px" }}>
+                Candidate daily progress tracking & skill trends
+              </p>
+            </div>
+
+            {/* Interactive Filter Pills */}
+            <div className="chart-filter-pills">
+              <button
+                className={`filter-pill ${activeMetric === "all" ? "active" : ""}`}
+                onClick={() => setActiveMetric("all")}
+              >
+                All Metrics
+              </button>
+              <button
+                className={`filter-pill quiz-pill ${activeMetric === "quiz" ? "active" : ""}`}
+                onClick={() => setActiveMetric("quiz")}
+              >
+                Quiz
+              </button>
+              <button
+                className={`filter-pill coding-pill ${activeMetric === "coding" ? "active" : ""}`}
+                onClick={() => setActiveMetric("coding")}
+              >
+                Coding
+              </button>
+              <button
+                className={`filter-pill interview-pill ${activeMetric === "interview" ? "active" : ""}`}
+                onClick={() => setActiveMetric("interview")}
+              >
+                Interview
+              </button>
+            </div>
           </div>
 
-          <ResponsiveContainer width="100%" height={350}>
-            <AreaChart data={performanceData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="quiz"
-                stroke="#2563EB"
-                strokeWidth={3}
-                fill="#2563EB"
-                fillOpacity={0.20}
-                name="Quiz"
+          <ResponsiveContainer width="100%" height={360}>
+            <AreaChart data={performanceData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="quizGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#2563EB" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#2563EB" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id="codingGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#10B981" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id="interviewGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#7C3AED" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid strokeDasharray="4 4" stroke="#e2e8f0" vertical={false} />
+              <XAxis
+                dataKey="day"
+                tick={{ fill: '#475569', fontSize: 13, fontWeight: 600 }}
+                axisLine={false}
+                tickLine={false}
               />
-              <Area
-                type="monotone"
-                dataKey="coding"
-                stroke="#10B981"
-                strokeWidth={3}
-                fill="#10B981"
-                fillOpacity={0.20}
-                name="Coding"
+              <YAxis
+                domain={[0, 100]}
+                tick={{ fill: '#475569', fontSize: 13, fontWeight: 600 }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}%`}
               />
-              <Area
-                type="monotone"
-                dataKey="interview"
-                stroke="#7C3AED"
-                strokeWidth={3}
-                fill="#7C3AED"
-                fillOpacity={0.20}
-                name="Interview"
-              />
+              <Tooltip content={<CustomTooltip />} />
+
+              {showQuiz && (
+                <Area
+                  type="monotone"
+                  dataKey="quiz"
+                  stroke="#2563EB"
+                  strokeWidth={3.5}
+                  fill="url(#quizGrad)"
+                  dot={{ r: 5, strokeWidth: 2, fill: "#ffffff", stroke: "#2563EB" }}
+                  activeDot={{ r: 8, strokeWidth: 2.5, fill: "#2563EB", stroke: "#ffffff" }}
+                  name="Quiz"
+                />
+              )}
+
+              {showCoding && (
+                <Area
+                  type="monotone"
+                  dataKey="coding"
+                  stroke="#10B981"
+                  strokeWidth={3.5}
+                  fill="url(#codingGrad)"
+                  dot={{ r: 5, strokeWidth: 2, fill: "#ffffff", stroke: "#10B981" }}
+                  activeDot={{ r: 8, strokeWidth: 2.5, fill: "#10B981", stroke: "#ffffff" }}
+                  name="Coding"
+                />
+              )}
+
+              {showInterview && (
+                <Area
+                  type="monotone"
+                  dataKey="interview"
+                  stroke="#7C3AED"
+                  strokeWidth={3.5}
+                  fill="url(#interviewGrad)"
+                  dot={{ r: 5, strokeWidth: 2, fill: "#ffffff", stroke: "#7C3AED" }}
+                  activeDot={{ r: 8, strokeWidth: 2.5, fill: "#7C3AED", stroke: "#ffffff" }}
+                  name="Interview"
+                />
+              )}
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -181,33 +360,72 @@ const Dashboard = () => {
           </div>
 
           <div className="main-readiness-score">
-            <h1>{user.overallPerformance}%</h1>
+            <h1>{aiIntelligence.overall_readiness}%</h1>
             <span>Overall Readiness</span>
           </div>
 
           <div className="ai-status-box">
             <div className="status-card">
-              <strong>Strong</strong>
+              <strong>{aiIntelligence.skill_status}</strong>
               <span>Skills</span>
             </div>
             <div className="status-card">
-              <strong>Ready</strong>
+              <strong>{aiIntelligence.readiness_status}</strong>
               <span>Status</span>
             </div>
           </div>
 
           <div className="ai-metrics">
             <div className="metric-row">
-              <span>Resume Quality</span>
-              <strong>95%</strong>
+              <div className="metric-row-header">
+                <span>Resume Quality</span>
+                <strong>{aiIntelligence.metrics.resume_quality}%</strong>
+              </div>
+              <div className="portal-progress-bar">
+                <div
+                  className="portal-progress-fill fill-resume"
+                  style={{ width: `${aiIntelligence.metrics.resume_quality}%` }}
+                />
+              </div>
             </div>
+
             <div className="metric-row">
-              <span>Coding Ability</span>
-              <strong>90%</strong>
+              <div className="metric-row-header">
+                <span>Quiz Mastery</span>
+                <strong>{aiIntelligence.metrics.quiz_mastery}%</strong>
+              </div>
+              <div className="portal-progress-bar">
+                <div
+                  className="portal-progress-fill fill-quiz"
+                  style={{ width: `${aiIntelligence.metrics.quiz_mastery}%` }}
+                />
+              </div>
             </div>
+
             <div className="metric-row">
-              <span>Interview Skill</span>
-              <strong>90%</strong>
+              <div className="metric-row-header">
+                <span>Coding Ability</span>
+                <strong>{aiIntelligence.metrics.coding_ability}%</strong>
+              </div>
+              <div className="portal-progress-bar">
+                <div
+                  className="portal-progress-fill fill-coding"
+                  style={{ width: `${aiIntelligence.metrics.coding_ability}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="metric-row">
+              <div className="metric-row-header">
+                <span>Interview Skill</span>
+                <strong>{aiIntelligence.metrics.interview_skill}%</strong>
+              </div>
+              <div className="portal-progress-bar">
+                <div
+                  className="portal-progress-fill fill-interview"
+                  style={{ width: `${aiIntelligence.metrics.interview_skill}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>

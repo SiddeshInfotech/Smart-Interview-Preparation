@@ -481,12 +481,27 @@ def get_interview_feedback(request, schedule_id):
 # INTERVIEW PERFORMANCE FOR DASHBOARD
 # =====================================
 from django.db.models import Avg
+from rest_framework.permissions import AllowAny
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def interview_performance(request):
-    user = request.user
-    if not hasattr(user, 'candidate_profile'):
+    user = request.user if request.user and request.user.is_authenticated else None
+    
+    if not user:
+        return Response({
+            "total_interviews": 0,
+            "technical_skills": 0,
+            "communication_skills": 0,
+            "problem_solving": 0,
+            "soft_skills": 0,
+            "code_quality": 0,
+            "overall_performance": 0,
+        })
+
+    from candidate.models import Candidate_Profile
+    candidate_profile = Candidate_Profile.objects.filter(user=user).first()
+    if not candidate_profile:
         return Response({
             "total_interviews": 0,
             "technical_skills": 0,
@@ -498,7 +513,7 @@ def interview_performance(request):
         })
 
     from .models import InterviewFeedbackReview
-    reviews = InterviewFeedbackReview.objects.filter(candidate=user.candidate_profile)
+    reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile)
     if not reviews.exists():
         return Response({
             "total_interviews": 0,
