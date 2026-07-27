@@ -1192,11 +1192,31 @@
 [data-theme="dark"] .candidate-profile-page,
 [data-theme="dark"] .cp-layout-container,
 [data-theme="dark"] .cp-app-wrapper,
+[data-theme="dark"] .cp-loading-screen,
 body.dark-theme .candidate-profile-page,
 body.dark-theme .cp-layout-container,
-body.dark-theme .cp-app-wrapper {
+body.dark-theme .cp-app-wrapper,
+body.dark-theme .cp-loading-screen {
   background-color: #090d16 !important;
   color: #ffffff !important;
+}
+
+[data-theme="dark"] .cp-loading-text,
+body.dark-theme .cp-loading-text {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cp-spinner,
+body.dark-theme .cp-spinner {
+  border-color: #1e293b !important;
+  border-top-color: #4f46e5 !important;
+}
+
+[data-theme="dark"] .cp-error-notification,
+body.dark-theme .cp-error-notification {
+  background: #7f1d1d !important;
+  color: #f87171 !important;
+  border-color: #991b1b !important;
 }
 
 [data-theme="dark"] .cp-sidebar,
@@ -1204,16 +1224,21 @@ body.dark-theme .cp-app-wrapper {
 [data-theme="dark"] .cp-card-header,
 [data-theme="dark"] .cp-card,
 [data-theme="dark"] .cp-header,
-[data-theme="dark"] .cp-bottom-bar,
 [data-theme="dark"] .cp-mobile-header,
 body.dark-theme .cp-sidebar,
 body.dark-theme .cp-card-section,
 body.dark-theme .cp-card-header,
 body.dark-theme .cp-card,
 body.dark-theme .cp-header,
-body.dark-theme .cp-bottom-bar,
 body.dark-theme .cp-mobile-header {
   background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cp-bottom-bar,
+body.dark-theme .cp-bottom-bar {
+  background: rgba(15, 23, 42, 0.95) !important;
   border-color: #1e293b !important;
   color: #ffffff !important;
 }
@@ -1223,11 +1248,15 @@ body.dark-theme .cp-mobile-header {
 [data-theme="dark"] .cp-label,
 [data-theme="dark"] .cp-brand-title,
 [data-theme="dark"] .cp-mode-title,
+[data-theme="dark"] .cp-input-suffix,
+[data-theme="dark"] .cp-pills-label,
 body.dark-theme .cp-card-title,
 body.dark-theme .cp-nav-item,
 body.dark-theme .cp-label,
 body.dark-theme .cp-brand-title,
-body.dark-theme .cp-mode-title {
+body.dark-theme .cp-mode-title,
+body.dark-theme .cp-input-suffix,
+body.dark-theme .cp-pills-label {
   color: #ffffff !important;
 }
 
@@ -1236,11 +1265,13 @@ body.dark-theme .cp-mode-title {
 [data-theme="dark"] .cp-mode-hint,
 [data-theme="dark"] .cp-field-hint,
 [data-theme="dark"] .cp-input-label,
+[data-theme="dark"] .cp-empty-skills-msg,
 body.dark-theme .cp-card-subtitle,
 body.dark-theme .cp-brand-subtitle,
 body.dark-theme .cp-mode-hint,
 body.dark-theme .cp-field-hint,
-body.dark-theme .cp-input-label {
+body.dark-theme .cp-input-label,
+body.dark-theme .cp-empty-skills-msg {
   color: #ffffff !important;
 }
 
@@ -1253,9 +1284,13 @@ body.dark-theme .cp-nav-item:hover {
 [data-theme="dark"] .cp-sidebar-mode-card,
 [data-theme="dark"] .cp-avatar-upload-area,
 [data-theme="dark"] .cp-skills-chips-wrapper,
+[data-theme="dark"] .cp-social-card,
+[data-theme="dark"] .cp-btn-secondary,
 body.dark-theme .cp-sidebar-mode-card,
 body.dark-theme .cp-avatar-upload-area,
-body.dark-theme .cp-skills-chips-wrapper {
+body.dark-theme .cp-skills-chips-wrapper,
+body.dark-theme .cp-social-card,
+body.dark-theme .cp-btn-secondary {
   background: #1e293b !important;
   border-color: #334155 !important;
   color: #ffffff !important;
@@ -1266,13 +1301,21 @@ body.dark-theme .cp-skills-chips-wrapper {
 [data-theme="dark"] .cp-input-field,
 [data-theme="dark"] .cp-select-field,
 [data-theme="dark"] .cp-textarea-field,
+[data-theme="dark"] .cp-datepicker-wrapper .react-datepicker__input-container input,
 body.dark-theme .cp-input,
 body.dark-theme .cp-select,
 body.dark-theme .cp-input-field,
 body.dark-theme .cp-select-field,
-body.dark-theme .cp-textarea-field {
+body.dark-theme .cp-textarea-field,
+body.dark-theme .cp-datepicker-wrapper .react-datepicker__input-container input {
   background-color: #0f172a !important;
   border-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cp-select option,
+body.dark-theme .cp-select option {
+  background-color: #0f172a !important;
   color: #ffffff !important;
 }
 
@@ -1284,6 +1327,119 @@ body.dark-theme .cp-input.readonly,
 body.dark-theme .cp-select.readonly {
   background-color: #1e293b !important;
   color: #ffffff !important;
+}
+
+[data-theme="dark"] .cp-locked-badge,
+body.dark-theme .cp-locked-badge {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Card Header Icon Badges */
+[data-theme="dark"] .cp-card-header-icon.profile,
+body.dark-theme .cp-card-header-icon.profile {
+  background: #312e81 !important;
+  color: #818cf8 !important;
+}
+
+[data-theme="dark"] .cp-card-header-icon.education,
+body.dark-theme .cp-card-header-icon.education {
+  background: #064e3b !important;
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .cp-card-header-icon.skills,
+body.dark-theme .cp-card-header-icon.skills {
+  background: #4c1d95 !important;
+  color: #c084fc !important;
+}
+
+[data-theme="dark"] .cp-card-header-icon.digital,
+body.dark-theme .cp-card-header-icon.digital {
+  background: #78350f !important;
+  color: #fbbf24 !important;
+}
+
+/* Count & Read-Only Badges */
+[data-theme="dark"] .cp-skills-count-badge,
+body.dark-theme .cp-skills-count-badge {
+  background: #4c1d95 !important;
+  color: #c084fc !important;
+  border-color: #7c3aed !important;
+}
+
+[data-theme="dark"] .cp-read-only-badge,
+[data-theme="dark"] .cp-readonly-hint,
+body.dark-theme .cp-read-only-badge,
+body.dark-theme .cp-readonly-hint {
+  background: #1e3a8a !important;
+  color: #60a5fa !important;
+  border-color: #2563eb !important;
+}
+
+/* Skill Chips */
+[data-theme="dark"] .cp-skill-chip,
+body.dark-theme .cp-skill-chip {
+  background: #1e1b4b !important;
+  color: #a5b4fc !important;
+  border-color: #312e81 !important;
+}
+
+[data-theme="dark"] .cp-skill-remove-btn,
+body.dark-theme .cp-skill-remove-btn {
+  background: #312e81 !important;
+  color: #a5b4fc !important;
+}
+
+/* Popular Pills & Suggestions */
+[data-theme="dark"] .cp-pill-btn,
+body.dark-theme .cp-pill-btn {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cp-pill-btn.active,
+[data-theme="dark"] .cp-pill-btn.added,
+body.dark-theme .cp-pill-btn.active,
+body.dark-theme .cp-pill-btn.added {
+  background: #312e81 !important;
+  color: #818cf8 !important;
+  border-color: #4f46e5 !important;
+}
+
+[data-theme="dark"] .cp-suggestions-dropdown,
+body.dark-theme .cp-suggestions-dropdown {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+}
+
+[data-theme="dark"] .cp-suggestion-item,
+body.dark-theme .cp-suggestion-item {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cp-suggestion-item:hover,
+body.dark-theme .cp-suggestion-item:hover {
+  background: #1e293b !important;
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .cp-link-preview-btn,
+body.dark-theme .cp-link-preview-btn {
+  background: #312e81 !important;
+  color: #818cf8 !important;
+}
+
+[data-theme="dark"] .cp-save-status.editing,
+body.dark-theme .cp-save-status.editing {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .cp-save-status.readonly,
+body.dark-theme .cp-save-status.readonly {
+  color: #34d399 !important;
 }
 
 

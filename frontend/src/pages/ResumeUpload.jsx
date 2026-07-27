@@ -18,8 +18,10 @@ import {
   Award
 } from "lucide-react";
 import "../styles/ResumeUpload.css";
+import { useTheme } from "../context/ThemeContext";
 
 const ResumeUpload = () => {
+  const { theme } = useTheme();
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -213,10 +215,11 @@ const ResumeUpload = () => {
   const scorePercent = Math.min(100, Math.max(0, rawScore));
 
   const getScoreTier = (score) => {
-    if (score >= 80) return { label: "Excellent Match", color: "#10b981", bg: "#d1fae5" };
-    if (score >= 65) return { label: "Strong Candidate", color: "#4f46e5", bg: "#e0e7ff" };
-    if (score >= 50) return { label: "Moderate Profile", color: "#f59e0b", bg: "#fef3c7" };
-    return { label: "Needs Optimization", color: "#ef4444", bg: "#fee2e2" };
+    const isDark = theme === "dark";
+    if (score >= 80) return { label: "Excellent Match", color: isDark ? "#34d399" : "#10b981", bg: isDark ? "#064e3b" : "#d1fae5" };
+    if (score >= 65) return { label: "Strong Candidate", color: isDark ? "#a5b4fc" : "#4f46e5", bg: isDark ? "#312e81" : "#e0e7ff" };
+    if (score >= 50) return { label: "Moderate Profile", color: isDark ? "#fbbf24" : "#d97706", bg: isDark ? "#78350f" : "#fef3c7" };
+    return { label: "Needs Optimization", color: isDark ? "#f87171" : "#ef4444", bg: isDark ? "#7f1d1d" : "#fee2e2" };
   };
 
   const scoreTier = getScoreTier(scorePercent);

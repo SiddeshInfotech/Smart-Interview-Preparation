@@ -1270,11 +1270,31 @@
 [data-theme="dark"] .interviewer-profile-page,
 [data-theme="dark"] .ip-layout-container,
 [data-theme="dark"] .ip-app-wrapper,
+[data-theme="dark"] .ip-loading-screen,
 body.dark-theme .interviewer-profile-page,
 body.dark-theme .ip-layout-container,
-body.dark-theme .ip-app-wrapper {
+body.dark-theme .ip-app-wrapper,
+body.dark-theme .ip-loading-screen {
   background-color: #090d16 !important;
   color: #ffffff !important;
+}
+
+[data-theme="dark"] .ip-loading-text,
+body.dark-theme .ip-loading-text {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .ip-spinner,
+body.dark-theme .ip-spinner {
+  border-color: #1e293b !important;
+  border-top-color: #4f46e5 !important;
+}
+
+[data-theme="dark"] .ip-error-notification,
+body.dark-theme .ip-error-notification {
+  background: #7f1d1d !important;
+  color: #f87171 !important;
+  border-color: #991b1b !important;
 }
 
 [data-theme="dark"] .ip-sidebar,
@@ -1282,16 +1302,21 @@ body.dark-theme .ip-app-wrapper {
 [data-theme="dark"] .ip-card-header,
 [data-theme="dark"] .ip-card,
 [data-theme="dark"] .ip-header,
-[data-theme="dark"] .ip-bottom-bar,
 [data-theme="dark"] .ip-mobile-header,
 body.dark-theme .ip-sidebar,
 body.dark-theme .ip-card-section,
 body.dark-theme .ip-card-header,
 body.dark-theme .ip-card,
 body.dark-theme .ip-header,
-body.dark-theme .ip-bottom-bar,
 body.dark-theme .ip-mobile-header {
   background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .ip-bottom-bar,
+body.dark-theme .ip-bottom-bar {
+  background: rgba(15, 23, 42, 0.95) !important;
   border-color: #1e293b !important;
   color: #ffffff !important;
 }
@@ -1301,11 +1326,15 @@ body.dark-theme .ip-mobile-header {
 [data-theme="dark"] .ip-label,
 [data-theme="dark"] .ip-brand-title,
 [data-theme="dark"] .ip-mode-title,
+[data-theme="dark"] .ip-input-suffix,
+[data-theme="dark"] .ip-pills-label,
 body.dark-theme .ip-card-title,
 body.dark-theme .ip-nav-item,
 body.dark-theme .ip-label,
 body.dark-theme .ip-brand-title,
-body.dark-theme .ip-mode-title {
+body.dark-theme .ip-mode-title,
+body.dark-theme .ip-input-suffix,
+body.dark-theme .ip-pills-label {
   color: #ffffff !important;
 }
 
@@ -1314,11 +1343,15 @@ body.dark-theme .ip-mode-title {
 [data-theme="dark"] .ip-mode-hint,
 [data-theme="dark"] .ip-field-hint,
 [data-theme="dark"] .ip-input-label,
+[data-theme="dark"] .ip-empty-expertise-msg,
+[data-theme="dark"] .ip-empty-slots-msg,
 body.dark-theme .ip-card-subtitle,
 body.dark-theme .ip-brand-subtitle,
 body.dark-theme .ip-mode-hint,
 body.dark-theme .ip-field-hint,
-body.dark-theme .ip-input-label {
+body.dark-theme .ip-input-label,
+body.dark-theme .ip-empty-expertise-msg,
+body.dark-theme .ip-empty-slots-msg {
   color: #ffffff !important;
 }
 
@@ -1333,11 +1366,15 @@ body.dark-theme .ip-nav-item:hover {
 [data-theme="dark"] .ip-expertise-chips-wrapper,
 [data-theme="dark"] .ip-slots-chips-wrapper,
 [data-theme="dark"] .ip-slot-add-form,
+[data-theme="dark"] .ip-slot-card,
+[data-theme="dark"] .ip-social-card,
 body.dark-theme .ip-sidebar-mode-card,
 body.dark-theme .ip-avatar-upload-area,
 body.dark-theme .ip-expertise-chips-wrapper,
 body.dark-theme .ip-slots-chips-wrapper,
-body.dark-theme .ip-slot-add-form {
+body.dark-theme .ip-slot-add-form,
+body.dark-theme .ip-slot-card,
+body.dark-theme .ip-social-card {
   background: #1e293b !important;
   border-color: #334155 !important;
   color: #ffffff !important;
@@ -1358,6 +1395,12 @@ body.dark-theme .ip-textarea-field {
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .ip-select option,
+body.dark-theme .ip-select option {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
 [data-theme="dark"] .ip-input.disabled,
 [data-theme="dark"] .ip-input.readonly,
 [data-theme="dark"] .ip-select.readonly,
@@ -1368,8 +1411,141 @@ body.dark-theme .ip-select.readonly {
   color: #ffffff !important;
 }
 
-[data-theme="dark"] .ip-empty-expertise-msg,
-body.dark-theme .ip-empty-expertise-msg {
+/* Card Header Icon Badges */
+[data-theme="dark"] .ip-card-header-icon.profile,
+body.dark-theme .ip-card-header-icon.profile {
+  background: #312e81 !important;
+  color: #818cf8 !important;
+}
+
+[data-theme="dark"] .ip-card-header-icon.background,
+body.dark-theme .ip-card-header-icon.background {
+  background: #064e3b !important;
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .ip-card-header-icon.expertise,
+body.dark-theme .ip-card-header-icon.expertise {
+  background: #4c1d95 !important;
+  color: #c084fc !important;
+}
+
+[data-theme="dark"] .ip-card-header-icon.slots,
+body.dark-theme .ip-card-header-icon.slots {
+  background: #155e75 !important;
+  color: #22d3ee !important;
+}
+
+[data-theme="dark"] .ip-card-header-icon.digital,
+body.dark-theme .ip-card-header-icon.digital {
+  background: #78350f !important;
+  color: #fbbf24 !important;
+}
+
+/* Count & Read-Only Badges */
+[data-theme="dark"] .ip-expertise-count-badge,
+[data-theme="dark"] .ip-locked-badge,
+body.dark-theme .ip-expertise-count-badge,
+body.dark-theme .ip-locked-badge {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  border: 1px solid #334155 !important;
+}
+
+[data-theme="dark"] .ip-expertise-count-badge.slots-badge,
+body.dark-theme .ip-expertise-count-badge.slots-badge {
+  background: #155e75 !important;
+  color: #22d3ee !important;
+  border-color: #0891b2 !important;
+}
+
+[data-theme="dark"] .ip-read-only-badge,
+[data-theme="dark"] .ip-readonly-hint,
+body.dark-theme .ip-read-only-badge,
+body.dark-theme .ip-readonly-hint {
+  background: #1e3a8a !important;
+  color: #60a5fa !important;
+  border-color: #2563eb !important;
+}
+
+/* Topic Chips & Slot Items */
+[data-theme="dark"] .ip-expertise-chip,
+body.dark-theme .ip-expertise-chip {
+  background: #1e1b4b !important;
+  color: #a5b4fc !important;
+  border-color: #312e81 !important;
+}
+
+[data-theme="dark"] .ip-expertise-remove-btn,
+body.dark-theme .ip-expertise-remove-btn {
+  background: #312e81 !important;
+  color: #a5b4fc !important;
+}
+
+[data-theme="dark"] .ip-slot-chip,
+body.dark-theme .ip-slot-chip {
+  background: #083344 !important;
+  color: #38bdf8 !important;
+  border-color: #155e75 !important;
+}
+
+[data-theme="dark"] .ip-slot-day,
+body.dark-theme .ip-slot-day {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .ip-slot-time,
+body.dark-theme .ip-slot-time {
+  color: #e0f2fe !important;
+}
+
+/* Popular Pills & Suggestions */
+[data-theme="dark"] .ip-pill-btn,
+body.dark-theme .ip-pill-btn {
+  background: #1e293b !important;
+  border-color: #334155 !important;
   color: #ffffff !important;
+}
+
+[data-theme="dark"] .ip-pill-btn.active,
+[data-theme="dark"] .ip-pill-btn.added,
+body.dark-theme .ip-pill-btn.active,
+body.dark-theme .ip-pill-btn.added {
+  background: #312e81 !important;
+  color: #818cf8 !important;
+  border-color: #4f46e5 !important;
+}
+
+[data-theme="dark"] .ip-suggestions-dropdown,
+body.dark-theme .ip-suggestions-dropdown {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+}
+
+[data-theme="dark"] .ip-suggestion-item,
+body.dark-theme .ip-suggestion-item {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .ip-suggestion-item:hover,
+body.dark-theme .ip-suggestion-item:hover {
+  background: #1e293b !important;
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .ip-link-preview-btn,
+body.dark-theme .ip-link-preview-btn {
+  background: #312e81 !important;
+  color: #818cf8 !important;
+}
+
+[data-theme="dark"] .ip-save-status.editing,
+body.dark-theme .ip-save-status.editing {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .ip-save-status.readonly,
+body.dark-theme .ip-save-status.readonly {
+  color: #34d399 !important;
 }
 

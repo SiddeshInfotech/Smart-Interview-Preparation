@@ -75,3 +75,27 @@
     display: none;
   }
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR UNIFIED INTERVIEW PAGE
+   ========================================================================== */
+[data-theme="dark"] .interview-dashboard,
+[data-theme="dark"] .interview-tab-content,
+body.dark-theme .interview-dashboard,
+body.dark-theme .interview-tab-content {
+  background: #090d16 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .interview-tab-btn,
+body.dark-theme .interview-tab-btn {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .interview-tab-btn:hover,
+[data-theme="dark"] .interview-tab-btn.active,
+body.dark-theme .interview-tab-btn:hover,
+body.dark-theme .interview-tab-btn.active {
+  background: #1e293b !important;
+  color: #3b82f6 !important;
+}

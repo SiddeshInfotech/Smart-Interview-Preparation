@@ -867,65 +867,86 @@ body {
    DARK THEME OVERRIDES FOR INTERVIEW PAGE
    ========================================================================== */
 [data-theme="dark"] .interview-page,
+[data-theme="dark"] .interview-container,
 [data-theme="dark"] .interview-lobby,
 [data-theme="dark"] .pre-interview-container,
 body.dark-theme .interview-page,
+body.dark-theme .interview-container,
 body.dark-theme .interview-lobby,
 body.dark-theme .pre-interview-container {
   background: #090d16 !important;
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .header,
+[data-theme="dark"] .face-status-bar,
 [data-theme="dark"] .ready-card,
 [data-theme="dark"] .lobby-card,
+[data-theme="dark"] .upcoming-card,
 [data-theme="dark"] .controls-card,
 [data-theme="dark"] .ai-chat-panel,
 [data-theme="dark"] .device-card,
 [data-theme="dark"] .device-item,
 [data-theme="dark"] .encrypted-banner,
 [data-theme="dark"] .session-details-card,
+[data-theme="dark"] .security-badge,
+[data-theme="dark"] .lobby-preview,
+body.dark-theme .header,
+body.dark-theme .face-status-bar,
 body.dark-theme .ready-card,
 body.dark-theme .lobby-card,
+body.dark-theme .upcoming-card,
 body.dark-theme .controls-card,
 body.dark-theme .ai-chat-panel,
 body.dark-theme .device-card,
 body.dark-theme .device-item,
 body.dark-theme .encrypted-banner,
-body.dark-theme .session-details-card {
+body.dark-theme .session-details-card,
+body.dark-theme .security-badge,
+body.dark-theme .lobby-preview {
   background: #0f172a !important;
   border-color: #1e293b !important;
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .logo-text,
+[data-theme="dark"] .nav-link,
 [data-theme="dark"] .detail-item .value,
+[data-theme="dark"] .detail-value,
+[data-theme="dark"] .detail-label,
 [data-theme="dark"] .ready-card h2,
+[data-theme="dark"] .ready-subtitle,
 [data-theme="dark"] .lobby-card h3,
+[data-theme="dark"] .upcoming-card h3,
 [data-theme="dark"] .device-item h4,
 [data-theme="dark"] .device-item span,
-[data-theme="dark"] .ready-subtitle,
 [data-theme="dark"] .device-name,
 [data-theme="dark"] .device-detail,
 [data-theme="dark"] .security-badge,
-body.dark-theme .detail-item .value,
-body.dark-theme .ready-card h2,
-body.dark-theme .lobby-card h3,
-body.dark-theme .device-item h4,
-body.dark-theme .device-item span,
-body.dark-theme .ready-subtitle,
-body.dark-theme .device-name,
-body.dark-theme .device-detail,
-body.dark-theme .security-badge {
-  color: #ffffff !important;
-}
-
+[data-theme="dark"] .preview-placeholder,
+[data-theme="dark"] .preview-placeholder p,
 [data-theme="dark"] .detail-item .label,
 [data-theme="dark"] .device-item p,
+body.dark-theme .logo-text,
+body.dark-theme .nav-link,
+body.dark-theme .detail-item .value,
+body.dark-theme .detail-value,
+body.dark-theme .detail-label,
+body.dark-theme .ready-card h2,
+body.dark-theme .ready-subtitle,
+body.dark-theme .lobby-card h3,
+body.dark-theme .upcoming-card h3,
+body.dark-theme .device-item h4,
+body.dark-theme .device-item span,
+body.dark-theme .device-name,
+body.dark-theme .device-detail,
+body.dark-theme .security-badge,
+body.dark-theme .preview-placeholder,
+body.dark-theme .preview-placeholder p,
 body.dark-theme .detail-item .label,
 body.dark-theme .device-item p {
   color: #ffffff !important;
 }
-
-
 
 .livekit-fullscreen-overlay .interview-container,
 .livekit-fullscreen-overlay .interview-content,

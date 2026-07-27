@@ -671,3 +671,37 @@ body.dark-theme .dropdown-item:hover:not(.disabled):not(.logout) {
 body.dark-theme .dropdown-divider {
   background: #1e293b;
 }
+
+/* ===== UNIVERSAL HIGH-CONTRAST DARK THEME TEXT OVERRIDES (Excluding Home & Custom Admin Panel) ===== */
+[data-theme="dark"] body:not(.landing-body) h1:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) h2:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) h3:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) h4:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) h5:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) h6:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) label:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) p:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) span:not(.home-page *):not(.admin-panel *):not(.status-dot):not(.skill-chip *):not(.skill-chip):not(.score-tier-badge *):not(.score-tier-badge):not(.analysis-field__score-badge *):not(.analysis-field__score-badge):not(.file-status):not(.ip-expertise-chip *):not(.ip-expertise-chip):not(.ip-slot-chip *):not(.ip-slot-chip):not(.ip-pill-btn *):not(.ip-pill-btn):not(.ip-read-only-badge *):not(.ip-read-only-badge):not(.ip-expertise-count-badge):not(.ip-locked-badge *):not(.ip-locked-badge):not(.cp-locked-badge *):not(.cp-locked-badge),
+[data-theme="dark"] body:not(.landing-body) strong:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) b:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) small:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) li:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) td:not(.home-page *):not(.admin-panel *),
+[data-theme="dark"] body:not(.landing-body) th:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) h1:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) h2:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) h3:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) h4:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) h5:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) h6:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) label:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) p:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) span:not(.home-page *):not(.admin-panel *):not(.status-dot):not(.skill-chip *):not(.skill-chip):not(.score-tier-badge *):not(.score-tier-badge):not(.analysis-field__score-badge *):not(.analysis-field__score-badge):not(.file-status):not(.ip-expertise-chip *):not(.ip-expertise-chip):not(.ip-slot-chip *):not(.ip-slot-chip):not(.ip-pill-btn *):not(.ip-pill-btn):not(.ip-read-only-badge *):not(.ip-read-only-badge):not(.ip-expertise-count-badge):not(.ip-locked-badge *):not(.ip-locked-badge):not(.cp-locked-badge *):not(.cp-locked-badge),
+body.dark-theme body:not(.landing-body) strong:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) b:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) small:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) li:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) td:not(.home-page *):not(.admin-panel *),
+body.dark-theme body:not(.landing-body) th:not(.home-page *):not(.admin-panel *) {
+  color: #ffffff;
+}
