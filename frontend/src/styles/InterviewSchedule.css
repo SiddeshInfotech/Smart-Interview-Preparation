@@ -1028,3 +1028,73 @@ select.field__input {
 .btn-join-session:hover {
   background: #1d4ed8;
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR INTERVIEW SCHEDULE PAGE
+   ========================================================================== */
+[data-theme="dark"] .page__content,
+[data-theme="dark"] .interview-tab-content,
+[data-theme="dark"] .schedule-container,
+body.dark-theme .page__content,
+body.dark-theme .interview-tab-content,
+body.dark-theme .schedule-container {
+  background: #090d16 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .list__row,
+[data-theme="dark"] .interview-card,
+[data-theme="dark"] .interviewer-card,
+[data-theme="dark"] .descriptive-card,
+[data-theme="dark"] .schedule-card,
+[data-theme="dark"] .slot-box,
+[data-theme="dark"] .modal-container,
+body.dark-theme .list__row,
+body.dark-theme .interview-card,
+body.dark-theme .interviewer-card,
+body.dark-theme .descriptive-card,
+body.dark-theme .schedule-card,
+body.dark-theme .slot-box,
+body.dark-theme .modal-container {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .info-box,
+[data-theme="dark"] .details__item,
+[data-theme="dark"] .filter-pill,
+[data-theme="dark"] .tab-pill,
+[data-theme="dark"] .filter-btn,
+body.dark-theme .info-box,
+body.dark-theme .details__item,
+body.dark-theme .filter-pill,
+body.dark-theme .tab-pill,
+body.dark-theme .filter-btn {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .interviewer-username,
+[data-theme="dark"] .descriptive-card__title,
+[data-theme="dark"] .details__value,
+[data-theme="dark"] .page__title,
+body.dark-theme .interviewer-username,
+body.dark-theme .descriptive-card__title,
+body.dark-theme .details__value,
+body.dark-theme .page__title {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .interviewer-email,
+[data-theme="dark"] .descriptive-card__text,
+[data-theme="dark"] .details__label,
+[data-theme="dark"] .page__sub,
+body.dark-theme .interviewer-email,
+body.dark-theme .descriptive-card__text,
+body.dark-theme .details__label,
+body.dark-theme .page__sub {
+  color: #94a3b8 !important;
+}
+

@@ -1,5 +1,22 @@
 import api from "../api/axios";
 import React, { useEffect, useRef, useState } from "react";
+import {
+  FileText,
+  User,
+  Sparkles,
+  Target,
+  CheckCircle2,
+  TrendingUp,
+  ArrowRight,
+  UploadCloud,
+  File,
+  RotateCcw,
+  UserPlus,
+  Check,
+  ShieldCheck,
+  X,
+  Award
+} from "lucide-react";
 import "../styles/ResumeUpload.css";
 
 const ResumeUpload = () => {
@@ -10,20 +27,22 @@ const ResumeUpload = () => {
   const [resumeId, setResumeId] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [isAddedToProfile, setIsAddedToProfile] = useState(false);
+  const [showScoreModal, setShowScoreModal] = useState(false);
 
   const fileInputRef = useRef(null);
+  const resultsRef = useRef(null);
 
   const candidateProfile = {
-  Name: analysisResult?.candidate_name || "—",
-  Email: analysisResult?.email || "—",
-  Role: analysisResult?.role || "—",
-  Location: analysisResult?.location || "—",
-  Education: analysisResult?.education || "—",
-  Experience: analysisResult?.experience || "—",
-  LinkedIn: analysisResult?.linkedin || "—",
-  GitHub: analysisResult?.github || "—",
-  Portfolio: analysisResult?.portfolio || "—",
-};
+    Name: analysisResult?.candidate_name || "—",
+    Email: analysisResult?.email || "—",
+    Role: analysisResult?.role || "—",
+    Location: analysisResult?.location || "—",
+    Education: analysisResult?.education || "—",
+    Experience: analysisResult?.experience || "—",
+    LinkedIn: analysisResult?.linkedin || "—",
+    GitHub: analysisResult?.github || "—",
+    Portfolio: analysisResult?.portfolio || "—",
+  };
 
   useEffect(() => {
     return () => {
@@ -32,6 +51,22 @@ const ResumeUpload = () => {
       }
     };
   }, []);
+
+  // Lock page scrolling when analysis result modal popup is open
+  useEffect(() => {
+    if (showScoreModal) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    };
+  }, [showScoreModal]);
 
   const handleFileSelect = (selectedFile) => {
     if (!selectedFile) return;
@@ -57,6 +92,7 @@ const ResumeUpload = () => {
     setUploadStatus("Selected Successfully");
     setAnalysisResult(null);
     setIsAddedToProfile(false);
+    setShowScoreModal(false);
   };
 
   const handleDragEnter = (event) => {
@@ -96,6 +132,7 @@ const ResumeUpload = () => {
     setUploadStatus("");
     setAnalysisResult(null);
     setIsAddedToProfile(false);
+    setShowScoreModal(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -105,108 +142,102 @@ const ResumeUpload = () => {
     setAnalysisResult(null);
     setIsLoading(false);
     setIsAddedToProfile(false);
+    setShowScoreModal(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleAnalyze = async () => {
-
     if (!file) {
-        setUploadStatus("Please select a file first");
-        return;
+      setUploadStatus("Please select a file first");
+      return;
     }
 
     setIsLoading(true);
 
     try {
+      const formData = new FormData();
+      formData.append("resume", file);
 
-        // Upload Resume
-        const formData = new FormData();
-        formData.append("resume", file);
+      const uploadResponse = await api.post("/resume/upload/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-        const uploadResponse = await api.post(
-            "/resume/upload/",
-            formData,
-            {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            }
-        );
+      const uploadData = uploadResponse.data;
+      const id = uploadData.data.resume_id;
+      setResumeId(id);
 
-        const uploadData = uploadResponse.data;
+      const analyzeResponse = await api.post("/resume/analyze/", {
+        resume_id: id,
+      });
 
-        const id = uploadData.data.resume_id;
-        setResumeId(id);
+      const analyzeData = analyzeResponse.data;
+      console.log("Analyze Result:", analyzeData.data);
 
-        // Analyze Resume
-        const analyzeResponse = await api.post(
-            "/resume/analyze/",
-            {
-                resume_id: id,
-            }
-        );
-
-        const analyzeData = analyzeResponse.data;
-
-        console.log("Analyze Result:", analyzeData.data);
-
-        setAnalysisResult(analyzeData.data);
-        setUploadStatus("Resume analyzed successfully");
-
+      setAnalysisResult(analyzeData.data);
+      setUploadStatus("Resume analyzed successfully");
+      setShowScoreModal(true);
     } catch (error) {
-
-        console.log("Analyze Error:", error);
-        console.log("Response:", error.response?.data);
-
-        setUploadStatus("Analysis Failed");
-
+      console.log("Analyze Error:", error);
+      setUploadStatus("Analysis Failed");
     } finally {
-
-        setIsLoading(false);
-
+      setIsLoading(false);
     }
-};
+  };
 
-const handleAddToProfile = async () => {
-
+  const handleAddToProfile = async () => {
     if (!resumeId) {
-        alert("Please analyze the resume first.");
-        return;
+      alert("Please analyze the resume first.");
+      return;
     }
 
     try {
+      const response = await api.post("/resume/add-to-profile/", {
+        resume_id: resumeId,
+      });
 
-        const response = await api.post(
-            "/resume/add-to-profile/",
-            {
-                resume_id: resumeId,
-            }
-        );
-
-        console.log("Add To Profile Response:", response);
-        console.log(
-              "Add To Profile Data:",
-               JSON.stringify(response.data, null, 2)
-           );
-        if (!isAddedToProfile) {
-               setIsAddedToProfile(true);
-              alert("✅ Profile updated successfully!");
-}
-
+      console.log("Add To Profile Response:", response);
+      if (!isAddedToProfile) {
+        setIsAddedToProfile(true);
+        alert("✅ Profile updated successfully!");
+      }
     } catch (error) {
-
-        console.log("Add To Profile Error:", error);
-        console.log("Response:", error.response?.data);
-
-        alert(error.response?.data?.error || "Something went wrong.");
-
+      console.log("Add To Profile Error:", error);
+      alert(error.response?.data?.error || "Something went wrong.");
     }
-};
+  };
 
- 
+  // Score Tier Evaluation
+  const rawScore = parseInt(analysisResult?.resume_score, 10) || 75;
+  const scorePercent = Math.min(100, Math.max(0, rawScore));
+
+  const getScoreTier = (score) => {
+    if (score >= 80) return { label: "Excellent Match", color: "#10b981", bg: "#d1fae5" };
+    if (score >= 65) return { label: "Strong Candidate", color: "#4f46e5", bg: "#e0e7ff" };
+    if (score >= 50) return { label: "Moderate Profile", color: "#f59e0b", bg: "#fef3c7" };
+    return { label: "Needs Optimization", color: "#ef4444", bg: "#fee2e2" };
+  };
+
+  const scoreTier = getScoreTier(scorePercent);
+
+  // SVG Circular Ring Calculation (Compact radius = 44px)
+  const radius = 44;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (scorePercent / 100) * circumference;
+
+  const scrollToInsights = () => {
+    setShowScoreModal(false);
+    if (resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <div className="resume-page-wrapper">
       <main className="resume-main-shell">
+
+        {/* UPLOAD & CONTROLS CONTAINER */}
         <section className="resume-card">
           <div
             className={`drop-zone ${isDragging ? "dragging" : ""} ${file ? "has-file" : ""}`}
@@ -216,11 +247,8 @@ const handleAddToProfile = async () => {
             onDrop={handleDrop}
           >
             <div className="drop-zone-content">
-              <div className="upload-icon" aria-hidden="true">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 16V4M12 4L8 8M12 4L16 8" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M4 16L4 17C4 18.6569 5.34315 20 7 20L17 20C18.6569 20 20 18.6569 20 17L20 16" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+              <div className="upload-icon-circle" aria-hidden="true">
+                <UploadCloud size={40} />
               </div>
               <p className="drop-text">Drag and drop your resume here</p>
               <p className="drop-or">or</p>
@@ -246,30 +274,26 @@ const handleAddToProfile = async () => {
             <div className="file-details-card">
               <div className="file-details-header">
                 <div className="file-icon-wrapper">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M14 2V8H20" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <File size={22} />
                 </div>
                 <div className="file-info">
                   <p className="file-name">{file.name}</p>
                   <div className="file-meta">
                     <span className="file-size">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                     <span className="file-type">{file.type.includes("pdf") ? "PDF" : "DOCX"}</span>
-                    <span className={`file-status ${uploadStatus.includes("Success") ? "success" : ""}`}>
+                    <span className={`file-status ${uploadStatus.includes("success") || uploadStatus.includes("Selected") ? "success" : ""}`}>
                       {uploadStatus}
                     </span>
                   </div>
                 </div>
-                <button className="remove-file-btn" onClick={handleRemoveFile}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                <button className="remove-file-btn" onClick={handleRemoveFile} title="Remove File">
+                  <X size={18} />
                 </button>
               </div>
             </div>
           )}
 
+          {/* ACTION BUTTONS ROW */}
           <div className="action-buttons">
             <button className="btn btn-primary" onClick={handleAnalyze} disabled={!file || isLoading}>
               {isLoading ? (
@@ -278,14 +302,25 @@ const handleAddToProfile = async () => {
                   Analyzing...
                 </>
               ) : (
-                "Analyze Resume"
+                <>
+                  <Sparkles size={18} />
+                  Analyze Resume
+                </>
               )}
             </button>
             <button className="btn btn-profile" onClick={handleAddToProfile} disabled={!file || isLoading || isAddedToProfile}>
-              {isAddedToProfile ? "✅ Added to Profile" : "Add to Profile"}
+              {isAddedToProfile ? (
+                <>
+                  <Check size={18} /> Added to Profile
+                </>
+              ) : (
+                <>
+                  <UserPlus size={18} /> Add to Profile
+                </>
+              )}
             </button>
             <button className="btn btn-outline" onClick={handleReset}>
-              Reset
+              <RotateCcw size={16} /> Reset
             </button>
           </div>
 
@@ -294,157 +329,280 @@ const handleAddToProfile = async () => {
               <div className="progress-bar">
                 <div className="progress-fill"></div>
               </div>
-              <p className="loading-text">Analyzing Resume... Please wait.</p>
+              <p className="loading-text">Analyzing Resume with Gemini AI... Please wait.</p>
             </div>
           )}
 
-          {analysisResult ? (
-            <div className="results-container">
+          {/* INSIGHTS CARDS */}
+          {analysisResult && (
+            <div className="ru-results-container" ref={resultsRef}>
               <div className="analysis-section-title">
-                <h3>Resume Insights</h3>
-                <p>Ready to map backend output from resume, profile, and skills data.</p>
+                <h3>Resume Insights & Breakdown</h3>
+                <p>Mapped backend evaluation from resume analysis, candidate profile, and technical skills.</p>
               </div>
 
-              <div className="result-grid">
-                <section className="result-card result-card--summary">
-                  <div className="result-header result-header--left">
-                    <span className="result-icon">📄</span>
-                    <h4>Resume Summary</h4>
+              <div className="ru-result-grid">
+                
+                {/* CARD 1: Summary */}
+                <section className="ru-result-card ru-result-card--summary">
+                  <div className="ru-result-header">
+                    <div className="ru-result-icon-badge summary">
+                      <FileText size={20} />
+                    </div>
+                    <div>
+                      <h4>Resume Summary & Rating</h4>
+                      <p className="ru-result-card-sub">Overview of your target designation & resume score</p>
+                    </div>
                   </div>
-                  <div className="result-body">
+                  <div className="ru-result-body">
                     <div className="analysis-row">
                       <div className="analysis-field">
-                        <span className="analysis-field__label">Title</span>
-                        <span className="analysis-field__value">{analysisResult.role || "—"}</span>
+                        <span className="analysis-field__label">Target Role / Title</span>
+                        <span className="analysis-field__value bold-text">{analysisResult.role || "—"}</span>
                       </div>
                       <div className="analysis-field analysis-field--grow">
-                        <span className="analysis-field__label">Summary</span>
+                        <span className="analysis-field__label">Executive Summary</span>
                         <span className="analysis-field__value">{analysisResult.summary || "—"}</span>
                       </div>
-                      <div className="analysis-field analysis-field--narrow">
-                        <span className="analysis-field__label">Score</span>
-                        <span className="analysis-field__value">{analysisResult.resume_score ?? "—"}</span>
+                      <div className="analysis-field analysis-field--score">
+                        <span className="analysis-field__label">Power Score</span>
+                        <span className="analysis-field__score-badge" style={{ color: scoreTier.color, background: scoreTier.bg }}>
+                          {analysisResult.resume_score ?? "—"} / 100
+                        </span>
                       </div>
                     </div>
                   </div>
                 </section>
 
-                <section className="result-card result-card--profile">
-                  <div className="result-header result-header--left">
-                    <span className="result-icon">👤</span>
-                    <h4>Candidate Profile</h4>
-                    <span className="result-header-note">with social platform urls</span>
+                {/* CARD 2: Candidate Profile */}
+                <section className="ru-result-card ru-result-card--profile">
+                  <div className="ru-result-header">
+                    <div className="ru-result-icon-badge profile">
+                      <User size={20} />
+                    </div>
+                    <div>
+                      <h4>Candidate Profile</h4>
+                      <p className="ru-result-card-sub">Personal credentials and digital platform links</p>
+                    </div>
                   </div>
-                  <div className="result-body">
+                  <div className="ru-result-body">
                     <div className="analysis-row analysis-row--wrap">
                       {["Name", "Email", "Role", "Location", "Education", "Experience", "LinkedIn", "GitHub", "Portfolio"].map(
                         (label) => (
                           <div className="analysis-field analysis-field--profile" key={label}>
                             <span className="analysis-field__label">{label}</span>
-                             <span className="analysis-field__value">
-                                        {candidateProfile[label]}
-                                </span>
-                          </div  >
+                            <span className="analysis-field__value">
+                              {candidateProfile[label] && candidateProfile[label].startsWith("http") ? (
+                                <a href={candidateProfile[label]} target="_blank" rel="noreferrer" className="link-preview-text">
+                                  {candidateProfile[label]}
+                                </a>
+                              ) : (
+                                candidateProfile[label]
+                              )}
+                            </span>
+                          </div>
                         )
                       )}
                     </div>
                   </div>
                 </section>
 
-                <section className="result-card result-card--skills">
-                  <div className="result-header result-header--left">
-                    <span className="result-icon">✨</span>
-                    <h4>Education, Experience and Skill</h4>
+                {/* CARD 3: Education, Experience and Skill */}
+                <section className="ru-result-card ru-result-card--skills">
+                  <div className="ru-result-header">
+                    <div className="ru-result-icon-badge skills">
+                      <Sparkles size={20} />
+                    </div>
+                    <div>
+                      <h4>Education, Experience & Skill Breakdown</h4>
+                      <p className="ru-result-card-sub">Matched skills and category mapping</p>
+                    </div>
                   </div>
-                  <div className="result-body">
+                  <div className="ru-result-body">
                     <div className="analysis-row analysis-row--wrap">
-                      {["Education", "Experience", "Matched skills", "Missing skills", "Suggested next skills", "Skill category"].map((label) => (
-                        <div className="analysis-field analysis-field--skill" key={label}>
-                          <span className="analysis-field__label">{label}</span>
+                      <div className="analysis-field analysis-field--skill">
+                        <span className="analysis-field__label">Education</span>
+                        <span className="analysis-field__value">{analysisResult.education || "—"}</span>
+                      </div>
 
-                               <span className="analysis-field__value">
-                          {
-                              label === "Education"
-                                    ? analysisResult.education
+                      <div className="analysis-field analysis-field--skill">
+                        <span className="analysis-field__label">Experience</span>
+                        <span className="analysis-field__value">{analysisResult.experience || "—"}</span>
+                      </div>
 
-                              : label === "Experience"
-                                    ? analysisResult.experience
+                      <div className="analysis-field analysis-field--skill">
+                        <span className="analysis-field__label">Skill Category</span>
+                        <span className="analysis-field__value bold-text">{analysisResult.skill_category || "—"}</span>
+                      </div>
 
-                              : label === "Matched skills" 
-                                     ? analysisResult.matched_skills
-
-                              : label === "Missing skills" 
-                                     ? analysisResult.missing_skills
-
-                              : label === "Suggested next skills"
-                                     ? analysisResult.suggested_next_skills
-
-                              : label === "Skill category"
-                                     ? analysisResult.skill_category
-
-                               : "—"
-                             }
-                          </span>
-                            
+                      {/* Matched Skills */}
+                      <div className="analysis-field analysis-field--full">
+                        <span className="analysis-field__label">Matched Skills</span>
+                        <div className="skills-chips-grid">
+                          {analysisResult.matched_skills ? (
+                            analysisResult.matched_skills.split(",").map((sk, idx) => (
+                              <span key={idx} className="skill-chip matched">
+                                <CheckCircle2 size={13} /> {sk.trim()}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="analysis-field__value">—</span>
+                          )}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Suggested Skills */}
+                      <div className="analysis-field analysis-field--full">
+                        <span className="analysis-field__label">Suggested Next Skills to Learn</span>
+                        <div className="skills-chips-grid">
+                          {analysisResult.suggested_next_skills ? (
+                            analysisResult.suggested_next_skills.split(",").map((sk, idx) => (
+                              <span key={idx} className="skill-chip suggested">
+                                <TrendingUp size={13} /> {sk.trim()}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="analysis-field__value">—</span>
+                          )}
+                        </div>
+                      </div>
+
                     </div>
                   </div>
                 </section>
 
-                <section className="result-card result-card--recommendations">
-                  <div className="result-header result-header--left">
-                    <span className="result-icon">🎯</span>
-                    <h4>Recommendation and Suggestions</h4>
-                  </div>
-                  <div className="result-body">
-                    <div className="analysis-row analysis-row--wrap">
-
-                 <div className="analysis-field analysis-field--recommendation">
-                     <span className="analysis-field__label">
-                              Suggestion 1
-                    </span>
-
-                   <span className="analysis-field__value">
-                        {analysisResult.suggestion_1 || "—"}
-                   </span>
+                {/* CARD 4: Recommendation and Suggestions */}
+                <section className="ru-result-card ru-result-card--recommendations">
+                  <div className="ru-result-header">
+                    <div className="ru-result-icon-badge recommendations">
+                      <Target size={20} />
                     </div>
+                    <div>
+                      <h4>Actionable Recommendations & Next Steps</h4>
+                      <p className="ru-result-card-sub">Expert advice to enhance your candidate resume</p>
+                    </div>
+                  </div>
+                  <div className="ru-result-body">
+                    <div className="recommendations-list">
+                      {analysisResult.suggestion_1 && (
+                        <div className="recommendation-item-card">
+                          <div className="rec-badge-number">1</div>
+                          <div className="rec-text-content">
+                            <strong>Project & Deployment Links</strong>
+                            <p>{analysisResult.suggestion_1}</p>
+                          </div>
+                        </div>
+                      )}
 
+                      {analysisResult.suggestion_2 && (
+                        <div className="recommendation-item-card">
+                          <div className="rec-badge-number">2</div>
+                          <div className="rec-text-content">
+                            <strong>Experience & Impact Framing</strong>
+                            <p>{analysisResult.suggestion_2}</p>
+                          </div>
+                        </div>
+                      )}
 
-                  <div className="analysis-field analysis-field--recommendation">
-                       <span className="analysis-field__label">
-                           Suggestion 2
-                 </span>
+                      {analysisResult.suggestion_3 && (
+                        <div className="recommendation-item-card">
+                          <div className="rec-badge-number">3</div>
+                          <div className="rec-text-content">
+                            <strong>Technical Architecture & Depth</strong>
+                            <p>{analysisResult.suggestion_3}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
 
-                  <span className="analysis-field__value">
-                        {analysisResult.suggestion_2 || "—"}
-                  </span>
-                   </div>
+              </div>
+            </div>
+          )}
 
+        </section>
+      </main>
 
-                    <div className="analysis-field analysis-field--recommendation">
-                        <span className="analysis-field__label">
-                               Suggestion 3
-                      </span>
+      {/* COMPACT & SLEEK POPUP MODAL: CIRCULAR SCORE ANALYZER */}
+      {showScoreModal && analysisResult && (
+        <div className="resume-modal-overlay" onClick={() => setShowScoreModal(false)}>
+          <div className="resume-score-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setShowScoreModal(false)} title="Close Modal">
+              <X size={16} />
+            </button>
 
-                      <span className="analysis-field__value">
-                           {analysisResult.suggestion_3 || "—"}
-                      </span>
-                                        </div>
+            <div className="modal-header-icon">
+              <Sparkles size={20} />
+            </div>
 
-                                 </div>
-                            </div>
-                     </section>
+            <h3 className="modal-title">Analysis Complete!</h3>
+            <p className="modal-subtitle">AI Evaluation of Candidate Resume:</p>
 
-                   </div>
-                </div>
-           ) : null}
+            {/* PERFECTLY CENTERED SCORE NUMBER INSIDE CIRCLE */}
+            <div className="circle-analyzer-container">
+              <svg className="circle-analyzer-svg" width="110" height="110" viewBox="0 0 110 110">
+                <circle
+                  className="circle-bg"
+                  cx="55"
+                  cy="55"
+                  r={radius}
+                  strokeWidth="8"
+                />
+                <circle
+                  className="circle-progress"
+                  cx="55"
+                  cy="55"
+                  r={radius}
+                  strokeWidth="8"
+                  stroke={scoreTier.color}
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                />
+              </svg>
 
-         </section>
-        </main>
-   </div>
+              <div className="circle-analyzer-center">
+                <span className="circle-score-number" style={{ color: scoreTier.color }}>
+                  {scorePercent}%
+                </span>
+              </div>
+            </div>
+
+            {/* TIER BADGE */}
+            <div className="score-tier-badge" style={{ background: scoreTier.bg, color: scoreTier.color }}>
+              <Award size={14} />
+              <span>{scoreTier.label}</span>
+            </div>
+
+            {/* METRICS GRID */}
+            <div className="modal-metrics-grid">
+              <div className="modal-metric-card">
+                <ShieldCheck size={16} className="metric-icon" />
+                <span className="metric-val">{analysisResult.matched_skills ? analysisResult.matched_skills.split(",").length : 0}</span>
+                <span className="metric-lbl">Matched Skills</span>
+              </div>
+
+              <div className="modal-metric-card">
+                <TrendingUp size={16} className="metric-icon" />
+                <span className="metric-val">{scorePercent >= 70 ? "High" : "Medium"}</span>
+                <span className="metric-lbl">Impact Rating</span>
+              </div>
+            </div>
+
+            {/* ACTION BUTTON */}
+            <div className="modal-actions-row">
+              <button className="btn btn-primary modal-btn" onClick={scrollToInsights}>
+                <span>View Full Insights</span>
+                <ArrowRight size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
   );
 };
 
 export default ResumeUpload;
-

@@ -23,10 +23,71 @@ import {
   ChevronRight,
   AlertCircle,
   Building2,
-  Award
+  Award,
+  Clock,
+  ArrowLeft
 } from "lucide-react";
+
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+
+// --- Helper to generate 30‑min interval time options ---
+const generateTimeOptions = () => {
+  const options = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let min = 0; min < 60; min += 30) {
+      const hStr = String(hour).padStart(2, "0");
+      const mStr = String(min).padStart(2, "0");
+      const timeVal = `${hStr}:${mStr}`;
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+      const displayMin = String(min).padStart(2, "0");
+      const label = `${displayHour}:${displayMin} ${ampm}`;
+      options.push({ value: timeVal, label });
+    }
+  }
+  return options;
+};
+
+const TIME_OPTIONS = generateTimeOptions();
+
+const DAYS_OF_WEEK = [
+  { value: "0", label: "Monday" },
+  { value: "1", label: "Tuesday" },
+  { value: "2", label: "Wednesday" },
+  { value: "3", label: "Thursday" },
+  { value: "4", label: "Friday" },
+  { value: "5", label: "Saturday" },
+  { value: "6", label: "Sunday" },
+];
+
+const formatSlotTime = (timeString) => {
+  if (!timeString) return "";
+  let date = new Date(timeString);
+  if (isNaN(date.getTime())) {
+    date = new Date(`2000-01-01T${timeString}`);
+  }
+  if (isNaN(date.getTime())) {
+    const parts = String(timeString).split(":");
+    if (parts.length >= 2) {
+      let h = parseInt(parts[0], 10);
+      let m = parseInt(parts[1], 10);
+      if (!isNaN(h) && !isNaN(m)) {
+        const ampm = h >= 12 ? "PM" : "AM";
+        const displayHour = h % 12 === 0 ? 12 : h % 12;
+        const displayMin = String(m).padStart(2, "0");
+        return `${String(displayHour).padStart(2, "0")}:${displayMin} ${ampm}`;
+      }
+    }
+    return timeString;
+  }
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
 
 // Custom GitHub Icon Component
 const GitHubIcon = ({ size = 18, className = "" }) => (
@@ -47,6 +108,12 @@ const InterviewerProfile = () => {
   const [searchParams] = useSearchParams();
   const { userProfile } = useAuth();
   
+  // --- Ownership & Permission Check ---
+  const targetInterviewerId = searchParams.get("interviewer_id") || searchParams.get("id");
+  const userRole = localStorage.getItem("user_role") || userProfile?.role;
+  // Candidates or users viewing another interviewer's profile are PERMANENTLY restricted to Read-Only
+  const canEdit = !targetInterviewerId && userRole === "interviewer";
+
   // State: Default Read-Only format when viewed from profile icon; Editable when registration setup or Edit clicked
   const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState("profile");
@@ -92,11 +159,22 @@ const InterviewerProfile = () => {
     "Behavioral & Leadership"
   ];
 
+  // --- Time Slots State ---
+  const [slots, setSlots] = useState([]);
+  const [slotStartTime, setSlotStartTime] = useState("");
+  const [slotEndTime, setSlotEndTime] = useState("");
+  const [slotDayOfWeek, setSlotDayOfWeek] = useState("");
+  const [slotError, setSlotError] = useState("");
+  const [addingSlot, setAddingSlot] = useState(false);
+  const [deletingSlotId, setDeletingSlotId] = useState(null);
+  const [loadingSlots, setLoadingSlots] = useState(true);
+
   // --- Section Refs ---
   const mainContentRef = useRef(null);
   const profileRef = useRef(null);
   const backgroundRef = useRef(null);
   const expertiseRef = useRef(null);
+  const slotsRef = useRef(null);
   const digitalPresenceRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -106,53 +184,42 @@ const InterviewerProfile = () => {
       const isSetupMode = searchParams.get("mode") === "setup";
 
       try {
-        const response = await api.get("/interviewer/profile/");
+        const endpoint = targetInterviewerId
+          ? `/interviewer/profile/${targetInterviewerId}/`
+          : "/interviewer/profile/";
+        const response = await api.get(endpoint);
         const data = response.data;
-        localStorage.setItem("cached_interviewer_profile", JSON.stringify(data));
 
-        const hasSavedProfile = Boolean(
-          data.designation || data.company || data.department || (data.expertise_area && data.expertise_area.length > 0)
-        );
+        if (!targetInterviewerId) {
+          localStorage.setItem("cached_interviewer_profile", JSON.stringify(data));
+        }
 
-        if (isSetupMode || !hasSavedProfile) {
-          // 1st Time Registration Setup: Empty editable fields (only name & email pre-populated)
-          setProfile({
-            full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
-            email: data.email || userProfile?.email || "",
-            designation: "",
-            company: "",
-            department: "",
-            years_of_experience: 0,
-            linkedin_url: "",
-            github_url: "",
-            website_url: "",
-          });
-          setProfilePicture(data.profile_picture || null);
-          setExpertise([]);
-          setIsEditing(true); // Edit/Setup mode with "Save Profile" footer button
+        // Always populate profile state with fetched data
+        setProfile({
+          full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
+          email: data.email || userProfile?.email || "",
+          designation: data.designation || "",
+          company: data.company || "",
+          department: data.department || "",
+          years_of_experience: Math.round(data.years_of_experience || data.experience_years || 0),
+          linkedin_url: data.linkedin_url || "",
+          github_url: data.github_url || "",
+          website_url: data.website_url || data.portfolio_url || "",
+        });
+        setProfilePicture(data.profile_picture || null);
+
+        const rawExp = data.expertise_area || data.expertise;
+        if (rawExp) {
+          const expArray = typeof rawExp === "string"
+            ? rawExp.split(",").map((s) => s.trim()).filter(Boolean)
+            : Array.isArray(rawExp) ? rawExp : [];
+          setExpertise(expArray.map((name, idx) => ({ id: `exp-${Date.now()}-${idx}`, name })));
+        }
+
+        if (isSetupMode && canEdit) {
+          setIsEditing(true); // 1st Time Registration Setup -> Write mode
         } else {
-          // Revisiting via View Profile: Pre-fill all fields & load in Read-Only mode
-          setProfile({
-            full_name: data.full_name || "",
-            email: data.email || "",
-            designation: data.designation || "",
-            company: data.company || "",
-            department: data.department || "",
-            years_of_experience: Math.round(data.years_of_experience || data.experience_years || 0),
-            linkedin_url: data.linkedin_url || "",
-            github_url: data.github_url || "",
-            website_url: data.website_url || data.portfolio_url || "",
-          });
-          setProfilePicture(data.profile_picture || null);
-
-          const rawExp = data.expertise_area || data.expertise;
-          if (rawExp) {
-            const expArray = typeof rawExp === "string"
-              ? rawExp.split(",").map((s) => s.trim()).filter(Boolean)
-              : Array.isArray(rawExp) ? rawExp : [];
-            setExpertise(expArray.map((name, idx) => ({ id: `exp-${Date.now()}-${idx}`, name })));
-          }
-          setIsEditing(false); // Read-Only mode with "Edit Profile" footer button
+          setIsEditing(false); // View Profile -> Read-Only mode by default
         }
       } catch (error) {
         console.error("Error fetching interviewer profile:", error);
@@ -167,7 +234,27 @@ const InterviewerProfile = () => {
     };
 
     fetchProfile();
-  }, [navigate, searchParams, userProfile]);
+  }, [navigate, searchParams, userProfile, targetInterviewerId, canEdit]);
+
+  // --- Fetch Availability Time Slots on Mount ---
+  useEffect(() => {
+    const fetchSlots = async () => {
+      try {
+        const endpoint = targetInterviewerId
+          ? `/interviewer/availability/${targetInterviewerId}/available/`
+          : "/interviewer/availability/";
+        const response = await api.get(endpoint);
+        setSlots(response.data);
+      } catch (error) {
+        console.error("Error fetching availability slots:", error);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+
+    fetchSlots();
+  }, [targetInterviewerId]);
+
 
   // --- Scroll Observer for Active Sidebar Highlighting ---
   useEffect(() => {
@@ -181,6 +268,7 @@ const InterviewerProfile = () => {
       { id: "profile", ref: profileRef },
       { id: "background", ref: backgroundRef },
       { id: "expertise", ref: expertiseRef },
+      { id: "slots", ref: slotsRef },
       { id: "digitalPresence", ref: digitalPresenceRef },
     ];
 
@@ -205,7 +293,72 @@ const InterviewerProfile = () => {
     return () => observer.disconnect();
   }, [loading]);
 
+  // --- Availability Time Slot Handlers ---
+  const handleAddSlot = async () => {
+    if (!canEdit || !isEditing) return;
+    setSlotError("");
+    if (slotDayOfWeek === "" || !slotStartTime || !slotEndTime) {
+      setSlotError("Please select Day of Week, Start Time, and End Time.");
+      return;
+    }
+
+    const dayVal = parseInt(slotDayOfWeek, 10);
+    const startParts = slotStartTime.split(":").map(Number);
+    const endParts = slotEndTime.split(":").map(Number);
+    const startMinutes = startParts[0] * 60 + startParts[1];
+    const endMinutes = endParts[0] * 60 + endParts[1];
+
+    if (endMinutes <= startMinutes) {
+      setSlotError("End time must be strictly after start time.");
+      return;
+    }
+
+    setAddingSlot(true);
+    try {
+      const response = await api.post("/interviewer/availability/", {
+        day_of_week: dayVal,
+        start_time: slotStartTime,
+        end_time: slotEndTime,
+      });
+      setSlots((prev) => [...prev, response.data]);
+      setSlotStartTime("");
+      setSlotEndTime("");
+      setSlotDayOfWeek("");
+      setSlotError("");
+    } catch (error) {
+      console.error("Error adding availability slot:", error);
+      let errorMsg = "Failed to add slot. Please check for overlaps.";
+      if (error.response?.data) {
+        errorMsg =
+          error.response.data.non_field_errors?.[0] ||
+          error.response.data.detail ||
+          error.response.data.start_time?.[0] ||
+          error.response.data.end_time?.[0] ||
+          (typeof error.response.data === "string" ? error.response.data : JSON.stringify(error.response.data));
+      }
+      setSlotError(errorMsg);
+    } finally {
+      setAddingSlot(false);
+    }
+  };
+
+  const handleDeleteSlot = async (id) => {
+    if (!canEdit || !isEditing) return;
+    if (!window.confirm("Are you sure you want to delete this availability slot?")) return;
+    setDeletingSlotId(id);
+    try {
+      await api.delete(`/interviewer/availability/${id}/`);
+      setSlots((prev) => prev.filter((slot) => slot.availability_id !== id));
+    } catch (error) {
+      console.error("Error deleting availability slot:", error);
+      alert("Failed to delete slot. Please try again.");
+    } finally {
+      setDeletingSlotId(null);
+    }
+  };
+
   // --- Smooth Scroll Navigation ---
+
   const handleNavClick = (sectionId, ref) => {
     setActiveSection(sectionId);
     isProgrammaticScroll.current = true;
@@ -223,7 +376,7 @@ const InterviewerProfile = () => {
 
   // --- Expertise Topic Handlers ---
   const addExpertiseTopic = (topicName) => {
-    if (!isEditing) return;
+    if (!canEdit || !isEditing) return;
     const name = typeof topicName === "string" ? topicName.trim() : newTopic.trim();
     if (name && !expertise.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
       setExpertise([...expertise, { id: Date.now() + Math.random(), name }]);
@@ -232,7 +385,7 @@ const InterviewerProfile = () => {
   };
 
   const handleTopicKeyDown = (e) => {
-    if (!isEditing) return;
+    if (!canEdit || !isEditing) return;
     if (e.key === "Enter" && newTopic.trim()) {
       e.preventDefault();
       addExpertiseTopic(newTopic.trim());
@@ -240,13 +393,13 @@ const InterviewerProfile = () => {
   };
 
   const removeExpertiseTopic = (id) => {
-    if (!isEditing) return;
+    if (!canEdit || !isEditing) return;
     setExpertise(expertise.filter((t) => t.id !== id));
   };
 
   // --- Profile Picture File Selection ---
   const handleFileChange = (e) => {
-    if (!isEditing) return;
+    if (!canEdit || !isEditing) return;
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const reader = new FileReader();
@@ -259,7 +412,9 @@ const InterviewerProfile = () => {
 
   // --- Save Interviewer Profile with Mandatory Field Validation ---
   const handleSaveProfile = async () => {
+    if (!canEdit || !isEditing) return;
     setValidationError("");
+
 
     // Validate Mandatory Fields: Name (*), Email (*), Designation (*), Company (*), Years of Experience (*)
     const missing = [];
@@ -340,14 +495,16 @@ const InterviewerProfile = () => {
           {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
         <span className="ip-mobile-title">PrepMasterAI Profile</span>
-        {isEditing ? (
-          <button className="ip-quick-save-btn" onClick={handleSaveProfile} disabled={saving}>
-            <Save size={16} />
-          </button>
-        ) : (
-          <button className="ip-quick-save-btn" onClick={() => setIsEditing(true)}>
-            <Edit3 size={16} />
-          </button>
+        {canEdit && (
+          isEditing ? (
+            <button className="ip-quick-save-btn" onClick={handleSaveProfile} disabled={saving}>
+              <Save size={16} />
+            </button>
+          ) : (
+            <button className="ip-quick-save-btn" onClick={() => setIsEditing(true)}>
+              <Edit3 size={16} />
+            </button>
+          )
         )}
       </header>
 
@@ -403,6 +560,15 @@ const InterviewerProfile = () => {
             </div>
 
             <div
+              className={`ip-nav-item ${activeSection === "slots" ? "active" : ""}`}
+              onClick={() => handleNavClick("slots", slotsRef)}
+            >
+              <Clock size={18} />
+              <span>Availability Slots</span>
+              {activeSection === "slots" && <ChevronRight size={16} className="ip-nav-arrow" />}
+            </div>
+
+            <div
               className={`ip-nav-item ${activeSection === "digitalPresence" ? "active" : ""}`}
               onClick={() => handleNavClick("digitalPresence", digitalPresenceRef)}
             >
@@ -410,23 +576,27 @@ const InterviewerProfile = () => {
               <span>Digital Presence</span>
               {activeSection === "digitalPresence" && <ChevronRight size={16} className="ip-nav-arrow" />}
             </div>
+
           </div>
 
           {/* Mode Card */}
           <div className="ip-sidebar-mode-card">
             <div className="ip-mode-badge-wrapper">
-              <span className={`ip-mode-dot ${isEditing ? "editing" : "readonly"}`}></span>
+              <span className={`ip-mode-dot ${canEdit && isEditing ? "editing" : "readonly"}`}></span>
               <span className="ip-mode-title">
-                {isEditing ? "Editing Mode" : "Read-Only Mode"}
+                {canEdit ? (isEditing ? "Editing Mode" : "Read-Only Mode") : "Read-Only Profile"}
               </span>
             </div>
             <p className="ip-mode-hint">
-              {isEditing
-                ? "Make your updates and click Save Profile at the bottom."
-                : "Click Edit Profile at the bottom to update details."}
+              {canEdit
+                ? isEditing
+                  ? "Make your updates and click Save Profile at the bottom."
+                  : "Click Edit Profile at the bottom to update details."
+                : "Viewing interviewer details in read-only format."}
             </p>
           </div>
         </aside>
+
 
         {/* Main Content Panel */}
         <main className="ip-main-content" ref={mainContentRef}>
@@ -757,8 +927,163 @@ const InterviewerProfile = () => {
               </div>
             </section>
 
-            {/* SECTION 4: Digital Presence */}
+            {/* SECTION 4: Availability Time Slots */}
+            <section className="ip-card-section" id="slots" ref={slotsRef}>
+
+              <div className="ip-card-header">
+                <div className="ip-card-header-icon slots">
+                  <Clock size={20} />
+                </div>
+                <div>
+                  <h2 className="ip-card-title">Availability Time Slots</h2>
+                  <p className="ip-card-subtitle">Set up weekly recurring availability for candidate interviews</p>
+                </div>
+              </div>
+
+              <div className="ip-card-body">
+                <div className="ip-expertise-manager">
+                  <div className="ip-expertise-header-row">
+                    <label className="ip-label">Configured Time Slots</label>
+                    <span className="ip-expertise-count-badge slots-badge">{slots.length} Slots</span>
+                  </div>
+
+                  {/* Active Availability Slots Chips */}
+                  <div className="ip-slots-chips-wrapper">
+                    {loadingSlots ? (
+                      <div className="ip-empty-expertise-msg">Loading availability slots...</div>
+                    ) : slots.length === 0 ? (
+                      <div className="ip-empty-expertise-msg">
+                        {isEditing
+                          ? "No availability slots added yet. Select Day of Week, Start Time, and End Time below to add slots."
+                          : "No availability slots configured."}
+                      </div>
+                    ) : (
+                      slots.map((slot) => {
+                        const isDeleting = deletingSlotId === slot.availability_id;
+                        const dayLabel = slot.day_label || DAYS_OF_WEEK.find((d) => String(d.value) === String(slot.day_of_week))?.label || "Day";
+                        return (
+                          <div key={slot.availability_id} className="ip-slot-chip">
+                            <span className="ip-slot-day">{dayLabel}:</span>
+                            <span className="ip-slot-time">
+                              {formatSlotTime(slot.start_time)} – {formatSlotTime(slot.end_time)}
+                            </span>
+                            {isEditing && (
+                              <button
+                                type="button"
+                                className="ip-expertise-remove-btn"
+                                onClick={() => handleDeleteSlot(slot.availability_id)}
+                                disabled={isDeleting}
+                                title="Delete Slot"
+                              >
+                                <X size={13} />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Add Slot Form */}
+                  <div className="ip-slot-add-form">
+                    <div className="ip-slot-inputs-grid">
+                      <div className="ip-field-group">
+                        <label className="ip-label">Day of Week</label>
+                        <div className="ip-input-wrapper">
+                          <select
+                            disabled={!isEditing}
+                            className={`ip-input ip-select ${!isEditing ? "readonly" : ""}`}
+                            value={slotDayOfWeek}
+                            onChange={(e) => {
+                              setSlotDayOfWeek(e.target.value);
+                              setSlotError("");
+                            }}
+                          >
+                            <option value="">Select Day</option>
+                            {DAYS_OF_WEEK.map((d) => (
+                              <option key={d.value} value={d.value}>
+                                {d.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="ip-field-group">
+                        <label className="ip-label">Start Time</label>
+                        <div className="ip-input-wrapper">
+                          <select
+                            disabled={!isEditing}
+                            className={`ip-input ip-select ${!isEditing ? "readonly" : ""}`}
+                            value={slotStartTime}
+                            onChange={(e) => {
+                              setSlotStartTime(e.target.value);
+                              setSlotEndTime("");
+                              setSlotError("");
+                            }}
+                          >
+                            <option value="">Start Time</option>
+                            {TIME_OPTIONS.map((t) => (
+                              <option key={t.value} value={t.value}>
+                                {t.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="ip-field-group">
+                        <label className="ip-label">End Time</label>
+                        <div className="ip-input-wrapper">
+                          <select
+                            disabled={!isEditing}
+                            className={`ip-input ip-select ${!isEditing ? "readonly" : ""}`}
+                            value={slotEndTime}
+                            onChange={(e) => {
+                              setSlotEndTime(e.target.value);
+                              setSlotError("");
+                            }}
+                          >
+                            <option value="">End Time</option>
+                            {TIME_OPTIONS.map((t) => (
+                              <option key={t.value} value={t.value}>
+                                {t.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {isEditing && (
+                        <div className="ip-field-group ip-slot-btn-group">
+                          <button
+                            type="button"
+                            className="ip-btn-primary ip-add-slot-btn"
+                            onClick={handleAddSlot}
+                            disabled={addingSlot || !slotDayOfWeek || !slotStartTime || !slotEndTime}
+                          >
+                            <Plus size={16} />
+                            <span>{addingSlot ? "Adding..." : "Add Slot"}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Slot Validation Error */}
+                    {slotError && (
+                      <div className="ip-error-notification" style={{ marginTop: "12px" }}>
+                        <AlertCircle size={18} />
+                        <span>{slotError}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 5: Digital Presence */}
             <section className="ip-card-section" id="digitalPresence" ref={digitalPresenceRef}>
+
               <div className="ip-card-header">
                 <div className="ip-card-header-icon digital">
                   <Globe size={20} />
@@ -858,19 +1183,32 @@ const InterviewerProfile = () => {
             {/* Bottom Action Footer Panel */}
             <div className="ip-bottom-bar">
               <div className="ip-bottom-bar-info">
-                {isEditing ? (
+                {canEdit && isEditing ? (
                   <span className="ip-save-status editing">
                     <Sparkles size={16} className="ip-status-icon" /> Make changes and click Save Profile
                   </span>
-                ) : (
+                ) : canEdit ? (
                   <span className="ip-save-status readonly">
                     <ShieldCheck size={16} className="ip-status-icon" /> Profile shown in Read-Only format
+                  </span>
+                ) : (
+                  <span className="ip-save-status readonly">
+                    <ShieldCheck size={16} className="ip-status-icon" /> Viewing Interviewer Profile (Read-Only)
                   </span>
                 )}
               </div>
 
               <div className="ip-bottom-bar-actions">
-                {isEditing ? (
+                {!canEdit ? (
+                  <button
+                    type="button"
+                    className="ip-btn-primary edit-mode-btn"
+                    onClick={() => navigate(-1)}
+                  >
+                    <ArrowLeft size={18} />
+                    <span>Back to Scheduling</span>
+                  </button>
+                ) : isEditing ? (
                   <button
                     type="button"
                     className="ip-btn-primary"
@@ -892,6 +1230,7 @@ const InterviewerProfile = () => {
                 )}
               </div>
             </div>
+
 
           </div>
         </main>

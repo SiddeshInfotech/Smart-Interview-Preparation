@@ -482,3 +482,34 @@
   background: #fee2e2;
   color: #b91c1c;
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR INTERVIEW FEEDBACK MODAL
+   ========================================================================== */
+[data-theme="dark"] .feedback-modal,
+[data-theme="dark"] .modal-content,
+body.dark-theme .feedback-modal,
+body.dark-theme .modal-content {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .modal-title,
+[data-theme="dark"] .field-label,
+body.dark-theme .modal-title,
+body.dark-theme .field-label {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .feedback-input,
+[data-theme="dark"] .feedback-textarea,
+[data-theme="dark"] .feedback-select,
+body.dark-theme .feedback-input,
+body.dark-theme .feedback-textarea,
+body.dark-theme .feedback-select {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+

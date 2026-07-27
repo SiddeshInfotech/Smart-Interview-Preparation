@@ -287,3 +287,33 @@ font-size:16px;
 }
 
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR ROLE SELECTION PAGE
+   ========================================================================== */
+[data-theme="dark"] .role-page,
+body.dark-theme .role-page {
+  background: #090d16;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .role-card,
+body.dark-theme .role-card {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .role-card h2,
+[data-theme="dark"] .role-container h1,
+body.dark-theme .role-card h2,
+body.dark-theme .role-container h1 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .role-card p,
+[data-theme="dark"] .subtitle,
+body.dark-theme .role-card p,
+body.dark-theme .subtitle {
+  color: #94a3b8;
+}

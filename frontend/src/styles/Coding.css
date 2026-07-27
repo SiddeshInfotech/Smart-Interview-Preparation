@@ -1957,3 +1957,89 @@ body {
 .eval-close-btn:hover {
     background: #1e293b;
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR CODING WORKSPACE PAGE
+   ========================================================================== */
+[data-theme="dark"] .coding-container,
+[data-theme="dark"] .coding-workspace,
+[data-theme="dark"] .coding-page-wrapper,
+body.dark-theme .coding-container,
+body.dark-theme .coding-workspace,
+body.dark-theme .coding-page-wrapper {
+  background: #090d16 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .problem-panel,
+[data-theme="dark"] .editor-panel,
+[data-theme="dark"] .console-panel,
+[data-theme="dark"] .coding-header,
+[data-theme="dark"] .question-card,
+[data-theme="dark"] .editor-card,
+[data-theme="dark"] .sample-box,
+[data-theme="dark"] .sample-card,
+[data-theme="dark"] .stdin-modal-content,
+[data-theme="dark"] .eval-modal-content,
+body.dark-theme .problem-panel,
+body.dark-theme .editor-panel,
+body.dark-theme .console-panel,
+body.dark-theme .coding-header,
+body.dark-theme .question-card,
+body.dark-theme .editor-card,
+body.dark-theme .sample-box,
+body.dark-theme .sample-card,
+body.dark-theme .stdin-modal-content,
+body.dark-theme .eval-modal-content {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .problem-title,
+[data-theme="dark"] .tab-btn,
+[data-theme="dark"] .question-header h2,
+[data-theme="dark"] .question-body p,
+[data-theme="dark"] .sample-title,
+[data-theme="dark"] .eval-modal-header h3,
+[data-theme="dark"] .stdin-modal-header h3,
+[data-theme="dark"] .eval-modal-header h2,
+body.dark-theme .problem-title,
+body.dark-theme .tab-btn,
+body.dark-theme .question-header h2,
+body.dark-theme .question-body p,
+body.dark-theme .sample-title,
+body.dark-theme .eval-modal-header h3,
+body.dark-theme .stdin-modal-header h3,
+body.dark-theme .eval-modal-header h2 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .question-body,
+[data-theme="dark"] .constraints-section,
+[data-theme="dark"] .format-section,
+body.dark-theme .question-body,
+body.dark-theme .constraints-section,
+body.dark-theme .format-section {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .editor-toolbar,
+[data-theme="dark"] .language-select,
+[data-theme="dark"] .stdin-info-banner,
+[data-theme="dark"] .eval-modal-header,
+[data-theme="dark"] .eval-modal-footer,
+[data-theme="dark"] .sample-input-box,
+[data-theme="dark"] .sample-output-box,
+body.dark-theme .editor-toolbar,
+body.dark-theme .language-select,
+body.dark-theme .stdin-info-banner,
+body.dark-theme .eval-modal-header,
+body.dark-theme .eval-modal-footer,
+body.dark-theme .sample-input-box,
+body.dark-theme .sample-output-box {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+

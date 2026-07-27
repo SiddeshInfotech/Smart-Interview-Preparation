@@ -243,3 +243,26 @@ class CodeSubmissionAdminSerializer(serializers.ModelSerializer):
             pass
         return obj.question_title or "Coding Assessment"
 
+
+# ── Quiz Performance Model ──────────────────────────────────
+from quiz.models import QuizPerformance
+
+class QuizPerformanceAdminSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField(read_only=True)
+    user_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = QuizPerformance
+        fields = '__all__'
+
+    def get_user_email(self, obj):
+        if obj.user:
+            return getattr(obj.user, 'email', 'N/A')
+        return "N/A"
+
+    def get_user_name(self, obj):
+        if obj.user:
+            return getattr(obj.user, 'full_name', obj.user.email)
+        return "N/A"
+
+

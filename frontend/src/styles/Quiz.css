@@ -740,15 +740,61 @@
   }
 }
 
-/* ===== FIELD ERROR (for consistency) ===== */
-.field-error {
-  color: #dc2626;
-  font-size: 14px;
-  background: #fef2f2;
-  padding: 10px 14px;
-  border-radius: 6px;
-  border: 1px solid #fca5a5;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  .field-error {
+    color: #dc2626;
+    font-size: 14px;
+    background: #fef2f2;
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid #fca5a5;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR QUIZ / PRACTICE MODE
+   ========================================================================== */
+[data-theme="dark"] .quiz-page-container,
+[data-theme="dark"] .quiz-container,
+body.dark-theme .quiz-page-container,
+body.dark-theme .quiz-container {
+  background: #090d16;
+  color: #f8fafc;
 }
+
+[data-theme="dark"] .quiz-card,
+[data-theme="dark"] .subject-card,
+[data-theme="dark"] .setup-card,
+[data-theme="dark"] .difficulty-card,
+[data-theme="dark"] .type-card,
+body.dark-theme .quiz-card,
+body.dark-theme .subject-card,
+body.dark-theme .setup-card,
+body.dark-theme .difficulty-card,
+body.dark-theme .type-card {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .subject-name,
+[data-theme="dark"] .setup-header h2,
+[data-theme="dark"] .content-header h1,
+body.dark-theme .subject-name,
+body.dark-theme .setup-header h2,
+body.dark-theme .content-header h1 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .subject-card:hover,
+[data-theme="dark"] .difficulty-card:hover,
+[data-theme="dark"] .type-card:hover,
+body.dark-theme .subject-card:hover,
+body.dark-theme .difficulty-card:hover,
+body.dark-theme .type-card:hover {
+  background: #1e293b;
+  border-color: #3b82f6;
+}
+

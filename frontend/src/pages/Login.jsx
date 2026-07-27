@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
 import "../styles/Auth.css";
 import { login } from "../api/axios";
 import WelcomePopup from "../components/WelcomePopup";
@@ -107,9 +108,7 @@ export default function Login() {
     try {
       const role = await handleLogin();
       if (role) {
-        // Optionally show welcome popup
         setShowWelcome(true);
-        // navigate to dashboard after popup closes
       }
     } catch (err) {
       console.log("login submit error:", err);
@@ -125,106 +124,114 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1 className="auth-title">Sign in</h1>
-        <p className="auth-subtitle">Welcome back. Let's keep preparing.</p>
+        <h1 className="auth-title">Welcome Back</h1>
+        <p className="auth-subtitle">Sign in to access your technical interview coaching dashboard.</p>
 
         <form onSubmit={handleSubmit}>
-          <label className="field-label" htmlFor="email">
-            Professional Email
-          </label>
-          <div className="input-wrap">
-            <svg className="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M3 6h18v12H3V6zm0 0l9 7 9-7"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <input
-              id="email"
-              type="email"
-              placeholder="john@company.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setFieldErrors((s) => ({ ...s, email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value) ? "" : "Enter a valid email address." }));
-              }}
-              required
-            />
-          </div>
-
-          <div className="field-row">
-            <label className="field-label" htmlFor="password">
-              Password
+          {/* EMAIL FIELD */}
+          <div className="form-group">
+            <label className="field-label" htmlFor="email">
+              Professional Email
             </label>
-            <button
-              type="button"
-              className="text-link small"
-              onClick={() => navigate("/forgot-password")}
-            >
-              Forgot password?
-            </button>
-          </div>
-          <div className="input-wrap">
-            <svg className="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.6" />
-              <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setFieldErrors((s) => ({ ...s, password: e.target.value.length >= 8 ? "" : "Password must be at least 8 characters." }));
-              }}
-              required
-            />
-            <button
-              type="button"
-              className="eye-btn"
-              onClick={() => setShowPassword((s) => !s)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                />
-                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
-              </svg>
-            </button>
+            <div className="input-wrap">
+              <Mail className="input-icon" size={18} />
+              <input
+                id="email"
+                type="email"
+                placeholder="john@company.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setFieldErrors((s) => ({ ...s, email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value) ? "" : "Enter a valid email address." }));
+                }}
+                required
+              />
+            </div>
           </div>
 
+          {/* PASSWORD FIELD */}
+          <div className="form-group">
+            <div className="field-row">
+              <label className="field-label" htmlFor="password">
+                Password
+              </label>
+              <button
+                type="button"
+                className="text-link small"
+                onClick={() => navigate("/forgot-password")}
+              >
+                Forgot password?
+              </button>
+            </div>
+            <div className="input-wrap">
+              <Lock className="input-icon" size={18} />
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setFieldErrors((s) => ({ ...s, password: e.target.value.length >= 8 ? "" : "Password must be at least 8 characters." }));
+                }}
+                required
+              />
+              <button
+                type="button"
+                className="eye-btn"
+                onClick={() => setShowPassword((s) => !s)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          {/* FIELD ERRORS */}
           {(fieldErrors.email || fieldErrors.password) && (
             <div className="field-error" style={{ whiteSpace: "pre-line" }} role="alert">
-              {fieldErrors.email}
-              {fieldErrors.email && fieldErrors.password ? "\n" : ""}
-              {fieldErrors.password}
+              <AlertCircle size={16} className="error-icon" />
+              <div>
+                {fieldErrors.email}
+                {fieldErrors.email && fieldErrors.password ? "\n" : ""}
+                {fieldErrors.password}
+              </div>
             </div>
           )}
 
+          {/* GENERAL ERROR */}
           {error && (
             <div className="field-error" style={{ whiteSpace: "pre-line" }} role="alert">
-              {error}
+              <AlertCircle size={16} className="error-icon" />
+              <div>{error}</div>
             </div>
           )}
 
+          {/* SUBMIT BUTTON */}
           <button type="submit" className="primary-btn" disabled={loading}>
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? (
+              <>
+                <span className="spinner"></span>
+                Signing in...
+              </>
+            ) : (
+              <>
+                Sign In <ArrowRight size={17} />
+              </>
+            )}
           </button>
         </form>
 
         <p className="auth-footer">
           Don't have an account?{" "}
           <button type="button" className="text-link" onClick={() => navigate("/register")}>
-            Sign up
+            Sign up for free
           </button>
         </p>
+
+        <div className="ssl-row">
+          <ShieldCheck size={14} /> 256-bit SSL Encrypted Login
+        </div>
       </div>
 
       {/* Welcome Popup */}

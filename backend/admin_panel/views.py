@@ -465,3 +465,21 @@ def coding_questions_list(request):
 @permission_classes([IsAdminOrSuperUser])
 def coding_question_detail(request, pk):
     return retrieve_update_delete(request, CodingQuestion, CodingQuestionAdminSerializer, pk)
+
+
+# ─────────────────────────────────────────────────────────────
+# 15. Quiz Performances
+# ─────────────────────────────────────────────────────────────
+from quiz.models import QuizPerformance
+from .serializers import QuizPerformanceAdminSerializer
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminOrSuperUser])
+def quiz_performances_list(request):
+    return list_create(request, QuizPerformance, QuizPerformanceAdminSerializer, "-completed_at")
+
+
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
+@permission_classes([IsAdminOrSuperUser])
+def quiz_performance_detail(request, pk):
+    return retrieve_update_delete(request, QuizPerformance, QuizPerformanceAdminSerializer, pk)

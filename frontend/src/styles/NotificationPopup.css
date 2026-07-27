@@ -241,3 +241,36 @@
     right: -60px;
   }
 }
+
+/* ==========================================================================
+   DARK THEME OVERRIDES FOR NOTIFICATION POPUP
+   ========================================================================== */
+[data-theme="dark"] .notif-panel,
+body.dark-theme .notif-panel {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .notif-header,
+body.dark-theme .notif-header {
+  border-bottom-color: #1e293b;
+}
+
+[data-theme="dark"] .notif-header__title,
+[data-theme="dark"] .notif-item__title,
+body.dark-theme .notif-header__title,
+body.dark-theme .notif-item__title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .notif-item:hover,
+body.dark-theme .notif-item:hover {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .notif-item--unread,
+body.dark-theme .notif-item--unread {
+  background: #1e1b4b;
+}
