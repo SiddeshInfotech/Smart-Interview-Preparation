@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LogOut, Sparkles, Lightbulb, Code2 } from "lucide-react";
+import { LogOut, Lightbulb, Code2 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import api from "../api/axios";
 import "../styles/Coding.css";
@@ -30,7 +30,7 @@ const CodingAssessment = () => {
   const [showResult, setShowResult] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
 
-  // Active question tab ("problem", "hint", "solution")
+  // Active question tab ("problem", "hint")
   const [activeTab, setActiveTab] = useState("problem");
 
   // Program Input State & Modal
@@ -196,14 +196,6 @@ public class Main {
                   <Lightbulb size={15} style={{ verticalAlign: 'middle', marginRight: 5 }} />
                   Hint
                 </button>
-                <button
-                  type="button"
-                  className={`q-tab ${activeTab === 'solution' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('solution')}
-                >
-                  <Sparkles size={15} style={{ verticalAlign: 'middle', marginRight: 5 }} />
-                  Solution
-                </button>
               </div>
             </div>
 
@@ -242,15 +234,6 @@ public class Main {
                   <p style={{ whiteSpace: "pre-wrap", lineHeight: '1.6', color: '#1e293b' }}>
                     {questionData?.hint || "Think about standard data structures and algorithmic steps to solve this problem effectively."}
                   </p>
-                </div>
-              )}
-
-              {activeTab === 'solution' && (
-                <div className="solution-container">
-                  <h4>📝 Reference Solution ({displayLanguage})</h4>
-                  <pre className="solution-code">
-                    {questionData?.solution || "// Complete solution code or reference explanation will appear here once generated."}
-                  </pre>
                 </div>
               )}
             </div>
@@ -330,25 +313,28 @@ public class Main {
             {showResult && (
               <div className="result-panel">
                 <div className="result-header">
-                  <h2>Output</h2>
-                  <button
-                    type="button"
-                    className="close-result-btn"
-                    onClick={() => setShowResult(false)}
-                    title="Close output"
-                  >
-                    ✕
-                  </button>
+                  <div className="result-header-left">
+                    <button
+                      type="button"
+                      className="close-result-btn"
+                      onClick={() => setShowResult(false)}
+                      title="Close output"
+                    >
+                      ✕
+                    </button>
+                    <div className="result-title-group">
+                      <div className="terminal-dots">
+                        <span className="dot red"></span>
+                        <span className="dot yellow"></span>
+                        <span className="dot green"></span>
+                      </div>
+                      <h2>Execution Output</h2>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="clean-output-body">
-                  <pre className={`clean-output-text ${error ? "error-text" : "success-text"}`}>
-                    {isRunning
-                      ? "Compiling & executing program..."
-                      : error
-                      ? error
-                      : output || "No output produced."}
-                  </pre>
+                  <pre className={`clean-output-text ${error ? "error-text" : "success-text"}`}>{isRunning ? "Compiling & executing program..." : error ? error : output || "No output produced."}</pre>
                 </div>
               </div>
             )}

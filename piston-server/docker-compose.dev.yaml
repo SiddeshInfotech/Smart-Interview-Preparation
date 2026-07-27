@@ -12,6 +12,10 @@ services:
             - ./data/piston/packages:/piston/packages
         environment:
             - PISTON_REPO_URL=http://repo:8000/index
+            - PISTON_COMPILE_TIMEOUT=30000
+            - PISTON_RUN_TIMEOUT=30000
+            - PISTON_COMPILE_CPU_TIME=30000
+            - PISTON_RUN_CPU_TIME=30000
 
     repo: # Local testing of packages
         build: repo

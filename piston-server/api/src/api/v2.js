@@ -7,10 +7,7 @@ const runtime = require('../runtime');
 const { Job } = require('../job');
 const package = require('../package');
 const globals = require('../globals');
-const editorRouter = require('./editor');
 const logger = require('logplease').create('api/v2');
-
-router.use('/editor', editorRouter);
 
 function get_job(body) {
     let {
@@ -110,8 +107,8 @@ function get_job(body) {
                     compile: compile_timeout ?? rt.timeouts.compile,
                 },
                 cpu_times: {
-                    run: run_cpu_time ?? rt.cpu_times.run,
-                    compile: compile_cpu_time ?? rt.cpu_times.compile,
+                    run: run_cpu_time ?? (run_timeout ?? rt.cpu_times.run),
+                    compile: compile_cpu_time ?? (compile_timeout ?? rt.cpu_times.compile),
                 },
                 memory_limits: {
                     run: run_memory_limit ?? rt.memory_limits.run,

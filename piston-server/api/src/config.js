@@ -80,25 +80,25 @@ const options = {
     },
     compile_timeout: {
         desc: 'Max time allowed for compile stage in milliseconds',
-        default: 10000, // 10 seconds
+        default: 30000, // 30 seconds
         parser: parse_int,
         validators: [(x, raw) => !is_nan(x) || `${raw} is not a number`],
     },
     run_timeout: {
         desc: 'Max time allowed for run stage in milliseconds',
-        default: 3000, // 3 seconds
+        default: 30000, // 30 seconds
         parser: parse_int,
         validators: [(x, raw) => !is_nan(x) || `${raw} is not a number`],
     },
     compile_cpu_time: {
         desc: 'Max CPU time allowed for compile stage in milliseconds',
-        default: 10000, // 10 seconds
+        default: 30000, // 30 seconds
         parser: parse_int,
         validators: [(x, raw) => !is_nan(x) || `${raw} is not a number`],
     },
     run_cpu_time: {
         desc: 'Max CPU time allowed for run stage in milliseconds',
-        default: 3000, // 3 seconds
+        default: 30000, // 30 seconds
         parser: parse_int,
         validators: [(x, raw) => !is_nan(x) || `${raw} is not a number`],
     },
