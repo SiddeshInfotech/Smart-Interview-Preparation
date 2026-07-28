@@ -11,9 +11,9 @@ from .serializers import NotificationSerializer
 @permission_classes([IsAuthenticated])
 def get_notifications(request):
 
-    notifications = Notification.objects.filter(
+    notifications = Notification.objects.select_related("user").filter(
         user=request.user
-    ).order_by("-created_at")
+    ).order_by("-created_at")[:50]
 
     serializer = NotificationSerializer(
         notifications,
@@ -41,7 +41,7 @@ def mark_as_read(request, notification_id):
         )
 
         notification.is_read = True
-        notification.save()
+        notification.save(update_fields=["is_read"])
 
         return Response(
             {

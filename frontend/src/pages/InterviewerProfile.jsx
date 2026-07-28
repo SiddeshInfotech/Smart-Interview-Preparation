@@ -184,6 +184,38 @@ const InterviewerProfile = () => {
     const fetchProfile = async () => {
       const isSetupMode = searchParams.get("mode") === "setup";
 
+      // Hydrate from cache immediately for own profile (not when viewing other's profile)
+      if (!targetInterviewerId) {
+        try {
+          const cached = localStorage.getItem("cached_interviewer_profile");
+          if (cached) {
+            const data = JSON.parse(cached);
+            setProfile({
+              full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
+              email: data.email || userProfile?.email || "",
+              designation: data.designation || "",
+              company: data.company || "",
+              department: data.department || "",
+              years_of_experience: Math.round(data.years_of_experience || data.experience_years || 0),
+              linkedin_url: data.linkedin_url || "",
+              github_url: data.github_url || "",
+              website_url: data.website_url || data.portfolio_url || "",
+            });
+            setProfilePicture(data.profile_picture || null);
+            const rawExp = data.expertise_area || data.expertise;
+            if (rawExp) {
+              const expArray = typeof rawExp === "string"
+                ? rawExp.split(",").map((s) => s.trim()).filter(Boolean)
+                : Array.isArray(rawExp) ? rawExp : [];
+              setExpertise(expArray.map((name, idx) => ({ id: `exp-${Date.now()}-${idx}`, name })));
+            }
+            setLoading(false); // Show cached data immediately
+          }
+        } catch (cacheErr) {
+          // Cache parse failed — will still fetch from API
+        }
+      }
+
       try {
         const endpoint = targetInterviewerId
           ? `/interviewer/profile/${targetInterviewerId}/`
@@ -235,7 +267,8 @@ const InterviewerProfile = () => {
     };
 
     fetchProfile();
-  }, [navigate, searchParams, userProfile, targetInterviewerId, canEdit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, searchParams, targetInterviewerId, canEdit]);
 
   // --- Fetch Availability Time Slots on Mount ---
   useEffect(() => {

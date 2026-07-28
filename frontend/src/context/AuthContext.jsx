@@ -160,9 +160,8 @@ export const AuthProvider = ({ children }) => {
       role: role,
     });
 
-    // Fetch authoritative backend profile for the newly logged in user
-    await fetchProfile();
-    await fetchNotifications();
+    // Fetch authoritative backend profile and notifications concurrently
+    await Promise.all([fetchProfile(), fetchNotifications()]);
   };
 
   // Initial load on mount or auth change

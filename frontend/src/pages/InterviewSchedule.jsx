@@ -394,24 +394,32 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
   const [loadingResultId, setLoadingResultId] = useState(null);
   const [acceptingId, setAcceptingId] = useState(null);
   const [decliningId, setDecliningId] = useState(null);
+  // Optimistic UI: track status overrides to trigger re-renders without mutating props
+  const [statusOverrides, setStatusOverrides] = useState({});
 
   const safeInterviews = Array.isArray(interviews) ? interviews : [];
 
   // Check 15m timeout auto cancellation
   const processedInterviews = safeInterviews.map((iv) => {
-    if (iv.status === "Scheduled" && iv.date && iv.time) {
+    const scheduleId = iv.id || iv.schedule_id;
+    // Apply optimistic status overrides
+    const effectiveStatus = statusOverrides[scheduleId]?.status || iv.status;
+    const effectiveMeetingLink = statusOverrides[scheduleId]?.meeting_link || iv.meeting_link;
+    const effectiveIv = { ...iv, status: effectiveStatus, meeting_link: effectiveMeetingLink };
+
+    if (effectiveIv.status === "Scheduled" && effectiveIv.date && effectiveIv.time) {
       try {
-        const scheduledTime = new Date(`${iv.date}T${iv.time}`);
+        const scheduledTime = new Date(`${effectiveIv.date}T${effectiveIv.time}`);
         const now = new Date();
         const timeoutMs = 15 * 60 * 1000;
         if (now.getTime() > scheduledTime.getTime() + timeoutMs) {
-          return { ...iv, status: "Cancelled" };
+          return { ...effectiveIv, status: "Cancelled" };
         }
       } catch (err) {
         console.warn("Date parse error:", err);
       }
     }
-    return iv;
+    return effectiveIv;
   });
 
   const filtered = filter === "All"
@@ -424,8 +432,13 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
     setAcceptingId(scheduleId);
     try {
       await api.post(`/interview/accept/${scheduleId}/`);
-      iv.status = "Scheduled";
-      iv.meeting_link = iv.room_name || `room-${scheduleId}`;
+      // Optimistic UI update via React state (not direct mutation)
+      setStatusOverrides((prev) => ({
+        ...prev,
+        [scheduleId]: { status: "Scheduled", meeting_link: iv.room_name || `room-${scheduleId}` },
+      }));
+      // Trigger notification refresh
+      window.dispatchEvent(new Event("notificationUpdate"));
     } catch (err) {
       console.error("Failed to accept request:", err);
       alert("Could not accept request.");
@@ -440,7 +453,13 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
     setDecliningId(scheduleId);
     try {
       await api.post(`/interview/decline/${scheduleId}/`);
-      iv.status = "Cancelled";
+      // Optimistic UI update via React state (not direct mutation)
+      setStatusOverrides((prev) => ({
+        ...prev,
+        [scheduleId]: { status: "Cancelled", meeting_link: iv.meeting_link },
+      }));
+      // Trigger notification refresh
+      window.dispatchEvent(new Event("notificationUpdate"));
     } catch (err) {
       console.error("Failed to decline request:", err);
       alert("Could not decline request.");

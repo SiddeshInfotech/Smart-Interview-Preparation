@@ -213,7 +213,9 @@ def get_livekit_token(request):
 @permission_classes([IsAuthenticated])
 def accept_interview(request, pk):
     try:
-        schedule = InterviewSchedule.objects.get(pk=pk)
+        schedule = InterviewSchedule.objects.select_related(
+            'candidate__user', 'interviewer__user'
+        ).get(pk=pk)
     except InterviewSchedule.DoesNotExist:
         return Response({'error': 'Interview schedule not found.'}, status=404)
 
@@ -222,7 +224,7 @@ def accept_interview(request, pk):
 
     schedule.status = 'Scheduled'
     schedule.meeting_link = schedule.room_name
-    schedule.save()
+    schedule.save(update_fields=['status', 'meeting_link', 'updated_at'])
 
     try:
         from notifications.utils import create_notification
@@ -243,7 +245,9 @@ def accept_interview(request, pk):
 @permission_classes([IsAuthenticated])
 def decline_interview(request, pk):
     try:
-        schedule = InterviewSchedule.objects.get(pk=pk)
+        schedule = InterviewSchedule.objects.select_related(
+            'candidate__user', 'interviewer__user'
+        ).get(pk=pk)
     except InterviewSchedule.DoesNotExist:
         return Response({'error': 'Interview schedule not found.'}, status=404)
 
@@ -251,7 +255,7 @@ def decline_interview(request, pk):
         return Response({'error': 'You are not the interviewer for this session.'}, status=403)
 
     schedule.status = 'Cancelled'
-    schedule.save()
+    schedule.save(update_fields=['status', 'updated_at'])
 
     try:
         from notifications.utils import create_notification

@@ -65,7 +65,9 @@ class AvailableSlotsListView(generics.ListAPIView):
     def get_queryset(self):
         interviewer_id = self.kwargs["interviewer_id"]
         date_param = self.request.query_params.get('date')
-        qs = InterviewerAvailability.objects.filter(
+        qs = InterviewerAvailability.objects.select_related(
+            'interviewer__user'
+        ).filter(
             interviewer_id=interviewer_id,
             status="available"
         )
@@ -96,7 +98,9 @@ class AvailableSlotsAllView(generics.ListAPIView):
         except ValueError:
             return InterviewerAvailability.objects.none()
 
-        return InterviewerAvailability.objects.filter(
+        return InterviewerAvailability.objects.select_related(
+            'interviewer__user'
+        ).filter(
             status='available',
             day_of_week=day_of_week
         ).order_by('start_time')

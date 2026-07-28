@@ -97,33 +97,35 @@ def login(request):
     try:
         user = serializer.validated_data["user"]
 
-        # Create Login Notification
-        create_notification(
-            user=user,
-            notification_type="system",
-            title="Login Successful",
-            message="Welcome back to PrepMaster AI.",
-        )
-
         refresh = RefreshToken.for_user(user)
         refresh["user_id"] = user.user_id
         refresh["email"] = user.email
         refresh["role"] = user.role
 
-        return Response(
-            {
-                "message": "Login successful.",
-                "access_token": str(refresh.access_token),
-                "refresh_token": str(refresh),
-                "user": {
-                    "user_id": user.user_id,
-                    "full_name": user.full_name,
-                    "email": user.email,
-                    "role": user.role,
-                },
+        response_data = {
+            "message": "Login successful.",
+            "access_token": str(refresh.access_token),
+            "refresh_token": str(refresh),
+            "user": {
+                "user_id": user.user_id,
+                "full_name": user.full_name,
+                "email": user.email,
+                "role": user.role,
             },
-            status=status.HTTP_200_OK,
-        )
+        }
+
+        # Create login notification after building response (non-blocking for user)
+        try:
+            create_notification(
+                user=user,
+                notification_type="system",
+                title="Login Successful",
+                message="Welcome back to PrepMaster AI.",
+            )
+        except Exception:
+            pass
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
     except Exception:
         logger.exception("Unexpected login failure")

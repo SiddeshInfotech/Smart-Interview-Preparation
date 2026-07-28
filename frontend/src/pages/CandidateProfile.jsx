@@ -128,6 +128,41 @@ const CandidateProfile = () => {
       // Check query param e.g. ?mode=setup (registration flow)
       const isSetupMode = searchParams.get("mode") === "setup";
 
+      // Hydrate from cache immediately to avoid loading spinner
+      try {
+        const cached = localStorage.getItem("cached_candidate_profile");
+        if (cached) {
+          const data = JSON.parse(cached);
+          setProfile({
+            full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
+            email: data.email || userProfile?.email || "",
+            date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : null,
+            gender: data.gender || "",
+            location: data.location || "",
+            education: data.education || "",
+            experience_years: Math.round(data.experience_years || 0),
+            linkedin_url: data.linkedin_url || "",
+            github_url: data.github_url || "",
+            portfolio_url: data.portfolio_url || "",
+          });
+          setProfilePicture(data.profile_picture || null);
+          if (data.skills) {
+            const skillNames = typeof data.skills === "string"
+              ? data.skills.split(",").map((s) => s.trim()).filter(Boolean)
+              : Array.isArray(data.skills) ? data.skills : [];
+            setSkills(
+              skillNames.map((name, index) => ({
+                id: `existing-${Date.now()}-${index}`,
+                skill_name: typeof name === "string" ? name : name.skill_name || name,
+              }))
+            );
+          }
+          setLoading(false); // Show cached data immediately
+        }
+      } catch (cacheErr) {
+        // Cache parse failed — will still fetch from API
+      }
+
       try {
         const response = await api.get("/candidate/profile/");
         const data = response.data;
@@ -178,7 +213,8 @@ const CandidateProfile = () => {
     };
 
     fetchProfile();
-  }, [navigate, searchParams, userProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, searchParams]);
 
 
   // --- Auto Active Highlight via Scroll Observer ---
