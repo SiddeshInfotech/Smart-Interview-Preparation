@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayCircle, Radar, FileText, CheckCircle2, ShieldCheck, PhoneCall, Sparkles, Code2, Check, X as XIcon } from 'lucide-react';
+import { PlayCircle, Radar, FileText, CheckCircle2, ShieldCheck, PhoneCall, Sparkles, Code2, Check, Video, Award, TrendingUp, Compass, X as XIcon } from 'lucide-react';
 import { PublicLayout } from '../components/Layouts.jsx';
 import Button from '../components/Button.jsx';
 import "../styles/home.css";
@@ -172,9 +172,123 @@ export default function Home() {
         </div>
       </section>
 
-      {/* TESTIMONIALS + CTA SECTION */}
-      <section className="container section" id="how-it-works">
-        <div className="testimonial-grid">
+      {/* CANDIDATE SUCCESS ROADMAP (HOW IT WORKS) SECTION */}
+      <section className="container section roadmap-section" id="how-it-works">
+        <div className="roadmap-header">
+          <span className="eyebrow-pill">
+            <Compass size={14} className="pill-icon" />
+            <span>CANDIDATE SUCCESS ROADMAP</span>
+          </span>
+          <h2 className="roadmap-main-title">
+            How <span className="accent">PrepMaster AI</span> Powers Your Career
+          </h2>
+          <p className="roadmap-lead">
+            A step-by-step guided trajectory engineered to transform your technical skills, build real interview confidence, and land top-tier software engineering offers.
+          </p>
+        </div>
+
+        {/* ROADMAP TIMELINE GRID */}
+        <div className="roadmap-grid">
+
+          {/* STEP 1 */}
+          <div className="roadmap-card">
+            <div className="roadmap-card-header">
+              <div className="roadmap-icon-box step-1-icon">
+                <FileText size={24} />
+              </div>
+              <span className="roadmap-step-badge">STEP 01</span>
+            </div>
+            <span className="roadmap-phase-tag">Phase 1: Baseline Diagnosis</span>
+            <h3>Smart Resume Parsing & Target Benchmarking</h3>
+            <p>
+              Upload your resume and select target job roles (e.g. Full Stack, Backend, Data Science). Our AI parses your experience, identifies technical gaps, and crafts personalized interview scenarios matched to real company rubrics.
+            </p>
+            <div className="roadmap-benefit-pill">
+              <CheckCircle2 size={15} color="#10b981" />
+              <span>100% role-tailored question pools</span>
+            </div>
+          </div>
+
+          {/* STEP 2 */}
+          <div className="roadmap-card">
+            <div className="roadmap-card-header">
+              <div className="roadmap-icon-box step-2-icon">
+                <Code2 size={24} />
+              </div>
+              <span className="roadmap-step-badge">STEP 02</span>
+            </div>
+            <span className="roadmap-phase-tag">Phase 2: Skill Building</span>
+            <h3>Quizzes & Real-Time Code Arena</h3>
+            <p>
+              Master Data Structures, Algorithms, System Design, and CS Fundamentals through adaptive quizzes and a full-featured browser IDE with real-time test execution.
+            </p>
+            <div className="roadmap-benefit-pill">
+              <CheckCircle2 size={15} color="#10b981" />
+              <span>Instant syntax & complexity checks</span>
+            </div>
+          </div>
+
+          {/* STEP 3 */}
+          <div className="roadmap-card">
+            <div className="roadmap-card-header">
+              <div className="roadmap-icon-box step-3-icon">
+                <Video size={24} />
+              </div>
+              <span className="roadmap-step-badge">STEP 03</span>
+            </div>
+            <span className="roadmap-phase-tag">Phase 3: Live Simulation</span>
+            <h3>High-Fidelity Mock Interviews</h3>
+            <p>
+              Experience realistic engineering interviews with expert interviewers or AI avatars. Solve live coding challenges under real pressure while articulating your technical decisions.
+            </p>
+            <div className="roadmap-benefit-pill">
+              <CheckCircle2 size={15} color="#10b981" />
+              <span>Recreates real-world interview pressure</span>
+            </div>
+          </div>
+
+          {/* STEP 4 */}
+          <div className="roadmap-card">
+            <div className="roadmap-card-header">
+              <div className="roadmap-icon-box step-4-icon">
+                <Radar size={24} />
+              </div>
+              <span className="roadmap-step-badge">STEP 04</span>
+            </div>
+            <span className="roadmap-phase-tag">Phase 4: Evaluation</span>
+            <h3>Multi-Dimensional Competency Rating</h3>
+            <p>
+              Receive deep feedback across Technical Competency, Communication Skills, Problem Solving, Soft Skills, and Code Quality with actionable tips for improvement.
+            </p>
+            <div className="roadmap-benefit-pill">
+              <CheckCircle2 size={15} color="#10b981" />
+              <span>Line-by-line feedback & rating rubrics</span>
+            </div>
+          </div>
+
+          {/* STEP 5 */}
+          <div className="roadmap-card roadmap-card-featured">
+            <div className="roadmap-card-header">
+              <div className="roadmap-icon-box step-5-icon">
+                <TrendingUp size={24} />
+              </div>
+              <span className="roadmap-step-badge step-5-badge">STEP 05</span>
+            </div>
+            <span className="roadmap-phase-tag phase-5-tag">Phase 5: Career Success</span>
+            <h3>Analytics Dashboard & AI Readiness Index</h3>
+            <p>
+              Monitor your day-wise performance progress graph, track your overall AI readiness index, and transform weak points until you are 100% ready to ace top tech rounds.
+            </p>
+            <div className="roadmap-benefit-pill">
+              <CheckCircle2 size={15} color="#10b981" />
+              <span>Data-backed readiness score & tracking</span>
+            </div>
+          </div>
+
+        </div>
+
+        {/* TESTIMONIALS + CTA GRID */}
+        <div className="testimonial-grid" style={{ marginTop: 50 }}>
 
           <div className="testimonial-card-box">
             <div className="stars">★★★★★</div>
