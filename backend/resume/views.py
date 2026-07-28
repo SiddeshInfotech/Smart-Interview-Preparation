@@ -103,6 +103,32 @@ def analyze_resume(request):
     except Resume.DoesNotExist:
         return Response({"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    # ── Free-tier monthly limit (5 analyses per month) ───────────────────
+    try:
+        from django.utils import timezone
+        now = timezone.now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        profile = Candidate_Profile.objects.filter(candidate_id=resume.candidate_id).first()
+        user = profile.user if profile else (request.user if request.user and request.user.is_authenticated else None)
+
+        if user and not user.has_premium:
+            used_this_month = ResumeAnalysis.objects.filter(
+                resume__candidate_id=resume.candidate_id,
+                analyzed_at__gte=month_start,
+            ).count()
+            if used_this_month >= 5:
+                return Response(
+                    {
+                        "error": "Monthly resume analysis limit reached.",
+                        "detail": "Free users can analyze up to 5 resumes per month. Upgrade to Premium for unlimited access.",
+                        "limit_reached": True,
+                    },
+                    status=429,
+                )
+    except Exception as limit_err:
+        print("Resume limit check error:", limit_err)
+    # ──────────────────────────────────────────────────────────────────────
+
     try:
 
         # Processing

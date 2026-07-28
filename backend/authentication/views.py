@@ -370,31 +370,51 @@ def get_profile(request):
 @permission_classes([IsAuthenticated])
 def get_usage(request):
     """
-    Returns today's usage counts for quiz and coding, and this month's
-    resume analysis count, along with free-tier limits.
+    Returns today's quiz/coding usage and this month's resume analysis usage
+    along with free-tier limits and the window type for each feature.
     Used by the frontend to render progress bars in the profile dropdown.
     """
     from django.utils import timezone
     from quiz.models import QuizPerformance
     from coding.models import CodeSubmission
+    from resume.models import Resume, ResumeAnalysis
+    from candidate.models import Candidate_Profile
 
     user = request.user
     now = timezone.now()
+
+    # Daily window (quiz & coding — resets every midnight UTC)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Monthly window (resume — resets on the 1st of each month UTC)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
+    # Quiz: count sessions saved today
     quiz_today = QuizPerformance.objects.filter(
         user=user,
         created_at__gte=today_start,
     ).count()
 
+    # Coding: count submissions made today
     coding_today = CodeSubmission.objects.filter(
         user=user,
         submitted_at__gte=today_start,
     ).count()
 
+    # Resume: count analyses completed this month via candidate profile chain
+    resume_this_month = 0
+    try:
+        profile = Candidate_Profile.objects.get(user=user)
+        resume_this_month = ResumeAnalysis.objects.filter(
+            resume__candidate_id=profile.candidate_id,
+            analyzed_at__gte=month_start,
+        ).count()
+    except Candidate_Profile.DoesNotExist:
+        resume_this_month = 0
+
     QUIZ_LIMIT = 20
     CODING_LIMIT = 20
+    RESUME_LIMIT = 5
 
     return Response({
         "has_premium": user.has_premium,
@@ -402,10 +422,18 @@ def get_usage(request):
             "used": quiz_today,
             "limit": QUIZ_LIMIT,
             "remaining": max(0, QUIZ_LIMIT - quiz_today),
+            "window": "daily",
         },
         "coding": {
             "used": coding_today,
             "limit": CODING_LIMIT,
             "remaining": max(0, CODING_LIMIT - coding_today),
+            "window": "daily",
+        },
+        "resume": {
+            "used": resume_this_month,
+            "limit": RESUME_LIMIT,
+            "remaining": max(0, RESUME_LIMIT - resume_this_month),
+            "window": "monthly",
         },
     }, status=status.HTTP_200_OK)

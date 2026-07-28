@@ -759,31 +759,35 @@ body.dark-theme body:not(.landing-body) th:not(.home-page *):not(.admin-panel *)
   background: linear-gradient(90deg, #3b82f6, #2563eb);
 }
 
+.usage-bar-fill--resume {
+  background: linear-gradient(90deg, #8b5cf6, #6d28d9);
+}
+
 /* When nearing limit (>= 80% used) shift to amber */
 .usage-bar-fill--quiz[style*="width: 8"],
 .usage-bar-fill--quiz[style*="width: 9"],
-.usage-bar-fill--quiz[style*="width: 100"] {
-  background: linear-gradient(90deg, #f59e0b, #d97706);
-}
-
+.usage-bar-fill--quiz[style*="width: 100"],
 .usage-bar-fill--coding[style*="width: 8"],
 .usage-bar-fill--coding[style*="width: 9"],
-.usage-bar-fill--coding[style*="width: 100"] {
+.usage-bar-fill--coding[style*="width: 100"],
+.usage-bar-fill--resume[style*="width: 8"],
+.usage-bar-fill--resume[style*="width: 9"],
+.usage-bar-fill--resume[style*="width: 100"] {
   background: linear-gradient(90deg, #f59e0b, #d97706);
 }
 
 /* Dark mode */
 [data-theme="dark"] .usage-bar-label,
 body.dark-theme .usage-bar-label {
-  color: #94a3b8;
+  color: #f1f5f9 !important;
 }
 
 [data-theme="dark"] .usage-bar-count,
 body.dark-theme .usage-bar-count {
-  color: #64748b;
+  color: #94a3b8 !important;
 }
 
 [data-theme="dark"] .usage-bar-track,
 body.dark-theme .usage-bar-track {
-  background: #1e293b;
+  background: #334155 !important;
 }

@@ -155,6 +155,22 @@ export default function PageNavbar({
                         />
                       </div>
                     </div>
+                    {usageData.resume && (
+                      <div className="usage-bar-row">
+                        <div className="usage-bar-header">
+                          <span className="usage-bar-label">📄 Resume Analysis</span>
+                          <span className="usage-bar-count">
+                            {usageData.resume.remaining}/{usageData.resume.limit} left
+                          </span>
+                        </div>
+                        <div className="usage-bar-track">
+                          <div
+                            className="usage-bar-fill usage-bar-fill--resume"
+                            style={{ width: `${(usageData.resume.used / usageData.resume.limit) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
