@@ -1,33 +1,37 @@
-"""Gemini integration for structured resume analysis."""
+"""OpenRouter integration for structured resume analysis."""
 
 import json
-import re
-
-from .gemini_service import generate_content
+from .openrouter_service import openrouter_service
 from .prompts import resume_analysis_prompt
 
 
-def analyze_resume(resume_text):
-    """Analyze resume text and return the normalized JSON object from Gemini."""
-    raw_result = generate_content(resume_analysis_prompt(resume_text))
+def analyze_resume(resume_text: str) -> dict:
+    """
+    Analyze resume text using OpenRouter AI service and return normalized dictionary.
 
-    if not isinstance(raw_result, str):
-        raise ValueError("Gemini returned an invalid resume-analysis response.")
+    Args:
+        resume_text: Extracted plain text from candidate resume file.
 
-    cleaned_result = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_result.strip(), flags=re.IGNORECASE).strip()
+    Returns:
+        dict: Parsed JSON evaluation containing skills, experience, score, and recommendations.
+    """
+    prompt = resume_analysis_prompt(resume_text)
+    raw_result = openrouter_service.chat(
+        prompt=prompt,
+        feature="resume",
+        temperature=0.3,
+        max_tokens=2500,
+        expect_json=True,
+    )
 
-    # Extract JSON object using regex if extraneous text or markdown remains
-    if not (cleaned_result.startswith("{") and cleaned_result.endswith("}")):
-        match = re.search(r"\{.*\}", cleaned_result, flags=re.DOTALL)
-        if match:
-            cleaned_result = match.group(0)
+    cleaned_result = openrouter_service.clean_json_string(raw_result)
 
     try:
         result = json.loads(cleaned_result)
     except Exception as exc:
-        raise ValueError(f"Failed to parse Gemini resume response as JSON: {exc}")
+        raise ValueError(f"Failed to parse OpenRouter resume analysis output as JSON: {exc}")
 
     if not isinstance(result, dict):
-        raise ValueError("Gemini returned a resume analysis in an invalid format.")
+        raise ValueError("OpenRouter returned a resume analysis in an invalid dictionary format.")
 
     return result

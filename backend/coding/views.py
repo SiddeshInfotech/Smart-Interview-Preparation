@@ -12,8 +12,7 @@ from .serializers import (
     CodingQuestionSerializer
 )
 from .services.executor_client import execute_code
-from ai.gemini_service import generate_content
-from ai.prompts import coding_challenge_prompt, code_evaluation_prompt
+from ai.coding_service import evaluate_code_submission, generate_coding_question as ai_generate_coding_question
 
 
 @api_view(["GET"])
@@ -89,24 +88,20 @@ def submit_code(request):
         if not isinstance(exec_result, dict):
             exec_result = {"status": "error", "output": "", "error": str(exec_result)}
 
-        # 2. Evaluate Code via Gemini AI
-        prompt = code_evaluation_prompt(
-            language,
-            question_title or f"{language} Coding Challenge",
-            problem_statement or "Solve the coding task.",
-            code,
-            user_input,
-            exec_result.get("output", ""),
-            exec_result.get("error", "")
-        )
-
+        # 2. Evaluate Code via OpenRouter AI
         eval_data = None
         try:
-            raw_response = generate_content(prompt)
-            cleaned = re.sub(r"^```(json)?|```$", "", raw_response.strip(), flags=re.MULTILINE).strip()
-            eval_data = json.loads(cleaned)
+            eval_data = evaluate_code_submission(
+                language=language,
+                problem_title=question_title or f"{language} Coding Challenge",
+                problem_statement=problem_statement or "Solve the coding task.",
+                code=code,
+                user_input=user_input,
+                execution_output=exec_result.get("output", ""),
+                execution_error=exec_result.get("error", "")
+            )
         except Exception as e:
-            print("Gemini Evaluation Exception:", e)
+            print("OpenRouter Evaluation Exception:", e)
             is_success = exec_result.get("status") == "success" and not exec_result.get("error")
             eval_data = {
                 "overall_score": 85 if is_success else 40,
@@ -263,18 +258,14 @@ def generate_coding_question(request):
     difficulty = request.data.get("difficulty", "Medium")
     custom_instruction = request.data.get("custom_instruction", "")
 
-    prompt = coding_challenge_prompt(language, difficulty, custom_instruction)
-
     try:
-        raw_response = generate_content(prompt)
-        cleaned = re.sub(r"^```(json)?|```$", "", raw_response.strip(), flags=re.MULTILINE).strip()
-        data = json.loads(cleaned)
+        data = ai_generate_coding_question(language, difficulty, custom_instruction)
         return Response({
             "success": True,
             "data": data
         })
     except Exception as e:
-        print("Error generating coding question via Gemini:", e)
+        print("Error generating coding question via OpenRouter:", e)
         return Response({
             "success": True,
             "data": {

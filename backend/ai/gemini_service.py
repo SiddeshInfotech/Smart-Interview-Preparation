@@ -1,49 +1,14 @@
-from google import genai
-from google.genai.errors import APIError
-from django.conf import settings
+"""
+Backwards compatibility layer for legacy gemini_service imports.
+Delegates all AI requests to the new OpenRouter service.
+"""
 
-# Initialize Gemini client
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
-
-# Models in priority order
-MODELS = [
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-]
+from .openrouter_service import generate_content as openrouter_generate_content
 
 
-def generate_content(prompt):
+def generate_content(prompt: str, feature: str = "quiz") -> str:
     """
-    Generates content using the first available Gemini model.
-    Automatically falls back if a model is unavailable.
+    Backwards-compatible wrapper function for generate_content.
+    Delegates directly to OpenRouter Service.
     """
-
-    last_error = None
-
-    for model in MODELS:
-        try:
-            print(f"\nTrying model: {model}")
-
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
-            )
-
-            print(f"✓ Success! Using {model}")
-
-            return response.text
-
-        except APIError as e:
-            print(f"✗ {model} failed.")
-            print(f"Reason: {e}")
-            last_error = e
-
-        except Exception as e:
-            print(f"✗ Unexpected error with {model}")
-            print(e)
-            last_error = e
-
-    raise Exception(
-        f"All Gemini models failed.\nLast Error: {last_error}"
-    )
+    return openrouter_generate_content(prompt=prompt, feature=feature)

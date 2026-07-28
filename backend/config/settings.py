@@ -198,3 +198,33 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ========== PISTON CODE EXECUTION ENGINE ==========
 PISTON_API_URL = os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
+
+# ========== OPENROUTER AI CONFIGURATION ==========
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_API_URL = os.environ.get("OPENROUTER_API_URL", "https://openrouter.ai/api/v1/chat/completions")
+
+AI_MODELS = {
+    "resume": [
+        "deepseek/deepseek-chat-v3.1",
+        "qwen/qwen3-235b-a22b-thinking-2507",
+        "mistralai/mistral-small"
+    ],
+    "quiz": [
+        "deepseek/deepseek-chat-v3.1",
+        "mistralai/mistral-small"
+    ],
+    "coding": [
+        "qwen/qwen3-coder",
+        "deepseek/deepseek-chat-v3.1",
+        "mistralai/mistral-small"
+    ],
+    "feedback": [
+        "qwen/qwen3-235b-a22b-thinking-2507",
+        "deepseek/deepseek-chat-v3.1",
+        "mistralai/mistral-small"
+    ],
+    "hr_interview": [
+        "deepseek/deepseek-chat-v3.1",
+        "mistralai/mistral-small"
+    ]
+}
