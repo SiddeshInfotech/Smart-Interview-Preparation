@@ -88,51 +88,69 @@ const Dashboard = () => {
     username: fullName,
   };
 
-  const [quizPerformance, setQuizPerformance] = useState({
-    total_quizzes: 0,
-    minimum_score: 0,
-    maximum_score: 0,
-    average_score: 0,
-    overall_score: 0,
-  });
+  const getCachedDashboard = (key, fallback) => {
+    try {
+      const stored = localStorage.getItem(`cached_dashboard_${key}`);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return fallback;
+  };
 
-  const [interviewPerformance, setInterviewPerformance] = useState({
-    total_interviews: 0,
-    technical_skills: 0,
-    communication_skills: 0,
-    problem_solving: 0,
-    soft_skills: 0,
-    code_quality: 0,
-    overall_performance: 0,
-  });
+  const [quizPerformance, setQuizPerformance] = useState(() =>
+    getCachedDashboard("quiz", {
+      total_quizzes: 0,
+      minimum_score: 0,
+      maximum_score: 0,
+      average_score: 0,
+      overall_score: 0,
+    })
+  );
 
-  const [codingPerformance, setCodingPerformance] = useState({
-    total_submissions: 0,
-    logical_thinking: 0,
-    code_efficiency: 0,
-    language_skills: 0,
-    problem_solving: 0,
-    overall_score: 0,
-  });
+  const [interviewPerformance, setInterviewPerformance] = useState(() =>
+    getCachedDashboard("interview", {
+      total_interviews: 0,
+      technical_skills: 0,
+      communication_skills: 0,
+      problem_solving: 0,
+      soft_skills: 0,
+      code_quality: 0,
+      overall_performance: 0,
+    })
+  );
 
-  const [aiIntelligence, setAiIntelligence] = useState({
-    overall_readiness: 0,
-    metrics: {
-      quiz_mastery: 0,
-      coding_ability: 0,
-      interview_skill: 0,
-    },
-  });
+  const [codingPerformance, setCodingPerformance] = useState(() =>
+    getCachedDashboard("coding", {
+      total_submissions: 0,
+      logical_thinking: 0,
+      code_efficiency: 0,
+      language_skills: 0,
+      problem_solving: 0,
+      overall_score: 0,
+    })
+  );
 
-  const [performanceData, setPerformanceData] = useState([
-    { day: "Mon", quiz: 50, coding: 40, interview: 70 },
-    { day: "Tue", quiz: 58, coding: 48, interview: 70 },
-    { day: "Wed", quiz: 65, coding: 56, interview: 70 },
-    { day: "Thu", quiz: 72, coding: 64, interview: 70 },
-    { day: "Fri", quiz: 80, coding: 74, interview: 70 },
-    { day: "Sat", quiz: 86, coding: 82, interview: 70 },
-    { day: "Sun", quiz: 92, coding: 88, interview: 70 },
-  ]);
+  const [aiIntelligence, setAiIntelligence] = useState(() =>
+    getCachedDashboard("ai", {
+      overall_readiness: 0,
+      metrics: {
+        quiz_mastery: 0,
+        coding_ability: 0,
+        interview_skill: 0,
+      },
+    })
+  );
+
+  const [performanceData, setPerformanceData] = useState(() =>
+    getCachedDashboard("daily_progress", [
+      { day: "Mon", quiz: 0, coding: 0, interview: 0 },
+      { day: "Tue", quiz: 0, coding: 0, interview: 0 },
+      { day: "Wed", quiz: 0, coding: 0, interview: 0 },
+      { day: "Thu", quiz: 0, coding: 0, interview: 0 },
+      { day: "Fri", quiz: 0, coding: 0, interview: 0 },
+      { day: "Sat", quiz: 0, coding: 0, interview: 0 },
+      { day: "Sun", quiz: 0, coding: 0, interview: 0 },
+    ])
+  );
 
   // Fetch all 5 dashboard performance metrics concurrently on mount
   useEffect(() => {
@@ -148,18 +166,23 @@ const Dashboard = () => {
 
         if (quizRes.status === "fulfilled" && quizRes.value?.data) {
           setQuizPerformance(quizRes.value.data);
+          localStorage.setItem("cached_dashboard_quiz", JSON.stringify(quizRes.value.data));
         }
         if (intRes.status === "fulfilled" && intRes.value?.data) {
           setInterviewPerformance(intRes.value.data);
+          localStorage.setItem("cached_dashboard_interview", JSON.stringify(intRes.value.data));
         }
         if (codingRes.status === "fulfilled" && codingRes.value?.data) {
           setCodingPerformance(codingRes.value.data);
+          localStorage.setItem("cached_dashboard_coding", JSON.stringify(codingRes.value.data));
         }
         if (aiRes.status === "fulfilled" && aiRes.value?.data?.metrics) {
           setAiIntelligence(aiRes.value.data);
+          localStorage.setItem("cached_dashboard_ai", JSON.stringify(aiRes.value.data));
         }
         if (progressRes.status === "fulfilled" && progressRes.value?.data?.daily_progress?.length > 0) {
           setPerformanceData(progressRes.value.data.daily_progress);
+          localStorage.setItem("cached_dashboard_daily_progress", JSON.stringify(progressRes.value.data.daily_progress));
         }
       } catch (err) {
         console.warn("Dashboard stats fetch error:", err);

@@ -41,6 +41,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem(STORAGE_PROFILE_KEY);
     localStorage.removeItem("cached_candidate_profile");
     localStorage.removeItem("cached_interviewer_profile");
+    localStorage.removeItem("cached_dashboard_quiz");
+    localStorage.removeItem("cached_dashboard_interview");
+    localStorage.removeItem("cached_dashboard_coding");
+    localStorage.removeItem("cached_dashboard_ai");
+    localStorage.removeItem("cached_dashboard_daily_progress");
   };
 
   // Helper to sync profile state with localStorage
