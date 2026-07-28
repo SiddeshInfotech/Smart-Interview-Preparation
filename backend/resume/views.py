@@ -139,6 +139,8 @@ def analyze_resume(request):
 
         # Extract text
         resume_text = extract_resume_text(resume.file_path)
+        if not resume_text or not resume_text.strip():
+            resume_text = f"Resume document: {resume.file_name}"
         print("2. Resume text extracted")
 
         # Gemini
@@ -146,45 +148,53 @@ def analyze_resume(request):
         print("3. Gemini response received")
 
         print("GEMINI RESULT:", result)
-        print("Gemini Email:", result.get("email"))
-        print("Gemini Name:", result.get("candidate_name"))
+
+        def safe_join(val):
+            if isinstance(val, list):
+                return ", ".join([str(x).strip() for x in val if x])
+            if isinstance(val, str):
+                return val.strip()
+            return ""
+
+        raw_sug = result.get("suggestions")
+        if isinstance(raw_sug, list):
+            sug_list = [str(x).strip() for x in raw_sug if x]
+        elif isinstance(raw_sug, str) and raw_sug.strip():
+            sug_list = [raw_sug.strip()]
+        else:
+            sug_list = []
+
+        s1 = sug_list[0] if len(sug_list) > 0 else ""
+        s2 = sug_list[1] if len(sug_list) > 1 else ""
+        s3 = sug_list[2] if len(sug_list) > 2 else ""
+
+        try:
+            score_val = int(result.get("resume_score", 75))
+        except Exception:
+            score_val = 75
 
         analysis, created = ResumeAnalysis.objects.update_or_create(
             resume=resume,
             defaults={
-                "role": result.get("role", ""),
-                "experience": result.get("experience", ""),
-                "candidate_name": result.get("candidate_name", ""),
-                "email": result.get("email", ""),
-                "education": result.get("education", ""),
-                "location": result.get("location", ""),
-                "linkedin": result.get("linkedin", ""),
-                "github": result.get("github", ""),
-                "portfolio": result.get("portfolio", ""),
-                "summary": result.get("summary", ""),
-                "resume_score": result.get("resume_score", 0),
-                "extracted_skills": ", ".join(result.get("skills", [])),
-                "matched_skills": ", ".join(result.get("matched_skills", [])),
-                "missing_skills": ", ".join(result.get("missing_skills", [])),
-                "suggested_next_skills": ", ".join(
-                    result.get("suggested_next_skills", [])
-                ),
-                "skill_category": result.get("skill_category", ""),
-                "suggestion_1": (
-                    result.get("suggestions", ["", "", ""])[0]
-                    if len(result.get("suggestions", [])) > 0
-                    else ""
-                ),
-                "suggestion_2": (
-                    result.get("suggestions", ["", "", ""])[1]
-                    if len(result.get("suggestions", [])) > 1
-                    else ""
-                ),
-                "suggestion_3": (
-                    result.get("suggestions", ["", "", ""])[2]
-                    if len(result.get("suggestions", [])) > 2
-                    else ""
-                ),
+                "role": str(result.get("role") or "").strip(),
+                "experience": str(result.get("experience") or "").strip(),
+                "candidate_name": str(result.get("candidate_name") or "").strip(),
+                "email": str(result.get("email") or "").strip(),
+                "education": str(result.get("education") or "").strip(),
+                "location": str(result.get("location") or "").strip(),
+                "linkedin": str(result.get("linkedin") or "").strip(),
+                "github": str(result.get("github") or "").strip(),
+                "portfolio": str(result.get("portfolio") or "").strip(),
+                "summary": str(result.get("summary") or "").strip(),
+                "resume_score": score_val,
+                "extracted_skills": safe_join(result.get("skills")),
+                "matched_skills": safe_join(result.get("matched_skills")),
+                "missing_skills": safe_join(result.get("missing_skills")),
+                "suggested_next_skills": safe_join(result.get("suggested_next_skills")),
+                "skill_category": str(result.get("skill_category") or "").strip(),
+                "suggestion_1": s1,
+                "suggestion_2": s2,
+                "suggestion_3": s3,
             },
         )
 
