@@ -14,6 +14,9 @@ export default function PageNavbar({
   brandHref = "/dashboard",
   brandIcon = <Brain size={28} />,
 }) {
+  const { userProfile, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+
   const defaultNavItems = userProfile?.role === "interviewer"
     ? [{ to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> }]
     : [
@@ -28,8 +31,6 @@ export default function PageNavbar({
   const dropdownRef = useRef(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [usageData, setUsageData] = useState(null);
-  const { userProfile, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const effectiveBrandHref = userProfile?.role === "interviewer" ? "/interview" : brandHref;
 
   useEffect(() => {
