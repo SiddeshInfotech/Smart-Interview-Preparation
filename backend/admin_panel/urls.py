@@ -65,4 +65,8 @@ urlpatterns = [
     # ── 15. Quiz Performances ─────────────────────────────────
     path("quiz-performances/",                  views.quiz_performances_list,    name="admin_quiz_performances_list"),
     path("quiz-performances/<int:pk>/",         views.quiz_performance_detail,   name="admin_quiz_performance_detail"),
+
+    # ── 16. User Credits ──────────────────────────────────────
+    path("user-credits/",                       views.user_credits_list,         name="admin_user_credits_list"),
+    path("user-credits/<int:pk>/",              views.user_credit_detail,        name="admin_user_credit_detail"),
 ]

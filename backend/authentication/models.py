@@ -72,3 +72,54 @@ class OtpVerification(models.Model):
         indexes = [
             models.Index(fields=["user", "purpose", "is_verified"]),
         ]
+
+
+class UserCredit(models.Model):
+    credit_id = models.AutoField(primary_key=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="credits", db_column="user_id")
+
+    quiz_used = models.IntegerField(default=0)
+    quiz_limit = models.IntegerField(default=20)
+    quiz_last_reset = models.DateField(null=True, blank=True)
+
+    coding_used = models.IntegerField(default=0)
+    coding_limit = models.IntegerField(default=20)
+    coding_last_reset = models.DateField(null=True, blank=True)
+
+    resume_used = models.IntegerField(default=0)
+    resume_limit = models.IntegerField(default=5)
+    resume_last_reset = models.DateField(null=True, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "User_Credits"
+
+    def check_and_reset(self, today=None):
+        from django.utils import timezone
+        if today is None:
+            today = timezone.now().date()
+
+        current_month_start = today.replace(day=1)
+        updated = False
+
+        if self.quiz_last_reset != today:
+            self.quiz_used = 0
+            self.quiz_last_reset = today
+            updated = True
+
+        if self.coding_last_reset != today:
+            self.coding_used = 0
+            self.coding_last_reset = today
+            updated = True
+
+        if self.resume_last_reset is None or self.resume_last_reset < current_month_start:
+            self.resume_used = 0
+            self.resume_last_reset = current_month_start
+            updated = True
+
+        if updated and self.pk:
+            self.save(update_fields=["quiz_used", "quiz_last_reset", "coding_used", "coding_last_reset", "resume_used", "resume_last_reset", "updated_at"])
+
+    def __str__(self):
+        return f"{self.user.email}'s Credits"

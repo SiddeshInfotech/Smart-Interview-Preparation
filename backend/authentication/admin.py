@@ -1,5 +1,4 @@
-from django.contrib import admin
-from .models import User, OtpVerification
+from .models import User, OtpVerification, UserCredit
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
@@ -14,3 +13,10 @@ class OtpVerificationAdmin(admin.ModelAdmin):
     list_filter = ("purpose", "is_verified")
     search_fields = ("user__email",)
     readonly_fields = ("created_at",)
+
+
+@admin.register(UserCredit)
+class UserCreditAdmin(admin.ModelAdmin):
+    list_display = ("user", "quiz_used", "quiz_limit", "coding_used", "coding_limit", "resume_used", "resume_limit", "updated_at")
+    search_fields = ("user__email", "user__full_name")
+    readonly_fields = ("updated_at",)

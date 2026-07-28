@@ -117,6 +117,15 @@ def save_quiz_result(request):
             score=data.get("score")
         )
 
+        try:
+            from authentication.models import UserCredit
+            credits_obj, _ = UserCredit.objects.get_or_create(user=request.user)
+            credits_obj.check_and_reset()
+            credits_obj.quiz_used += 1
+            credits_obj.save(update_fields=["quiz_used", "updated_at"])
+        except Exception:
+            pass
+
         return Response({
             "message": "Quiz result saved successfully",
             "result_id": result.id

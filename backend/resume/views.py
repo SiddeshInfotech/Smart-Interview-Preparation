@@ -191,6 +191,16 @@ def analyze_resume(request):
         resume.status = "analyzed"
         resume.save()
 
+        if user:
+            try:
+                from authentication.models import UserCredit
+                credits_obj, _ = UserCredit.objects.get_or_create(user=user)
+                credits_obj.check_and_reset()
+                credits_obj.resume_used += 1
+                credits_obj.save(update_fields=["resume_used", "updated_at"])
+            except Exception:
+                pass
+
         serializer = ResumeAnalysisSerializer(analysis)
 
         print("FINAL RESPONSE READY")

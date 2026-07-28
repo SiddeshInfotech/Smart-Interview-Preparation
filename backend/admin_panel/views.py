@@ -483,3 +483,21 @@ def quiz_performances_list(request):
 @permission_classes([IsAdminOrSuperUser])
 def quiz_performance_detail(request, pk):
     return retrieve_update_delete(request, QuizPerformance, QuizPerformanceAdminSerializer, pk)
+
+
+# ─────────────────────────────────────────────────────────────
+# 16. User Credits
+# ─────────────────────────────────────────────────────────────
+from authentication.models import UserCredit
+from .serializers import UserCreditAdminSerializer
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAdminOrSuperUser])
+def user_credits_list(request):
+    return list_create(request, UserCredit, UserCreditAdminSerializer, "-updated_at")
+
+
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
+@permission_classes([IsAdminOrSuperUser])
+def user_credit_detail(request, pk):
+    return retrieve_update_delete(request, UserCredit, UserCreditAdminSerializer, pk)

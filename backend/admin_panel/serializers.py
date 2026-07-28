@@ -266,3 +266,21 @@ class QuizPerformanceAdminSerializer(serializers.ModelSerializer):
         return "N/A"
 
 
+# ── User Credit Model ───────────────────────────────────────
+from authentication.models import UserCredit
+
+class UserCreditAdminSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField(read_only=True)
+    user_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = UserCredit
+        fields = '__all__'
+
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else "N/A"
+
+    def get_user_name(self, obj):
+        return getattr(obj.user, 'full_name', obj.user.email) if obj.user else "N/A"
+
+

@@ -19,6 +19,7 @@ import AdminInterviewFeedbackReviews from "./admin/AdminInterviewFeedbackReviews
 import AdminCodingSubmissions from "./admin/AdminCodingSubmissions";
 import AdminCodingQuestions from "./admin/AdminCodingQuestions";
 import AdminQuizPerformance from "./admin/AdminQuizPerformance";
+import AdminUserCredits from "./admin/AdminUserCredits";
 
 // ── Sidebar nav config ─────────────────────────────────────
 const NAV = [
@@ -35,6 +36,7 @@ const NAV = [
       { label: "Candidates",     path: "/my_admin_panel/candidates",     icon: <IconPerson /> },
       { label: "Interviewers",   path: "/my_admin_panel/interviewers",   icon: <IconBriefcase /> },
       { label: "Availability",   path: "/my_admin_panel/availabilities", icon: <IconClock /> },
+      { label: "User Credits",   path: "/my_admin_panel/user-credits",   icon: <IconStar /> },
     ],
   },
   {
@@ -72,6 +74,7 @@ const PAGE_TITLES = {
   "/my_admin_panel/candidates":      "Candidate Profiles",
   "/my_admin_panel/interviewers":    "Interviewer Profiles",
   "/my_admin_panel/availabilities":  "Interviewer Availability",
+  "/my_admin_panel/user-credits":    "User Credits & Limits",
   "/my_admin_panel/interviews":      "Interview Schedules",
   "/my_admin_panel/feedback":        "User Feedback",
   "/my_admin_panel/interview-feedback-reviews": "Interview Feedback Reviews",
@@ -192,6 +195,7 @@ export default function AdminPanel() {
             <Route path="candidates"      element={<AdminCandidates />} />
             <Route path="interviewers"    element={<AdminInterviewers />} />
             <Route path="availabilities" element={<AdminAvailability />} />
+            <Route path="user-credits"   element={<AdminUserCredits />} />
             <Route path="interviews"      element={<AdminInterviews />} />
             <Route path="feedback"        element={<AdminFeedback />} />
             <Route path="interview-feedback-reviews" element={<AdminInterviewFeedbackReviews />} />

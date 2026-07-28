@@ -157,6 +157,16 @@ def submit_code(request):
             ai_evaluation=eval_data
         )
 
+        if user_obj:
+            try:
+                from authentication.models import UserCredit
+                credits_obj, _ = UserCredit.objects.get_or_create(user=user_obj)
+                credits_obj.check_and_reset()
+                credits_obj.coding_used += 1
+                credits_obj.save(update_fields=["coding_used", "updated_at"])
+            except Exception:
+                pass
+
         return Response({
             "success": True,
             "submission_id": submission.id,

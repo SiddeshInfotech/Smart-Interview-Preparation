@@ -145,5 +145,12 @@ export const createQuizPerformance  = (data)    => adminApi.post("/admin_panel/q
 export const updateQuizPerformance  = (id, data)=> adminApi.put(`/admin_panel/quiz-performances/${id}/`, data);
 export const deleteQuizPerformance  = (id)      => adminApi.delete(`/admin_panel/quiz-performances/${id}/`);
 
+// ── 16. User Credits ──────────────────────────────────────
+export const getUserCredits    = ()        => adminApi.get("/admin_panel/user-credits/");
+export const getUserCredit     = (id)      => adminApi.get(`/admin_panel/user-credits/${id}/`);
+export const createUserCredit  = (data)    => adminApi.post("/admin_panel/user-credits/", data);
+export const updateUserCredit  = (id, data)=> adminApi.put(`/admin_panel/user-credits/${id}/`, data);
+export const deleteUserCredit  = (id)      => adminApi.delete(`/admin_panel/user-credits/${id}/`);
+
 export default adminApi;
 
