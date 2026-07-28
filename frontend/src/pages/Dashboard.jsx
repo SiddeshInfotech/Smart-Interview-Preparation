@@ -134,118 +134,40 @@ const Dashboard = () => {
     { day: "Sun", quiz: 92, coding: 88, interview: 70 },
   ]);
 
+  // Fetch all 5 dashboard performance metrics concurrently on mount
   useEffect(() => {
-    const fetchQuizPerformance = async () => {
+    const fetchAllDashboardStats = async () => {
       try {
-        const res = await api.get("/quiz/performance/");
-        if (res.data) {
-          setQuizPerformance(res.data);
+        const [quizRes, intRes, codingRes, aiRes, progressRes] = await Promise.allSettled([
+          api.get("/quiz/performance/"),
+          api.get("/interview/performance/"),
+          api.get("/coding/performance/"),
+          api.get("/dashboard/ai-intelligence/"),
+          api.get("/dashboard/daily-progress/"),
+        ]);
+
+        if (quizRes.status === "fulfilled" && quizRes.value?.data) {
+          setQuizPerformance(quizRes.value.data);
+        }
+        if (intRes.status === "fulfilled" && intRes.value?.data) {
+          setInterviewPerformance(intRes.value.data);
+        }
+        if (codingRes.status === "fulfilled" && codingRes.value?.data) {
+          setCodingPerformance(codingRes.value.data);
+        }
+        if (aiRes.status === "fulfilled" && aiRes.value?.data?.metrics) {
+          setAiIntelligence(aiRes.value.data);
+        }
+        if (progressRes.status === "fulfilled" && progressRes.value?.data?.daily_progress?.length > 0) {
+          setPerformanceData(progressRes.value.data.daily_progress);
         }
       } catch (err) {
-        console.warn("Quiz API Error:", err);
+        console.warn("Dashboard stats fetch error:", err);
       }
     };
 
-    const fetchInterviewPerformance = async () => {
-      try {
-        const res = await api.get("/interview/performance/");
-        if (res.data) {
-          setInterviewPerformance(res.data);
-        }
-      } catch (err) {
-        console.warn("Interview Performance API Error:", err);
-      }
-    };
-
-    const fetchCodingPerformance = async () => {
-      try {
-        const res = await api.get("/coding/performance/");
-        if (res.data) {
-          setCodingPerformance(res.data);
-        }
-      } catch (err) {
-        console.warn("Coding Performance API Error:", err);
-      }
-    };
-
-    const fetchAiIntelligence = async () => {
-      try {
-        const res = await api.get("/dashboard/ai-intelligence/");
-        if (res.data && res.data.metrics) {
-          setAiIntelligence(res.data);
-        }
-      } catch (err) {
-        console.warn("AI Intelligence API Error:", err);
-      }
-    };
-
-    fetchQuizPerformance();
-    fetchInterviewPerformance();
-    fetchCodingPerformance();
-    fetchAiIntelligence();
+    fetchAllDashboardStats();
   }, []);
-
-  // Synchronize AI Profile Intelligence metrics live whenever Candidate Task results update
-  useEffect(() => {
-    const qScore = quizPerformance.overall_score || 0;
-    const cScore = codingPerformance.overall_score || 0;
-    const iScore = interviewPerformance.overall_performance || 0;
-
-    const scoresMap = [
-      { name: "Quiz", score: qScore },
-      { name: "Coding", score: cScore },
-      { name: "Interview", score: iScore },
-    ];
-
-    const activeScores = scoresMap.filter((s) => s.score > 0);
-    const overallReadiness =
-      activeScores.length > 0
-        ? Math.round(activeScores.reduce((acc, curr) => acc + curr.score, 0) / activeScores.length)
-        : 0;
-
-    setAiIntelligence({
-      overall_readiness: overallReadiness,
-      metrics: {
-        quiz_mastery: qScore,
-        coding_ability: cScore,
-        interview_skill: iScore,
-      },
-    });
-  }, [quizPerformance.overall_score, codingPerformance.overall_score, interviewPerformance.overall_performance]);
-
-  // Day-wise performance data calculation & backend API integration
-  useEffect(() => {
-    const fetchDailyProgress = async () => {
-      try {
-        const res = await api.get("/dashboard/daily-progress/");
-        if (res.data && res.data.daily_progress && res.data.daily_progress.length > 0) {
-          setPerformanceData(res.data.daily_progress);
-          return;
-        }
-      } catch (err) {
-        console.warn("Daily Progress API Error:", err);
-      }
-
-      // Dynamic day-wise calculation based on overall candidate performance
-      const qScore = quizPerformance.overall_score || 0;
-      const cScore = codingPerformance.overall_score || 0;
-      const iScore = interviewPerformance.overall_performance || 0;
-      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-      const computed = days.map((dayName, index) => {
-        const progressFactor = 0.65 + 0.35 * ((index + 1) / 7);
-        return {
-          day: dayName,
-          quiz: qScore > 0 ? Math.min(100, Math.round(qScore * progressFactor)) : 0,
-          coding: cScore > 0 ? Math.min(100, Math.round(cScore * progressFactor)) : 0,
-          interview: iScore > 0 ? Math.min(100, Math.round(iScore * progressFactor)) : 0,
-        };
-      });
-      setPerformanceData(computed);
-    };
-
-    fetchDailyProgress();
-  }, [quizPerformance.overall_score, codingPerformance.overall_score, interviewPerformance.overall_performance]);
 
   const showQuiz = activeMetric === "all" || activeMetric === "quiz";
   const showCoding = activeMetric === "all" || activeMetric === "coding";

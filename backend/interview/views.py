@@ -532,12 +532,20 @@ def interview_performance(request):
             "overall_performance": 0,
         })
 
-    tech_avg = reviews.aggregate(Avg('technical_skills'))['technical_skills__avg'] or 0
-    comm_avg = reviews.aggregate(Avg('communication_skills'))['communication_skills__avg'] or 0
-    prob_avg = reviews.aggregate(Avg('problem_solving'))['problem_solving__avg'] or 0
-    soft_avg = reviews.aggregate(Avg('soft_skills'))['soft_skills__avg'] or 0
-    code_avg = reviews.aggregate(Avg('code_quality'))['code_quality__avg'] or 0
-    overall_avg = reviews.aggregate(Avg('overall_rating'))['overall_rating__avg'] or 0
+    aggs = reviews.aggregate(
+        tech=Avg('technical_skills'),
+        comm=Avg('communication_skills'),
+        prob=Avg('problem_solving'),
+        soft=Avg('soft_skills'),
+        code=Avg('code_quality'),
+        overall=Avg('overall_rating'),
+    )
+    tech_avg = aggs['tech'] or 0
+    comm_avg = aggs['comm'] or 0
+    prob_avg = aggs['prob'] or 0
+    soft_avg = aggs['soft'] or 0
+    code_avg = aggs['code'] or 0
+    overall_avg = aggs['overall'] or 0
 
     # Summary average of all rating stats (out of 5)
     summary_avg = (tech_avg + comm_avg + prob_avg + soft_avg + code_avg) / 5.0 if any([tech_avg, comm_avg, prob_avg, soft_avg, code_avg]) else overall_avg

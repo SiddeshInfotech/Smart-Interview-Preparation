@@ -179,7 +179,14 @@ def get_coding_performance(request):
     if request.user and request.user.is_authenticated:
         submissions = CodeSubmission.objects.filter(user=request.user)
     else:
-        submissions = CodeSubmission.objects.all()
+        return Response({
+            "total_submissions": 0,
+            "logical_thinking": 0,
+            "code_efficiency": 0,
+            "language_skills": 0,
+            "problem_solving": 0,
+            "overall_score": 0,
+        })
 
     total = submissions.count()
     if total == 0:
@@ -198,7 +205,7 @@ def get_coding_performance(request):
     sum_problem = 0
     sum_overall = 0
 
-    for s in submissions:
+    for s in submissions.only("score", "ai_evaluation"):
         eval_obj = s.ai_evaluation or {}
         sum_logical += eval_obj.get("logical_thinking", s.score)
         sum_efficiency += eval_obj.get("code_efficiency", s.score)

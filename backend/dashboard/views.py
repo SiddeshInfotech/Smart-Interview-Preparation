@@ -29,62 +29,88 @@ def get_daily_progress(request):
     candidate_profile = Candidate_Profile.objects.filter(user=user).first() if user else None
 
     today = timezone.now().date()
+    start_date = today - timedelta(days=6)
 
     quiz_qs = QuizPerformance.objects.filter(user=user) if user else QuizPerformance.objects.none()
     coding_qs = CodeSubmission.objects.filter(user=user) if user else CodeSubmission.objects.none()
     int_reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile) if candidate_profile else InterviewFeedbackReview.objects.none()
 
-    overall_quiz = round(quiz_qs.aggregate(Avg("score"))["score__avg"] or 0, 1) if quiz_qs.exists() else 0
-
-    coding_scores = [s.score for s in coding_qs]
-    overall_coding = round(sum(coding_scores) / len(coding_scores), 1) if coding_scores else 0
+    overall_quiz = round(quiz_qs.aggregate(avg=Avg("score"))["avg"] or 0, 1) if user else 0
+    overall_coding = round(coding_qs.aggregate(avg=Avg("score"))["avg"] or 0, 1) if user else 0
 
     def calc_review_summary_pct(reviews_qs):
-        if not reviews_qs.exists():
+        aggs = reviews_qs.aggregate(
+            tech=Avg("technical_skills"),
+            comm=Avg("communication_skills"),
+            prob=Avg("problem_solving"),
+            soft=Avg("soft_skills"),
+            code=Avg("code_quality"),
+            overall=Avg("overall_rating"),
+        )
+        tech = aggs["tech"] or 0
+        comm = aggs["comm"] or 0
+        prob = aggs["prob"] or 0
+        soft = aggs["soft"] or 0
+        code = aggs["code"] or 0
+        overall = aggs["overall"] or 0
+        if not any([tech, comm, prob, soft, code, overall]):
             return 0.0
-        tech = reviews_qs.aggregate(Avg("technical_skills"))["technical_skills__avg"] or 0
-        comm = reviews_qs.aggregate(Avg("communication_skills"))["communication_skills__avg"] or 0
-        prob = reviews_qs.aggregate(Avg("problem_solving"))["problem_solving__avg"] or 0
-        soft = reviews_qs.aggregate(Avg("soft_skills"))["soft_skills__avg"] or 0
-        code = reviews_qs.aggregate(Avg("code_quality"))["code_quality__avg"] or 0
-        overall = reviews_qs.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0
         summary_avg = (tech + comm + prob + soft + code) / 5.0 if any([tech, comm, prob, soft, code]) else overall
-        return round((summary_avg / 5.0) * 100, 1)
+        return round((float(summary_avg) / 5.0) * 100, 1)
 
-    overall_interview = calc_review_summary_pct(int_reviews)
+    overall_interview = calc_review_summary_pct(int_reviews) if candidate_profile else 0.0
+
+    # Bulk fetch daily averages for the past 7 days in single database queries
+    quiz_daily_map = {}
+    if user:
+        for row in quiz_qs.filter(created_at__date__gte=start_date).values("created_at__date").annotate(avg_score=Avg("score")):
+            quiz_daily_map[row["created_at__date"]] = round(row["avg_score"] or 0, 1)
+
+    coding_daily_map = {}
+    if user:
+        for row in coding_qs.filter(submitted_at__date__gte=start_date).values("submitted_at__date").annotate(avg_score=Avg("score")):
+            coding_daily_map[row["submitted_at__date"]] = round(row["avg_score"] or 0, 1)
+
+    # Pre-fetch interview reviews for the past 7 days
+    reviews_by_date = {}
+    if candidate_profile:
+        for r in int_reviews.filter(submitted_at__date__gte=start_date):
+            d = r.submitted_at.date()
+            if d not in reviews_by_date:
+                reviews_by_date[d] = []
+            reviews_by_date[d].append(r)
 
     daily_data = []
-
-    # Past 7 days
     for i in range(6, -1, -1):
         target_date = today - timedelta(days=i)
         day_name = target_date.strftime("%a")
 
-        day_quizzes = quiz_qs.filter(created_at__date=target_date) if user else QuizPerformance.objects.none()
-        day_codings = coding_qs.filter(submitted_at__date=target_date) if user else CodeSubmission.objects.none()
-        day_interviews = int_reviews.filter(submitted_at__date=target_date) if candidate_profile else InterviewFeedbackReview.objects.none()
-
-        if day_quizzes.exists():
-            quiz_val = round(day_quizzes.aggregate(Avg("score"))["score__avg"] or 0, 1)
+        if target_date in quiz_daily_map:
+            quiz_val = quiz_daily_map[target_date]
         else:
             factor = 0.65 + 0.35 * ((7 - i) / 7.0)
             quiz_val = round(overall_quiz * factor, 1) if overall_quiz > 0 else 0.0
 
-        if day_codings.exists():
-            coding_val = round(sum([s.score for s in day_codings]) / day_codings.count(), 1)
+        if target_date in coding_daily_map:
+            coding_val = coding_daily_map[target_date]
         else:
             factor = 0.60 + 0.40 * ((7 - i) / 7.0)
             coding_val = round(overall_coding * factor, 1) if overall_coding > 0 else 0.0
 
-        # Dynamic day-wise Interview Performance evaluation
-        if day_interviews.exists():
-            interview_val = calc_review_summary_pct(day_interviews)
+        if target_date in reviews_by_date:
+            day_revs = reviews_by_date[target_date]
+            tech = sum(r.technical_skills for r in day_revs) / len(day_revs)
+            comm = sum(r.communication_skills for r in day_revs) / len(day_revs)
+            prob = sum(r.problem_solving for r in day_revs) / len(day_revs)
+            soft = sum(r.soft_skills for r in day_revs) / len(day_revs)
+            code = sum(r.code_quality for r in day_revs) / len(day_revs)
+            overall_r = sum(float(r.overall_rating) for r in day_revs) / len(day_revs)
+            summary_avg = (tech + comm + prob + soft + code) / 5.0 if any([tech, comm, prob, soft, code]) else overall_r
+            interview_val = round((summary_avg / 5.0) * 100, 1)
+        elif candidate_profile and int_reviews.filter(submitted_at__date__lte=target_date).exists():
+            interview_val = overall_interview
         else:
-            historical_reviews = int_reviews.filter(submitted_at__date__lte=target_date) if candidate_profile else InterviewFeedbackReview.objects.none()
-            if historical_reviews.exists():
-                interview_val = calc_review_summary_pct(historical_reviews)
-            else:
-                interview_val = 0.0
+            interview_val = 0.0
 
         daily_data.append({
             "day": day_name,
@@ -116,24 +142,31 @@ def get_ai_intelligence(request):
 
     # 1. Quiz Score (0-100)
     quiz_qs = QuizPerformance.objects.filter(user=user) if user else QuizPerformance.objects.none()
-    quiz_score = round(quiz_qs.aggregate(Avg("score"))["score__avg"] or 0) if quiz_qs.exists() else 0
+    quiz_score = round(quiz_qs.aggregate(avg=Avg("score"))["avg"] or 0) if user else 0
 
     # 2. Coding Score (0-100)
     coding_qs = CodeSubmission.objects.filter(user=user) if user else CodeSubmission.objects.none()
-    coding_scores = [s.score for s in coding_qs]
-    coding_score = round(sum(coding_scores) / len(coding_scores)) if coding_scores else 0
+    coding_score = round(coding_qs.aggregate(avg=Avg("score"))["avg"] or 0) if user else 0
 
     # 3. Interview Score (0-100)
     int_reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile) if candidate_profile else None
     if int_reviews and int_reviews.exists():
-        tech = int_reviews.aggregate(Avg("technical_skills"))["technical_skills__avg"] or 0
-        comm = int_reviews.aggregate(Avg("communication_skills"))["communication_skills__avg"] or 0
-        prob = int_reviews.aggregate(Avg("problem_solving"))["problem_solving__avg"] or 0
-        soft = int_reviews.aggregate(Avg("soft_skills"))["soft_skills__avg"] or 0
-        code = int_reviews.aggregate(Avg("code_quality"))["code_quality__avg"] or 0
-        overall = int_reviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0
+        aggs = int_reviews.aggregate(
+            tech=Avg("technical_skills"),
+            comm=Avg("communication_skills"),
+            prob=Avg("problem_solving"),
+            soft=Avg("soft_skills"),
+            code=Avg("code_quality"),
+            overall=Avg("overall_rating"),
+        )
+        tech = aggs["tech"] or 0
+        comm = aggs["comm"] or 0
+        prob = aggs["prob"] or 0
+        soft = aggs["soft"] or 0
+        code = aggs["code"] or 0
+        overall = aggs["overall"] or 0
         summary_avg = (tech + comm + prob + soft + code) / 5.0 if any([tech, comm, prob, soft, code]) else overall
-        interview_score = round((summary_avg / 5.0) * 100)
+        interview_score = round((float(summary_avg) / 5.0) * 100)
     else:
         interview_score = 0
 
