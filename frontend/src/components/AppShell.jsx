@@ -17,11 +17,11 @@ export default function AppShell() {
   const activePath = location.pathname;
   const { role } = useCurrentUserRole();
 
-  // Always include Interview link
+  // Interviewers get only Interview link (no Dashboard access)
   let visibleNavItems;
   if (role === "interviewer") {
     visibleNavItems = allNavItems.filter(
-      (item) => item.to === "/dashboard" || item.to === "/interview"
+      (item) => item.to === "/interview"
     );
   } else {
     // Candidates (or unknown role) get all items

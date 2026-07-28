@@ -32,7 +32,6 @@ export default function Home() {
           
           <div className="hero__actions">
             <Button variant="primary" as="a" href="/register">Start Free Trial</Button>
-            <Button variant="outline" as="a" href="#features" icon={<PlayCircle size={17} />}>View Demo</Button>
           </div>
         </div>
 

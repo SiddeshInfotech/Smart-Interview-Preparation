@@ -62,18 +62,18 @@ function App() {
             <Route path="/interview-page" element={<InterviewPage />} />
 
             <Route element={<AppShell />}>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="resume-upload" element={<ResumeUpload />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="feedback-form" element={<FeedbackForm />} />
-
-              {/* Quiz – candidate only */}
-              <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>
+              {/* Dashboard – candidate only */}
+              <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/interview" />}>
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="resume-upload" element={<ResumeUpload />} />
                 <Route path="quiz" element={<Quiz />} />
               </Route>
 
+              <Route path="profile" element={<Profile />} />
+              <Route path="feedback-form" element={<FeedbackForm />} />
+
               {/* Interview – both candidate and interviewer */}
-              <Route element={<RequireRole allowedRoles={["candidate", "interviewer"]} redirectTo="/dashboard" />}>
+              <Route element={<RequireRole allowedRoles={["candidate", "interviewer"]} redirectTo="/login" />}>
                 <Route path="interview" element={<Interview />} />
               </Route>
             </Route>

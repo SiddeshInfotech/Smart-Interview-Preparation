@@ -107,7 +107,9 @@ export default function Login() {
 
     try {
       const role = await handleLogin();
-      if (role) {
+      if (role === "interviewer") {
+        navigate("/interview");
+      } else if (role) {
         navigate("/dashboard");
       }
     } catch (err) {

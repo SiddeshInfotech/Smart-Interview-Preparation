@@ -14,12 +14,14 @@ export default function PageNavbar({
   brandHref = "/dashboard",
   brandIcon = <Brain size={28} />,
 }) {
-  const defaultNavItems = [
-    { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-    { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
-    { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
-    { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
-  ];
+  const defaultNavItems = userProfile?.role === "interviewer"
+    ? [{ to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> }]
+    : [
+        { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
+        { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
+        { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
+        { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
+      ];
 
   const itemsToRender = navItems && navItems.length > 0 ? navItems : defaultNavItems;
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ export default function PageNavbar({
   const [usageData, setUsageData] = useState(null);
   const { userProfile, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const effectiveBrandHref = userProfile?.role === "interviewer" ? "/interview" : brandHref;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -65,7 +68,7 @@ export default function PageNavbar({
   return (
     <header className="top-navbar">
       <div className="navbar-container">
-        <button className="navbar-brand" onClick={() => navigate(brandHref)} type="button">
+        <button className="navbar-brand" onClick={() => navigate(effectiveBrandHref)} type="button">
           {brandIcon}
           <span className="logo-text">{brandLabel}</span>
         </button>
