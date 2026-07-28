@@ -7,8 +7,9 @@ import {
   VideoTrack,
   useParticipants,
   RoomAudioRenderer,
+  useRoomContext,
 } from '@livekit/components-react';
-import { Track } from 'livekit-client';
+import { Track, RoomEvent } from 'livekit-client';
 import '@livekit/components-styles';
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import api from '../api/axios';
@@ -31,12 +32,91 @@ const LiveVideo = ({
   role,
   participantName,
   selectedInterview,
+  tabSwitchCount = 0,
 }) => {
   const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
   const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone]);
+  const room = useRoomContext();
+
+  const [interviewerTabWarning, setInterviewerTabWarning] = useState(null);
+  const warningTimerRef = useRef(null);
 
   const localIdentity = localParticipant?.identity;
+
+  const isInterviewerRole = (role || '').toString().toLowerCase() === 'interviewer';
+
+  // Candidate: publish tab switch data message over LiveKit data track when tabSwitchCount changes
+  const prevTabSwitchRef = useRef(0);
+  useEffect(() => {
+    if (!isInterviewerRole && tabSwitchCount > 0 && tabSwitchCount !== prevTabSwitchRef.current) {
+      prevTabSwitchRef.current = tabSwitchCount;
+      if (localParticipant) {
+        try {
+          const encoder = new TextEncoder();
+          const payload = encoder.encode(JSON.stringify({
+            type: 'TAB_SWITCH',
+            count: tabSwitchCount,
+            candidateName: participantName || 'Candidate',
+            maxSwitches: 3,
+          }));
+          localParticipant.publishData(payload, { reliable: true });
+        } catch (err) {
+          console.warn("LiveKit publishData tab switch error:", err);
+        }
+      }
+    }
+  }, [tabSwitchCount, isInterviewerRole, localParticipant, participantName]);
+
+  // Interviewer: listen for candidate TAB_SWITCH events via LiveKit room and BroadcastChannel
+  const showInterviewerWarning = useCallback((data) => {
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    const candName = data.candidateName || 'Candidate';
+    const count = data.count || 1;
+    const maxSw = data.maxSwitches || 3;
+    setInterviewerTabWarning({
+      message: `⚠️ WARNING: Candidate (${candName}) switched browser tabs! (${count}/${maxSw})`,
+    });
+    warningTimerRef.current = setTimeout(() => {
+      setInterviewerTabWarning(null);
+    }, 4000);
+  }, []);
+
+  useEffect(() => {
+    if (!isInterviewerRole) return;
+
+    const handleDataReceived = (payload, participant, kind, topic) => {
+      try {
+        const str = new TextDecoder().decode(payload);
+        const data = JSON.parse(str);
+        if (data && data.type === 'TAB_SWITCH') {
+          showInterviewerWarning(data);
+        }
+      } catch (err) {
+        console.warn("DataReceived parsing error:", err);
+      }
+    };
+
+    if (room) {
+      room.on(RoomEvent.DataReceived, handleDataReceived);
+    }
+
+    let bc;
+    try {
+      bc = new BroadcastChannel('interview_events_channel');
+      bc.onmessage = (event) => {
+        if (event.data && event.data.type === 'TAB_SWITCH') {
+          showInterviewerWarning(event.data);
+        }
+      };
+    } catch (err) {}
+
+    return () => {
+      if (room) room.off(RoomEvent.DataReceived, handleDataReceived);
+      if (bc) bc.close();
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    };
+  }, [room, isInterviewerRole, showInterviewerWarning]);
 
   // Synchronize camera state with LiveKit Room track
   useEffect(() => {
@@ -143,6 +223,14 @@ const LiveVideo = ({
 
   return (
     <div className="video-call-container">
+      {/* Short Duration Top Warning Popup on Interviewer Side when Candidate Switches Tabs */}
+      {isInterviewerRole && interviewerTabWarning && (
+        <div className="interviewer-tab-warning-banner">
+          <span className="warning-pulse-icon">🚨</span>
+          <span>{interviewerTabWarning.message}</span>
+        </div>
+      )}
+
       <div className="video-grid">
         {/* Remote participant video */}
         <div className="video-box interviewer-video">
@@ -468,6 +556,19 @@ const InterviewPage = ({
       if (document.hidden && isInInterview && !isEndingRef.current) {
         setTabSwitchCount((prev) => {
           const newCount = prev + 1;
+
+          // Dispatch tab switch event via BroadcastChannel for interviewer view sync
+          try {
+            const bc = new BroadcastChannel('interview_events_channel');
+            bc.postMessage({
+              type: 'TAB_SWITCH',
+              count: newCount,
+              candidateName: participantName || 'Candidate',
+              maxSwitches: MAX_SWITCHES,
+            });
+            bc.close();
+          } catch (err) {}
+
           if (newCount >= MAX_SWITCHES) {
             alert(`🚫 Interview terminated immediately due to excessive tab switches (${newCount}/${MAX_SWITCHES}).`);
             handleCancelInterview('tab_switch_limit');
@@ -909,6 +1010,7 @@ const InterviewPage = ({
                 role={role}
                 participantName={participantName}
                 selectedInterview={selectedInterview}
+                tabSwitchCount={tabSwitchCount}
               />
             </LiveKitRoom>
           </div>

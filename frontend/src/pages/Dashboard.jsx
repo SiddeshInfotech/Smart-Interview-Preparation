@@ -610,11 +610,15 @@ const Dashboard = () => {
               <span>Soft Skills & Professionalism</span>
               <strong>{interviewPerformance.soft_skills || 0}%</strong>
             </div>
+            <div className="performance-row">
+              <span>Code Quality & Architecture</span>
+              <strong>{interviewPerformance.code_quality || 0}%</strong>
+            </div>
 
             <hr className="performance-divider" />
 
             <div className="performance-row total-performance">
-              <span>Overall Interview Performance</span>
+              <span>Overall Performance (Avg. of All Stats)</span>
               <strong className="performance-score">
                 {interviewPerformance.overall_performance || 0}%
               </strong>

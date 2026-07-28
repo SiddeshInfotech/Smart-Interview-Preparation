@@ -957,3 +957,61 @@ body.dark-theme .device-item p {
   padding: 0 !important;
   margin: 0 !important;
 }
+
+/* ==========================================================================
+   INTERVIEWER TAB SWITCH WARNING POPUP (SHORT DURATION TOP BANNER)
+   ========================================================================== */
+.interviewer-tab-warning-banner {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #ffffff;
+  padding: 12px 28px;
+  border-radius: 50px;
+  box-shadow: 0 8px 30px rgba(239, 68, 68, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.3);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  animation: slideDownWarning 0.4s cubic-bezier(0.16, 1, 0.3, 1), pulseWarningGlow 1.5s infinite alternate;
+  pointer-events: none;
+}
+
+.warning-pulse-icon {
+  font-size: 20px;
+  animation: warningIconBounce 0.8s infinite alternate;
+}
+
+@keyframes slideDownWarning {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes pulseWarningGlow {
+  from {
+    box-shadow: 0 8px 30px rgba(239, 68, 68, 0.4);
+  }
+  to {
+    box-shadow: 0 12px 40px rgba(239, 68, 68, 0.8);
+  }
+}
+
+@keyframes warningIconBounce {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-4px);
+  }
+}

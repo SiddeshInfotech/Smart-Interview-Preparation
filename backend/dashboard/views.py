@@ -39,11 +39,19 @@ def get_daily_progress(request):
     coding_scores = [s.score for s in coding_qs]
     overall_coding = round(sum(coding_scores) / len(coding_scores), 1) if coding_scores else 0
 
-    if int_reviews.exists():
-        avg_rating = int_reviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0.0
-        overall_interview = round((avg_rating / 5.0) * 100, 1)
-    else:
-        overall_interview = 0.0
+    def calc_review_summary_pct(reviews_qs):
+        if not reviews_qs.exists():
+            return 0.0
+        tech = reviews_qs.aggregate(Avg("technical_skills"))["technical_skills__avg"] or 0
+        comm = reviews_qs.aggregate(Avg("communication_skills"))["communication_skills__avg"] or 0
+        prob = reviews_qs.aggregate(Avg("problem_solving"))["problem_solving__avg"] or 0
+        soft = reviews_qs.aggregate(Avg("soft_skills"))["soft_skills__avg"] or 0
+        code = reviews_qs.aggregate(Avg("code_quality"))["code_quality__avg"] or 0
+        overall = reviews_qs.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0
+        summary_avg = (tech + comm + prob + soft + code) / 5.0 if any([tech, comm, prob, soft, code]) else overall
+        return round((summary_avg / 5.0) * 100, 1)
+
+    overall_interview = calc_review_summary_pct(int_reviews)
 
     daily_data = []
 
@@ -70,13 +78,11 @@ def get_daily_progress(request):
 
         # Dynamic day-wise Interview Performance evaluation
         if day_interviews.exists():
-            day_rating = day_interviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0.0
-            interview_val = round((day_rating / 5.0) * 100, 1)
+            interview_val = calc_review_summary_pct(day_interviews)
         else:
             historical_reviews = int_reviews.filter(submitted_at__date__lte=target_date) if candidate_profile else InterviewFeedbackReview.objects.none()
             if historical_reviews.exists():
-                hist_rating = historical_reviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0.0
-                interview_val = round((hist_rating / 5.0) * 100, 1)
+                interview_val = calc_review_summary_pct(historical_reviews)
             else:
                 interview_val = 0.0
 
@@ -101,7 +107,7 @@ def get_ai_intelligence(request):
     Computes AI Profile Intelligence metrics 100% dynamically based on candidate tasks:
     - Quiz Mastery (from quiz results)
     - Coding Ability (from coding submissions)
-    - Interview Skill (from completed interview feedback)
+    - Interview Skill (from completed interview feedback summary avg of all stats)
     - Overall Readiness (computed dynamic average)
     - Completed Modules & Strongest Skill Area
     """
@@ -120,8 +126,14 @@ def get_ai_intelligence(request):
     # 3. Interview Score (0-100)
     int_reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile) if candidate_profile else None
     if int_reviews and int_reviews.exists():
-        avg_rating = int_reviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0
-        interview_score = round((avg_rating / 5.0) * 100)
+        tech = int_reviews.aggregate(Avg("technical_skills"))["technical_skills__avg"] or 0
+        comm = int_reviews.aggregate(Avg("communication_skills"))["communication_skills__avg"] or 0
+        prob = int_reviews.aggregate(Avg("problem_solving"))["problem_solving__avg"] or 0
+        soft = int_reviews.aggregate(Avg("soft_skills"))["soft_skills__avg"] or 0
+        code = int_reviews.aggregate(Avg("code_quality"))["code_quality__avg"] or 0
+        overall = int_reviews.aggregate(Avg("overall_rating"))["overall_rating__avg"] or 0
+        summary_avg = (tech + comm + prob + soft + code) / 5.0 if any([tech, comm, prob, soft, code]) else overall
+        interview_score = round((summary_avg / 5.0) * 100)
     else:
         interview_score = 0
 
