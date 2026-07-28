@@ -568,11 +568,11 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                 <div className="descriptive-card__footer">
                   <div className="meeting-status">
                     {iv.status === "Completed" ? (
-                      <span className="meeting-badge ready" style={{ background: "#dcfce7", color: "#15803d" }}>
+                      <span className="meeting-badge ready badge--completed">
                         ✅ Interview Completed
                       </span>
                     ) : iv.status === "Cancelled" ? (
-                      <span className="meeting-badge pending" style={{ background: "#fee2e2", color: "#b91c1c" }}>
+                      <span className="meeting-badge cancelled badge--cancelled">
                         ❌ Cancelled
                       </span>
                     ) : isMeetingReady ? (

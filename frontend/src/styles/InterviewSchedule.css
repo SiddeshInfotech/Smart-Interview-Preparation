@@ -1214,4 +1214,39 @@ body.dark-theme .field__input {
   border-color: #334155 !important;
   color: #ffffff !important;
 }
+
+/* ==========================================================================
+   STATUS BADGES DARK MODE OVERRIDES (HIGH CONTRAST VISIBILITY)
+   ========================================================================== */
+[data-theme="dark"] .badge--completed,
+[data-theme="dark"] .meeting-badge.ready,
+body.dark-theme .badge--completed,
+body.dark-theme .meeting-badge.ready {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+  border: 1px solid #047857 !important;
+}
+
+[data-theme="dark"] .badge--scheduled,
+body.dark-theme .badge--scheduled {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+  border: 1px solid #2563eb !important;
+}
+
+[data-theme="dark"] .badge--cancelled,
+[data-theme="dark"] .meeting-badge.cancelled,
+body.dark-theme .badge--cancelled,
+body.dark-theme .meeting-badge.cancelled {
+  background: #7f1d1d !important;
+  color: #fca5a5 !important;
+  border: 1px solid #dc2626 !important;
+}
+
+[data-theme="dark"] .meeting-badge.pending,
+body.dark-theme .meeting-badge.pending {
+  background: #78350f !important;
+  color: #fde68a !important;
+  border: 1px solid #d97706 !important;
+}
 

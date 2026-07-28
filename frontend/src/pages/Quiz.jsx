@@ -10,9 +10,17 @@ import {
   Sparkles,
   Zap,
   AlertCircle,
+  Code2,
+  HelpCircle,
+  Flame,
+  CheckCircle2
 } from 'lucide-react';
 import api from '../api/axios';
 import '../styles/Quiz.css';
+
+const SUGGESTED_CHIPS = [
+  'JavaScript', 'React', 'Python', 'SQL', 'Data Structures', 'System Design'
+];
 
 const Quiz = () => {
   const navigate = useNavigate();
@@ -107,6 +115,12 @@ const Quiz = () => {
     setSelectedTopics(selectedTopics.filter(t => t.id !== id));
   };
 
+  const addSuggestedChip = (topicName) => {
+    if (!selectedTopics.some((t) => t.name.toLowerCase() === topicName.toLowerCase())) {
+      setSelectedTopics([...selectedTopics, { id: Date.now().toString() + topicName, name: topicName }]);
+    }
+  };
+
   // --- Options ---
   const modes = ['MCQ', 'Coding Challenge'];
   const codingLanguages = ['C', 'C++', 'Java', 'Python'];
@@ -189,24 +203,32 @@ const Quiz = () => {
 
   return (
     <div className="quiz-app">
+      {/* Background Ambient Glows */}
+      <div className="quiz-glow glow-1" />
+      <div className="quiz-glow glow-2" />
+
       <div className="dashboard-page-container">
         <main className="dashboard-content-wrapper">
-          <div className="quiz-content-wrapper" style={{ paddingTop: '20px' }}>
+          <div className="quiz-content-wrapper" style={{ paddingTop: '10px' }}>
             <div className="setup-container">
+              
               <div className="setup-header">
+                <div className="quiz-badge-pill">
+                  <Sparkles size={14} /> AI-POWERED PRACTICE ARENA
+                </div>
                 <h1>
-                  <Sparkles size={28} color="#2563eb" style={{ display: 'inline-block', marginRight: '8px' }} />
-                  Choose Your Challenge
+                  <span className="quiz-gradient-title">Choose Your Challenge</span>
                 </h1>
-                <p>Select the mode, topics, and difficulty to generate an AI‑powered quiz.</p>
+                <p>Select the mode, topics, and difficulty to generate an AI‑powered practice arena.</p>
+                <div className="quiz-header-line" />
               </div>
 
               <div className="setup-card">
                 {/* MODE */}
                 <div className="setup-section">
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Zap size={18} color="#2563eb" />
-                    Mode
+                  <h3 className="section-title">
+                    <Zap size={18} className="section-icon" />
+                    Practice Mode
                   </h3>
                   <div className="question-type-grid">
                     {modes.map((mode) => (
@@ -215,7 +237,13 @@ const Quiz = () => {
                         className={`question-type-item ${selectedMode === mode ? 'selected' : ''}`}
                         onClick={() => setSelectedMode(mode)}
                       >
-                        {mode}
+                        <span className="mode-icon-wrapper">
+                          {mode === 'MCQ' ? <HelpCircle size={20} /> : <Code2 size={20} />}
+                        </span>
+                        <div className="mode-text-wrapper">
+                          <strong>{mode}</strong>
+                          <span>{mode === 'MCQ' ? 'Multiple choice assessment' : 'Interactive coding environment'}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -229,27 +257,27 @@ const Quiz = () => {
                     <div className="setup-section">
                       {selectedMode === 'Coding Challenge' ? (
                         <>
-                          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <BookOpen size={18} color="#2563eb" />
-                            Select Language
+                          <h3 className="section-title">
+                            <BookOpen size={18} className="section-icon" />
+                            Select Programming Language
                           </h3>
-                          <div className="question-type-grid">
+                          <div className="question-type-grid lang-grid">
                             {codingLanguages.map((lang) => (
                               <div
                                 key={lang}
                                 className={`question-type-item ${selectedCodingLanguage === lang ? 'selected' : ''}`}
                                 onClick={() => setSelectedCodingLanguage(lang)}
                               >
-                                {lang}
+                                <strong>{lang}</strong>
                               </div>
                             ))}
                           </div>
                         </>
                       ) : (
                         <>
-                          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <BookOpen size={18} color="#2563eb" />
-                            Select Topics
+                          <h3 className="section-title">
+                            <BookOpen size={18} className="section-icon" />
+                            Select Topics & Technologies
                           </h3>
                           <div className="skills-container">
                             {selectedTopics.length > 0 && (
@@ -271,7 +299,7 @@ const Quiz = () => {
                             <div className="skill-input-wrapper" ref={suggestionRef}>
                               <input
                                 type="text"
-                                placeholder="Type a topic and press Enter..."
+                                placeholder="Type a topic (e.g. React, Python) and press Enter..."
                                 value={newTopic}
                                 onChange={(e) => {
                                   setNewTopic(e.target.value);
@@ -294,7 +322,7 @@ const Quiz = () => {
                               {showTopicSuggestions && (
                                 <div className="skill-suggestions-dropdown">
                                   {loadingSuggestions ? (
-                                    <div className="suggestion-loading">Loading...</div>
+                                    <div className="suggestion-loading">Loading suggestions...</div>
                                   ) : (
                                     topicSuggestions.map((topic) => (
                                       <div
@@ -310,9 +338,28 @@ const Quiz = () => {
                                 </div>
                               )}
                             </div>
+
+                            {/* Interactive Suggested Topic Chips */}
                             <div className="suggestions-hint">
-                              Suggested topics: JavaScript, React, Python, SQL, Data Structures, System Design
+                              <span className="hint-label"><Flame size={14} color="#f59e0b" /> Popular Topics:</span>
+                              <div className="suggested-chips-row">
+                                {SUGGESTED_CHIPS.map((chip) => {
+                                  const isAdded = selectedTopics.some(t => t.name.toLowerCase() === chip.toLowerCase());
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={chip}
+                                      className={`suggested-chip-btn ${isAdded ? 'added' : ''}`}
+                                      onClick={() => addSuggestedChip(chip)}
+                                    >
+                                      {isAdded ? <CheckCircle2 size={13} /> : <Plus size={13} />}
+                                      {chip}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
+
                           </div>
                         </>
                       )}
@@ -325,15 +372,15 @@ const Quiz = () => {
                   <div className="slide-inner">
                     <div className="divider"></div>
                     <div className="setup-section">
-                      <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Gauge size={18} color="#2563eb" />
+                      <h3 className="section-title">
+                        <Gauge size={18} className="section-icon" />
                         Difficulty Level
                       </h3>
                       <div className="difficulty-grid">
                         {difficulties.map((diff) => (
                           <div
                             key={diff}
-                            className={`difficulty-item ${selectedDifficulty === diff ? 'selected' : ''}`}
+                            className={`difficulty-item diff-${diff.toLowerCase()} ${selectedDifficulty === diff ? 'selected' : ''}`}
                             onClick={() => setSelectedDifficulty(diff)}
                           >
                             <span className={`difficulty-dot ${diff.toLowerCase()}`}></span>
@@ -350,8 +397,8 @@ const Quiz = () => {
                   <div className="slide-inner">
                     <div className="divider"></div>
                     <div className="setup-section">
-                      <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <ListChecks size={18} color="#2563eb" />
+                      <h3 className="section-title">
+                        <ListChecks size={18} className="section-icon" />
                         Number of Questions
                       </h3>
                       <div className="difficulty-grid">
@@ -361,7 +408,7 @@ const Quiz = () => {
                             className={`difficulty-item ${selectedQuestionCount === count ? 'selected' : ''}`}
                             onClick={() => setSelectedQuestionCount(count)}
                           >
-                            <span>{count}</span>
+                            <strong>{count} Questions</strong>
                           </div>
                         ))}
                       </div>
@@ -374,14 +421,14 @@ const Quiz = () => {
                   <div className="slide-inner">
                     <div className="divider"></div>
                     <div className="setup-section">
-                      <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <MessageSquare size={18} color="#2563eb" />
+                      <h3 className="section-title">
+                        <MessageSquare size={18} className="section-icon" />
                         Custom Instructions (Optional)
                       </h3>
                       <div className="prompt-box-wrapper">
                         <textarea
                           className="prompt-box-textarea"
-                          placeholder="e.g. Focus on dynamic programming and graph algorithms..."
+                          placeholder="e.g. Focus on dynamic programming, system architecture, or async operations..."
                           value={promptText}
                           onChange={(e) => setPromptText(e.target.value)}
                           rows="3"
@@ -401,19 +448,18 @@ const Quiz = () => {
 
                 {/* START BUTTON */}
                 <button
-                  className="start-quiz-btn"
+                  className={`start-quiz-btn ${generating ? 'generating' : ''}`}
                   onClick={handleGenerate}
                   disabled={(selectedMode === 'Coding Challenge' ? !selectedCodingLanguage : selectedTopics.length === 0) || !selectedDifficulty || !selectedMode || generating}
                 >
                   {generating ? (
-                    <>
-                      <span className="spinner"></span> Generating...
-                    </>
+                    <span className="quiz-loading-wrapper">
+                      <span className="quiz-spinner" /> Generating Challenge...
+                    </span>
                   ) : (
-                    <>
-                      <ArrowRight size={20} style={{ marginRight: '8px', color: 'white' }} />
-                      Start
-                    </>
+                    <span className="start-btn-content">
+                      <Sparkles size={18} /> Generate Challenge <ArrowRight size={18} />
+                    </span>
                   )}
                 </button>
               </div>

@@ -981,3 +981,16 @@ body.dark-theme .interview-score-chip {
   color: #c4b5fd !important;
   border: 1px solid #7c3aed !important;
 }
+
+[data-theme="dark"] .tag-completed,
+[data-theme="dark"] .badge-completed,
+[data-theme="dark"] .badge--completed,
+[data-theme="dark"] .status-completed,
+body.dark-theme .tag-completed,
+body.dark-theme .badge-completed,
+body.dark-theme .badge--completed,
+body.dark-theme .status-completed {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+  border: 1px solid #047857 !important;
+}
