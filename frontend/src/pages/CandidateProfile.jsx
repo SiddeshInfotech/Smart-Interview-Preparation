@@ -57,32 +57,75 @@ const CandidateProfile = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isProgrammaticScroll = useRef(false);
 
-  // --- Profile Form State ---
-  const [profile, setProfile] = useState({
-    full_name: "",
-    email: "",
-    date_of_birth: null,
-    gender: "",
-    location: "",
-    education: "",
-    experience_years: 0, // Integer / Round number
-    linkedin_url: "",
-    github_url: "",
-    portfolio_url: "",
+  // --- Profile Form State (Synchronous Cache Hydration for Instant 0ms Load) ---
+  const [profile, setProfile] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cached_candidate_profile");
+      if (cached) {
+        const data = JSON.parse(cached);
+        return {
+          full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
+          email: data.email || userProfile?.email || "",
+          date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : null,
+          gender: data.gender || "",
+          location: data.location || "",
+          education: data.education || "",
+          experience_years: Math.round(data.experience_years || 0),
+          linkedin_url: data.linkedin_url || "",
+          github_url: data.github_url || "",
+          portfolio_url: data.portfolio_url || "",
+        };
+      }
+    } catch (e) {}
+    return {
+      full_name: userProfile?.full_name || userProfile?.name || "",
+      email: userProfile?.email || "",
+      date_of_birth: null,
+      gender: "",
+      location: "",
+      education: "",
+      experience_years: 0,
+      linkedin_url: "",
+      github_url: "",
+      portfolio_url: "",
+    };
   });
 
   // --- Profile Picture State ---
-  const [profilePicture, setProfilePicture] = useState(null);
+  const [profilePicture, setProfilePicture] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cached_candidate_profile");
+      if (cached) return JSON.parse(cached).profile_picture || null;
+    } catch (e) {}
+    return null;
+  });
 
   // --- Skills State ---
-  const [skills, setSkills] = useState([]);
+  const [skills, setSkills] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cached_candidate_profile");
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data.skills) {
+          const skillNames = typeof data.skills === "string"
+            ? data.skills.split(",").map((s) => s.trim()).filter(Boolean)
+            : Array.isArray(data.skills) ? data.skills : [];
+          return skillNames.map((name, index) => ({
+            id: `cached-${index}`,
+            skill_name: typeof name === "string" ? name : name.skill_name || name,
+          }));
+        }
+      }
+    } catch (e) {}
+    return [];
+  });
   const [newSkill, setNewSkill] = useState("");
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   // --- UI Feedback States ---
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !localStorage.getItem("cached_candidate_profile"));
   const [saving, setSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");

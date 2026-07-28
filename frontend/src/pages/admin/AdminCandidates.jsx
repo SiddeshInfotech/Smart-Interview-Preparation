@@ -5,6 +5,8 @@ import { useAdminTable, AdminTable, ConfirmDeleteModal, AdminToast } from "./adm
 const COLUMNS = [
   { key: "candidate_id",      label: "ID"          },
   { key: "user_id",           label: "User ID"     },
+  { key: "user_name",          label: "Name"        },
+  { key: "user_email",         label: "Email"       },
   { key: "gender",            label: "Gender"      },
   { key: "location",          label: "Location"    },
   { key: "education",         label: "Education"   },

@@ -9,9 +9,9 @@ class InterviewerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Interviewer_Profile
         fields = [
-            'interviewer_id', 'profile_picture', 'department', 'designation',
-            'expertise_area', 'years_of_experience', 'is_available',
-            'full_name', 'email',
+            'interviewer_id', 'profile_picture', 'department', 'designation', 'company',
+            'expertise_area', 'years_of_experience', 'linkedin_url', 'github_url',
+            'website_url', 'is_available', 'full_name', 'email',
         ]
         read_only_fields = ['interviewer_id']
 
@@ -30,6 +30,7 @@ class InterviewerSearchSerializer(serializers.ModelSerializer):
             "profile_picture",
             "department",
             "designation",
+            "company",
             "expertise_area",
             "years_of_experience",
             "is_available",

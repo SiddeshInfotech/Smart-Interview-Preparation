@@ -5,15 +5,17 @@ import { useAdminTable, AdminTable, ConfirmDeleteModal, AdminToast } from "./adm
 const COLUMNS = [
   { key: "interviewer_id",     label: "ID"          },
   { key: "user_id",            label: "User ID"     },
-  { key: "department",         label: "Department"  },
+  { key: "user_name",          label: "Name"        },
+  { key: "user_email",         label: "Email"       },
   { key: "designation",        label: "Designation" },
-  { key: "expertise_area",     label: "Expertise",  render: (v) => <span title={v}>{String(v || "").slice(0, 40)}{v?.length > 40 ? "…" : ""}</span> },
+  { key: "company",            label: "Company"     },
+  { key: "department",         label: "Department"  },
   { key: "years_of_experience",label: "Exp (yrs)"  },
   { key: "is_available",       label: "Available",  render: (v) => <span className={`admin-badge ${v ? "admin-badge--success" : "admin-badge--error"}`}>{v ? "Yes" : "No"}</span> },
   { key: "created_at",         label: "Created",    render: (v) => v ? new Date(v).toLocaleDateString() : "—" },
 ];
 
-const EMPTY = { user_id: "", department: "", designation: "", expertise_area: "", years_of_experience: "", is_available: true };
+const EMPTY = { user_id: "", department: "", designation: "", company: "", expertise_area: "", years_of_experience: "", linkedin_url: "", github_url: "", website_url: "", is_available: true };
 
 export default function AdminInterviewers() {
   const table = useAdminTable({ fetchFn: getInterviewers, createFn: createInterviewer, updateFn: updateInterviewer, deleteFn: deleteInterviewer, pkField: "interviewer_id" });
@@ -54,20 +56,20 @@ export default function AdminInterviewers() {
                   <input type="number" value={form.user_id || ""} onChange={(e) => setForm({ ...form, user_id: e.target.value })} />
                 </div>
                 <div className="admin-form-group">
-                  <label>Department</label>
-                  <input value={form.department || ""} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="Engineering" />
+                  <label>Company</label>
+                  <input value={form.company || ""} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Google / PrepMasterAI" />
                 </div>
                 <div className="admin-form-group">
                   <label>Designation</label>
                   <input value={form.designation || ""} onChange={(e) => setForm({ ...form, designation: e.target.value })} placeholder="Senior Engineer" />
                 </div>
                 <div className="admin-form-group">
+                  <label>Department</label>
+                  <input value={form.department || ""} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="Engineering" />
+                </div>
+                <div className="admin-form-group">
                   <label>Years of Experience</label>
                   <input type="number" step="0.5" value={form.years_of_experience || ""} onChange={(e) => setForm({ ...form, years_of_experience: e.target.value })} />
-                </div>
-                <div className="admin-form-group admin-form-group--full">
-                  <label>Expertise Area</label>
-                  <textarea value={form.expertise_area || ""} onChange={(e) => setForm({ ...form, expertise_area: e.target.value })} placeholder="React, Node.js, System Design…" />
                 </div>
                 <div className="admin-form-group">
                   <label>Available</label>
@@ -75,6 +77,22 @@ export default function AdminInterviewers() {
                     <option value="true">Yes</option>
                     <option value="false">No</option>
                   </select>
+                </div>
+                <div className="admin-form-group admin-form-group--full">
+                  <label>Expertise Area</label>
+                  <textarea value={form.expertise_area || ""} onChange={(e) => setForm({ ...form, expertise_area: e.target.value })} placeholder="React, Node.js, System Design…" />
+                </div>
+                <div className="admin-form-group">
+                  <label>LinkedIn URL</label>
+                  <input value={form.linkedin_url || ""} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} placeholder="https://linkedin.com/in/..." />
+                </div>
+                <div className="admin-form-group">
+                  <label>GitHub URL</label>
+                  <input value={form.github_url || ""} onChange={(e) => setForm({ ...form, github_url: e.target.value })} placeholder="https://github.com/..." />
+                </div>
+                <div className="admin-form-group">
+                  <label>Website URL</label>
+                  <input value={form.website_url || ""} onChange={(e) => setForm({ ...form, website_url: e.target.value })} placeholder="https://portfolio.dev" />
                 </div>
               </div>
             </div>

@@ -121,28 +121,68 @@ const InterviewerProfile = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isProgrammaticScroll = useRef(false);
 
-  // --- Interviewer Profile State ---
-  const [profile, setProfile] = useState({
-    full_name: "",
-    email: "",
-    designation: "",
-    company: "",
-    department: "",
-    years_of_experience: 0, // Integer round figure
-    linkedin_url: "",
-    github_url: "",
-    website_url: "",
+  // --- Interviewer Profile State (Synchronous Cache Hydration for Instant 0ms Load) ---
+  const [profile, setProfile] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cached_interviewer_profile");
+      if (cached) {
+        const data = JSON.parse(cached);
+        return {
+          full_name: data.full_name || userProfile?.full_name || userProfile?.name || "",
+          email: data.email || userProfile?.email || "",
+          designation: data.designation || "",
+          company: data.company || "",
+          department: data.department || "",
+          years_of_experience: Math.round(data.years_of_experience || data.experience_years || 0),
+          linkedin_url: data.linkedin_url || "",
+          github_url: data.github_url || "",
+          website_url: data.website_url || data.portfolio_url || "",
+        };
+      }
+    } catch (e) {}
+    return {
+      full_name: userProfile?.full_name || userProfile?.name || "",
+      email: userProfile?.email || "",
+      designation: "",
+      company: "",
+      department: "",
+      years_of_experience: 0,
+      linkedin_url: "",
+      github_url: "",
+      website_url: "",
+    };
   });
 
   // --- Profile Picture State ---
-  const [profilePicture, setProfilePicture] = useState(null);
+  const [profilePicture, setProfilePicture] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cached_interviewer_profile");
+      if (cached) return JSON.parse(cached).profile_picture || null;
+    } catch (e) {}
+    return null;
+  });
 
   // --- Expertise / Topics State ---
-  const [expertise, setExpertise] = useState([]);
+  const [expertise, setExpertise] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cached_interviewer_profile");
+      if (cached) {
+        const data = JSON.parse(cached);
+        const rawExp = data.expertise_area || data.expertise;
+        if (rawExp) {
+          const expArray = typeof rawExp === "string"
+            ? rawExp.split(",").map((s) => s.trim()).filter(Boolean)
+            : Array.isArray(rawExp) ? rawExp : [];
+          return expArray.map((name, idx) => ({ id: `exp-cached-${idx}`, name }));
+        }
+      }
+    } catch (e) {}
+    return [];
+  });
   const [newTopic, setNewTopic] = useState("");
 
   // --- UI Feedback States ---
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !targetInterviewerId && !localStorage.getItem("cached_interviewer_profile"));
   const [saving, setSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
