@@ -57,6 +57,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Fetch complete profile details authoritatively from /auth/profile/
+  // Fetch complete profile details authoritatively in a single unified request
   const fetchProfile = useCallback(async () => {
     const currentToken = localStorage.getItem("access_token");
     if (!currentToken) {
@@ -67,40 +68,39 @@ export const AuthProvider = ({ children }) => {
     setLoadingProfile(true);
 
     try {
-      // 1. Always fetch authoritative user profile from auth endpoint first
-      const authRes = await api.get("/auth/profile/");
-      if (authRes.data) {
-        const name = authRes.data.full_name || authRes.data.name || "User";
-        const email = authRes.data.email || "";
-        const role = authRes.data.role || localStorage.getItem(STORAGE_ROLE_KEY) || "candidate";
+      const role = localStorage.getItem(STORAGE_ROLE_KEY) || "candidate";
+      const roleEndpoint = role === "interviewer" ? "/interviewer/profile/" : "/candidate/profile/";
 
+      let profileRes = null;
+      try {
+        profileRes = await api.get(roleEndpoint);
+      } catch (err) {
+        // Fallback to auth profile if role endpoint fails
+        profileRes = await api.get("/auth/profile/");
+      }
+
+      if (profileRes?.data) {
+        const name = profileRes.data.full_name || profileRes.data.name || "User";
+        const email = profileRes.data.email || "";
         let profilePic = null;
-        const roleEndpoint = role === "interviewer" ? "/interviewer/profile/" : "/candidate/profile/";
-
-        try {
-          const roleRes = await api.get(roleEndpoint);
-          if (roleRes.data?.profile_picture) {
-            const pic = roleRes.data.profile_picture;
-            profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
-          }
-        } catch (roleErr) {
-          console.warn("Role profile fetch warning:", roleErr);
+        if (profileRes.data.profile_picture) {
+          const pic = profileRes.data.profile_picture;
+          profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
         }
 
         const updated = { name, email, profilePicture: profilePic, role };
         updateCachedProfile(updated);
 
-        // Keep localStorage user object updated for legacy/direct components
         localStorage.setItem("user", JSON.stringify({
-          ...authRes.data,
+          ...profileRes.data,
           full_name: name,
           email: email,
           role: role,
-          has_premium: authRes.data.has_premium ?? false,
+          has_premium: profileRes.data.has_premium ?? false,
         }));
       }
     } catch (error) {
-      console.error("Error fetching authoritative profile:", error);
+      console.error("Error fetching profile:", error);
     } finally {
       setLoadingProfile(false);
     }
@@ -121,8 +121,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Login handler to clear old caches and load new user state
-  const loginUser = async (loginData) => {
+  // Login handler to clear old caches and load new user state instantly
+  const loginUser = (loginData) => {
     clearAuthCaches();
 
     const accessToken = loginData.access_token;
@@ -152,16 +152,13 @@ export const AuthProvider = ({ children }) => {
     };
     localStorage.setItem("user", JSON.stringify(userObj));
 
-    setToken(accessToken || null);
     setUserProfile({
       name: userObj.full_name || userObj.name || "User",
       email: userObj.email || "",
       profilePicture: null,
       role: role,
     });
-
-    // Fetch authoritative backend profile and notifications concurrently
-    await Promise.all([fetchProfile(), fetchNotifications()]);
+    setToken(accessToken || null);
   };
 
   // Initial load on mount or auth change

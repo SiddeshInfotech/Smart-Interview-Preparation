@@ -39,10 +39,11 @@ class InterviewerProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        profile, created = Interviewer_Profile.objects.get_or_create(
-            user=self.request.user
-        )
-        return profile
+        try:
+            return Interviewer_Profile.objects.select_related("user").get(user=self.request.user)
+        except Interviewer_Profile.DoesNotExist:
+            profile = Interviewer_Profile.objects.create(user=self.request.user)
+            return Interviewer_Profile.objects.select_related("user").get(pk=profile.pk)
 
 
 class InterviewerAvailabilityViewSet(viewsets.ModelViewSet):

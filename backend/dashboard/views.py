@@ -73,12 +73,17 @@ def get_daily_progress(request):
 
     # Pre-fetch interview reviews for the past 7 days
     reviews_by_date = {}
+    earliest_review_date = None
     if candidate_profile:
         for r in int_reviews.filter(submitted_at__date__gte=start_date):
             d = r.submitted_at.date()
             if d not in reviews_by_date:
                 reviews_by_date[d] = []
             reviews_by_date[d].append(r)
+
+        first_rev = int_reviews.order_by("submitted_at").first()
+        if first_rev:
+            earliest_review_date = first_rev.submitted_at.date()
 
     daily_data = []
     for i in range(6, -1, -1):
@@ -107,7 +112,7 @@ def get_daily_progress(request):
             overall_r = sum(float(r.overall_rating) for r in day_revs) / len(day_revs)
             summary_avg = (tech + comm + prob + soft + code) / 5.0 if any([tech, comm, prob, soft, code]) else overall_r
             interview_val = round((summary_avg / 5.0) * 100, 1)
-        elif candidate_profile and int_reviews.filter(submitted_at__date__lte=target_date).exists():
+        elif candidate_profile and earliest_review_date and target_date >= earliest_review_date:
             interview_val = overall_interview
         else:
             interview_val = 0.0

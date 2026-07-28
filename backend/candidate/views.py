@@ -35,5 +35,8 @@ class ProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        profile, created = Candidate_Profile.objects.get_or_create(user=self.request.user)
-        return profile
+        try:
+            return Candidate_Profile.objects.select_related("user").get(user=self.request.user)
+        except Candidate_Profile.DoesNotExist:
+            profile = Candidate_Profile.objects.create(user=self.request.user)
+            return Candidate_Profile.objects.select_related("user").get(pk=profile.pk)
