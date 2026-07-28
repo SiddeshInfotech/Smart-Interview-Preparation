@@ -256,7 +256,8 @@ const Dashboard = () => {
       {/* Dashboard Header */}
       <div className="dashboard-header">
         <h1>
-          Welcome Back, <span className="username">{user.username}</span>
+          <span className="welcome-text">Welcome Back, </span>
+          <span className="username">{user.username}</span>
         </h1>
         <h2>PrepMaster AI Dashboard</h2>
         <p>
@@ -322,16 +323,16 @@ const Dashboard = () => {
                 </linearGradient>
               </defs>
 
-              <CartesianGrid strokeDasharray="4 4" stroke="#e2e8f0" vertical={false} />
+              <CartesianGrid strokeDasharray="4 4" stroke="#334155" vertical={false} />
               <XAxis
                 dataKey="day"
-                tick={{ fill: '#475569', fontSize: 13, fontWeight: 600 }}
+                tick={{ fill: '#cbd5e1', fontSize: 13, fontWeight: 700 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 domain={[0, 100]}
-                tick={{ fill: '#475569', fontSize: 13, fontWeight: 600 }}
+                tick={{ fill: '#cbd5e1', fontSize: 13, fontWeight: 700 }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => `${v}%`}

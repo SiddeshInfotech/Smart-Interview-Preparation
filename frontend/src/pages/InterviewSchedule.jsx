@@ -392,6 +392,8 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [loadingResultId, setLoadingResultId] = useState(null);
+  const [acceptingId, setAcceptingId] = useState(null);
+  const [decliningId, setDecliningId] = useState(null);
 
   const safeInterviews = Array.isArray(interviews) ? interviews : [];
 
@@ -415,6 +417,37 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
   const filtered = filter === "All"
     ? processedInterviews
     : processedInterviews.filter((i) => i.status === filter);
+
+  const handleAccept = async (iv, e) => {
+    if (e) e.stopPropagation();
+    const scheduleId = iv.id || iv.schedule_id;
+    setAcceptingId(scheduleId);
+    try {
+      await api.post(`/interview/accept/${scheduleId}/`);
+      iv.status = "Scheduled";
+      iv.meeting_link = iv.room_name || `room-${scheduleId}`;
+    } catch (err) {
+      console.error("Failed to accept request:", err);
+      alert("Could not accept request.");
+    } finally {
+      setAcceptingId(null);
+    }
+  };
+
+  const handleDecline = async (iv, e) => {
+    if (e) e.stopPropagation();
+    const scheduleId = iv.id || iv.schedule_id;
+    setDecliningId(scheduleId);
+    try {
+      await api.post(`/interview/decline/${scheduleId}/`);
+      iv.status = "Cancelled";
+    } catch (err) {
+      console.error("Failed to decline request:", err);
+      alert("Could not decline request.");
+    } finally {
+      setDecliningId(null);
+    }
+  };
 
   const handleViewResult = async (iv, e) => {
     if (e) e.stopPropagation();
@@ -460,6 +493,8 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
             const candidateUser = iv.candidate_username || iv.candidate_name || iv.candidate || "candidate";
             const interviewerUser = iv.interviewer_username || iv.interviewer_name || iv.interviewer || "interviewer";
             const scheduleId = iv.id || iv.schedule_id;
+            const isAccepting = acceptingId === scheduleId;
+            const isDeclining = decliningId === scheduleId;
 
             return (
               <div
@@ -528,7 +563,48 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                     )}
                   </div>
 
-                  {iv.status === "Completed" ? (
+                  {userRole === "interviewer" && iv.status !== "Completed" && iv.status !== "Cancelled" && !isMeetingReady ? (
+                    <div style={{ display: "flex", gap: "8px" }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="btn btn--success"
+                        disabled={isAccepting || isDeclining}
+                        style={{
+                          background: isAccepting ? "#15803d" : "#22c55e",
+                          color: "#ffffff",
+                          padding: "6px 14px",
+                          borderRadius: "8px",
+                          border: "none",
+                          fontWeight: "600",
+                          fontSize: "12px",
+                          cursor: isAccepting || isDeclining ? "wait" : "pointer",
+                          opacity: isAccepting || isDeclining ? 0.8 : 1,
+                        }}
+                        onClick={(e) => handleAccept(iv, e)}
+                      >
+                        {isAccepting ? "Accepting..." : "Accept"}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--danger"
+                        disabled={isAccepting || isDeclining}
+                        style={{
+                          background: isDeclining ? "#b91c1c" : "#ef4444",
+                          color: "#ffffff",
+                          padding: "6px 14px",
+                          borderRadius: "8px",
+                          border: "none",
+                          fontWeight: "600",
+                          fontSize: "12px",
+                          cursor: isAccepting || isDeclining ? "wait" : "pointer",
+                          opacity: isAccepting || isDeclining ? 0.8 : 1,
+                        }}
+                        onClick={(e) => handleDecline(iv, e)}
+                      >
+                        {isDeclining ? "Declining..." : "Decline"}
+                      </button>
+                    </div>
+                  ) : iv.status === "Completed" ? (
                     <button
                       className="btn-view-result"
                       type="button"

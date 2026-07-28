@@ -15,6 +15,7 @@ const QuizPage = () => {
   const [showPanel, setShowPanel] = useState(false);
   const [isAnswered, setIsAnswered] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load questions
   useEffect(() => {
@@ -125,7 +126,9 @@ const QuizPage = () => {
   };
 
   const handleSubmitQuiz = async () => {
-    if (totalQuestions === 0) return;
+    if (isSubmitting || totalQuestions === 0) return;
+    setIsSubmitting(true);
+
     let correct = 0, wrong = 0, skipped = 0;
     quizData.forEach((q, idx) => {
       const ans = userAnswers[idx];
@@ -159,7 +162,9 @@ const QuizPage = () => {
       console.warn("Could not save quiz performance:", err);
     }
 
-    navigate('/quiz-result', { state: { results: resultsData } });
+    setTimeout(() => {
+      navigate('/quiz-result', { state: { results: resultsData } });
+    }, 400);
   };
 
   const getOptionClass = (index) => {
@@ -236,7 +241,7 @@ const QuizPage = () => {
               key={index}
               className={getOptionClass(index)}
               onClick={() => handleOptionClick(index)}
-              disabled={isAnswered}
+              disabled={isAnswered || isSubmitting}
             >
               <span className="option-label">{String.fromCharCode(65 + index)}</span>
               <span className="option-text">{option}</span>
@@ -246,26 +251,36 @@ const QuizPage = () => {
 
         <div className="quiz-bottom-bar">
           <button
-            className={`btn-previous ${currentQuestion === 0 ? 'disabled' : ''}`}
+            className={`btn-previous ${currentQuestion === 0 || isSubmitting ? 'disabled' : ''}`}
             onClick={handlePrevious}
-            disabled={currentQuestion === 0}
+            disabled={currentQuestion === 0 || isSubmitting}
           >
             ◀ Previous
           </button>
 
           {currentQuestion === totalQuestions - 1 ? (
-            <button className="btn-submit" onClick={handleSubmitQuiz}>
-              Submit Quiz
+            <button
+              className={`btn-submit ${isSubmitting ? 'submitting' : ''}`}
+              onClick={handleSubmitQuiz}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="submit-loading-wrapper">
+                  <span className="submit-spinner" /> Submitting...
+                </span>
+              ) : (
+                "Submit Quiz"
+              )}
             </button>
           ) : (
             <>
-              <button className="btn-skip" onClick={handleSkip}>
+              <button className="btn-skip" onClick={handleSkip} disabled={isSubmitting}>
                 Skip ▶
               </button>
               <button
-                className={`btn-next ${userAnswers[currentQuestion] === null || currentQuestion === totalQuestions - 1 ? 'disabled' : ''}`}
+                className={`btn-next ${userAnswers[currentQuestion] === null || currentQuestion === totalQuestions - 1 || isSubmitting ? 'disabled' : ''}`}
                 onClick={handleNext}
-                disabled={userAnswers[currentQuestion] === null || currentQuestion === totalQuestions - 1}
+                disabled={userAnswers[currentQuestion] === null || currentQuestion === totalQuestions - 1 || isSubmitting}
               >
                 Next ▶
               </button>

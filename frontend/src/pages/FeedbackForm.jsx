@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import "../styles/FeedbackForm.css";
 import { submitFeedback } from "../api/feedbackAPI";
 
@@ -14,6 +15,8 @@ const FeedbackForm = () => {
     recommendation_reason: ""
   });
 
+  const [submitting, setSubmitting] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleChange = (e) => {
     setFeedback({
@@ -22,43 +25,37 @@ const FeedbackForm = () => {
     });
   };
 
-
   const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
 
-  e.preventDefault();
+    setSubmitting(true);
 
-  try {
+    try {
+      const response = await submitFeedback(feedback);
+      console.log("Feedback Response:", response.data);
 
-    const response = await submitFeedback(feedback);
+      setFeedback({
+        name: "",
+        email: "",
+        overall_experience: "",
+        mock_interview: "",
+        suggestions: "",
+        recommend: "",
+        recommendation_reason: ""
+      });
 
-    console.log("Feedback Response:", response.data);
-
-    alert("Thank you for your feedback!");
-
-
-    setFeedback({
-         name: "",
-         email: "",
-         overall_experience: "",
-         mock_interview: "",
-         suggestions: "",
-         recommend: "",
-         recommendation_reason: ""
-     });
-
-
-  } catch (error) {
-
-    console.log(
-      "Feedback Error:",
-      error.response?.data || error.message
-    );
-
-    alert("Failed to submit feedback");
-
-  }
-
-};
+      setShowSuccessPopup(true);
+    } catch (error) {
+      console.log(
+        "Feedback Error:",
+        error.response?.data || error.message
+      );
+      alert("Failed to submit feedback. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="feedback-page">
@@ -263,18 +260,37 @@ const FeedbackForm = () => {
 
           <button 
             type="submit" 
-            className="submit-btn"
+            className={`submit-btn ${submitting ? 'submitting' : ''}`}
+            disabled={submitting}
           >
-            Submit Feedback
+            {submitting ? (
+              <span className="feedback-loading-wrapper">
+                <span className="feedback-spinner" /> Submitting...
+              </span>
+            ) : (
+              "Submit Feedback"
+            )}
           </button>
-
-
 
         </form>
 
-
       </div>
 
+      {/* SUCCESS POPUP MODAL */}
+      {showSuccessPopup && (
+        <div className="feedback-popup-overlay" onClick={() => setShowSuccessPopup(false)}>
+          <div className="feedback-popup-card" onClick={(e) => e.stopPropagation()}>
+            <div className="popup-icon-wrapper">
+              <CheckCircle2 size={40} color="#10b981" />
+            </div>
+            <h3>Feedback Submitted!</h3>
+            <p>Thank you for taking the time to share your feedback with PrepMaster AI. Your insights help us continuously improve our portal!</p>
+            <button className="popup-close-btn" onClick={() => setShowSuccessPopup(false)}>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

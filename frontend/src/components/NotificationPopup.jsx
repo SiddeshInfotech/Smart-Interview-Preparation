@@ -27,6 +27,9 @@ export default function NotificationPopup() {
   const [activeTab, setActiveTab] = useState("All");
   const wrapperRef = useRef(null);
 
+  const [acceptingId, setAcceptingId] = useState(null);
+  const [decliningId, setDecliningId] = useState(null);
+
   const {
     notifications = [],
     unreadCount = 0,
@@ -66,23 +69,22 @@ export default function NotificationPopup() {
   // Accept Interview Request
   // ===========================
   const handleAcceptRequest = async (n) => {
-    // Extract schedule ID from the message
     const match = n.message.match(/Schedule ID:\s*(\d+)/);
     if (!match) {
       console.error("Could not find Schedule ID in message");
       return;
     }
     const scheduleId = match[1];
+    setAcceptingId(scheduleId);
     try {
-      // ✅ Correct endpoint (without /schedule/)
       await api.post(`/interview/accept/${scheduleId}/`);
-      alert("✅ Interview request accepted and scheduled!");
       await markAsRead(n.notification_id);
-      // Optionally refresh notifications to reflect updated status
       fetchNotifications();
     } catch (err) {
       console.error("Accept error:", err);
-      alert("❌ Failed to accept request.");
+      alert("Failed to accept request.");
+    } finally {
+      setAcceptingId(null);
     }
   };
 
@@ -96,15 +98,16 @@ export default function NotificationPopup() {
       return;
     }
     const scheduleId = match[1];
+    setDecliningId(scheduleId);
     try {
-      // ✅ Correct endpoint
       await api.post(`/interview/decline/${scheduleId}/`);
-      alert("❌ Interview request declined.");
       await markAsRead(n.notification_id);
       fetchNotifications();
     } catch (err) {
       console.error("Decline error:", err);
-      alert("❌ Failed to decline request.");
+      alert("Failed to decline request.");
+    } finally {
+      setDecliningId(null);
     }
   };
 
@@ -185,50 +188,61 @@ export default function NotificationPopup() {
                       <span className="notif-item__title">{n.title}</span>
                       <span className="notif-item__desc">{n.message}</span>
 
-                      {isInterviewRequest && (
-                        <div
-                          className="notif-actions"
-                          style={{
-                            display: "flex",
-                            gap: "8px",
-                            marginTop: "8px",
-                          }}
-                          onClick={(e) => e.stopPropagation()} // prevent marking as read
-                        >
-                          <button
-                            className="btn btn--success btn--xs"
+                      {isInterviewRequest && (() => {
+                        const match = n.message.match(/Schedule ID:\s*(\d+)/);
+                        const schedId = match ? match[1] : null;
+                        const isAccepting = acceptingId === schedId;
+                        const isDeclining = decliningId === schedId;
+
+                        return (
+                          <div
+                            className="notif-actions"
                             style={{
-                              padding: "4px 8px",
-                              fontSize: "11px",
-                              background: "#10b981",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontWeight: "600",
+                              display: "flex",
+                              gap: "8px",
+                              marginTop: "8px",
                             }}
-                            onClick={() => handleAcceptRequest(n)}
+                            onClick={(e) => e.stopPropagation()} // prevent marking as read
                           >
-                            Accept
-                          </button>
-                          <button
-                            className="btn btn--danger btn--xs"
-                            style={{
-                              padding: "4px 8px",
-                              fontSize: "11px",
-                              background: "#ef4444",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontWeight: "600",
-                            }}
-                            onClick={() => handleDeclineRequest(n)}
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      )}
+                            <button
+                              className="btn btn--success btn--xs"
+                              disabled={isAccepting || isDeclining}
+                              style={{
+                                padding: "4px 10px",
+                                fontSize: "11px",
+                                background: isAccepting ? "#059669" : "#10b981",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: isAccepting || isDeclining ? "wait" : "pointer",
+                                fontWeight: "600",
+                                opacity: isAccepting || isDeclining ? 0.8 : 1,
+                              }}
+                              onClick={() => handleAcceptRequest(n)}
+                            >
+                              {isAccepting ? "Accepting..." : "Accept"}
+                            </button>
+                            <button
+                              className="btn btn--danger btn--xs"
+                              disabled={isAccepting || isDeclining}
+                              style={{
+                                padding: "4px 10px",
+                                fontSize: "11px",
+                                background: isDeclining ? "#dc2626" : "#ef4444",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: isAccepting || isDeclining ? "wait" : "pointer",
+                                fontWeight: "600",
+                                opacity: isAccepting || isDeclining ? 0.8 : 1,
+                              }}
+                              onClick={() => handleDeclineRequest(n)}
+                            >
+                              {isDeclining ? "Declining..." : "Decline"}
+                            </button>
+                          </div>
+                        );
+                      })()}
 
                       <span
                         className="notif-item__time"

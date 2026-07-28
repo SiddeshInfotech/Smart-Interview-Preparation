@@ -997,4 +997,176 @@ body.dark-theme .testimonial-author {
   transform: translateY(-3px);
   box-shadow: 0 14px 32px rgba(79, 70, 229, 0.55);
 }
+
+/* ==========================================================================
+   CANDIDATE SUCCESS ROADMAP STYLES (how-it-works section)
+   ========================================================================== */
+.roadmap-section {
+  padding: 80px 0 70px;
+}
+
+.roadmap-header {
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto 52px;
+}
+
+.roadmap-main-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-top: 14px;
+  margin-bottom: 14px;
+  letter-spacing: -0.8px;
+}
+
+.roadmap-lead {
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--color-ink-soft);
+}
+
+.roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  align-items: stretch;
+}
+
+.roadmap-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 32px 26px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.roadmap-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+}
+
+.roadmap-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 22px 48px -10px rgba(79, 70, 229, 0.22);
+  border-color: #818cf8;
+}
+
+.roadmap-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.roadmap-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.step-1-icon { background: linear-gradient(135deg, #dbeafe, #eff6ff); color: #1d4ed8; }
+.step-2-icon { background: linear-gradient(135deg, #d1fae5, #ecfdf5); color: #047857; }
+.step-3-icon { background: linear-gradient(135deg, #ede9fe, #f5f3ff); color: #6d28d9; }
+.step-4-icon { background: linear-gradient(135deg, #ffedd5, #fff7ed); color: #c2410c; }
+.step-5-icon { background: linear-gradient(135deg, #dcfce7, #f0fdf4); color: #15803d; }
+
+.roadmap-step-badge {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #4f46e5;
+  background: #eef2ff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #c7d2fe;
+}
+
+.step-5-badge {
+  color: #ffffff;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.roadmap-phase-tag {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+}
+
+.phase-5-tag {
+  color: #059669;
+}
+
+.roadmap-card h3 {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--color-ink);
+  margin-bottom: 12px;
+  line-height: 1.35;
+}
+
+.roadmap-card p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-ink-soft);
+  flex: 1;
+  margin-bottom: 22px;
+}
+
+.roadmap-benefit-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+.roadmap-card-featured {
+  grid-column: span 2;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  border: 1.5px solid #a7f3d0;
+  box-shadow: 0 12px 36px -6px rgba(16, 185, 129, 0.15);
+}
+
+.roadmap-card-featured::before {
+  background: linear-gradient(90deg, #10b981, #059669, #06b6d4);
+}
+
+@media (max-width: 900px) {
+  .roadmap-grid {
+    grid-template-columns: 1fr;
+  }
+  .roadmap-card-featured {
+    grid-column: span 1;
+  }
+  .roadmap-main-title {
+    font-size: 28px;
+  }
+}
 

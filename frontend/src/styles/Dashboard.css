@@ -21,13 +21,29 @@
 }
 
 .dashboard-header h1 {
-  font-size: 36px;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 36px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.6px !important;
+  line-height: 1.2 !important;
 }
 
-.username {
-  color: #2563eb;
+.dashboard-header h1 .welcome-text {
+  font-size: 36px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  line-height: 1.2 !important;
+  display: inline !important;
+  transition: color 0.3s ease;
+}
+
+.dashboard-header h1 .username {
+  font-size: 36px !important;
+  font-weight: 700 !important;
+  color: #2563eb !important;
+  line-height: 1.2 !important;
+  display: inline !important;
+  transition: all 0.3s ease;
 }
 
 .dashboard-header h2 {
@@ -409,6 +425,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .metric-icon-box {
@@ -452,6 +470,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .metric-title {
@@ -470,6 +489,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .metric-status-badge {
@@ -477,12 +497,32 @@
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 20px;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .tag-unattempted {
   background: #f1f5f9;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.tag-excellent {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.tag-good {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+
+.tag-practice {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
 }
 
 .score-pill-chip {
@@ -791,6 +831,28 @@ body.dark-theme .filter-pill {
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .dashboard-header h1 .welcome-text,
+body.dark-theme .dashboard-header h1 .welcome-text {
+  font-size: 36px !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+  line-height: 1.2 !important;
+  display: inline !important;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .dashboard-header h1 .username,
+body.dark-theme .dashboard-header h1 .username {
+  font-size: 36px !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #c084fc 0%, #60a5fa 40%, #38bdf8 80%, #34d399 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  display: inline !important;
+  line-height: 1.2 !important;
+  text-shadow: 0 0 25px rgba(192, 132, 252, 0.35) !important;
+}
+
 [data-theme="dark"] .graph-card,
 [data-theme="dark"] .overall-card,
 [data-theme="dark"] .performance-card,
@@ -818,4 +880,104 @@ body.dark-theme .filter-pill:hover,
 body.dark-theme .filter-pill.active {
   background: #334155 !important;
   color: #ffffff !important;
+}
+
+/* Dark Mode Tooltip & Graph Text Overrides */
+[data-theme="dark"] .tooltip-day,
+body.dark-theme .tooltip-day {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .tooltip-name,
+body.dark-theme .tooltip-name {
+  color: #f1f5f9 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .tooltip-val,
+body.dark-theme .tooltip-val {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="dark"] .tooltip-badge,
+body.dark-theme .tooltip-badge {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+  border: 1px solid #2563eb !important;
+}
+
+[data-theme="dark"] .status-good,
+body.dark-theme .status-good {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+}
+
+[data-theme="dark"] .status-excellent,
+body.dark-theme .status-excellent {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+}
+
+[data-theme="dark"] .status-focus,
+body.dark-theme .status-focus {
+  background: #78350f !important;
+  color: #fde68a !important;
+}
+
+[data-theme="dark"] .status-unattempted,
+body.dark-theme .status-unattempted {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
+  border-color: #475569 !important;
+}
+
+/* Dark Mode Metric Badges & Score Chips Overrides */
+[data-theme="dark"] .tag-unattempted,
+body.dark-theme .tag-unattempted {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+  border: 1px solid #475569 !important;
+}
+
+[data-theme="dark"] .tag-excellent,
+body.dark-theme .tag-excellent {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+  border: 1px solid #047857 !important;
+}
+
+[data-theme="dark"] .tag-good,
+body.dark-theme .tag-good {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+  border: 1px solid #2563eb !important;
+}
+
+[data-theme="dark"] .tag-practice,
+body.dark-theme .tag-practice {
+  background: #78350f !important;
+  color: #fde68a !important;
+  border: 1px solid #d97706 !important;
+}
+
+[data-theme="dark"] .quiz-score-chip,
+body.dark-theme .quiz-score-chip {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+  border: 1px solid #2563eb !important;
+}
+
+[data-theme="dark"] .coding-score-chip,
+body.dark-theme .coding-score-chip {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+  border: 1px solid #047857 !important;
+}
+
+[data-theme="dark"] .interview-score-chip,
+body.dark-theme .interview-score-chip {
+  background: #4c1d95 !important;
+  color: #c4b5fd !important;
+  border: 1px solid #7c3aed !important;
 }
