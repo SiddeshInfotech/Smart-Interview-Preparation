@@ -14,6 +14,20 @@ import os
 from django.conf import settings
 
 
+# Helper for cleaning URL fields
+def safe_url(val):
+    if not val or not isinstance(val, str):
+        return None
+    v = val.strip()
+    if not v or v.lower() in ["n/a", "none", "not provided", "null", "-", "undefined", "no", "false"]:
+        return None
+    if not (v.startswith("http://") or v.startswith("https://")):
+        if "." in v and " " not in v:
+            return "https://" + v
+        return None
+    return v[:200]
+
+
 # ==========================
 # Upload Resume API
 # ==========================
@@ -23,15 +37,8 @@ def upload_resume(request):
 
     resume_file = request.FILES.get("resume")
 
-    try:
-        profile = Candidate_Profile.objects.get(user=request.user)
-
-        candidate_id = profile.candidate_id
-
-    except Candidate_Profile.DoesNotExist:
-        return Response(
-            {"error": "Candidate profile not found"}, status=status.HTTP_404_NOT_FOUND
-        )
+    profile, _ = Candidate_Profile.objects.get_or_create(user=request.user)
+    candidate_id = profile.candidate_id
 
     if not resume_file:
         return Response(
@@ -182,9 +189,9 @@ def analyze_resume(request):
                 "email": str(result.get("email") or "").strip(),
                 "education": str(result.get("education") or "").strip(),
                 "location": str(result.get("location") or "").strip(),
-                "linkedin": str(result.get("linkedin") or "").strip(),
-                "github": str(result.get("github") or "").strip(),
-                "portfolio": str(result.get("portfolio") or "").strip(),
+                "linkedin": safe_url(result.get("linkedin")),
+                "github": safe_url(result.get("github")),
+                "portfolio": safe_url(result.get("portfolio")),
                 "summary": str(result.get("summary") or "").strip(),
                 "resume_score": score_val,
                 "extracted_skills": safe_join(result.get("skills")),
@@ -303,44 +310,28 @@ def add_to_profile(request):
 
         analysis = ResumeAnalysis.objects.get(resume=resume)
 
-        profile = Candidate_Profile.objects.get(user=request.user)
-        print("Candidate Profile Found")
-        print("Candidate ID:", profile.candidate_id)
+        # Verify candidate profile ownership
+        profile, _ = Candidate_Profile.objects.get_or_create(user=request.user)
 
-        print("Profile Email:", profile.user.email)
-        print("Resume Email:", analysis.email)
-
-        print("Profile Email Lower:", profile.user.email.strip().lower())
-        print("Resume Email Lower:", analysis.email.strip().lower())
-
-        # Email Validation
-        if profile.user.email.strip().lower() != analysis.email.strip().lower():
-            return Response(
-                {"error": "Resume email does not match your profile email."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Name Validation
-        print("Profile Name:", profile.user.full_name)
-        print("Resume Name:", analysis.candidate_name)
-        if profile.user.email.strip().lower() != analysis.email.strip().lower():
-            return Response(
-                {"error": "Resume email does not match your profile email."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         # Education
-        profile.education = analysis.education
+        if analysis.education:
+            profile.education = analysis.education
 
         # Location
-        profile.location = analysis.location
+        if analysis.location:
+            profile.location = analysis.location
 
         # Skills
-        profile.skills = analysis.extracted_skills
+        if analysis.extracted_skills:
+            profile.skills = analysis.extracted_skills
 
         # Social Links
-        profile.linkedin_url = analysis.linkedin
-        profile.github_url = analysis.github
-        profile.portfolio_url = analysis.portfolio
+        if analysis.linkedin:
+            profile.linkedin_url = safe_url(analysis.linkedin) or profile.linkedin_url
+        if analysis.github:
+            profile.github_url = safe_url(analysis.github) or profile.github_url
+        if analysis.portfolio:
+            profile.portfolio_url = safe_url(analysis.portfolio) or profile.portfolio_url
 
         # Experience
 
