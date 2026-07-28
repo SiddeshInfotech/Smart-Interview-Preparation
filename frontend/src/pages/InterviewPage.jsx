@@ -183,8 +183,6 @@ const LiveVideo = ({
   const oppositeUserName =
     remoteUserObj?.name || remoteUserObj?.identity || oppositeFallback;
 
-  const isInterviewerRole = (role || '').toString().toLowerCase() === 'interviewer';
-
   // Candidate auto-detect when interviewer leaves room
   const prevHadInterviewerRef = useRef(false);
   useEffect(() => {
