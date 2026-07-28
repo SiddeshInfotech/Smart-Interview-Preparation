@@ -53,20 +53,18 @@ def run_code(request):
 @permission_classes([AllowAny])
 def submit_code(request):
     try:
-        # ── Free-tier daily limit (authenticated users only) ───────────────
+        # ── Free-tier daily limit via UserCredit database model ──────────────
         if request.user and request.user.is_authenticated and not request.user.has_premium:
-            from django.utils import timezone
-            today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-            used_today = CodeSubmission.objects.filter(
-                user=request.user,
-                submitted_at__gte=today_start,
-            ).count()
-            if used_today >= 20:
+            from authentication.models import UserCredit
+            credits_obj, _ = UserCredit.objects.get_or_create(user=request.user)
+            credits_obj.check_and_reset()
+
+            if credits_obj.coding_used >= credits_obj.coding_limit:
                 return Response(
                     {
                         "success": False,
                         "error": "Daily coding limit reached.",
-                        "detail": "Free users can submit up to 20 coding solutions per day. Upgrade to Premium for unlimited access.",
+                        "detail": f"Free users can submit up to {credits_obj.coding_limit} coding solutions per day. Upgrade to Premium for unlimited access.",
                         "limit_reached": True,
                     },
                     status=429,
