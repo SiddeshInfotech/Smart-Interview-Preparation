@@ -137,7 +137,7 @@ export default function PageNavbar({
                       <div className="usage-bar-track">
                         <div
                           className="usage-bar-fill usage-bar-fill--quiz"
-                          style={{ width: `${(usageData.quiz.used / usageData.quiz.limit) * 100}%` }}
+                          style={{ width: `${(usageData.quiz.remaining / usageData.quiz.limit) * 100}%` }}
                         />
                       </div>
                     </div>
@@ -151,7 +151,7 @@ export default function PageNavbar({
                       <div className="usage-bar-track">
                         <div
                           className="usage-bar-fill usage-bar-fill--coding"
-                          style={{ width: `${(usageData.coding.used / usageData.coding.limit) * 100}%` }}
+                          style={{ width: `${(usageData.coding.remaining / usageData.coding.limit) * 100}%` }}
                         />
                       </div>
                     </div>
@@ -166,7 +166,7 @@ export default function PageNavbar({
                         <div className="usage-bar-track">
                           <div
                             className="usage-bar-fill usage-bar-fill--resume"
-                            style={{ width: `${(usageData.resume.used / usageData.resume.limit) * 100}%` }}
+                            style={{ width: `${(usageData.resume.remaining / usageData.resume.limit) * 100}%` }}
                           />
                         </div>
                       </div>

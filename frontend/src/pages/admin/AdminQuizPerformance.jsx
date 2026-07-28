@@ -15,20 +15,20 @@ const COLUMNS = [
       </div>
     )
   },
-  { key: "subject", label: "Subject", render: (v) => <span className="admin-badge admin-badge--purple">{v || "N/A"}</span> },
-  { key: "topic", label: "Topic", render: (v) => v || "N/A" },
-  { key: "score", label: "Score", render: (v, r) => `${v} / ${r.total_questions || 0}` },
+  { key: "total_questions", label: "Questions" },
+  { key: "correct_answers", label: "Correct", render: (v) => <span className="admin-badge admin-badge--success">{v}</span> },
+  { key: "wrong_answers", label: "Wrong", render: (v) => <span className="admin-badge admin-badge--error">{v}</span> },
+  { key: "skipped_answers", label: "Skipped", render: (v) => <span className="admin-badge admin-badge--neutral">{v}</span> },
   {
-    key: "percentage",
-    label: "Percentage",
+    key: "score",
+    label: "Score (%)",
     render: (v) => (
       <span className={`admin-badge ${v >= 70 ? "admin-badge--success" : "admin-badge--warning"}`}>
         {v}%
       </span>
     )
   },
-  { key: "time_taken_seconds", label: "Time", render: (v) => (v ? `${v}s` : "—") },
-  { key: "completed_at", label: "Completed", render: (v) => (v ? new Date(v).toLocaleString() : "—") }
+  { key: "created_at", label: "Date", render: (v) => (v ? new Date(v).toLocaleDateString() : "—") }
 ];
 
 export default function AdminQuizPerformance() {
@@ -57,7 +57,7 @@ export default function AdminQuizPerformance() {
               <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
             </svg>
             <input
-              placeholder="Search by candidate, subject, topic, percentage…"
+              placeholder="Search by candidate, score, accuracy…"
               value={table.search}
               onChange={(e) => table.setSearch(e.target.value)}
             />
@@ -90,16 +90,16 @@ export default function AdminQuizPerformance() {
                 <strong>Candidate:</strong> {selectedRecord.user_name} ({selectedRecord.user_email})
               </div>
               <div>
-                <strong>Subject:</strong> {selectedRecord.subject} | <strong>Topic:</strong> {selectedRecord.topic}
+                <strong>Total Questions:</strong> {selectedRecord.total_questions} | <strong>Correct:</strong> {selectedRecord.correct_answers}
               </div>
               <div>
-                <strong>Score:</strong> {selectedRecord.score} / {selectedRecord.total_questions} ({selectedRecord.percentage}%)
+                <strong>Wrong Answers:</strong> {selectedRecord.wrong_answers} | <strong>Skipped:</strong> {selectedRecord.skipped_answers}
               </div>
               <div>
-                <strong>Time Spent:</strong> {selectedRecord.time_taken_seconds || 0} seconds
+                <strong>Overall Score:</strong> <span className="admin-badge admin-badge--success">{selectedRecord.score}%</span>
               </div>
               <div>
-                <strong>Completed At:</strong> {selectedRecord.completed_at ? new Date(selectedRecord.completed_at).toLocaleString() : "N/A"}
+                <strong>Submitted At:</strong> {selectedRecord.created_at ? new Date(selectedRecord.created_at).toLocaleString() : "N/A"}
               </div>
             </div>
             <div className="admin-modal__footer">

@@ -476,7 +476,7 @@ from .serializers import QuizPerformanceAdminSerializer
 @api_view(["GET", "POST"])
 @permission_classes([IsAdminOrSuperUser])
 def quiz_performances_list(request):
-    return list_create(request, QuizPerformance, QuizPerformanceAdminSerializer, "-completed_at")
+    return list_create(request, QuizPerformance, QuizPerformanceAdminSerializer, "-created_at")
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])

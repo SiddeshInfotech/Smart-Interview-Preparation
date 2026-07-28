@@ -11,6 +11,7 @@ const COLUMNS = [
   { key: "full_name",        label: "Name"     },
   { key: "email",            label: "Email"    },
   { key: "role",             label: "Role",    render: (v) => <span className={`admin-badge admin-badge--${v === "superuser" ? "error" : v === "interviewer" ? "blue" : "neutral"}`}>{v}</span> },
+  { key: "has_premium",      label: "Tier",    render: (v) => <span className={`admin-badge ${v ? "admin-badge--purple" : "admin-badge--neutral"}`}>{v ? "Premium ⭐" : "Free"}</span> },
   { key: "is_staff",         label: "Is Staff",render: (v) => <span className={`admin-badge ${v ? "admin-badge--success" : "admin-badge--neutral"}`}>{v ? "Yes (Admin)" : "No"}</span> },
   { key: "is_active",        label: "Active",  render: (v) => <span className={`admin-badge ${v ? "admin-badge--success" : "admin-badge--error"}`}>{v ? "Yes" : "No"}</span> },
   { key: "is_email_verified",label: "Verified",render: (v) => <span className={`admin-badge ${v ? "admin-badge--success" : "admin-badge--warning"}`}>{v ? "Yes" : "No"}</span> },
@@ -20,7 +21,7 @@ const COLUMNS = [
 const EMPTY_FORM = {
   full_name: "", email: "", password: "", role: "candidate",
   phone_number: "", is_active: true, is_email_verified: false,
-  is_staff: false, is_superuser: false,
+  has_premium: false, is_staff: false, is_superuser: false,
 };
 
 export default function AdminUsers() {
@@ -109,6 +110,13 @@ export default function AdminUsers() {
                     <option value="candidate">Candidate</option>
                     <option value="interviewer">Interviewer</option>
                     <option value="superuser">Superuser</option>
+                  </select>
+                </div>
+                <div className="admin-form-group">
+                  <label>Plan Tier</label>
+                  <select value={form.has_premium ? "true" : "false"} onChange={(e) => setForm({ ...form, has_premium: e.target.value === "true" })}>
+                    <option value="false">Free Tier</option>
+                    <option value="true">Premium ⭐</option>
                   </select>
                 </div>
                 <div className="admin-form-group">

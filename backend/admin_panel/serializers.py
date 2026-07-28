@@ -17,7 +17,7 @@ class UsersSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'user_id', 'full_name', 'email', 'phone_number',
-            'role', 'is_active', 'is_email_verified',
+            'role', 'is_active', 'is_email_verified', 'has_premium',
             'is_staff', 'is_superuser', 'created_at', 'updated_at',
         ]
         extra_kwargs = {
