@@ -42,6 +42,28 @@ const CodingAssessment = () => {
   const [userInput, setUserInput] = useState("");
   const [showInputModal, setShowInputModal] = useState(false);
 
+  // Dynamic Theme state for Monaco Editor
+  const [monacoTheme, setMonacoTheme] = useState(
+    document.documentElement.getAttribute("data-theme") === "dark" ||
+    document.body.classList.contains("dark-theme")
+      ? "vs-dark"
+      : "vs-light"
+  );
+
+  useEffect(() => {
+    const checkTheme = () => {
+      const isDark =
+        document.documentElement.getAttribute("data-theme") === "dark" ||
+        document.body.classList.contains("dark-theme");
+      setMonacoTheme(isDark ? "vs-dark" : "vs-light");
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
   const templates = {
     python: `# Python 3
 import sys
@@ -305,10 +327,10 @@ public class Main {
             {/* MONACO EDITOR */}
             <div className="editor-container">
               <Editor
-                height="450px"
+                height="516px"
                 language={languageKey}
                 value={code}
-                theme="vs-light"
+                theme={monacoTheme}
                 onChange={(value) => setCode(value || "")}
                 loading={<div style={{ padding: "20px", color: "#64748b", fontWeight: "bold" }}>Loading Code Editor...</div>}
                 options={{
@@ -321,32 +343,6 @@ public class Main {
                   padding: { top: 15 }
                 }}
               />
-            </div>
-
-            {/* PROGRAM INPUT FIELD */}
-            <div className="input-card">
-              <div className="input-card-header">
-                <div className="input-card-title-group">
-                  <h4>⌨️ Standard Program Input (stdin)</h4>
-                  <p className="input-card-desc">
-                    Specify keyboard input values below (e.g., numbers, strings, or multi-line text) to be passed directly to standard input during execution.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="input-field-row">
-                <label htmlFor="program-input" className="input-field-label">
-                  Input Data:
-                </label>
-                <textarea
-                  id="program-input"
-                  className="input-box-large"
-                  placeholder="Enter keyboard input data here (e.g. 10 25 15 or name)..."
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  rows={3}
-                />
-              </div>
             </div>
 
             {/* ===========================

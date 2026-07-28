@@ -829,3 +829,53 @@ body.dark-theme .question-type-item:hover {
   color: #ffffff;
 }
 
+/* Selected Items Dark Mode Highlight */
+[data-theme="dark"] .question-type-item.selected,
+[data-theme="dark"] .difficulty-item.selected,
+[data-theme="dark"] .subject-item.selected,
+[data-theme="dark"] .step-card.selected,
+[data-theme="dark"] .type-card.selected,
+[data-theme="dark"] .difficulty-card.selected,
+body.dark-theme .question-type-item.selected,
+body.dark-theme .difficulty-item.selected,
+body.dark-theme .subject-item.selected,
+body.dark-theme .step-card.selected,
+body.dark-theme .type-card.selected,
+body.dark-theme .difficulty-card.selected {
+  background: #1e1b4b !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4), 0 4px 14px rgba(59, 130, 246, 0.25) !important;
+}
+
+[data-theme="dark"] .skill-tag,
+body.dark-theme .skill-tag {
+  background: #1e1b4b !important;
+  color: #a5b4fc !important;
+  border: 1px solid #312e81 !important;
+}
+
+[data-theme="dark"] .skill-input-wrapper input,
+body.dark-theme .skill-input-wrapper input {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .skill-suggestions-dropdown,
+body.dark-theme .skill-suggestions-dropdown {
+  background: #0f172a !important;
+  border-color: #1e293b !important;
+}
+
+[data-theme="dark"] .suggestion-item,
+body.dark-theme .suggestion-item {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .suggestion-item:hover,
+body.dark-theme .suggestion-item:hover {
+  background: #1e293b !important;
+  color: #60a5fa !important;
+}
+
