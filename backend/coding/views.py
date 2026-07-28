@@ -53,6 +53,26 @@ def run_code(request):
 @permission_classes([AllowAny])
 def submit_code(request):
     try:
+        # ── Free-tier daily limit (authenticated users only) ───────────────
+        if request.user and request.user.is_authenticated and not request.user.has_premium:
+            from django.utils import timezone
+            today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            used_today = CodeSubmission.objects.filter(
+                user=request.user,
+                submitted_at__gte=today_start,
+            ).count()
+            if used_today >= 20:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "Daily coding limit reached.",
+                        "detail": "Free users can submit up to 20 coding solutions per day. Upgrade to Premium for unlimited access.",
+                        "limit_reached": True,
+                    },
+                    status=429,
+                )
+        # ──────────────────────────────────────────────────────────────────
+
         question_id = request.data.get("question_id")
         question_title = request.data.get("question_title", "")
         problem_statement = request.data.get("problem_statement", "")

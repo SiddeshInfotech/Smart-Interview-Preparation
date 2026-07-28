@@ -29,6 +29,7 @@ export const PublicLayout = ({ children }) => {
           <a href="#features" className="nav-link">Features</a>
           <a href="#how-it-works" className="nav-link">How It Works</a>
           <a href="#about" className="nav-link">About Us</a>
+          <a href="#pricing" className="nav-link">Pricing</a>
         </nav>
 
         <div className="header-right">
@@ -39,7 +40,7 @@ export const PublicLayout = ({ children }) => {
             </button>
           ) : (
             <>
-              <button className="btn-primary-small outline-signin" onClick={() => navigate("/login")} type="button">
+              <button className="btn-primary-small" onClick={() => navigate("/login")} type="button">
                 <LogIn size={16} />
                 <span>Sign In</span>
               </button>
@@ -61,6 +62,7 @@ export const PublicLayout = ({ children }) => {
           <a href="#features" className="mobile-nav-link" onClick={() => setSidebarOpen(false)}>Features</a>
           <a href="#how-it-works" className="mobile-nav-link" onClick={() => setSidebarOpen(false)}>How It Works</a>
           <a href="#about" className="mobile-nav-link" onClick={() => setSidebarOpen(false)}>About Us</a>
+          <a href="#pricing" className="mobile-nav-link" onClick={() => setSidebarOpen(false)}>Pricing</a>
 
           <hr className="mobile-divider" />
 

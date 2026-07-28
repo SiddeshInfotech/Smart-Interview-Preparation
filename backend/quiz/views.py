@@ -9,6 +9,25 @@ from ai.gemini_service import generate_content   # corrected import
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def generate_quiz(request):
+    # ── Free-tier daily limit ──────────────────────────────────────────────
+    if not request.user.has_premium:
+        from django.utils import timezone
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        used_today = QuizPerformance.objects.filter(
+            user=request.user,
+            created_at__gte=today_start,
+        ).count()
+        if used_today >= 20:
+            return Response(
+                {
+                    "error": "Daily quiz limit reached.",
+                    "detail": "Free users can take up to 20 quiz sessions per day. Upgrade to Premium for unlimited access.",
+                    "limit_reached": True,
+                },
+                status=429,
+            )
+    # ──────────────────────────────────────────────────────────────────────
+
     data = request.data
     topics = data.get('topics', [])
     difficulty = data.get('difficulty', 'Medium')

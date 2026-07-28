@@ -23,6 +23,7 @@ import Coding from "./pages/Coding";
 import AppShell from "./components/AppShell";
 import RequireRole from "./components/RequireRole";
 import InterviewPage from "./pages/InterviewPage";
+import Pricing from "./pages/Pricing";
 
 // ── Admin Panel ────────────────────────────────────────────
 import AdminLogin from "./pages/AdminLogin";
@@ -37,54 +38,55 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/otp" element={<Otp />} />
-          <Route path="/role-selection" element={<RoleSelection />} />
-          <Route path="/interviewer-profile" element={<InterviewerProfile />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />        
-          <Route path="/Auth-page" element={<AuthPage />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/candidate-profile" element={<CandidateProfile />} />
-          <Route path="/coding" element={<Coding />} />
-          
-          {/* Quiz routes – candidate only */}
-          <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>
-            <Route path="/quiz-page" element={<QuizPage />} />
-            <Route path="/quiz-result" element={<QuizResult />} />
-          </Route>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/otp" element={<Otp />} />
+            <Route path="/role-selection" element={<RoleSelection />} />
+            <Route path="/interviewer-profile" element={<InterviewerProfile />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/Auth-page" element={<AuthPage />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/candidate-profile" element={<CandidateProfile />} />
+            <Route path="/coding" element={<Coding />} />
+            <Route path="/pricing" element={<Pricing />} />
 
-          {/* Interview Page - Direct Access (Testing Only) */}
-          <Route path="/interview-page" element={<InterviewPage />} />
-
-          <Route element={<AppShell />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="resume-upload" element={<ResumeUpload />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="feedback-form" element={<FeedbackForm />} />
-            
-            {/* Quiz – candidate only */}
+            {/* Quiz routes – candidate only */}
             <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>
-              <Route path="quiz" element={<Quiz />} />
+              <Route path="/quiz-page" element={<QuizPage />} />
+              <Route path="/quiz-result" element={<QuizResult />} />
             </Route>
-            
-            {/* Interview – both candidate and interviewer */}
-            <Route element={<RequireRole allowedRoles={["candidate", "interviewer"]} redirectTo="/dashboard" />}>
-              <Route path="interview" element={<Interview />} />
-            </Route>
-          </Route>
 
-          {/* ── Admin Panel ─────────────────────────── */}
-          <Route path="/my_admin_panel/login" element={<AdminLogin />} />
-          <Route element={<AdminRoute />}>
-            <Route path="/my_admin_panel/*" element={<AdminPanel />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  </ThemeProvider>
+            {/* Interview Page - Direct Access (Testing Only) */}
+            <Route path="/interview-page" element={<InterviewPage />} />
+
+            <Route element={<AppShell />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="resume-upload" element={<ResumeUpload />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="feedback-form" element={<FeedbackForm />} />
+
+              {/* Quiz – candidate only */}
+              <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>
+                <Route path="quiz" element={<Quiz />} />
+              </Route>
+
+              {/* Interview – both candidate and interviewer */}
+              <Route element={<RequireRole allowedRoles={["candidate", "interviewer"]} redirectTo="/dashboard" />}>
+                <Route path="interview" element={<Interview />} />
+              </Route>
+            </Route>
+
+            {/* ── Admin Panel ─────────────────────────── */}
+            <Route path="/my_admin_panel/login" element={<AdminLogin />} />
+            <Route element={<AdminRoute />}>
+              <Route path="/my_admin_panel/*" element={<AdminPanel />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

@@ -118,12 +118,13 @@ const generateTimeOptions = () => {
 const TIME_OPTIONS = generateTimeOptions();
 
 // --- ScheduleForm with Search Interviewers button ---
-function ScheduleForm({ onSchedule }) {
+function ScheduleForm({ onSchedule, hasPremium = true }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const [slots, setSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedTime, setSelectedTime] = useState("");
-  const [durationFilter, setDurationFilter] = useState("60");
+  // Free users are locked to 30 min; premium users default to 60 min
+  const [durationFilter, setDurationFilter] = useState(hasPremium ? "60" : "30");
   const [hasSearched, setHasSearched] = useState(false);
   const [submittingRequestId, setSubmittingRequestId] = useState(null);
 
@@ -272,16 +273,40 @@ function ScheduleForm({ onSchedule }) {
         <label className="field">
           <span className="field__label">
             <Hourglass size={14} className="field__icon" /> Duration
+            {!hasPremium && (
+              <span style={{
+                marginLeft: 8,
+                fontSize: 10,
+                fontWeight: 700,
+                background: '#fef3c7',
+                color: '#92400e',
+                padding: '2px 7px',
+                borderRadius: 20,
+                letterSpacing: '0.3px',
+              }}>Free plan</span>
+            )}
           </span>
-          <select
-            className="field__input"
-            value={durationFilter}
-            onChange={(e) => setDurationFilter(e.target.value)}
-          >
-            <option value="30">30 min</option>
-            <option value="60">60 min</option>
-            <option value="90">90 min</option>
-          </select>
+          {hasPremium ? (
+            <select
+              className="field__input"
+              value={durationFilter}
+              onChange={(e) => setDurationFilter(e.target.value)}
+            >
+              <option value="30">30 min</option>
+              <option value="60">60 min</option>
+              <option value="90">90 min</option>
+            </select>
+          ) : (
+            <select
+              className="field__input"
+              value="30"
+              disabled
+              title="Upgrade to Premium for sessions up to 90 minutes"
+              style={{ cursor: 'not-allowed', opacity: 0.7 }}
+            >
+              <option value="30">30 min (max on Free plan)</option>
+            </select>
+          )}
         </label>
 
         {/* Search button */}
@@ -626,6 +651,7 @@ export default function InterviewSchedule({
   interviews: propInterviews,
   onSchedule: propOnSchedule,
   onSelectInterview: propOnSelectInterview,
+  hasPremium = true,
 }) {
   const { userProfile } = useAuth();
   const userRole = userProfile?.role || localStorage.getItem("user_role") || "candidate";
@@ -705,7 +731,7 @@ export default function InterviewSchedule({
           </button>
         </div>
 
-        {isCandidate && tab === "schedule" && <ScheduleForm onSchedule={handleSchedule} />}
+        {isCandidate && tab === "schedule" && <ScheduleForm onSchedule={handleSchedule} hasPremium={hasPremium} />}
         {tab === "upcoming" && (
           <InterviewList
             interviews={interviews}

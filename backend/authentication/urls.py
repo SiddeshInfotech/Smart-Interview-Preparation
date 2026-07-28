@@ -12,6 +12,7 @@ urlpatterns = [
     path("verify-otp/", views.verify_otp, name="verify_otp"),
     path("reset-password/", views.reset_password, name="reset-password"),
     path("profile/", views.get_profile, name="get-profile"),
+    path("usage/", views.get_usage, name="get-usage"),
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 

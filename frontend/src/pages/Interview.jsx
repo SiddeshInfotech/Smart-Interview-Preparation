@@ -119,6 +119,7 @@ export default function Interview() {
 
   // ---- LiveKit identity from user ----
   const role = user?.role || "candidate";
+  const hasPremium = user?.has_premium === true;
   const identity = user?.id
     ? `usr_${role}_${user.id}`
     : user?.user_id
@@ -149,6 +150,7 @@ export default function Interview() {
                 interviews={interviews}
                 onSchedule={handleSchedule}
                 onSelectInterview={handleSelectInterview}
+                hasPremium={hasPremium}
               />
             ) : (
               <InterviewPage

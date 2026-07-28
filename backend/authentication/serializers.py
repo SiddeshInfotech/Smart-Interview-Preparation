@@ -97,4 +97,5 @@ class ProfileSerializer(serializers.ModelSerializer):
             "email",
             "phone_number",
             "role",
+            "has_premium",
         ]

@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sun, Moon, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock, HelpCircle } from "lucide-react";
 import NotificationPopup from "./NotificationPopup";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import api from "../api/axios";
 import "../styles/NotificationPopup.css";
 
 export default function PageNavbar({
@@ -24,6 +25,7 @@ export default function PageNavbar({
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [usageData, setUsageData] = useState(null);
   const { userProfile, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
@@ -37,6 +39,23 @@ export default function PageNavbar({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Fetch usage data when dropdown opens (free users only)
+  const fetchUsage = useCallback(async () => {
+    try {
+      const res = await api.get("/auth/usage/");
+      setUsageData(res.data);
+    } catch (err) {
+      console.warn("Could not fetch usage data", err);
+    }
+  }, []);
+
+  const handleToggleDropdown = () => {
+    setProfileMenuOpen((open) => {
+      if (!open) fetchUsage();
+      return !open;
+    });
+  };
 
   const handleLogout = () => {
     logout();
@@ -84,7 +103,7 @@ export default function PageNavbar({
             <button
               type="button"
               className="avatar-btn"
-              onClick={() => setProfileMenuOpen((open) => !open)}
+              onClick={handleToggleDropdown}
               aria-label="User account options"
               aria-expanded={profileMenuOpen}
             >
@@ -104,6 +123,41 @@ export default function PageNavbar({
                   <strong>{userProfile.name}</strong>
                   <span>{userProfile.email}</span>
                 </div>
+
+                {/* Usage progress bars — free users only */}
+                {usageData && !usageData.has_premium && (
+                  <div className="usage-bars-section">
+                    <div className="usage-bar-row">
+                      <div className="usage-bar-header">
+                        <span className="usage-bar-label">🧠 Quiz</span>
+                        <span className="usage-bar-count">
+                          {usageData.quiz.remaining}/{usageData.quiz.limit} left
+                        </span>
+                      </div>
+                      <div className="usage-bar-track">
+                        <div
+                          className="usage-bar-fill usage-bar-fill--quiz"
+                          style={{ width: `${(usageData.quiz.used / usageData.quiz.limit) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="usage-bar-row">
+                      <div className="usage-bar-header">
+                        <span className="usage-bar-label">💻 Coding</span>
+                        <span className="usage-bar-count">
+                          {usageData.coding.remaining}/{usageData.coding.limit} left
+                        </span>
+                      </div>
+                      <div className="usage-bar-track">
+                        <div
+                          className="usage-bar-fill usage-bar-fill--coding"
+                          style={{ width: `${(usageData.coding.used / usageData.coding.limit) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="dropdown-divider" />
                 <button
                   type="button"

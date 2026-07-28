@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, PlayCircle, Radar, FileText, CheckCircle2, ShieldCheck, PhoneCall, Sparkles, Star, Award, Users, Code2 } from 'lucide-react';
+import { PlayCircle, Radar, FileText, CheckCircle2, ShieldCheck, PhoneCall, Sparkles, Code2, Check, X as XIcon } from 'lucide-react';
 import { PublicLayout } from '../components/Layouts.jsx';
 import Button from '../components/Button.jsx';
 import "../styles/home.css";
@@ -213,6 +213,99 @@ export default function Home() {
                 Talk to Advisor
               </Button>
             </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* PRICING SECTION */}
+      <section className="container section" id="pricing">
+
+        {/* Section header */}
+        <div className="pricing-section-header">
+          <span className="about-tag">PRICING PLANS</span>
+          <h2 className="pricing-section-title">
+            Simple, Transparent Pricing
+          </h2>
+          <p className="pricing-section-subtitle">
+            Choose the perfect plan to master your technical interviews and land your dream job.
+          </p>
+        </div>
+
+        {/* Plan cards */}
+        <div className="pricing-plans-grid">
+
+          {/* FREE PLAN */}
+          <div className="pricing-plan-card">
+            <div className="pricing-plan-label">Free</div>
+            <div className="pricing-plan-price">
+              $0
+              <span className="pricing-plan-period">/month</span>
+            </div>
+            <p className="pricing-plan-desc">
+              Perfect for getting started with basic preparation and exploring the platform.
+            </p>
+
+            <ul className="pricing-feature-list">
+              <li>
+                <span className="pf-icon pf-check"><Check size={14} /></span>
+                <span><strong>Quiz questions:</strong> 20 per day</span>
+              </li>
+              <li>
+                <span className="pf-icon pf-check"><Check size={14} /></span>
+                <span><strong>Coding questions:</strong> 20 per day</span>
+              </li>
+              <li>
+                <span className="pf-icon pf-check"><Check size={14} /></span>
+                <span><strong>Resume analysis:</strong> 5 per month</span>
+              </li>
+              <li>
+                <span className="pf-icon pf-check"><Check size={14} /></span>
+                <span><strong>Interview session:</strong> 30 min limit</span>
+              </li>
+              <li>
+                <span className="pf-icon pf-cross"><XIcon size={14} /></span>
+                <span className="pf-muted">Priority support</span>
+              </li>
+            </ul>
+
+          </div>
+
+          {/* PREMIUM PLAN */}
+          <div className="pricing-plan-card pricing-plan-card--popular">
+            <span className="pricing-popular-badge">🌟 Most Popular</span>
+            <div className="pricing-plan-label">Premium</div>
+            <div className="pricing-plan-price">
+              $29
+              <span className="pricing-plan-period">/month</span>
+            </div>
+            <p className="pricing-plan-desc">
+              Comprehensive tools &amp; advanced analytics for serious FAANG-track candidates.
+            </p>
+
+            <ul className="pricing-feature-list">
+              <li>
+                <span className="pf-icon pf-check"><Check size={14} /></span>
+                <span><strong>Quiz questions:</strong> Unlimited</span>
+              </li>
+              <li>
+                <span className="pf-icon pf-check"><Check size={14} /></span>
+                <span><strong>Coding questions:</strong> Unlimited</span>
+              </li>
+              <li>
+                <span className="pf-icon pf-check"><Check size={14} /></span>
+                <span><strong>Resume analysis:</strong> Unlimited</span>
+              </li>
+              <li>
+                <span className="pf-icon pf-check"><Check size={14} /></span>
+                <span><strong>Interview session:</strong> Up to 90 minutes</span>
+              </li>
+              <li>
+                <span className="pf-icon pf-check"><Check size={14} /></span>
+                <span><strong>Priority support</strong> included</span>
+              </li>
+            </ul>
+
           </div>
 
         </div>

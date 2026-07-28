@@ -96,6 +96,7 @@ export const AuthProvider = ({ children }) => {
           full_name: name,
           email: email,
           role: role,
+          has_premium: authRes.data.has_premium ?? false,
         }));
       }
     } catch (error) {

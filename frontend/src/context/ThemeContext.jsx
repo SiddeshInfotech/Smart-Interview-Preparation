@@ -2,33 +2,70 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext();
 
+// Pages that must always render in light mode regardless of user preference
+const LIGHT_MODE_ONLY_PATHS = ["/my_admin_panel", "/"];
+
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
     const savedTheme = localStorage.getItem("app-theme");
     return savedTheme ? savedTheme : "light";
   });
 
-  useEffect(() => {
+  const applyTheme = (currentTheme) => {
     const path = window.location.pathname;
 
-    // Admin panel is strictly light theme as requested
-    if (path.startsWith("/my_admin_panel")) {
+    // Force light mode on specific pages (landing page & admin panel)
+    const isLightModeOnly =
+      LIGHT_MODE_ONLY_PATHS.some((p) =>
+        p === "/" ? path === "/" : path.startsWith(p)
+      );
+
+    if (isLightModeOnly) {
       document.documentElement.setAttribute("data-theme", "light");
       document.documentElement.classList.remove("dark", "dark-theme");
       document.body.classList.remove("dark", "dark-theme");
       return;
     }
 
-    document.documentElement.setAttribute("data-theme", theme);
-    if (theme === "dark") {
+    document.documentElement.setAttribute("data-theme", currentTheme);
+    if (currentTheme === "dark") {
       document.documentElement.classList.add("dark", "dark-theme");
       document.body.classList.add("dark", "dark-theme");
     } else {
       document.documentElement.classList.remove("dark", "dark-theme");
       document.body.classList.remove("dark", "dark-theme");
     }
+  };
 
+  useEffect(() => {
+    applyTheme(theme);
     localStorage.setItem("app-theme", theme);
+  }, [theme]);
+
+  // Re-apply theme on every client-side navigation (popstate / pushstate)
+  useEffect(() => {
+    const handleRouteChange = () => applyTheme(theme);
+
+    window.addEventListener("popstate", handleRouteChange);
+
+    // Patch history methods so pushState/replaceState also trigger the check
+    const origPush = window.history.pushState.bind(window.history);
+    const origReplace = window.history.replaceState.bind(window.history);
+
+    window.history.pushState = (...args) => {
+      origPush(...args);
+      handleRouteChange();
+    };
+    window.history.replaceState = (...args) => {
+      origReplace(...args);
+      handleRouteChange();
+    };
+
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+      window.history.pushState = origPush;
+      window.history.replaceState = origReplace;
+    };
   }, [theme]);
 
   const toggleTheme = () => {

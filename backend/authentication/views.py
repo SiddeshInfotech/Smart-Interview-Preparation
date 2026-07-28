@@ -364,3 +364,48 @@ def verify_registration_otp(request):
 def get_profile(request):
     serializer = ProfileSerializer(request.user)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_usage(request):
+    """
+    Returns today's usage counts for quiz and coding, and this month's
+    resume analysis count, along with free-tier limits.
+    Used by the frontend to render progress bars in the profile dropdown.
+    """
+    from django.utils import timezone
+    from quiz.models import QuizPerformance
+    from coding.models import CodeSubmission
+
+    user = request.user
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    quiz_today = QuizPerformance.objects.filter(
+        user=user,
+        created_at__gte=today_start,
+    ).count()
+
+    coding_today = CodeSubmission.objects.filter(
+        user=user,
+        submitted_at__gte=today_start,
+    ).count()
+
+    QUIZ_LIMIT = 20
+    CODING_LIMIT = 20
+
+    return Response({
+        "has_premium": user.has_premium,
+        "quiz": {
+            "used": quiz_today,
+            "limit": QUIZ_LIMIT,
+            "remaining": max(0, QUIZ_LIMIT - quiz_today),
+        },
+        "coding": {
+            "used": coding_today,
+            "limit": CODING_LIMIT,
+            "remaining": max(0, CODING_LIMIT - coding_today),
+        },
+    }, status=status.HTTP_200_OK)

@@ -705,3 +705,85 @@ body.dark-theme body:not(.landing-body) td:not(.home-page *):not(.admin-panel *)
 body.dark-theme body:not(.landing-body) th:not(.home-page *):not(.admin-panel *) {
   color: #ffffff;
 }
+
+/* ===== USAGE PROGRESS BARS (profile dropdown — free users) ===== */
+.usage-bars-section {
+  padding: 10px 18px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.usage-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.usage-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.usage-bar-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.usage-bar-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.usage-bar-track {
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.usage-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.usage-bar-fill--quiz {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.usage-bar-fill--coding {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+/* When nearing limit (>= 80% used) shift to amber */
+.usage-bar-fill--quiz[style*="width: 8"],
+.usage-bar-fill--quiz[style*="width: 9"],
+.usage-bar-fill--quiz[style*="width: 100"] {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.usage-bar-fill--coding[style*="width: 8"],
+.usage-bar-fill--coding[style*="width: 9"],
+.usage-bar-fill--coding[style*="width: 100"] {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+/* Dark mode */
+[data-theme="dark"] .usage-bar-label,
+body.dark-theme .usage-bar-label {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .usage-bar-count,
+body.dark-theme .usage-bar-count {
+  color: #64748b;
+}
+
+[data-theme="dark"] .usage-bar-track,
+body.dark-theme .usage-bar-track {
+  background: #1e293b;
+}
