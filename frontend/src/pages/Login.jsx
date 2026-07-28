@@ -108,17 +108,12 @@ export default function Login() {
     try {
       const role = await handleLogin();
       if (role) {
-        setShowWelcome(true);
+        navigate("/dashboard");
       }
     } catch (err) {
       console.log("login submit error:", err);
       setError("Invalid email or password.");
     }
-  };
-
-  const handleWelcomeClose = () => {
-    setShowWelcome(false);
-    navigate("/dashboard");
   };
 
   return (
