@@ -478,11 +478,19 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
         setSelectedFeedback(res.data.feedback);
         setShowResultModal(true);
       } else {
-        alert("Interview feedback result is not yet available for this session.");
+        if (userRole === "interviewer") {
+          onSelectInterview(iv);
+        } else {
+          alert("Interview feedback result is not yet available for this session.");
+        }
       }
     } catch (err) {
       console.error("Failed to fetch feedback:", err);
-      alert("Could not load feedback results.");
+      if (userRole === "interviewer") {
+        onSelectInterview(iv);
+      } else {
+        alert("Could not load feedback results.");
+      }
     } finally {
       setLoadingResultId(null);
     }
@@ -515,11 +523,26 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
             const isAccepting = acceptingId === scheduleId;
             const isDeclining = decliningId === scheduleId;
 
+            const handleCardClick = () => {
+              if (iv.status === "Completed") {
+                handleViewResult(iv);
+              } else if (iv.status === "Scheduled") {
+                if (isMeetingReady) {
+                  onSelectInterview(iv);
+                }
+              } else {
+                onSelectInterview(iv);
+              }
+            };
+
             return (
               <div
                 key={scheduleId || index}
                 className="descriptive-interview-card"
-                onClick={() => onSelectInterview(iv)}
+                onClick={handleCardClick}
+                style={{
+                  cursor: iv.status === "Scheduled" && !isMeetingReady ? "default" : "pointer"
+                }}
               >
                 <div className="descriptive-card__header">
                   <div className="descriptive-card__status-wrap">
@@ -647,11 +670,37 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                       {loadingResultId === scheduleId ? "Loading..." : "📊 View Result"}
                     </button>
                   ) : iv.status === "Scheduled" ? (
-                    <button className="btn-join-session" type="button">
-                      View & Join Lobby →
+                    <button
+                      className={`btn-join-session ${!isMeetingReady ? "btn-disabled" : ""}`}
+                      type="button"
+                      disabled={!isMeetingReady}
+                      style={
+                        !isMeetingReady
+                          ? {
+                              opacity: 0.6,
+                              cursor: "not-allowed",
+                              background: "#94a3b8",
+                              color: "#ffffff",
+                              boxShadow: "none",
+                            }
+                          : {}
+                      }
+                      title={
+                        !isMeetingReady
+                          ? "Waiting for interviewer to accept the interview request"
+                          : "View and join the live interview lobby"
+                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isMeetingReady) {
+                          onSelectInterview(iv);
+                        }
+                      }}
+                    >
+                      {isMeetingReady ? "View & Join Lobby →" : "Lobby Disabled (Pending Acceptance)"}
                     </button>
                   ) : (
-                    <button className="btn-join-session" type="button">
+                    <button className="btn-join-session" type="button" onClick={() => onSelectInterview(iv)}>
                       View Details →
                     </button>
                   )}

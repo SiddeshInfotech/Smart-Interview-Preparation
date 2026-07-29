@@ -381,6 +381,7 @@ const InterviewPage = ({
   const timerInterval = useRef(null);
   const [showInterviewerFeedbackModal, setShowInterviewerFeedbackModal] = useState(false);
   const [showCandidateWaitingModal, setShowCandidateWaitingModal] = useState(false);
+  const isAccepted = Boolean(selectedInterview?.meeting_link);
 
 
   // ---- Tab/eye tracking ----
@@ -960,13 +961,32 @@ const InterviewPage = ({
                     <div className="device-status">✅ Ready</div>
                   </div>
                 </div>
+                {!isAccepted && selectedInterview?.status === 'Scheduled' && (
+                  <div style={{ background: '#fef3c7', color: '#92400e', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '13px', border: '1px solid #fde68a' }}>
+                    ⚠️ This interview request has not been accepted by the interviewer yet. Joining is disabled until accepted.
+                  </div>
+                )}
                 <div className="action-buttons">
                   <button
                     className="btn btn-primary"
                     onClick={handleJoinInterview}
-                    disabled={isJoining}
+                    disabled={isJoining || (!isAccepted && selectedInterview?.status === 'Scheduled')}
+                    style={
+                      !isAccepted && selectedInterview?.status === 'Scheduled'
+                        ? { opacity: 0.6, cursor: 'not-allowed', background: '#94a3b8' }
+                        : {}
+                    }
+                    title={
+                      !isAccepted && selectedInterview?.status === 'Scheduled'
+                        ? 'Waiting for interviewer to accept the request'
+                        : 'Join Interview'
+                    }
                   >
-                    {isJoining ? 'Joining...' : '🚀 Join Interview'}
+                    {isJoining
+                      ? 'Joining...'
+                      : !isAccepted && selectedInterview?.status === 'Scheduled'
+                      ? '⏳ Pending Interviewer Acceptance'
+                      : '🚀 Join Interview'}
                   </button>
                 </div>
                 <div className="security-badge">

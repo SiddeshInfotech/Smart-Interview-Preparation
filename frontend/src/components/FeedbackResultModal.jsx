@@ -26,7 +26,7 @@ const FeedbackResultModal = ({ feedback, onClose }) => {
           <div>
             <h3>🏆 Interview Assessment Result</h3>
             <p className="feedback-modal-subtitle">
-              Detailed performance feedback evaluated by your interviewer
+              Detailed performance feedback and skill evaluation review
             </p>
           </div>
           <button
