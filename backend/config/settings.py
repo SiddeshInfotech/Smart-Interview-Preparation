@@ -189,6 +189,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ========== OPENROUTER AI CONFIGURATION ==========
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_API_URL = os.environ.get("OPENROUTER_API_URL", "https://openrouter.ai/api/v1/chat/completions")
+OPENROUTER_CONNECT_TIMEOUT = float(os.environ.get("OPENROUTER_CONNECT_TIMEOUT", "5.0"))
+OPENROUTER_READ_TIMEOUT = float(os.environ.get("OPENROUTER_READ_TIMEOUT", "25.0"))
+OPENROUTER_TOTAL_TIMEOUT = float(os.environ.get("OPENROUTER_TOTAL_TIMEOUT", "26.0"))
+OPENROUTER_MAX_RETRIES = int(os.environ.get("OPENROUTER_MAX_RETRIES", "3"))
+
+# ========== PISTON CODE EXECUTION ENGINE ==========
+PISTON_RUNTIMES_CACHE_TTL = int(os.environ.get("PISTON_RUNTIMES_CACHE_TTL", "86400"))
 
 AI_MODELS = {
     "resume": [
