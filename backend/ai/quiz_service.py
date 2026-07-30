@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 from .json_utils import (
     clean_json_string,
     extract_questions_list,
+    parse_json_robust,
     validate_and_repair_question,
 )
 from .openrouter_service import (
@@ -100,7 +101,7 @@ def generate_quiz_questions(
 
                 # 3. JSON Parsing
                 try:
-                    parsed_data = json.loads(cleaned_text)
+                    parsed_data = parse_json_robust(cleaned_text)
                 except Exception as json_err:
                     raise ValueError(f"Failed to parse cleaned JSON: {json_err}")
 

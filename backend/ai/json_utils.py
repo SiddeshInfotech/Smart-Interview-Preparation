@@ -48,6 +48,61 @@ def clean_json_string(raw_text: str) -> str:
     return text
 
 
+def parse_json_robust(cleaned_text: str) -> Any:
+    """
+    Parse JSON string with automatic error recovery for unterminated strings,
+    unescaped control characters (newlines/tabs in string literals), and truncated quotes/brackets.
+    """
+    if not cleaned_text or not isinstance(cleaned_text, str) or not cleaned_text.strip():
+        raise ValueError("JSON input text is empty.")
+
+    text = cleaned_text.strip()
+
+    # Attempt 1: json.loads with strict=False (allows raw newlines/tabs inside string values)
+    try:
+        return json.loads(text, strict=False)
+    except Exception:
+        pass
+
+    # Attempt 2: Escape raw unescaped newlines inside string literals
+    def _escape_newlines(s: str) -> str:
+        in_str = False
+        esc = False
+        out = []
+        for ch in s:
+            if ch == '"' and not esc:
+                in_str = not in_str
+                out.append(ch)
+            elif ch == '\\' and not esc:
+                esc = True
+                out.append(ch)
+            elif in_str and ch == '\n':
+                out.append('\\n')
+                esc = False
+            elif in_str and ch == '\r':
+                esc = False
+            else:
+                out.append(ch)
+                esc = False
+        return "".join(out)
+
+    repaired = _escape_newlines(text)
+    try:
+        return json.loads(repaired, strict=False)
+    except Exception:
+        pass
+
+    # Attempt 3: Auto-close unterminated quotes or missing braces if LLM output truncated
+    for suffix in ['"', '"}', '"}]', '}', ']']:
+        try:
+            return json.loads(repaired + suffix, strict=False)
+        except Exception:
+            pass
+
+    # Final attempt: standard json.loads to raise informative Exception
+    return json.loads(text)
+
+
 def extract_questions_list(parsed_data: Any) -> Tuple[Optional[List[Dict[str, Any]]], str]:
     """
     Recursively find the first valid list of question objects inside parsed JSON structure.
