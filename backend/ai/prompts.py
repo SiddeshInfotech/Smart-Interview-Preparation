@@ -1,147 +1,173 @@
-# Prompt builders shared by the quiz and resume-analysis modules.
+"""
+Prompt builders shared by AI generation services.
+Provides strict system prompts for quiz generation, resume analysis, coding challenges, and code evaluation.
+"""
+
+from typing import List
 
 
-def resume_analysis_prompt(resume_text):
+def resume_analysis_prompt(resume_text: str) -> str:
     return f"""
-    Analyze this resume.
+Analyze this resume.
 
-    Extract:
-    - candidate_name
-    - email
-    - role
-    - location
-    - education
-    - experience
-    - linkedin
-    - github
-    - portfolio
-    - skills
-    - matched_skills
-    - missing_skills
-    - suggested_next_skills
-    - skill_category
-    - resume_score
-    - summary
-    - suggestions
+Extract:
+- candidate_name
+- email
+- role
+- location
+- education
+- experience
+- linkedin
+- github
+- portfolio
+- skills
+- matched_skills
+- missing_skills
+- suggested_next_skills
+- skill_category
+- resume_score
+- summary
+- suggestions
 
-    Resume:
-    {resume_text}
+Resume:
+{resume_text}
 
-    Return ONLY valid JSON.
-    Do not use markdown.
-    Do not wrap the response in ```json or ```.
-    Use exactly these keys:
+Return ONLY valid JSON.
+Do not use markdown.
+Do not wrap the response in ```json or ```.
+Use exactly these keys:
 
-    {{
-      "candidate_name": "",
-      "email": "",
-      "role": "",
-      "location": "",
-      "education": "",
-      "experience": "",
-      "linkedin": "",
-      "github": "",
-      "portfolio": "",
-      "skills": [],
-      "matched_skills": [],
-      "missing_skills": [],
-      "suggested_next_skills": [],
-      "skill_category": "",
-      "resume_score": 0,
-      "summary": "",
-      "suggestions": []
-    }}
+{{
+  "candidate_name": "",
+  "email": "",
+  "role": "",
+  "location": "",
+  "education": "",
+  "experience": "",
+  "linkedin": "",
+  "github": "",
+  "portfolio": "",
+  "skills": [],
+  "matched_skills": [],
+  "missing_skills": [],
+  "suggested_next_skills": [],
+  "skill_category": "",
+  "resume_score": 0,
+  "summary": "",
+  "suggestions": []
+}}
+"""
+
+
+def quiz_generation_prompt(
+    topics: List[str],
+    difficulty: str,
+    count: int,
+    mode: str,
+    custom_instruction: str = ""
+) -> str:
     """
-
-def quiz_generation_prompt(topics, difficulty, count, mode, custom_instruction=""):
+    Generate strict prompt for OpenRouter quiz question generation.
+    Forces raw JSON array, forbids markdown formatting and preamble/postamble text.
     """
-    Generate a prompt for Gemini to produce quiz questions.
+    topics_str = ", ".join(topics) if isinstance(topics, list) else str(topics)
 
-    Args:
-        topics (list): List of topic names.
-        difficulty (str): 'Easy', 'Medium', 'Hard'.
-        count (int): Number of questions to generate.
-        mode (str): 'MCQ', 'Coding Challenge', or 'Mock Interview'.
-        custom_instruction (str): Optional extra guidance.
-
-    Returns:
-        str: The fully formed prompt.
-    """
-    topics_str = ", ".join(topics)
-
-    # Mode-specific instructions – each now includes a "hint" field
     if mode == "MCQ":
-        format_instruction = """
-Each question must have exactly 4 options with one correct answer.
-Output format (array of objects):
-[
-  {{
-    "text": "question text",
-    "options": ["option A", "option B", "option C", "option D"],
-    "correct": 0,   // index of the correct option (0‑based)
-    "hint": "a short, helpful clue that points toward the correct answer, but does not reveal it outright",
-    "explanation": "brief explanation of the correct answer"
-  }}
-]
-"""
+        mode_rules = (
+            '- Each question MUST have "options" containing EXACTLY 4 non-empty string choices: '
+            '["Option A", "Option B", "Option C", "Option D"].\n'
+            '- "correct" MUST be an integer between 0 and 3 representing the 0-based index of the correct option.'
+        )
+        schema_example = """[
+  {
+    "text": "Clear and accurate question statement",
+    "options": [
+      "Option A text",
+      "Option B text",
+      "Option C text",
+      "Option D text"
+    ],
+    "correct": 0,
+    "hint": "Helpful hint guiding candidate without revealing the answer",
+    "explanation": "Clear explanation of why option index 0 is correct"
+  }
+]"""
     elif mode == "Coding Challenge":
-        format_instruction = """
-Each question must be a coding problem (not multiple choice).
-Provide a clear problem statement, optional sample input/output, and a hint about the expected approach.
-Output format (array of objects):
-[
-  {{
-    "text": "problem statement",
-    "options": [],   // empty array
-    "correct": 0,    // placeholder, always 0
-    "hint": "a nudge about which data structure, algorithm, or technique to consider",
-    "explanation": "approach or solution outline"
-  }}
-]
-"""
-    else:  # Mock Interview
-        format_instruction = """
-Each question must be an open‑ended interview question (system design, behavioural, or architecture).
-Provide a thought‑provoking question and explain what the interviewer is looking for.
-Output format (array of objects):
-[
-  {{
-    "text": "question text",
-    "options": [],   // empty array
-    "correct": 0,    // placeholder
-    "hint": "a suggestion on what aspects to focus on in your answer",
-    "explanation": "what the interviewer wants to assess"
-  }}
-]
-"""
+        mode_rules = (
+            '- "options" MUST be an empty array [].\n'
+            '- "correct" MUST be 0.\n'
+            '- "text" MUST present a comprehensive coding problem statement with input/output requirements.\n'
+            '- "hint" MUST provide an algorithmic or data structure suggestion.\n'
+            '- "explanation" MUST outline the expected solution strategy.'
+        )
+        schema_example = """[
+  {
+    "text": "Coding problem statement with requirements and sample I/O",
+    "options": [],
+    "correct": 0,
+    "hint": "Nudge regarding data structures or algorithmic technique",
+    "explanation": "Step-by-step optimal approach and solution breakdown"
+  }
+]"""
+    else:  # Mock Interview or default
+        mode_rules = (
+            '- "options" MUST be an empty array [].\n'
+            '- "correct" MUST be 0.\n'
+            '- "text" MUST present a scenario or open-ended technical/architectural interview question.\n'
+            '- "hint" MUST suggest key aspects or concepts to address in response.\n'
+            '- "explanation" MUST detail what the interviewer is evaluating.'
+        )
+        schema_example = """[
+  {
+    "text": "Technical or architectural interview question",
+    "options": [],
+    "correct": 0,
+    "hint": "Key architectural or technical considerations to cover",
+    "explanation": "Interviewer evaluation criteria and ideal response structure"
+  }
+]"""
 
     custom = (
-        f"Additional instruction: {custom_instruction}" if custom_instruction else ""
+        f"\nUser Additional Instructions:\n{custom_instruction.strip()}"
+        if custom_instruction and custom_instruction.strip()
+        else ""
     )
 
-    return f"""
-Role:
-You are an expert technical interviewer.
+    return f"""You are an elite technical interviewer and domain expert.
 
-Task:
-Generate {count} {difficulty}-level questions on the following topics: {topics_str}.
+TASK:
+Generate EXACTLY {count} unique, non-repetitive, high-quality assessment questions.
 
-Mode: {mode}
-
-{format_instruction}
-
+PARAMETERS:
+- Topics: {topics_str}
+- Difficulty Level: {difficulty}
+- Assessment Mode: {mode}
 {custom}
 
-Rules:
-- Do not repeat questions.
-- Ensure the JSON is valid and contains exactly {count} questions.
-- Return ONLY the JSON, no other text.
-"""
+CRITICAL RULES - STRICT ENFORCEMENT:
+1. JSON ONLY: Your output MUST be ONLY a valid raw JSON array containing EXACTLY {count} question objects.
+2. NO MARKDOWN: Do NOT wrap the JSON inside markdown code block fences (NO ```json or ```).
+3. NO EXPLANATORY TEXT: Do NOT include any intro, preamble, commentary, or outro outside the JSON structure.
+4. EXACT BOUNDARIES: The FIRST character of your response MUST be '[' and the LAST character MUST be ']'.
+5. REQUIRED FIELDS: Every question object MUST contain ALL 5 of these exact keys:
+   - "text" (non-empty string)
+   - "options" (list of strings)
+   - "correct" (integer)
+   - "hint" (non-empty string)
+   - "explanation" (non-empty string)
+
+MODE-SPECIFIC SCHEMAS:
+{mode_rules}
+
+SCHEMA TEMPLATE:
+{schema_example}
+
+Begin output now:"""
 
 
-def coding_challenge_prompt(language, difficulty, custom_instruction=""):
+def coding_challenge_prompt(language: str, difficulty: str, custom_instruction: str = "") -> str:
     """
-    Generate a prompt for Gemini AI to produce a coding challenge with hint and solution.
+    Generate a prompt for AI to produce a coding challenge with hint and solution.
     """
     custom = f"Additional guidance: {custom_instruction}" if custom_instruction else ""
 
@@ -195,9 +221,17 @@ Rules:
 """
 
 
-def code_evaluation_prompt(language, problem_title, problem_statement, code, user_input, execution_output, execution_error):
+def code_evaluation_prompt(
+    language: str,
+    problem_title: str,
+    problem_statement: str,
+    code: str,
+    user_input: str,
+    execution_output: str,
+    execution_error: str
+) -> str:
     """
-    Generate a prompt for Gemini AI to evaluate code submitted by a candidate based on multiple criteria.
+    Generate a prompt for AI to evaluate candidate code submission.
     """
     return f"""
 Role:

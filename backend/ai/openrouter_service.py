@@ -8,11 +8,12 @@ import concurrent.futures
 import copy
 import json
 import logging
-import re
 import time
 from typing import Any, Dict, List, Optional
 import requests
 from django.conf import settings
+
+from .json_utils import clean_json_string as utils_clean_json_string
 
 logger = logging.getLogger(__name__)
 
@@ -58,17 +59,18 @@ class OpenRouterService:
                 "mistralai/mistral-small-24b-instruct-2501",
             ],
             "temperature": 0.3,
-            "max_tokens": 1200,
+            "max_tokens": 1500,
             "expect_json": True,
         },
         "quiz": {
             "models": [
                 "google/gemini-2.0-flash-001",
                 "deepseek/deepseek-chat",
+                "qwen/qwen-2.5-coder-32b-instruct",
                 "mistralai/mistral-small-24b-instruct-2501",
             ],
             "temperature": 0.7,
-            "max_tokens": 700,
+            "max_tokens": 2000,
             "expect_json": True,
         },
         "coding": {
@@ -78,7 +80,7 @@ class OpenRouterService:
                 "deepseek/deepseek-chat",
             ],
             "temperature": 0.7,
-            "max_tokens": 1000,
+            "max_tokens": 2500,
             "expect_json": True,
         },
         "feedback": {
@@ -87,16 +89,7 @@ class OpenRouterService:
                 "deepseek/deepseek-chat",
             ],
             "temperature": 0.5,
-            "max_tokens": 600,
-            "expect_json": True,
-        },
-        "hr_interview": {
-            "models": [
-                "google/gemini-2.0-flash-001",
-                "deepseek/deepseek-chat",
-            ],
-            "temperature": 0.7,
-            "max_tokens": 700,
+            "max_tokens": 1500,
             "expect_json": True,
         },
     }
@@ -132,7 +125,7 @@ class OpenRouterService:
                     features[feat] = {
                         "models": models,
                         "temperature": 0.7,
-                        "max_tokens": 700,
+                        "max_tokens": 1500,
                         "expect_json": False,
                     }
 
@@ -185,6 +178,64 @@ class OpenRouterService:
                     f"Hard wall-clock timeout of {self.total_timeout}s exceeded"
                 )
 
+    def chat_with_model(
+        self,
+        model: str,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = 1500,
+        expect_json: bool = False,
+    ) -> str:
+        """
+        Single HTTP post invocation targeting a specific OpenRouter model.
+        """
+        headers = self._get_headers()
+        payload: Dict[str, Any] = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if expect_json:
+            payload["response_format"] = {"type": "json_object"}
+
+        response = self._execute_post(headers, payload)
+
+        # Fallback if model rejects response_format with 400 Bad Request
+        if response.status_code == 400 and expect_json and "response_format" in payload:
+            logger.warning(
+                f"[OpenRouter] Model '{model}' rejected response_format json_object (HTTP 400). "
+                f"Retrying request without response_format parameter..."
+            )
+            payload.pop("response_format")
+            response = self._execute_post(headers, payload)
+
+        status_code = response.status_code
+
+        if status_code == 200:
+            try:
+                resp_data = response.json()
+                choices = resp_data.get("choices", [])
+                if not choices:
+                    raise OpenRouterServiceError(f"Model '{model}' returned empty choices array.")
+
+                content = choices[0].get("message", {}).get("content", "")
+                if not content or not content.strip():
+                    raise OpenRouterServiceError(f"Model '{model}' returned empty message content.")
+
+                return content
+            except json.JSONDecodeError as exc:
+                raise OpenRouterJSONError(f"Failed to decode HTTP response body as JSON from '{model}': {exc}")
+
+        elif status_code in (401, 403):
+            raise OpenRouterAuthError(f"HTTP {status_code} Auth failure: Invalid or missing OPENROUTER_API_KEY.")
+
+        elif status_code in self.RETRY_STATUS_CODES:
+            raise OpenRouterHttpError(f"HTTP {status_code} retryable status code from model '{model}'")
+
+        else:
+            raise OpenRouterHttpError(f"HTTP {status_code} error from model '{model}': {response.text[:200]}")
+
     def chat(
         self,
         prompt: str,
@@ -195,189 +246,81 @@ class OpenRouterService:
         expect_json: Optional[bool] = None,
     ) -> str:
         """
-        Send chat completion request to OpenRouter with explicit model fallback and automatic retries.
-
-        Args:
-            prompt: Text prompt to send to the model.
-            feature: Category ('resume', 'quiz', 'coding', 'feedback', 'hr_interview').
-            temperature: Optional temperature override.
-            max_tokens: Optional max_tokens override.
-            response_format: Optional OpenRouter response_format dict.
-            expect_json: Optional boolean flag to validate and parse JSON response.
-
-        Returns:
-            str: Generated string response content.
+        Send chat completion request to OpenRouter with automatic model fallback and retries.
         """
         feat_config = self.features.get(feature, self.features.get("quiz", {}))
         models = feat_config.get("models", ["google/gemini-2.0-flash-001"])
 
         resolved_temp = temperature if temperature is not None else feat_config.get("temperature", 0.7)
-        resolved_max_tokens = max_tokens if max_tokens is not None else feat_config.get("max_tokens", 700)
+        resolved_max_tokens = max_tokens if max_tokens is not None else feat_config.get("max_tokens", 1500)
         resolved_expect_json = expect_json if expect_json is not None else feat_config.get("expect_json", False)
 
-        resolved_response_format = response_format
-        if resolved_expect_json and resolved_response_format is None:
-            resolved_response_format = {"type": "json_object"}
-
-        headers = self._get_headers()
         overall_errors: List[str] = []
+        primary_model = models[0] if models else "unknown"
 
-        # Explicit Model Fallback Loop
         for model_idx, selected_model in enumerate(models, start=1):
-            # Payload contains ONLY "model": selected_model
-            payload: Dict[str, Any] = {
-                "model": selected_model,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": resolved_temp,
-                "max_tokens": resolved_max_tokens,
-            }
-            if resolved_response_format:
-                payload["response_format"] = resolved_response_format
+            is_fallback = (selected_model != primary_model)
 
-            # Inner retry loop per model
             for attempt in range(1, self.max_retries + 1):
                 start_time = time.time()
                 logger.info(
-                    f"[OpenRouter] Request | Feature: '{feature}' | Model: '{selected_model}' ({model_idx}/{len(models)}) | "
+                    f"[OpenRouter] Request | Feature: '{feature}' | Model: '{selected_model}' "
+                    f"({'FALLBACK' if is_fallback else 'PRIMARY'}, {model_idx}/{len(models)}) | "
                     f"Attempt: {attempt}/{self.max_retries}"
                 )
 
                 try:
-                    response = self._execute_post(headers, payload)
+                    content = self.chat_with_model(
+                        model=selected_model,
+                        prompt=prompt,
+                        temperature=resolved_temp,
+                        max_tokens=resolved_max_tokens,
+                        expect_json=resolved_expect_json,
+                    )
                     elapsed_time = round(time.time() - start_time, 2)
-                    status_code = response.status_code
 
-                    if status_code == 200:
-                        try:
-                            resp_data = response.json()
-                            choices = resp_data.get("choices", [])
-                            if not choices:
-                                raise OpenRouterServiceError("OpenRouter response choices array is empty.")
+                    logger.info(
+                        f"[OpenRouter] Success | Feature: '{feature}' | Selected Model: '{selected_model}' | "
+                        f"Fallback Model: '{selected_model if is_fallback else 'None'}' | "
+                        f"Attempt: {attempt}/{self.max_retries} | Time: {elapsed_time}s | Response Length: {len(content)} chars"
+                    )
+                    return content
 
-                            content = choices[0].get("message", {}).get("content", "")
-                            if not content or not content.strip():
-                                raise OpenRouterServiceError("OpenRouter returned empty message content.")
-
-                            if resolved_expect_json:
-                                cleaned_content = self.clean_json_string(content)
-                                try:
-                                    json.loads(cleaned_content)
-                                except Exception as json_err:
-                                    err_msg = f"JSON validation failed on model '{selected_model}' attempt {attempt}: {json_err}"
-                                    logger.warning(f"[OpenRouter] {err_msg}")
-                                    if attempt < self.max_retries:
-                                        time.sleep(0.5)
-                                        continue
-                                    raise OpenRouterJSONError(err_msg)
-
-                            logger.info(
-                                f"[OpenRouter] Success | Feature: '{feature}' | Model: '{selected_model}' | "
-                                f"Attempt: {attempt}/{self.max_retries} | Time: {elapsed_time}s"
-                            )
-                            return content
-
-                        except json.JSONDecodeError as exc:
-                            raise OpenRouterJSONError(f"Failed to decode HTTP JSON response body: {exc}")
-
-                    elif status_code in self.RETRY_STATUS_CODES:
-                        err_msg = f"HTTP {status_code} retryable status from '{selected_model}': {response.text[:150]}"
-                        logger.warning(
-                            f"[OpenRouter] {err_msg} | Attempt: {attempt}/{self.max_retries} | Time: {elapsed_time}s"
-                        )
-                        if attempt < self.max_retries:
-                            time.sleep(0.5 * attempt)
-                            continue
-                        overall_errors.append(f"Model '{selected_model}': {err_msg}")
-
-                    elif status_code in (401, 403):
-                        err_msg = f"HTTP {status_code} Auth failure: Access denied or invalid OPENROUTER_API_KEY."
-                        logger.error(f"[OpenRouter] {err_msg}")
-                        raise OpenRouterAuthError(err_msg)
-
-                    else:
-                        err_msg = f"HTTP {status_code} Non-retryable error from '{selected_model}': {response.text[:150]}"
-                        logger.warning(f"[OpenRouter] {err_msg}")
-                        overall_errors.append(f"Model '{selected_model}': {err_msg}")
-                        break
-
-                except requests.exceptions.ConnectTimeout as conn_err:
-                    elapsed = round(time.time() - start_time, 2)
-                    err_msg = f"Connect Timeout ({self.connect_timeout}s) on '{selected_model}': {conn_err}"
-                    logger.warning(f"[OpenRouter] {err_msg} | Attempt: {attempt}/{self.max_retries} | Time: {elapsed}s")
-                    if attempt < self.max_retries:
-                        time.sleep(0.5)
-                        continue
-                    overall_errors.append(f"Model '{selected_model}': {err_msg}")
-
-                except requests.exceptions.ReadTimeout as read_err:
-                    elapsed = round(time.time() - start_time, 2)
-                    err_msg = f"Read Timeout ({self.read_timeout}s) on '{selected_model}': {read_err}"
-                    logger.warning(f"[OpenRouter] {err_msg} | Attempt: {attempt}/{self.max_retries} | Time: {elapsed}s")
-                    if attempt < self.max_retries:
-                        time.sleep(0.5)
-                        continue
-                    overall_errors.append(f"Model '{selected_model}': {err_msg}")
-
-                except requests.exceptions.Timeout as timeout_err:
-                    elapsed = round(time.time() - start_time, 2)
-                    err_msg = f"Total Wall-Clock Timeout ({self.total_timeout}s) on '{selected_model}': {timeout_err}"
-                    logger.warning(f"[OpenRouter] {err_msg} | Attempt: {attempt}/{self.max_retries} | Time: {elapsed}s")
-                    if attempt < self.max_retries:
-                        time.sleep(0.5)
-                        continue
-                    overall_errors.append(f"Model '{selected_model}': {err_msg}")
-
-                except (requests.exceptions.ConnectionError, requests.exceptions.RequestException) as net_err:
-                    elapsed = round(time.time() - start_time, 2)
-                    err_msg = f"Network Error ({type(net_err).__name__}) on '{selected_model}': {net_err}"
-                    logger.warning(f"[OpenRouter] {err_msg} | Attempt: {attempt}/{self.max_retries} | Time: {elapsed}s")
-                    if attempt < self.max_retries:
-                        time.sleep(0.5)
-                        continue
-                    overall_errors.append(f"Model '{selected_model}': {err_msg}")
-
-                except OpenRouterJSONError as json_err:
-                    elapsed = round(time.time() - start_time, 2)
-                    logger.warning(f"[OpenRouter] JSON Error on '{selected_model}': {json_err}")
-                    overall_errors.append(f"Model '{selected_model}': {json_err}")
-
-                except OpenRouterAuthError:
+                except OpenRouterAuthError as auth_err:
+                    logger.error(f"[OpenRouter] Auth Failure: {auth_err}")
                     raise
 
-                except OpenRouterHttpError as http_err:
-                    logger.warning(f"[OpenRouter] HTTP Error on '{selected_model}': {http_err}")
-                    overall_errors.append(f"Model '{selected_model}': {http_err}")
-                    break
+                except (requests.exceptions.Timeout, OpenRouterTimeoutError) as timeout_err:
+                    elapsed = round(time.time() - start_time, 2)
+                    err_msg = f"Timeout ({elapsed}s) on '{selected_model}': {timeout_err}"
+                    logger.warning(f"[OpenRouter] {err_msg} | Attempt {attempt}/{self.max_retries}")
+                    if attempt < self.max_retries:
+                        time.sleep(0.5 * attempt)
+                        continue
+                    overall_errors.append(f"Model '{selected_model}' attempt {attempt}: {err_msg}")
 
-                except OpenRouterServiceError as svc_err:
-                    logger.warning(f"[OpenRouter] Service error on '{selected_model}': {svc_err}")
-                    overall_errors.append(f"Model '{selected_model}': {svc_err}")
+                except Exception as err:
+                    elapsed = round(time.time() - start_time, 2)
+                    err_msg = f"Error on '{selected_model}' ({type(err).__name__}): {err}"
+                    logger.warning(f"[OpenRouter] {err_msg} | Attempt {attempt}/{self.max_retries}")
+                    if attempt < self.max_retries:
+                        time.sleep(0.5 * attempt)
+                        continue
+                    overall_errors.append(f"Model '{selected_model}' attempt {attempt}: {err_msg}")
 
-                except Exception as unhandled_err:
-                    logger.error(f"[OpenRouter] Unexpected error on '{selected_model}': {unhandled_err}")
-                    overall_errors.append(f"Model '{selected_model}': {unhandled_err}")
-
-            # Selected model failed all retries; fall back to next model
             logger.warning(
                 f"[OpenRouter] Model '{selected_model}' failed all {self.max_retries} retries. "
-                f"Falling back to next model in fallback list..."
+                f"Moving to next fallback model..."
             )
 
         raise OpenRouterServiceError(
-            f"All models ({models}) failed for feature '{feature}'. Errors encountered: {overall_errors}"
+            f"All models ({models}) failed for feature '{feature}'. Errors: {overall_errors}"
         )
 
     @staticmethod
     def clean_json_string(raw_text: str) -> str:
         """Utility to strip markdown code blocks and extract raw JSON object or array."""
-        if not isinstance(raw_text, str):
-            return ""
-        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_text.strip(), flags=re.IGNORECASE).strip()
-        if not (cleaned.startswith("{") or cleaned.startswith("[")):
-            match = re.search(r"(\{.*\}|\[.*\])", cleaned, flags=re.DOTALL)
-            if match:
-                cleaned = match.group(0)
-        return cleaned
+        return utils_clean_json_string(raw_text)
 
 
 # Global service instance for easy import across modules
