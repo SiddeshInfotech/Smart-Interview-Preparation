@@ -47,7 +47,7 @@ const QuizPage = () => {
   const totalQuestions = quizData.length;
 
   const handleOptionClick = (index) => {
-    if (isAnswered) return;
+    if (isSubmitting) return;
     setSelectedOption(index);
     setIsAnswered(true);
 
@@ -168,10 +168,8 @@ const QuizPage = () => {
   };
 
   const getOptionClass = (index) => {
-    if (selectedOption === null) return "option-btn";
-    if (index === quizData[currentQuestion]?.correct) return "option-btn correct";
-    if (index === selectedOption && index !== quizData[currentQuestion]?.correct) return "option-btn wrong";
-    return "option-btn disabled";
+    if (selectedOption === index) return "option-btn selected";
+    return "option-btn";
   };
 
   if (loading) {
@@ -241,7 +239,7 @@ const QuizPage = () => {
               key={index}
               className={getOptionClass(index)}
               onClick={() => handleOptionClick(index)}
-              disabled={isAnswered || isSubmitting}
+              disabled={isSubmitting}
             >
               <span className="option-label">{String.fromCharCode(65 + index)}</span>
               <span className="option-text">{option}</span>

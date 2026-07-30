@@ -27,7 +27,7 @@ class OpenRouterService:
 
     RETRY_STATUS_CODES = {429, 502, 503, 504}
     MAX_ATTEMPTS = 2
-    TIMEOUT_SECONDS = 35
+    TIMEOUT_SECONDS = 18
 
     def __init__(self):
         self.api_key: str = getattr(settings, "OPENROUTER_API_KEY", "")
@@ -40,11 +40,11 @@ class OpenRouterService:
             settings,
             "AI_MODELS",
             {
-                "resume": ["deepseek/deepseek-chat-v3.1", "qwen/qwen3-235b-a22b-thinking-2507"],
-                "quiz": ["deepseek/deepseek-chat-v3.1", "mistralai/mistral-small"],
-                "coding": ["qwen/qwen3-coder", "deepseek/deepseek-chat-v3.1"],
-                "feedback": ["qwen/qwen3-235b-a22b-thinking-2507", "deepseek/deepseek-chat-v3.1"],
-                "hr_interview": ["deepseek/deepseek-chat-v3.1", "mistralai/mistral-small"]
+                "resume": ["deepseek/deepseek-chat", "google/gemini-2.0-flash-lite-001", "mistralai/mistral-small-24b-instruct-2501"],
+                "quiz": ["deepseek/deepseek-chat", "google/gemini-2.0-flash-lite-001", "mistralai/mistral-small-24b-instruct-2501"],
+                "coding": ["qwen/qwen-2.5-coder-32b-instruct", "deepseek/deepseek-chat", "google/gemini-2.0-flash-lite-001"],
+                "feedback": ["deepseek/deepseek-chat", "google/gemini-2.0-flash-lite-001"],
+                "hr_interview": ["deepseek/deepseek-chat", "google/gemini-2.0-flash-lite-001"]
             }
         )
 
@@ -61,7 +61,7 @@ class OpenRouterService:
 
     def get_models_for_feature(self, feature: str) -> List[str]:
         """Retrieve model fallback hierarchy configured for a feature."""
-        return self.ai_models.get(feature, self.ai_models.get("quiz", ["deepseek/deepseek-chat-v3.1"]))
+        return self.ai_models.get(feature, self.ai_models.get("quiz", ["deepseek/deepseek-chat"]))
 
     def chat(
         self,
@@ -103,8 +103,9 @@ class OpenRouterService:
 
         for attempt in range(1, self.MAX_ATTEMPTS + 1):
             start_time = time.time()
+            attempt_timeout = self.TIMEOUT_SECONDS if attempt == 1 else 7
             logger.info(
-                f"[OpenRouter] Request started | Feature: {feature} | Attempt: {attempt}/{self.MAX_ATTEMPTS} | Models: {models}"
+                f"[OpenRouter] Request started | Feature: {feature} | Attempt: {attempt}/{self.MAX_ATTEMPTS} | Timeout: {attempt_timeout}s | Models: {models}"
             )
 
             try:
@@ -112,7 +113,7 @@ class OpenRouterService:
                     self.api_url,
                     headers=headers,
                     json=payload,
-                    timeout=self.TIMEOUT_SECONDS
+                    timeout=attempt_timeout
                 )
                 elapsed_time = round(time.time() - start_time, 2)
                 status_code = response.status_code
@@ -142,7 +143,7 @@ class OpenRouterService:
                                     f"[OpenRouter] JSON parsing failed on attempt {attempt}: {json_err}"
                                 )
                                 if attempt < self.MAX_ATTEMPTS:
-                                    time.sleep(1)
+                                    time.sleep(0.5)
                                     continue
                                 raise OpenRouterServiceError(f"OpenRouter output failed JSON validation: {json_err}")
 
@@ -157,7 +158,7 @@ class OpenRouterService:
                         f"[OpenRouter] Retryable status code {status_code} on attempt {attempt}/{self.MAX_ATTEMPTS}"
                     )
                     if attempt < self.MAX_ATTEMPTS:
-                        time.sleep(1.5 * attempt)
+                        time.sleep(0.5)
                         continue
 
                 elif status_code == 401:
@@ -174,7 +175,7 @@ class OpenRouterService:
                     f"[OpenRouter] Network failure on attempt {attempt}/{self.MAX_ATTEMPTS} after {elapsed_time}s: {net_err}"
                 )
                 if attempt < self.MAX_ATTEMPTS:
-                    time.sleep(1.5 * attempt)
+                    time.sleep(0.5)
                     continue
 
             except OpenRouterServiceError:

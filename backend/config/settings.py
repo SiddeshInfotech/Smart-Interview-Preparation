@@ -205,26 +205,26 @@ OPENROUTER_API_URL = os.environ.get("OPENROUTER_API_URL", "https://openrouter.ai
 
 AI_MODELS = {
     "resume": [
-        "deepseek/deepseek-chat-v3.1",
-        "qwen/qwen3-235b-a22b-thinking-2507",
-        "mistralai/mistral-small"
+        "deepseek/deepseek-chat",
+        "google/gemini-2.0-flash-lite-001",
+        "mistralai/mistral-small-24b-instruct-2501"
     ],
     "quiz": [
-        "deepseek/deepseek-chat-v3.1",
-        "mistralai/mistral-small"
+        "deepseek/deepseek-chat",
+        "google/gemini-2.0-flash-lite-001",
+        "mistralai/mistral-small-24b-instruct-2501"
     ],
     "coding": [
-        "qwen/qwen3-coder",
-        "deepseek/deepseek-chat-v3.1",
-        "mistralai/mistral-small"
+        "qwen/qwen-2.5-coder-32b-instruct",
+        "deepseek/deepseek-chat",
+        "google/gemini-2.0-flash-lite-001"
     ],
     "feedback": [
-        "qwen/qwen3-235b-a22b-thinking-2507",
-        "deepseek/deepseek-chat-v3.1",
-        "mistralai/mistral-small"
+        "deepseek/deepseek-chat",
+        "google/gemini-2.0-flash-lite-001"
     ],
     "hr_interview": [
-        "deepseek/deepseek-chat-v3.1",
-        "mistralai/mistral-small"
+        "deepseek/deepseek-chat",
+        "google/gemini-2.0-flash-lite-001"
     ]
 }

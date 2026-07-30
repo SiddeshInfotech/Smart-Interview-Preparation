@@ -118,7 +118,7 @@ const QuizResult = () => {
                         }
                       } else if (isSelected) {
                         className += ' wrong-option';
-                        badgeText = '✕ Your Answer';
+                        badgeText = '✕ Your Answer (Incorrect)';
                         badgeClass = 'wrong-badge';
                       }
 
@@ -156,6 +156,11 @@ const QuizResult = () => {
                       )}
                       <div className="correct-option-text">
                         Correct Answer: <strong>Option {optionLabels[q.correct]}</strong>
+                        {!isSkipped && !isCorrect && (
+                          <span style={{ marginLeft: '12px', color: '#b91c1c' }}>
+                            Your Selection: <strong>Option {optionLabels[selectedOptionIndex]}</strong>
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

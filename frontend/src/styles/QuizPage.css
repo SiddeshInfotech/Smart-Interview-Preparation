@@ -342,6 +342,15 @@ body::-webkit-scrollbar {
   font-size: 14px;
   line-height: 1.4;
 }
+.option-btn.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+.option-btn.selected .option-label {
+  background: #2563eb;
+  color: white;
+}
 .option-btn.correct {
   border-color: #22c55e;
   background: #f0fdf4;

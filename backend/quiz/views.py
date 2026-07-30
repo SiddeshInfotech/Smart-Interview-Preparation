@@ -54,6 +54,9 @@ def generate_quiz(request):
         return Response({"questions": questions}, status=200)
 
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"[QuizView] AI generation failed: {e}", exc_info=True)
         return Response({"error": f"AI generation failed: {str(e)}"}, status=500)
 
 
