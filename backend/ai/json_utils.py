@@ -27,7 +27,6 @@ def clean_json_string(raw_text: str) -> str:
     text = raw_text.strip()
 
     # Step 1: Remove markdown code block wrappers if present
-    # Pattern matches ```json ... ``` or ``` ... ```
     code_block_match = re.search(r"```(?:json)?\s*(.*?)\s*```", text, flags=re.DOTALL | re.IGNORECASE)
     if code_block_match:
         text = code_block_match.group(1).strip()
@@ -56,6 +55,7 @@ def extract_questions_list(parsed_data: Any) -> Tuple[Optional[List[Dict[str, An
     Supports:
     - Direct list: [...]
     - Object wrappers: {"questions": [...]}, {"quiz": [...]}, {"data": [...]}, {"result": [...]}, {"items": [...]}
+    - Index dicts: {"0": {...}, "1": {...}}
     - Deeply nested objects/lists.
 
     Returns:
@@ -73,14 +73,20 @@ def extract_questions_list(parsed_data: Any) -> Tuple[Optional[List[Dict[str, An
         return None, "failed"
 
     if isinstance(parsed_data, dict):
-        # Priority check for common keys
-        candidate_keys = ["questions", "quiz", "data", "result", "results", "items"]
+        # 1. Priority check for common keys
+        candidate_keys = ["questions", "quiz", "data", "result", "results", "items", "mcq", "list"]
         for key in candidate_keys:
             val = parsed_data.get(key)
             if isinstance(val, list) and _is_question_list(val):
                 return val, f"wrapper_key_{key}"
 
-        # Recursive search across all dictionary values
+        # 2. Check if dict values are indexed questions e.g. {"0": {...}, "1": {...}}
+        dict_values = list(parsed_data.values())
+        if dict_values and all(isinstance(v, dict) for v in dict_values):
+            if _is_question_list(dict_values):
+                return dict_values, "indexed_dict_values"
+
+        # 3. Recursive search across all dictionary values
         queue = [(parsed_data, "root")]
         visited = set()
 
@@ -99,6 +105,11 @@ def extract_questions_list(parsed_data: Any) -> Tuple[Optional[List[Dict[str, An
                     elif isinstance(v, (dict, list)):
                         queue.append((v, sub_path))
 
+        # 4. Check if parsed_data itself is a single question object
+        keys = {k.lower() for k in parsed_data.keys()}
+        if any(k in keys for k in ("text", "question", "prompt", "title", "problem")):
+            return [parsed_data], "single_question_object"
+
     return None, "failed"
 
 
@@ -106,11 +117,12 @@ def _is_question_list(lst: List[Any]) -> bool:
     """Check if a list contains dictionary objects that resemble question items."""
     if not lst or not isinstance(lst, list):
         return False
-    # At least one item in the list must be a dictionary with question-like keys
     for item in lst:
         if isinstance(item, dict):
             keys = {k.lower() for k in item.keys()}
-            if any(k in keys for k in ("text", "question", "prompt", "title", "problem", "options")):
+            if any(k in keys for k in ("text", "question", "prompt", "title", "problem", "options", "q", "content", "query", "mcq")):
+                return True
+            if len(item) >= 2:
                 return True
     return False
 
@@ -136,7 +148,7 @@ def validate_and_repair_question(
 
     # 1. Normalize 'text'
     text_val = None
-    for key in ("text", "question", "prompt", "title", "problem", "statement"):
+    for key in ("text", "question", "prompt", "title", "problem", "statement", "q", "content", "query"):
         if key in question and isinstance(question[key], str) and question[key].strip():
             text_val = question[key].strip()
             if key != "text":
@@ -173,7 +185,7 @@ def validate_and_repair_question(
         # Extract options
         raw_options = question.get("options")
         if not isinstance(raw_options, list):
-            raw_options = question.get("choices") or question.get("answers") or []
+            raw_options = question.get("choices") or question.get("answers") or question.get("mcq_options") or []
             repair_performed = True
 
         str_options = [str(opt).strip() for opt in raw_options if str(opt).strip()]

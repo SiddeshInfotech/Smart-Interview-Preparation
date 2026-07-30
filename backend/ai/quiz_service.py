@@ -14,7 +14,11 @@ from .json_utils import (
     extract_questions_list,
     validate_and_repair_question,
 )
-from .openrouter_service import OpenRouterServiceError, openrouter_service
+from .openrouter_service import (
+    OpenRouterNonRetryableError,
+    OpenRouterServiceError,
+    openrouter_service,
+)
 from .prompts import quiz_generation_prompt
 
 logger = logging.getLogger(__name__)
@@ -61,7 +65,7 @@ def generate_quiz_questions(
 
     models = openrouter_service.get_models_for_feature("quiz")
     max_retries = openrouter_service.max_retries
-    primary_model = models[0] if models else "google/gemini-2.0-flash-001"
+    primary_model = models[0] if models else "google/gemini-2.0-flash-01"
 
     overall_failures: List[str] = []
 
@@ -135,7 +139,7 @@ def generate_quiz_questions(
                 # Truncate to exact requested count
                 final_questions = validated_questions[:count]
 
-                # 8. Detailed Metrics Logging
+                # Detailed Metrics Logging
                 logger.info("=" * 80)
                 logger.info(
                     f"[QuizService] SUCCESS | Selected Model: '{selected_model}' | "
@@ -149,6 +153,15 @@ def generate_quiz_questions(
 
                 return final_questions
 
+            except OpenRouterNonRetryableError as non_retryable_err:
+                elapsed_time = round(time.time() - start_time, 2)
+                logger.warning(
+                    f"[QuizService] NON-RETRYABLE ERROR | Model: '{selected_model}' | "
+                    f"Time: {elapsed_time}s | Reason: '{non_retryable_err}'"
+                )
+                overall_failures.append(f"Model '{selected_model}': {non_retryable_err}")
+                break  # Immediately move to next fallback model
+
             except Exception as failure:
                 elapsed_time = round(time.time() - start_time, 2)
                 retry_reason = str(failure)
@@ -158,13 +171,13 @@ def generate_quiz_questions(
                 )
 
                 if attempt < max_retries:
-                    time.sleep(0.5 * attempt)
+                    time.sleep(0.3 * attempt)
                     continue
 
                 overall_failures.append(f"Model '{selected_model}' failed: {retry_reason}")
 
         logger.warning(
-            f"[QuizService] Model '{selected_model}' failed all {max_retries} retries. "
+            f"[QuizService] Model '{selected_model}' finished attempts. "
             f"Falling back to next model in fallback list..."
         )
 
