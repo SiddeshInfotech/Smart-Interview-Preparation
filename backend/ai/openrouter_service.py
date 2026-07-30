@@ -53,7 +53,7 @@ class OpenRouterService:
     DEFAULT_FEATURES: Dict[str, Dict[str, Any]] = {
         "resume": {
             "models": [
-                "google/gemini-2.0-flash-lite-001",
+                "google/gemini-2.0-flash-001",
                 "deepseek/deepseek-chat",
                 "mistralai/mistral-small-24b-instruct-2501",
             ],
@@ -63,7 +63,7 @@ class OpenRouterService:
         },
         "quiz": {
             "models": [
-                "google/gemini-2.0-flash-lite-001",
+                "google/gemini-2.0-flash-001",
                 "deepseek/deepseek-chat",
                 "mistralai/mistral-small-24b-instruct-2501",
             ],
@@ -73,7 +73,7 @@ class OpenRouterService:
         },
         "coding": {
             "models": [
-                "google/gemini-2.0-flash-lite-001",
+                "google/gemini-2.0-flash-001",
                 "qwen/qwen-2.5-coder-32b-instruct",
                 "deepseek/deepseek-chat",
             ],
@@ -83,7 +83,7 @@ class OpenRouterService:
         },
         "feedback": {
             "models": [
-                "google/gemini-2.0-flash-lite-001",
+                "google/gemini-2.0-flash-001",
                 "deepseek/deepseek-chat",
             ],
             "temperature": 0.5,
@@ -92,7 +92,7 @@ class OpenRouterService:
         },
         "hr_interview": {
             "models": [
-                "google/gemini-2.0-flash-lite-001",
+                "google/gemini-2.0-flash-001",
                 "deepseek/deepseek-chat",
             ],
             "temperature": 0.7,
@@ -161,7 +161,7 @@ class OpenRouterService:
     def get_models_for_feature(self, feature: str) -> List[str]:
         """Retrieve model fallback hierarchy configured for a feature."""
         feat_config = self.features.get(feature, self.features.get("quiz", {}))
-        return feat_config.get("models", ["google/gemini-2.0-flash-lite-001"])
+        return feat_config.get("models", ["google/gemini-2.0-flash-001"])
 
     def _execute_post(self, headers: dict, payload: dict) -> requests.Response:
         """
@@ -209,7 +209,7 @@ class OpenRouterService:
             str: Generated string response content.
         """
         feat_config = self.features.get(feature, self.features.get("quiz", {}))
-        models = feat_config.get("models", ["google/gemini-2.0-flash-lite-001"])
+        models = feat_config.get("models", ["google/gemini-2.0-flash-001"])
 
         resolved_temp = temperature if temperature is not None else feat_config.get("temperature", 0.7)
         resolved_max_tokens = max_tokens if max_tokens is not None else feat_config.get("max_tokens", 700)
@@ -296,8 +296,9 @@ class OpenRouterService:
 
                     else:
                         err_msg = f"HTTP {status_code} Non-retryable error from '{selected_model}': {response.text[:150]}"
-                        logger.error(f"[OpenRouter] {err_msg}")
-                        raise OpenRouterHttpError(err_msg)
+                        logger.warning(f"[OpenRouter] {err_msg}")
+                        overall_errors.append(f"Model '{selected_model}': {err_msg}")
+                        break
 
                 except requests.exceptions.ConnectTimeout as conn_err:
                     elapsed = round(time.time() - start_time, 2)
@@ -340,8 +341,13 @@ class OpenRouterService:
                     logger.warning(f"[OpenRouter] JSON Error on '{selected_model}': {json_err}")
                     overall_errors.append(f"Model '{selected_model}': {json_err}")
 
-                except (OpenRouterAuthError, OpenRouterHttpError):
+                except OpenRouterAuthError:
                     raise
+
+                except OpenRouterHttpError as http_err:
+                    logger.warning(f"[OpenRouter] HTTP Error on '{selected_model}': {http_err}")
+                    overall_errors.append(f"Model '{selected_model}': {http_err}")
+                    break
 
                 except OpenRouterServiceError as svc_err:
                     logger.warning(f"[OpenRouter] Service error on '{selected_model}': {svc_err}")

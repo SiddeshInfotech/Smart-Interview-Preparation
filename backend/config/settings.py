@@ -199,26 +199,26 @@ PISTON_RUNTIMES_CACHE_TTL = int(os.environ.get("PISTON_RUNTIMES_CACHE_TTL", "864
 
 AI_MODELS = {
     "resume": [
-        "google/gemini-2.0-flash-lite-001",
+        "google/gemini-2.0-flash-001",
         "deepseek/deepseek-chat",
         "mistralai/mistral-small-24b-instruct-2501"
     ],
     "quiz": [
-        "google/gemini-2.0-flash-lite-001",
+        "google/gemini-2.0-flash-001",
         "deepseek/deepseek-chat",
         "mistralai/mistral-small-24b-instruct-2501"
     ],
     "coding": [
-        "google/gemini-2.0-flash-lite-001",
+        "google/gemini-2.0-flash-001",
         "qwen/qwen-2.5-coder-32b-instruct",
         "deepseek/deepseek-chat"
     ],
     "feedback": [
-        "google/gemini-2.0-flash-lite-001",
+        "google/gemini-2.0-flash-001",
         "deepseek/deepseek-chat"
     ],
     "hr_interview": [
-        "google/gemini-2.0-flash-lite-001",
+        "google/gemini-2.0-flash-001",
         "deepseek/deepseek-chat"
     ]
 }
