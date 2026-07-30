@@ -7,56 +7,49 @@ from typing import List
 
 
 def resume_analysis_prompt(resume_text: str) -> str:
-    return f"""
-Analyze this resume.
+    """
+    Generate strict prompt for resume analysis.
+    Forces JSON output synchronized with ResumeUpload.jsx frontend fields and backend ResumeAnalysis model.
+    """
+    return f"""You are an expert ATS (Applicant Tracking System) reviewer, Lead Technical Recruiter, and Resume Strategist.
 
-Extract:
-- candidate_name
-- email
-- role
-- location
-- education
-- experience
-- linkedin
-- github
-- portfolio
-- skills
-- matched_skills
-- missing_skills
-- suggested_next_skills
-- skill_category
-- resume_score
-- summary
-- suggestions
+Analyze the following resume text and provide a thorough, structured evaluation.
 
-Resume:
+RESUME TEXT:
 {resume_text}
 
-Return ONLY valid JSON.
-Do not use markdown.
-Do not wrap the response in ```json or ```.
-Use exactly these keys:
+CRITICAL RULES:
+1. Return ONLY a single raw valid JSON object.
+2. Do NOT use markdown fences (NO ```json or ```).
+3. Do NOT include any preamble, intro, commentary, or outro text outside the JSON structure.
+4. Output MUST match the exact JSON schema defined below.
 
+REQUIRED JSON SCHEMA:
 {{
-  "candidate_name": "",
-  "email": "",
-  "role": "",
-  "location": "",
-  "education": "",
-  "experience": "",
-  "linkedin": "",
-  "github": "",
-  "portfolio": "",
-  "skills": [],
-  "matched_skills": [],
-  "missing_skills": [],
-  "suggested_next_skills": [],
-  "skill_category": "",
-  "resume_score": 0,
-  "summary": "",
-  "suggestions": []
+  "candidate_name": "Full Name of candidate or 'Candidate'",
+  "email": "Email address or '' if not found",
+  "role": "Primary target role or current designation (e.g. Full Stack Web Developer)",
+  "location": "City, Country or 'Remote'",
+  "education": "Highest degree, field of study, and university/college",
+  "experience": "Total experience summary (e.g. 3 years or Entry Level)",
+  "linkedin": "LinkedIn profile URL or '' if not found",
+  "github": "GitHub profile URL or '' if not found",
+  "portfolio": "Portfolio or personal website URL or '' if not found",
+  "skills": ["Skill 1", "Skill 2", "Skill 3"],
+  "matched_skills": ["Matched Skill 1", "Matched Skill 2"],
+  "missing_skills": ["Missing Skill 1", "Missing Skill 2"],
+  "suggested_next_skills": ["Suggested Skill 1", "Suggested Skill 2"],
+  "skill_category": "Primary technical domain (e.g. Full Stack Web Development)",
+  "resume_score": 82,
+  "summary": "2-3 sentence executive professional summary highlighting candidate strengths and domain expertise.",
+  "suggestions": [
+    "First actionable advice focusing on project links and live portfolio work",
+    "Second actionable advice focusing on experience framing and quantifiable metric achievements",
+    "Third actionable advice focusing on technical architecture, system design, or domain depth"
+  ]
 }}
-"""
+
+Begin JSON output now:"""
 
 
 def quiz_generation_prompt(
