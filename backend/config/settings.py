@@ -35,11 +35,6 @@ CORS_ALLOWED_ORIGINS = os.environ.get(
 ).split(",")
 
 # ========== DATABASE (MySQL) ==========
-# Using individual environment variables (DB_NAME, DB_USER, etc.)
-# The SSL certificate path is relative to BASE_DIR.
-# Make sure the 'certificates/ca.pem' file is present on your server (Render)
-# If your MySQL provider does not require SSL, you can remove the 'ssl' option.
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -65,15 +60,11 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-print(f"Current dir: {BASE_DIR}")
-print(f".env exists: {(BASE_DIR / '.env').exists()}")
-
-# ========== EMAIL (console backend – works on Render free tier) ==========
+# ========== EMAIL ==========
 EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@yourdomain.com")
 
-# Optional: disable sandbox mode in production
 SENDGRID_SANDBOX_MODE_IN_DEBUG = False
 
 # ========== API KEYS & LIVEKIT ==========
@@ -115,11 +106,10 @@ INSTALLED_APPS = [
 # ========== PISTON API CONFIGURATION ==========
 PISTON_API_URL = os.environ.get("PISTON_API_URL", "https://emkc.org/api/v2/piston")
 
-
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # required for static files
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -196,35 +186,32 @@ USE_TZ = True
 # ========== DEFAULT PRIMARY KEY FIELD TYPE ==========
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ========== PISTON CODE EXECUTION ENGINE ==========
-PISTON_API_URL = os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
-
 # ========== OPENROUTER AI CONFIGURATION ==========
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_API_URL = os.environ.get("OPENROUTER_API_URL", "https://openrouter.ai/api/v1/chat/completions")
 
 AI_MODELS = {
     "resume": [
-        "deepseek/deepseek-chat",
         "google/gemini-2.0-flash-lite-001",
+        "deepseek/deepseek-chat",
         "mistralai/mistral-small-24b-instruct-2501"
     ],
     "quiz": [
-        "deepseek/deepseek-chat",
         "google/gemini-2.0-flash-lite-001",
+        "deepseek/deepseek-chat",
         "mistralai/mistral-small-24b-instruct-2501"
     ],
     "coding": [
+        "google/gemini-2.0-flash-lite-001",
         "qwen/qwen-2.5-coder-32b-instruct",
-        "deepseek/deepseek-chat",
-        "google/gemini-2.0-flash-lite-001"
+        "deepseek/deepseek-chat"
     ],
     "feedback": [
-        "deepseek/deepseek-chat",
-        "google/gemini-2.0-flash-lite-001"
+        "google/gemini-2.0-flash-lite-001",
+        "deepseek/deepseek-chat"
     ],
     "hr_interview": [
-        "deepseek/deepseek-chat",
-        "google/gemini-2.0-flash-lite-001"
+        "google/gemini-2.0-flash-lite-001",
+        "deepseek/deepseek-chat"
     ]
 }

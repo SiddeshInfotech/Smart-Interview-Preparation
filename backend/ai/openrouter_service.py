@@ -3,6 +3,7 @@ OpenRouter API Service.
 Provides centralized, resilient AI generation using OpenRouter models, automatic model fallback, retry logic, error handling, and JSON validation.
 """
 
+import concurrent.futures
 import json
 import logging
 import re
@@ -27,7 +28,7 @@ class OpenRouterService:
 
     RETRY_STATUS_CODES = {429, 502, 503, 504}
     MAX_ATTEMPTS = 2
-    TIMEOUT_SECONDS = 18
+    TIMEOUT_SECONDS = 14
 
     def __init__(self):
         self.api_key: str = getattr(settings, "OPENROUTER_API_KEY", "")
@@ -40,11 +41,29 @@ class OpenRouterService:
             settings,
             "AI_MODELS",
             {
-                "resume": ["deepseek/deepseek-chat", "google/gemini-2.0-flash-lite-001", "mistralai/mistral-small-24b-instruct-2501"],
-                "quiz": ["deepseek/deepseek-chat", "google/gemini-2.0-flash-lite-001", "mistralai/mistral-small-24b-instruct-2501"],
-                "coding": ["qwen/qwen-2.5-coder-32b-instruct", "deepseek/deepseek-chat", "google/gemini-2.0-flash-lite-001"],
-                "feedback": ["deepseek/deepseek-chat", "google/gemini-2.0-flash-lite-001"],
-                "hr_interview": ["deepseek/deepseek-chat", "google/gemini-2.0-flash-lite-001"]
+                "resume": [
+                    "google/gemini-2.0-flash-lite-001",
+                    "deepseek/deepseek-chat",
+                    "mistralai/mistral-small-24b-instruct-2501"
+                ],
+                "quiz": [
+                    "google/gemini-2.0-flash-lite-001",
+                    "deepseek/deepseek-chat",
+                    "mistralai/mistral-small-24b-instruct-2501"
+                ],
+                "coding": [
+                    "google/gemini-2.0-flash-lite-001",
+                    "qwen/qwen-2.5-coder-32b-instruct",
+                    "deepseek/deepseek-chat"
+                ],
+                "feedback": [
+                    "google/gemini-2.0-flash-lite-001",
+                    "deepseek/deepseek-chat"
+                ],
+                "hr_interview": [
+                    "google/gemini-2.0-flash-lite-001",
+                    "deepseek/deepseek-chat"
+                ]
             }
         )
 
@@ -61,7 +80,26 @@ class OpenRouterService:
 
     def get_models_for_feature(self, feature: str) -> List[str]:
         """Retrieve model fallback hierarchy configured for a feature."""
-        return self.ai_models.get(feature, self.ai_models.get("quiz", ["deepseek/deepseek-chat"]))
+        return self.ai_models.get(feature, self.ai_models.get("quiz", ["google/gemini-2.0-flash-lite-001"]))
+
+    def _execute_post(self, headers: dict, payload: dict, timeout_seconds: float) -> requests.Response:
+        """Executes requests.post inside a ThreadPoolExecutor to guarantee strict wall-clock timeout."""
+        def _do_request():
+            return requests.post(
+                self.api_url,
+                headers=headers,
+                json=payload,
+                timeout=(4.0, timeout_seconds)
+            )
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_do_request)
+            try:
+                return future.result(timeout=timeout_seconds + 1.0)
+            except concurrent.futures.TimeoutError:
+                raise requests.exceptions.Timeout(
+                    f"Hard wall-clock timeout of {timeout_seconds}s exceeded"
+                )
 
     def chat(
         self,
@@ -90,6 +128,7 @@ class OpenRouterService:
         headers = self._get_headers()
 
         payload: Dict[str, Any] = {
+            "model": models[0] if models else "google/gemini-2.0-flash-lite-001",
             "models": models,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": temperature,
@@ -103,18 +142,13 @@ class OpenRouterService:
 
         for attempt in range(1, self.MAX_ATTEMPTS + 1):
             start_time = time.time()
-            attempt_timeout = self.TIMEOUT_SECONDS if attempt == 1 else 7
+            attempt_timeout = self.TIMEOUT_SECONDS if attempt == 1 else 6
             logger.info(
-                f"[OpenRouter] Request started | Feature: {feature} | Attempt: {attempt}/{self.MAX_ATTEMPTS} | Timeout: {attempt_timeout}s | Models: {models}"
+                f"[OpenRouter] Request started | Feature: {feature} | Attempt: {attempt}/{self.MAX_ATTEMPTS} | Timeout: {attempt_timeout}s | Model: {payload['model']}"
             )
 
             try:
-                response = requests.post(
-                    self.api_url,
-                    headers=headers,
-                    json=payload,
-                    timeout=attempt_timeout
-                )
+                response = self._execute_post(headers, payload, attempt_timeout)
                 elapsed_time = round(time.time() - start_time, 2)
                 status_code = response.status_code
 
