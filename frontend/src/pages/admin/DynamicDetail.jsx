@@ -153,18 +153,13 @@ export default function DynamicDetail({
 
   const pk = record[pkField];
 
-  // Separate fields into groups
-  const primaryFields = fields.filter((f) => {
-    if (f.is_primary_key) return true;
-    if (["string", "email", "integer", "float", "decimal", "boolean"].includes(f.type)) return true;
-    if (f.choices) return true;
-    if (["foreignkey", "onetoone"].includes(f.type)) return true;
-    return false;
-  });
-
+  // Separate fields into groups ensuring 100% field coverage
   const dateFields = fields.filter((f) => ["date", "datetime", "time"].includes(f.type));
   const textFields = fields.filter((f) => ["text", "json"].includes(f.type));
-  const urlFields = fields.filter((f) => ["url", "email", "image", "file"].includes(f.type) && !primaryFields.includes(f));
+  const urlFields = fields.filter((f) => ["url", "image", "file"].includes(f.type));
+  const primaryFields = fields.filter(
+    (f) => !dateFields.includes(f) && !textFields.includes(f) && !urlFields.includes(f)
+  );
 
   return (
     <div className="admin-modal-overlay" onClick={onClose}>

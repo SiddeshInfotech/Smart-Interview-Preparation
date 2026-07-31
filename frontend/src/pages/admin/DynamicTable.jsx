@@ -150,16 +150,14 @@ export default function DynamicTable({
   onDelete,
   emptyMsg = "No records found.",
 }) {
-  // Determine which fields to show as columns (skip large text, json, etc.)
+  // Determine which fields to show as columns
   const displayFields = useMemo(() => {
     if (!fields || !fields.length) return [];
     return fields.filter((f) => {
-      if (f.type === "auto" && f.is_primary_key) return true;  // always show PK
-      if (f.type === "json" || f.type === "binary") return false;
-      if (f.type === "text" && f.name !== "skills") return false; // skip large text fields in table
       if (f.name === "password") return false;
+      if (f.type === "binary") return false;
       return true;
-    }).slice(0, 10); // max 10 columns
+    });
   }, [fields]);
 
   // Current sort state

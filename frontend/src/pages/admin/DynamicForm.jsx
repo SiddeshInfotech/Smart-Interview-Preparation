@@ -459,16 +459,10 @@ export default function DynamicForm({
     return <div className="admin-empty"><p>No fields available.</p></div>;
   }
 
-  // Filter out fields that shouldn't be shown in the form
+  // Include all model fields in the form (render read-only fields as disabled)
   const editableFields = fields.filter((f) => {
-    // Always hide auto PKs
-    if (f.type === "auto" && f.is_primary_key) return false;
-    // Hide readonly fields (auto_now, auto_now_add)
-    if (f.readonly && !isEdit) return false;
-    if (f.readonly && isEdit && f.type !== "auto") return false;
-    // Skip binary fields
+    // Skip binary fields and password when editing unless intended
     if (f.type === "binary") return false;
-    // Skip M2M for now (complex)
     if (f.type === "manytomany") return false;
     return true;
   });
