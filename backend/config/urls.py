@@ -25,6 +25,7 @@ urlpatterns = [
     path('', RedirectView.as_view(url='https://my-frontend.onrender.com', permanent=False)),  # Redirect root to admin
     path("admin/", admin.site.urls),
     path("api/admin_panel/", include("admin_panel.urls")),
+    path("api/admin/", include("admin_panel.dynamic_urls")),
     path("api/auth/", include("authentication.urls")),
     path('api/common/', include('common.urls')),
     path("api/candidate/", include("candidate.urls")),
