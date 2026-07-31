@@ -60,60 +60,29 @@ def get_daily_progress(request):
 
     overall_interview = calc_review_summary_pct(int_reviews) if candidate_profile else 0.0
 
-    # Bulk fetch daily averages for the past 7 days in single database queries
-    quiz_daily_map = {}
-    if user:
-        for row in quiz_qs.filter(created_at__date__gte=start_date).values("created_at__date").annotate(avg_score=Avg("score")):
-            quiz_daily_map[row["created_at__date"]] = round(row["avg_score"] or 0, 1)
-
-    coding_daily_map = {}
-    if user:
-        for row in coding_qs.filter(submitted_at__date__gte=start_date).values("submitted_at__date").annotate(avg_score=Avg("score")):
-            coding_daily_map[row["submitted_at__date"]] = round(row["avg_score"] or 0, 1)
-
-    # Pre-fetch interview reviews for the past 7 days
-    reviews_by_date = {}
-    earliest_review_date = None
-    if candidate_profile:
-        for r in int_reviews.filter(submitted_at__date__gte=start_date):
-            d = r.submitted_at.date()
-            if d not in reviews_by_date:
-                reviews_by_date[d] = []
-            reviews_by_date[d].append(r)
-
-        first_rev = int_reviews.order_by("submitted_at").first()
-        if first_rev:
-            earliest_review_date = first_rev.submitted_at.date()
-
     daily_data = []
     for i in range(6, -1, -1):
         target_date = today - timedelta(days=i)
         day_name = target_date.strftime("%a")
 
-        if target_date in quiz_daily_map:
-            quiz_val = quiz_daily_map[target_date]
+        # 1. Cumulative Quiz Average up to target_date
+        quiz_sub = quiz_qs.filter(created_at__date__lte=target_date) if user else QuizPerformance.objects.none()
+        if quiz_sub.exists():
+            quiz_val = round(quiz_sub.aggregate(avg=Avg("score"))["avg"] or 0, 1)
         else:
-            factor = 0.65 + 0.35 * ((7 - i) / 7.0)
-            quiz_val = round(overall_quiz * factor, 1) if overall_quiz > 0 else 0.0
+            quiz_val = 0.0
 
-        if target_date in coding_daily_map:
-            coding_val = coding_daily_map[target_date]
+        # 2. Cumulative Coding Average up to target_date
+        coding_sub = coding_qs.filter(submitted_at__date__lte=target_date) if user else CodeSubmission.objects.none()
+        if coding_sub.exists():
+            coding_val = round(coding_sub.aggregate(avg=Avg("score"))["avg"] or 0, 1)
         else:
-            factor = 0.60 + 0.40 * ((7 - i) / 7.0)
-            coding_val = round(overall_coding * factor, 1) if overall_coding > 0 else 0.0
+            coding_val = 0.0
 
-        if target_date in reviews_by_date:
-            day_revs = reviews_by_date[target_date]
-            tech = sum(r.technical_skills for r in day_revs) / len(day_revs)
-            comm = sum(r.communication_skills for r in day_revs) / len(day_revs)
-            prob = sum(r.problem_solving for r in day_revs) / len(day_revs)
-            soft = sum(r.soft_skills for r in day_revs) / len(day_revs)
-            code = sum(r.code_quality for r in day_revs) / len(day_revs)
-            overall_r = sum(float(r.overall_rating) for r in day_revs) / len(day_revs)
-            summary_avg = (tech + comm + prob + soft + code) / 5.0 if any([tech, comm, prob, soft, code]) else overall_r
-            interview_val = round((summary_avg / 5.0) * 100, 1)
-        elif candidate_profile and earliest_review_date and target_date >= earliest_review_date:
-            interview_val = overall_interview
+        # 3. Cumulative Interview Rating up to target_date
+        int_sub = int_reviews.filter(submitted_at__date__lte=target_date) if candidate_profile else InterviewFeedbackReview.objects.none()
+        if int_sub.exists():
+            interview_val = calc_review_summary_pct(int_sub)
         else:
             interview_val = 0.0
 

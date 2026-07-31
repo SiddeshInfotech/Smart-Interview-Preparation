@@ -1,8 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 
 /**
  * DynamicTable — Advanced data table with server-side pagination,
- * column sorting, row selection, bulk actions, and smart cell rendering.
+ * column sorting, row selection, bulk actions, column visibility toggle,
+ * pinned sticky action buttons, and smart cell rendering.
  */
 
 /* ── Smart Cell Renderers ───────────────────────────────────── */
@@ -52,7 +53,7 @@ function renderCellValue(value, field) {
       return (
         <a href={value} target="_blank" rel="noopener noreferrer"
           style={{ color: "var(--admin-primary)", textDecoration: "none", fontSize: "12px" }}>
-          {value.length > 35 ? value.slice(0, 35) + "…" : value}
+          {value.length > 30 ? value.slice(0, 30) + "…" : value}
         </a>
       );
 
@@ -83,10 +84,10 @@ function renderCellValue(value, field) {
         return (
           <span title={display} style={{
             fontFamily: "monospace", fontSize: "11px",
-            maxWidth: 200, display: "inline-block",
+            maxWidth: 160, display: "inline-block",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
-            {display.length > 50 ? display.slice(0, 50) + "…" : display}
+            {display.length > 40 ? display.slice(0, 40) + "…" : display}
           </span>
         );
       } catch {
@@ -96,7 +97,7 @@ function renderCellValue(value, field) {
     case "text":
       return (
         <span title={String(value)}>
-          {String(value).length > 60 ? String(value).slice(0, 60) + "…" : String(value)}
+          {String(value).length > 50 ? String(value).slice(0, 50) + "…" : String(value)}
         </span>
       );
 
@@ -132,6 +133,88 @@ function SortIcon({ direction }) {
   );
 }
 
+/* ── Column Selector Dropdown Component ────────────────────── */
+
+function ColumnToggleDropdown({ allFields, visibleColumns, onToggleColumn, onShowAll, onResetDefault }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const validFields = allFields.filter(f => f.name !== "password" && f.type !== "binary");
+
+  return (
+    <div style={{ position: "relative" }} ref={dropdownRef}>
+      <button
+        type="button"
+        className="admin-btn-outline"
+        style={{ padding: "6px 12px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: 6 }}
+        onClick={() => setOpen(!open)}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3h7a2 2 0 012 2v14a2 2 0 01-2 2h-7m0-18H5a2 2 0 00-2 2v14a2 2 0 002 2h7m0-18v18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+        Columns ({visibleColumns ? visibleColumns.size : validFields.length})
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", right: 0, zIndex: 100,
+          background: "var(--admin-surface)", border: "1px solid var(--admin-border)",
+          borderRadius: "var(--admin-radius-md)", boxShadow: "var(--admin-shadow-lg)",
+          width: 240, padding: 8, marginTop: 4,
+          maxHeight: 320, overflowY: "auto",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px 8px", borderBottom: "1px solid var(--admin-border-soft)", marginBottom: 6 }}>
+            <button type="button" className="admin-btn-ghost" style={{ fontSize: 11, padding: "2px 6px" }} onClick={onShowAll}>
+              Show All ({validFields.length})
+            </button>
+            <button type="button" className="admin-btn-ghost" style={{ fontSize: 11, padding: "2px 6px" }} onClick={onResetDefault}>
+              Reset
+            </button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {validFields.map((field) => {
+              const isChecked = visibleColumns ? visibleColumns.has(field.name) : true;
+              return (
+                <label
+                  key={field.name}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8, padding: "5px 8px",
+                    borderRadius: 6, cursor: "pointer", fontSize: 12,
+                    background: isChecked ? "var(--admin-surface-hover)" : "transparent",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => onToggleColumn(field.name)}
+                    style={{ accentColor: "var(--admin-primary)", cursor: "pointer" }}
+                  />
+                  <span style={{ color: isChecked ? "var(--admin-ink)" : "var(--admin-ink-muted)", fontWeight: isChecked ? 600 : 400 }}>
+                    {field.verbose_name}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+/* ── Main DynamicTable Component ───────────────────────────── */
 
 export default function DynamicTable({
   fields,
@@ -150,15 +233,50 @@ export default function DynamicTable({
   onDelete,
   emptyMsg = "No records found.",
 }) {
-  // Determine which fields to show as columns
-  const displayFields = useMemo(() => {
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState(null);
+
+  // Filter valid fields
+  const validFields = useMemo(() => {
     if (!fields || !fields.length) return [];
-    return fields.filter((f) => {
-      if (f.name === "password") return false;
-      if (f.type === "binary") return false;
-      return true;
-    });
+    return fields.filter((f) => f.name !== "password" && f.type !== "binary");
   }, [fields]);
+
+  // Initialize all fields as visible by default
+  useEffect(() => {
+    if (validFields.length > 0) {
+      setVisibleColumns(new Set(validFields.map((f) => f.name)));
+    } else {
+      setVisibleColumns(null);
+    }
+  }, [validFields]);
+
+  const toggleColumn = (fieldName) => {
+    setVisibleColumns((prev) => {
+      const next = new Set(prev || validFields.map(f => f.name));
+      if (next.has(fieldName)) {
+        if (next.size > 1) next.delete(fieldName); // Keep at least 1 column
+      } else {
+        next.add(fieldName);
+      }
+      return next;
+    });
+  };
+
+  const showAllColumns = () => {
+    setVisibleColumns(new Set(validFields.map(f => f.name)));
+  };
+
+  const resetDefaultColumns = () => {
+    const defaultNames = validFields.slice(0, Math.min(7, validFields.length)).map(f => f.name);
+    setVisibleColumns(new Set(defaultNames));
+  };
+
+  const displayFields = useMemo(() => {
+    if (!validFields.length) return [];
+    if (!visibleColumns) return validFields.slice(0, 7);
+    return validFields.filter((f) => visibleColumns.has(f.name));
+  }, [validFields, visibleColumns]);
 
   // Current sort state
   const sortField = ordering?.replace(/^-/, "") || "";
@@ -171,20 +289,20 @@ export default function DynamicTable({
           <thead>
             <tr>
               <th style={{ width: 40 }}></th>
-              {Array.from({ length: 5 }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <th key={i}><div className="admin-skeleton admin-skeleton--text" style={{ width: "60%" }}></div></th>
               ))}
-              <th></th>
+              <th className="actions-col"></th>
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: 5 }).map((_, i) => (
               <tr key={i}>
                 <td><div className="admin-skeleton" style={{ width: 15, height: 15 }}></div></td>
-                {Array.from({ length: 5 }).map((_, j) => (
+                {Array.from({ length: 6 }).map((_, j) => (
                   <td key={j}><div className="admin-skeleton admin-skeleton--text"></div></td>
                 ))}
-                <td><div className="admin-skeleton" style={{ width: 60, height: 24 }}></div></td>
+                <td className="actions-col"><div className="admin-skeleton" style={{ width: 80, height: 24 }}></div></td>
               </tr>
             ))}
           </tbody>
@@ -219,101 +337,121 @@ export default function DynamicTable({
   }
 
   return (
-    <div className="admin-table-wrapper">
-      <table className="admin-table">
-        <thead>
-          <tr>
-            {onSelectToggle && (
-              <th className="checkbox-col">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={(e) => onSelectAll?.(e.target.checked)}
-                />
-              </th>
-            )}
-            {displayFields.map((field) => {
-              const isSortable = !["json", "manytomany"].includes(field.type);
-              const isSorted = sortField === field.name;
-              return (
-                <th
-                  key={field.name}
-                  className={`${isSortable ? "sortable" : ""} ${isSorted ? "sorted" : ""}`}
-                  onClick={() => {
-                    if (!isSortable || !onSort) return;
-                    if (isSorted && sortDir === "asc") {
-                      onSort(`-${field.name}`);
-                    } else if (isSorted && sortDir === "desc") {
-                      onSort("");
-                    } else {
-                      onSort(field.name);
-                    }
-                  }}
-                >
-                  {field.verbose_name}
-                  {isSortable && <SortIcon direction={isSorted ? sortDir : null} />}
+    <div>
+      {/* Column visibility control bar above table */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "8px 16px", borderBottom: "1px solid var(--admin-border-soft)",
+        background: "var(--admin-bg-soft)", fontSize: 12, color: "var(--admin-ink-muted)",
+      }}>
+        <span>
+          Showing <strong>{displayFields.length}</strong> of <strong>{validFields.length}</strong> columns. Scroll horizontally to view extra fields.
+        </span>
+        <ColumnToggleDropdown
+          allFields={validFields}
+          visibleColumns={visibleColumns}
+          onToggleColumn={toggleColumn}
+          onShowAll={showAllColumns}
+          onResetDefault={resetDefaultColumns}
+        />
+      </div>
+
+      <div className="admin-table-wrapper">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              {onSelectToggle && (
+                <th className="checkbox-col">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={(e) => onSelectAll?.(e.target.checked)}
+                  />
                 </th>
+              )}
+              {displayFields.map((field) => {
+                const isSortable = !["json", "manytomany"].includes(field.type);
+                const isSorted = sortField === field.name;
+                return (
+                  <th
+                    key={field.name}
+                    className={`${isSortable ? "sortable" : ""} ${isSorted ? "sorted" : ""}`}
+                    onClick={() => {
+                      if (!isSortable || !onSort) return;
+                      if (isSorted && sortDir === "asc") {
+                        onSort(`-${field.name}`);
+                      } else if (isSorted && sortDir === "desc") {
+                        onSort("");
+                      } else {
+                        onSort(field.name);
+                      }
+                    }}
+                  >
+                    {field.verbose_name}
+                    {isSortable && <SortIcon direction={isSorted ? sortDir : null} />}
+                  </th>
+                );
+              })}
+              <th className="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const pk = row[pkField];
+              const isSelected = selectedIds.has(pk);
+              return (
+                <tr key={pk} className={isSelected ? "selected" : ""}>
+                  {onSelectToggle && (
+                    <td className="checkbox-col">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => onSelectToggle(pk)}
+                      />
+                    </td>
+                  )}
+                  {displayFields.map((field) => (
+                    <td key={field.name} title={String(row[field.name] ?? "")}>
+                      {renderCellValue(row[field.name], field)}
+                    </td>
+                  ))}
+                  <td className="actions-col">
+                    <div className="admin-table-actions">
+                      {onView && (
+                        <button className="admin-action-btn admin-action-btn--view" onClick={() => onView(row)} title="View Record">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.8" />
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+                          </svg>
+                          View
+                        </button>
+                      )}
+                      {onEdit && (
+                        <button className="admin-action-btn admin-action-btn--edit" onClick={() => onEdit(row)} title="Edit Record">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                          </svg>
+                          Edit
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button className="admin-action-btn admin-action-btn--delete" onClick={() => onDelete(row)} title="Delete Record">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
               );
             })}
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const pk = row[pkField];
-            const isSelected = selectedIds.has(pk);
-            return (
-              <tr key={pk} className={isSelected ? "selected" : ""}>
-                {onSelectToggle && (
-                  <td className="checkbox-col">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => onSelectToggle(pk)}
-                    />
-                  </td>
-                )}
-                {displayFields.map((field) => (
-                  <td key={field.name} title={String(row[field.name] ?? "")}>
-                    {renderCellValue(row[field.name], field)}
-                  </td>
-                ))}
-                <td>
-                  <div className="admin-table-actions">
-                    {onView && (
-                      <button className="admin-action-btn admin-action-btn--view" onClick={() => onView(row)}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.8" />
-                          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
-                        </svg>
-                        View
-                      </button>
-                    )}
-                    {onEdit && (
-                      <button className="admin-action-btn admin-action-btn--edit" onClick={() => onEdit(row)}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-                        </svg>
-                        Edit
-                      </button>
-                    )}
-                    {onDelete && (
-                      <button className="admin-action-btn admin-action-btn--delete" onClick={() => onDelete(row)}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                          <polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                          <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

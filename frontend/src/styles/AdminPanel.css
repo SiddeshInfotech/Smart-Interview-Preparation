@@ -77,11 +77,14 @@
 .admin-shell {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
   background: var(--admin-bg);
   font-family: 'Inter', -apple-system, system-ui, sans-serif;
   color: var(--admin-ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 /* ─────────────────────────────────────────────────────────── */
@@ -314,10 +317,13 @@
 /* ─────────────────────────────────────────────────────────── */
 .admin-main {
   flex: 1;
+  min-width: 0;
+  max-width: calc(100vw - var(--admin-sidebar-width));
   margin-left: var(--admin-sidebar-width);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Topbar */
@@ -333,6 +339,8 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-topbar__left {
@@ -414,8 +422,13 @@
 /* Content */
 .admin-content {
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 24px;
   animation: adminFadeIn 0.2s ease;
+  overflow-x: hidden;
 }
 
 @keyframes adminFadeIn {
@@ -432,6 +445,8 @@
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .admin-section-header h2 {
@@ -698,6 +713,26 @@
 /* ─────────────────────────────────────────────────────────── */
 .admin-table-wrapper {
   overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 var(--admin-bg-soft);
+}
+
+.admin-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.admin-table-wrapper::-webkit-scrollbar-track {
+  background: var(--admin-bg-soft);
+}
+
+.admin-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.admin-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .admin-table {
@@ -779,13 +814,55 @@
   border-bottom: none;
 }
 
-/* Checkbox column */
+/* Sticky Checkbox column */
 .admin-table th.checkbox-col,
 .admin-table td.checkbox-col {
   width: 40px;
   min-width: 40px;
   padding: 0 12px;
   text-align: center;
+  position: sticky;
+  left: 0;
+  background: var(--admin-surface);
+  z-index: 6;
+  border-right: 1px solid var(--admin-border-soft);
+}
+
+.admin-table th.checkbox-col {
+  background: var(--admin-bg-soft);
+  z-index: 7;
+}
+
+.admin-table tbody tr:hover td.checkbox-col {
+  background: var(--admin-surface-hover);
+}
+
+.admin-table tbody tr.selected td.checkbox-col {
+  background: var(--admin-primary-soft);
+}
+
+/* Sticky Actions column */
+.admin-table th.actions-col,
+.admin-table td.actions-col {
+  position: sticky;
+  right: 0;
+  background: var(--admin-surface);
+  z-index: 6;
+  border-left: 1px solid var(--admin-border-soft);
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.04);
+}
+
+.admin-table th.actions-col {
+  background: var(--admin-bg-soft);
+  z-index: 7;
+}
+
+.admin-table tbody tr:hover td.actions-col {
+  background: var(--admin-surface-hover);
+}
+
+.admin-table tbody tr.selected td.actions-col {
+  background: var(--admin-primary-soft);
 }
 
 .admin-table input[type="checkbox"] {
