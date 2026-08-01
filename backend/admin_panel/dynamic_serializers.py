@@ -113,25 +113,53 @@ def build_serializer_class(model, include_display_fields=True):
             method_name = f"get_{display_name}"
             attrs[method_name] = _get_fk_display_method(field.name, field.related_model)
 
-    # Custom create/update for User model (password hashing)
+    # Custom create/update for User model (password hashing and M2M handling)
     if model == User:
         def create_user(self, validated_data):
             password = self.initial_data.get("password")
+            m2m_data = {}
+            for attr in list(validated_data.keys()):
+                field_obj = getattr(User, attr, None)
+                if field_obj and isinstance(field_obj, models.fields.related_descriptors.ManyToManyDescriptor):
+                    m2m_data[attr] = validated_data.pop(attr)
+
             user = model(**validated_data)
             if password:
                 user.set_password(password)
             else:
                 user.set_unusable_password()
             user.save()
+
+            for attr, value in m2m_data.items():
+                field_manager = getattr(user, attr, None)
+                if field_manager and hasattr(field_manager, "set"):
+                    field_manager.set(value)
             return user
 
         def update_user(self, instance, validated_data):
             password = self.initial_data.get("password")
+            m2m_data = {}
             for attr, value in validated_data.items():
-                setattr(instance, attr, value)
+                field_val = getattr(instance, attr, None)
+                if hasattr(field_val, "set") and hasattr(field_val, "all"):
+                    m2m_data[attr] = value
+                else:
+                    try:
+                        setattr(instance, attr, value)
+                    except TypeError as e:
+                        if "many-to-many" in str(e).lower():
+                            m2m_data[attr] = value
+                        else:
+                            raise e
+
             if password:
                 instance.set_password(password)
             instance.save()
+
+            for attr, value in m2m_data.items():
+                field_manager = getattr(instance, attr, None)
+                if field_manager and hasattr(field_manager, "set"):
+                    field_manager.set(value)
             return instance
 
         attrs["create"] = create_user

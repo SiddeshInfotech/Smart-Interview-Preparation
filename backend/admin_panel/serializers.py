@@ -26,21 +26,51 @@ class UsersSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = self.initial_data.get('password')
+        m2m_data = {}
+        for attr in list(validated_data.keys()):
+            field_obj = getattr(User, attr, None)
+            if field_obj and isinstance(field_obj, models.fields.related_descriptors.ManyToManyDescriptor):
+                m2m_data[attr] = validated_data.pop(attr)
+
         user = User(**validated_data)
         if password:
             user.set_password(password)
         else:
             user.set_unusable_password()
         user.save()
+
+        for attr, value in m2m_data.items():
+            field_manager = getattr(user, attr, None)
+            if field_manager and hasattr(field_manager, 'set'):
+                field_manager.set(value)
+
         return user
 
     def update(self, instance, validated_data):
         password = self.initial_data.get('password')
+        m2m_data = {}
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            field_val = getattr(instance, attr, None)
+            if hasattr(field_val, 'set') and hasattr(field_val, 'all'):
+                m2m_data[attr] = value
+            else:
+                try:
+                    setattr(instance, attr, value)
+                except TypeError as e:
+                    if "many-to-many" in str(e).lower():
+                        m2m_data[attr] = value
+                    else:
+                        raise e
+
         if password:
             instance.set_password(password)
         instance.save()
+
+        for attr, value in m2m_data.items():
+            field_manager = getattr(instance, attr, None)
+            if field_manager and hasattr(field_manager, 'set'):
+                field_manager.set(value)
+
         return instance
 
 

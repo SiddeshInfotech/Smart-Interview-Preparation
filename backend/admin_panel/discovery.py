@@ -139,6 +139,9 @@ def get_model_fields(model):
     """Get all field metadata for a given model."""
     fields = []
     for field in model._meta.get_fields():
+        # Exclude Django auth M2M fields (groups and user_permissions)
+        if field.name in ("groups", "user_permissions"):
+            continue
         # Skip reverse relations (they don't have a column)
         if hasattr(field, "field"):  # This is a reverse relation
             continue
@@ -236,8 +239,8 @@ def discover_models():
 
     for model in registered_models:
         meta = model._meta
-        # Skip proxy models and abstract models
-        if meta.proxy or meta.abstract:
+        # Skip proxy models, abstract models, and standalone Group/Permission models
+        if meta.proxy or meta.abstract or meta.model_name in ("group", "permission"):
             continue
 
         fields = get_model_fields(model)
