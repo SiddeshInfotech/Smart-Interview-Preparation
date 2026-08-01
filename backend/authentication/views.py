@@ -361,6 +361,9 @@ def verify_registration_otp(request):
     )
 
 
+
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_profile(request):
@@ -372,33 +375,9 @@ def get_profile(request):
 @permission_classes([IsAuthenticated])
 def get_usage(request):
     """
-    Returns user credit & usage data directly from UserCredit database model.
-    Checks and auto-resets daily/monthly credit windows.
+    Returns user credit & usage data using service layer.
     """
-    from .models import UserCredit
+    from .services import get_user_usage_summary
 
-    user = request.user
-    credits_obj, created = UserCredit.objects.get_or_create(user=user)
-    credits_obj.check_and_reset()
-
-    return Response({
-        "has_premium": user.has_premium,
-        "quiz": {
-            "used": credits_obj.quiz_used,
-            "limit": credits_obj.quiz_limit,
-            "remaining": max(0, credits_obj.quiz_limit - credits_obj.quiz_used),
-            "window": "daily",
-        },
-        "coding": {
-            "used": credits_obj.coding_used,
-            "limit": credits_obj.coding_limit,
-            "remaining": max(0, credits_obj.coding_limit - credits_obj.coding_used),
-            "window": "daily",
-        },
-        "resume": {
-            "used": credits_obj.resume_used,
-            "limit": credits_obj.resume_limit,
-            "remaining": max(0, credits_obj.resume_limit - credits_obj.resume_used),
-            "window": "monthly",
-        },
-    }, status=status.HTTP_200_OK)
+    data = get_user_usage_summary(request.user)
+    return Response(data, status=status.HTTP_200_OK)

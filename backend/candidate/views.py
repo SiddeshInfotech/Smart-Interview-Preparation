@@ -2,6 +2,7 @@ from rest_framework import generics, permissions, serializers as drf_serializers
 from django.db.models import Q
 from .models import Candidate_Profile
 from .serializers import CandidateProfileSerializer
+from .services import get_candidate_profile_data, invalidate_candidate_profile_cache
 
 
 class CandidateSearchSerializer(drf_serializers.ModelSerializer):
@@ -40,3 +41,7 @@ class ProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
         except Candidate_Profile.DoesNotExist:
             profile = Candidate_Profile.objects.create(user=self.request.user)
             return Candidate_Profile.objects.select_related("user").get(pk=profile.pk)
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        invalidate_candidate_profile_cache(self.request.user.id)

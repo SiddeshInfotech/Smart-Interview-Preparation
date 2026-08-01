@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import "../styles/Dashboard.css";
 import { BookOpen, Code, Video } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from "recharts";
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = React.memo(({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="custom-chart-tooltip">
@@ -59,7 +59,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     );
   }
   return null;
-};
+});
 
 const Dashboard = () => {
   const { userProfile } = useAuth();
@@ -68,6 +68,7 @@ const Dashboard = () => {
   });
 
   const [activeMetric, setActiveMetric] = useState("all");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (userProfile?.name && userProfile.name !== "User") {
@@ -84,9 +85,9 @@ const Dashboard = () => {
     }
   }, [userProfile]);
 
-  const user = {
+  const user = useMemo(() => ({
     username: fullName,
-  };
+  }), [fullName]);
 
   const getCachedDashboard = (key, fallback) => {
     try {
@@ -152,49 +153,69 @@ const Dashboard = () => {
     ])
   );
 
-  // Fetch all 5 dashboard performance metrics concurrently on mount
+  // SINGLE OPTIMIZED BOOTSTRAP API CALL
   useEffect(() => {
-    const fetchAllDashboardStats = async () => {
-      try {
-        const [quizRes, intRes, codingRes, aiRes, progressRes] = await Promise.allSettled([
-          api.get("/quiz/performance/"),
-          api.get("/interview/performance/"),
-          api.get("/coding/performance/"),
-          api.get("/dashboard/ai-intelligence/"),
-          api.get("/dashboard/daily-progress/"),
-        ]);
+    let isMounted = true;
 
-        if (quizRes.status === "fulfilled" && quizRes.value?.data) {
-          setQuizPerformance(quizRes.value.data);
-          localStorage.setItem("cached_dashboard_quiz", JSON.stringify(quizRes.value.data));
+    const fetchBootstrapData = async () => {
+      try {
+        const response = await api.get("/dashboard/bootstrap/");
+        if (!isMounted || !response.data) return;
+
+        const {
+          quiz_performance,
+          interview_performance,
+          coding_performance,
+          ai_intelligence,
+          daily_progress,
+          profile,
+        } = response.data;
+
+        if (profile?.full_name && profile.full_name !== "User") {
+          setFullName(profile.full_name);
         }
-        if (intRes.status === "fulfilled" && intRes.value?.data) {
-          setInterviewPerformance(intRes.value.data);
-          localStorage.setItem("cached_dashboard_interview", JSON.stringify(intRes.value.data));
+
+        if (quiz_performance) {
+          setQuizPerformance(quiz_performance);
+          localStorage.setItem("cached_dashboard_quiz", JSON.stringify(quiz_performance));
         }
-        if (codingRes.status === "fulfilled" && codingRes.value?.data) {
-          setCodingPerformance(codingRes.value.data);
-          localStorage.setItem("cached_dashboard_coding", JSON.stringify(codingRes.value.data));
+        if (interview_performance) {
+          setInterviewPerformance(interview_performance);
+          localStorage.setItem("cached_dashboard_interview", JSON.stringify(interview_performance));
         }
-        if (aiRes.status === "fulfilled" && aiRes.value?.data?.metrics) {
-          setAiIntelligence(aiRes.value.data);
-          localStorage.setItem("cached_dashboard_ai", JSON.stringify(aiRes.value.data));
+        if (coding_performance) {
+          setCodingPerformance(coding_performance);
+          localStorage.setItem("cached_dashboard_coding", JSON.stringify(coding_performance));
         }
-        if (progressRes.status === "fulfilled" && progressRes.value?.data?.daily_progress?.length > 0) {
-          setPerformanceData(progressRes.value.data.daily_progress);
-          localStorage.setItem("cached_dashboard_daily_progress", JSON.stringify(progressRes.value.data.daily_progress));
+        if (ai_intelligence?.metrics) {
+          setAiIntelligence(ai_intelligence);
+          localStorage.setItem("cached_dashboard_ai", JSON.stringify(ai_intelligence));
+        }
+        if (daily_progress && daily_progress.length > 0) {
+          setPerformanceData(daily_progress);
+          localStorage.setItem("cached_dashboard_daily_progress", JSON.stringify(daily_progress));
         }
       } catch (err) {
-        console.warn("Dashboard stats fetch error:", err);
+        console.warn("Dashboard bootstrap fetch error:", err);
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
 
-    fetchAllDashboardStats();
+    fetchBootstrapData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const showQuiz = activeMetric === "all" || activeMetric === "quiz";
-  const showCoding = activeMetric === "all" || activeMetric === "coding";
-  const showInterview = activeMetric === "all" || activeMetric === "interview";
+  const handleFilterChange = useCallback((metric) => {
+    setActiveMetric(metric);
+  }, []);
+
+  const showQuiz = useMemo(() => activeMetric === "all" || activeMetric === "quiz", [activeMetric]);
+  const showCoding = useMemo(() => activeMetric === "all" || activeMetric === "coding", [activeMetric]);
+  const showInterview = useMemo(() => activeMetric === "all" || activeMetric === "interview", [activeMetric]);
 
   return (
     <div className="dashboard-container">
@@ -226,25 +247,25 @@ const Dashboard = () => {
             <div className="chart-filter-pills">
               <button
                 className={`filter-pill ${activeMetric === "all" ? "active" : ""}`}
-                onClick={() => setActiveMetric("all")}
+                onClick={() => handleFilterChange("all")}
               >
                 All Metrics
               </button>
               <button
                 className={`filter-pill quiz-pill ${activeMetric === "quiz" ? "active" : ""}`}
-                onClick={() => setActiveMetric("quiz")}
+                onClick={() => handleFilterChange("quiz")}
               >
                 Quiz
               </button>
               <button
                 className={`filter-pill coding-pill ${activeMetric === "coding" ? "active" : ""}`}
-                onClick={() => setActiveMetric("coding")}
+                onClick={() => handleFilterChange("coding")}
               >
                 Coding
               </button>
               <button
                 className={`filter-pill interview-pill ${activeMetric === "interview" ? "active" : ""}`}
-                onClick={() => setActiveMetric("interview")}
+                onClick={() => handleFilterChange("interview")}
               >
                 Interview
               </button>
@@ -333,7 +354,7 @@ const Dashboard = () => {
             <p>Smart Candidate Performance Analysis</p>
           </div>
 
-          {/* Ultra-Attractive Circular SVG Gauge */}
+          {/* Circular SVG Gauge */}
           <div className="ai-gauge-container">
             <svg className="ai-gauge-svg" viewBox="0 0 120 120">
               <defs>
@@ -352,12 +373,12 @@ const Dashboard = () => {
                 strokeWidth="9"
                 stroke="url(#gaugeGrad)"
                 strokeDasharray={314.159}
-                strokeDashoffset={314.159 - (314.159 * aiIntelligence.overall_readiness) / 100}
+                strokeDashoffset={314.159 - (314.159 * (aiIntelligence.overall_readiness || 0)) / 100}
                 strokeLinecap="round"
               />
             </svg>
             <div className="gauge-center-text">
-              <span className="gauge-score-num">{aiIntelligence.overall_readiness}%</span>
+              <span className="gauge-score-num">{aiIntelligence.overall_readiness || 0}%</span>
               <span className="gauge-score-label">Readiness</span>
             </div>
           </div>
@@ -375,7 +396,7 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="metric-info-right">
-                {aiIntelligence.metrics.quiz_mastery > 0 && (
+                {aiIntelligence.metrics?.quiz_mastery > 0 && (
                   <span className={`metric-status-badge ${
                     aiIntelligence.metrics.quiz_mastery >= 85 ? "tag-excellent" :
                     aiIntelligence.metrics.quiz_mastery >= 50 ? "tag-good" : "tag-practice"
@@ -385,7 +406,7 @@ const Dashboard = () => {
                   </span>
                 )}
                 <div className="score-pill-chip quiz-score-chip">
-                  {aiIntelligence.metrics.quiz_mastery}%
+                  {aiIntelligence.metrics?.quiz_mastery || 0}%
                 </div>
               </div>
             </div>
@@ -402,7 +423,7 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="metric-info-right">
-                {aiIntelligence.metrics.coding_ability > 0 && (
+                {aiIntelligence.metrics?.coding_ability > 0 && (
                   <span className={`metric-status-badge ${
                     aiIntelligence.metrics.coding_ability >= 85 ? "tag-excellent" :
                     aiIntelligence.metrics.coding_ability >= 50 ? "tag-good" : "tag-practice"
@@ -412,7 +433,7 @@ const Dashboard = () => {
                   </span>
                 )}
                 <div className="score-pill-chip coding-score-chip">
-                  {aiIntelligence.metrics.coding_ability}%
+                  {aiIntelligence.metrics?.coding_ability || 0}%
                 </div>
               </div>
             </div>
@@ -429,7 +450,7 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="metric-info-right">
-                {aiIntelligence.metrics.interview_skill > 0 ? (
+                {aiIntelligence.metrics?.interview_skill > 0 ? (
                   <span className={`metric-status-badge ${
                     aiIntelligence.metrics.interview_skill >= 85 ? "tag-excellent" :
                     aiIntelligence.metrics.interview_skill >= 50 ? "tag-good" : "tag-practice"
@@ -443,7 +464,7 @@ const Dashboard = () => {
                   </span>
                 )}
                 <div className="score-pill-chip interview-score-chip">
-                  {aiIntelligence.metrics.interview_skill}%
+                  {aiIntelligence.metrics?.interview_skill || 0}%
                 </div>
               </div>
             </div>

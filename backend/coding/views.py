@@ -179,51 +179,9 @@ def submit_code(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def get_coding_performance(request):
-    if request.user and request.user.is_authenticated:
-        submissions = CodeSubmission.objects.filter(user=request.user)
-    else:
-        return Response({
-            "total_submissions": 0,
-            "logical_thinking": 0,
-            "code_efficiency": 0,
-            "language_skills": 0,
-            "problem_solving": 0,
-            "overall_score": 0,
-        })
-
-    total = submissions.count()
-    if total == 0:
-        return Response({
-            "total_submissions": 0,
-            "logical_thinking": 0,
-            "code_efficiency": 0,
-            "language_skills": 0,
-            "problem_solving": 0,
-            "overall_score": 0,
-        })
-
-    sum_logical = 0
-    sum_efficiency = 0
-    sum_language = 0
-    sum_problem = 0
-    sum_overall = 0
-
-    for s in submissions.only("score", "ai_evaluation"):
-        eval_obj = s.ai_evaluation or {}
-        sum_logical += eval_obj.get("logical_thinking", s.score)
-        sum_efficiency += eval_obj.get("code_efficiency", s.score)
-        sum_language += eval_obj.get("language_skills", s.score)
-        sum_problem += eval_obj.get("problem_solving", s.score)
-        sum_overall += s.score
-
-    return Response({
-        "total_submissions": total,
-        "logical_thinking": round(sum_logical / total),
-        "code_efficiency": round(sum_efficiency / total),
-        "language_skills": round(sum_language / total),
-        "problem_solving": round(sum_problem / total),
-        "overall_score": round(sum_overall / total),
-    })
+    from .services import get_coding_performance_summary
+    data = get_coding_performance_summary(request.user)
+    return Response(data)
 
 
 @api_view(["GET"])

@@ -64,32 +64,13 @@ def generate_quiz(request):
 # QUIZ PERFORMANCE FOR DASHBOARD
 # =====================================
 
-from .models import QuizPerformance
-from django.db.models import Avg, Max, Min
+from .services import get_quiz_performance_summary, invalidate_quiz_cache
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def quiz_performance(request):
-    quizzes = QuizPerformance.objects.filter(user=request.user)
-
-    if not quizzes.exists():
-        return Response({
-            "total_quizzes": 0,
-            "minimum_score": 0,
-            "maximum_score": 0,
-            "average_score": 0,
-            "overall_score": 0
-        })
-
-    data = {
-        "total_quizzes": quizzes.count(),
-        "minimum_score": quizzes.aggregate(Min("score"))["score__min"] or 0,
-        "maximum_score": quizzes.aggregate(Max("score"))["score__max"] or 0,
-        "average_score": round(quizzes.aggregate(Avg("score"))["score__avg"] or 0, 2),
-        "overall_score": round(quizzes.aggregate(Avg("score"))["score__avg"] or 0, 2),
-    }
-
+    data = get_quiz_performance_summary(request.user)
     return Response(data)
 
 
@@ -108,12 +89,16 @@ def save_quiz_result(request):
             score=data.get("score")
         )
 
+        invalidate_quiz_cache(request.user.id)
+
         try:
             from authentication.models import UserCredit
+            from authentication.services import invalidate_usage_cache
             credits_obj, _ = UserCredit.objects.get_or_create(user=request.user)
             credits_obj.check_and_reset()
             credits_obj.quiz_used += 1
             credits_obj.save(update_fields=["quiz_used", "updated_at"])
+            invalidate_usage_cache(request.user.id)
         except Exception:
             pass
 
