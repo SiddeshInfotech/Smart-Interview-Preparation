@@ -15,6 +15,10 @@ def get_user_usage_summary(user):
     if not user or not user.is_authenticated:
         return {}
 
+    role = getattr(user, "role", "")
+    if role == "interviewer":
+        return {}
+
     user_pk = getattr(user, "pk", getattr(user, "user_id", None))
     cache_key = f"user_usage_summary_{user_pk}"
     cached_summary = cache.get(cache_key)

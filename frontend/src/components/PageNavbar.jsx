@@ -38,7 +38,8 @@ export default function PageNavbar({
       return null;
     }
   });
-  const effectiveBrandHref = userProfile?.role === "interviewer" ? "/interview" : brandHref;
+  const isInterviewer = userProfile?.role === "interviewer";
+  const effectiveBrandHref = isInterviewer ? "/interview" : brandHref;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -51,8 +52,9 @@ export default function PageNavbar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch usage data and sync to localStorage cache
+  // Fetch usage data and sync to localStorage cache (Candidates only)
   const fetchUsage = useCallback(async () => {
+    if (isInterviewer) return;
     try {
       const res = await api.get("/auth/usage/");
       setUsageData(res.data);
@@ -60,18 +62,18 @@ export default function PageNavbar({
     } catch (err) {
       console.warn("Could not fetch usage data", err);
     }
-  }, []);
+  }, [isInterviewer]);
 
-  // Pre-fetch usage on mount if authenticated
+  // Pre-fetch usage on mount if authenticated candidate
   useEffect(() => {
-    if (localStorage.getItem("access_token")) {
+    if (localStorage.getItem("access_token") && !isInterviewer) {
       fetchUsage();
     }
-  }, [fetchUsage]);
+  }, [fetchUsage, isInterviewer]);
 
   const handleToggleDropdown = () => {
     setProfileMenuOpen((open) => {
-      if (!open) fetchUsage();
+      if (!open && !isInterviewer) fetchUsage();
       return !open;
     });
   };
@@ -143,8 +145,8 @@ export default function PageNavbar({
                   <span>{userProfile.email}</span>
                 </div>
 
-                {/* Usage progress bars — free users only */}
-                {usageData && !usageData.has_premium && (
+                {/* Usage progress bars — candidate free users only */}
+                {!isInterviewer && usageData && !usageData.has_premium && usageData.quiz && (
                   <div className="usage-bars-section">
                     <div className="usage-bar-row">
                       <div className="usage-bar-header">
