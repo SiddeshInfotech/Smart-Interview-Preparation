@@ -21,7 +21,7 @@ export const PublicLayout = ({ children }) => {
           </button>
           <div className="logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
             <Brain size={28} />
-            <span>PrepMaster AI</span>
+            <span>PrepMaster</span>
           </div>
         </div>
 

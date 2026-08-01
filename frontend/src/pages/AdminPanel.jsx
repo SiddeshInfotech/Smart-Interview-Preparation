@@ -117,7 +117,7 @@ export default function AdminPanel() {
           <div className="admin-sidebar__logo">⚙</div>
           <div>
             <div className="admin-sidebar__title">Django Admin Wrapper</div>
-            <div className="admin-sidebar__subtitle">PrepMaster Dynamic AI</div>
+            <div className="admin-sidebar__subtitle">PrepMaster Dynamic</div>
           </div>
         </div>
 

@@ -90,7 +90,7 @@ export default function ResetPassword() {
               <input
                 id="newPassword"
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
+                placeholder="Enter new password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
@@ -109,7 +109,7 @@ export default function ResetPassword() {
               <input
                 id="confirmPassword"
                 type={showConfirm ? "text" : "password"}
-                placeholder="••••••••"
+                placeholder="Confirm new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required

@@ -217,6 +217,12 @@
   box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.16), 0 4px 18px rgba(79, 70, 229, 0.12);
 }
 
+.field-control .input::placeholder {
+  color: #94a3b8;
+  opacity: 0.45;
+  font-weight: 400;
+}
+
 /* OTP Input specific padding offset */
 .otp-input {
   padding-right: 132px !important;
@@ -557,4 +563,10 @@ body.dark-theme .ssl-row {
 body.dark-theme .checkbox-row a,
 body.dark-theme .register-footer a {
   color: #60a5fa !important;
+}
+
+[data-theme="dark"] .field-control .input::placeholder,
+body.dark-theme .field-control .input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.4 !important;
 }

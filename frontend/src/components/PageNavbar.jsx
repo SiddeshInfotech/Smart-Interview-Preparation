@@ -10,7 +10,7 @@ import "../styles/NotificationPopup.css";
 export default function PageNavbar({
   activePath = "/dashboard",
   navItems = [],
-  brandLabel = "PrepMaster AI",
+  brandLabel = "PrepMaster",
   brandHref = "/dashboard",
   brandIcon = <Brain size={28} />,
 }) {

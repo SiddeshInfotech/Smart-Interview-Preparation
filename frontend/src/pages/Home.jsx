@@ -49,7 +49,7 @@ export default function Home() {
               <span>optimizeRoute.ts</span>
             </div>
 
-            <span className="mock-window__title">PrepMasterAI</span>
+            <span className="mock-window__title">PrepMaster</span>
           </div>
 
           <pre>{`function optimizeRoute(graph: Graph) {
@@ -129,7 +129,7 @@ export default function Home() {
       {/* ABOUT US BOX CARD CONTAINER */}
       <section className="container section" id="about">
         <div className="about-card-box">
-          <span className="about-tag">ABOUT PREPMASTER AI</span>
+          <span className="about-tag">ABOUT PREPMASTER</span>
           <h2>Smart Interview Preparation Portal</h2>
 
           <p className="lead about-text">
@@ -179,7 +179,7 @@ export default function Home() {
             <span>CANDIDATE SUCCESS ROADMAP</span>
           </span>
           <h2 className="roadmap-main-title">
-            How <span className="accent">PrepMaster AI</span> Powers Your Career
+            How <span className="accent">PrepMaster</span> Powers Your Career
           </h2>
           <p className="roadmap-lead">
             A step-by-step guided trajectory engineered to transform your technical skills, build real interview confidence, and land top-tier software engineering offers.

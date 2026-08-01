@@ -7,7 +7,7 @@ router = APIRouter()
 def home():
     return {
         "status": "success",
-        "message": "PrepMaster AI Code Executor is Running 🚀"
+        "message": "PrepMaster Code Executor is Running 🚀"
     }
 
     

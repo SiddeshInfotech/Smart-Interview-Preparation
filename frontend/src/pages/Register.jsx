@@ -249,7 +249,7 @@ export default function Register() {
                 className="input"
                 type="text"
                 name="name"
-                placeholder="John Doe"
+                placeholder="Enter your full name"
                 value={form.name}
                 onChange={handleChange}
                 required
@@ -269,7 +269,7 @@ export default function Register() {
                 className="input otp-input"
                 type="email"
                 name="email"
-                placeholder="john@company.com"
+                placeholder="Enter your email address"
                 value={form.email}
                 onChange={handleChange}
                 disabled={otpVerified}
@@ -367,9 +367,9 @@ export default function Register() {
                 className="input"
                 type="text"
                 name="phone_number"
+                placeholder="Enter your phone number"
                 value={form.phone_number}
                 onChange={handleChange}
-                placeholder="+1 (555) 000-0000"
                 required
               />
             </div>
@@ -387,7 +387,7 @@ export default function Register() {
                 className="input"
                 type={showPassword ? "text" : "password"}
                 name="password"
-                placeholder="••••••••"
+                placeholder="Enter password"
                 value={form.password}
                 onChange={handleChange}
                 required
@@ -432,7 +432,7 @@ export default function Register() {
                 className="input"
                 type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
-                placeholder="••••••••"
+                placeholder="Confirm password"
                 value={form.confirmPassword}
                 onChange={handleChange}
                 required

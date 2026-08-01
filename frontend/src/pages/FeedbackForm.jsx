@@ -101,7 +101,7 @@ const FeedbackForm = () => {
             <span className="feedback-gradient-title">Portal Feedback</span>
           </h1>
           <p>
-            Share your experience with PrepMaster AI and help us shape the future of smart interview preparation.
+            Share your experience with PrepMaster and help us shape the future of smart interview preparation.
           </p>
           <div className="feedback-header-line" />
         </div>
@@ -195,7 +195,7 @@ const FeedbackForm = () => {
           {/* Recommendation Options */}
           <div className="form-group">
             <label>
-              <ThumbsUp size={16} className="label-icon" /> Would you recommend PrepMaster AI to candidates?
+              <ThumbsUp size={16} className="label-icon" /> Would you recommend PrepMaster to candidates?
             </label>
             <div className="recommend-cards-row">
               <button
@@ -239,7 +239,7 @@ const FeedbackForm = () => {
                 onChange={handleChange}
                 placeholder={
                   feedback.recommend === "Yes"
-                    ? "Share why you'd recommend PrepMaster AI..."
+                    ? "Share why you'd recommend PrepMaster..."
                     : "Let us know how we can earn your recommendation..."
                 }
                 rows="3"
@@ -290,7 +290,7 @@ const FeedbackForm = () => {
               <CheckCircle2 size={40} color="#10b981" />
             </div>
             <h3>Feedback Submitted!</h3>
-            <p>Thank you for taking the time to share your feedback with PrepMaster AI. Your insights help us continuously improve our portal!</p>
+            <p>Thank you for taking the time to share your feedback with PrepMaster. Your insights help us continuously improve our portal!</p>
             <button className="popup-close-btn" onClick={() => setShowSuccessPopup(false)}>
               Done
             </button>

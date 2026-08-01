@@ -10,7 +10,7 @@ const ScorePage = () => {
       <div className="score-content">
         {/* Quiz Header */}
         <div className="quiz-header">
-          <h1 className="quiz-title">PrepMaster AI</h1>
+          <h1 className="quiz-title">PrepMaster</h1>
           <div className="quiz-subtitle">Quiz Completed! Great effort! Here's how everyone performed.</div>
         </div>
 

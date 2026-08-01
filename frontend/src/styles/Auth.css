@@ -268,7 +268,8 @@
 
 .input-wrap input::placeholder {
   color: #94a3b8;
-  font-weight: 500;
+  opacity: 0.45;
+  font-weight: 400;
 }
 
 .eye-btn {
@@ -541,5 +542,11 @@ body.dark-theme .input-wrap input:focus {
 body.dark-theme .ssl-row {
   border-top-color: #1e293b !important;
   color: #ffffff !important;
+}
+
+[data-theme="dark"] .input-wrap input::placeholder,
+body.dark-theme .input-wrap input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.4 !important;
 }
 

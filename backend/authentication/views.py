@@ -58,7 +58,7 @@ def register(request):
     create_notification(
         user=user,
         notification_type="system",
-        title="Welcome to PrepMaster AI",
+        title="Welcome to PrepMaster",
         message="Your account has been created successfully. Welcome aboard!",
     )
 
@@ -120,7 +120,7 @@ def login(request):
                 user=user,
                 notification_type="system",
                 title="Login Successful",
-                message="Welcome back to PrepMaster AI.",
+                message="Welcome back to PrepMaster.",
             )
         except Exception:
             pass

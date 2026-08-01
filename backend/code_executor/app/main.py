@@ -8,7 +8,7 @@ from app.schemas.execute_schema import (
 
 
 app = FastAPI(
-    title="PrepMaster AI Code Executor"
+    title="PrepMaster Code Executor"
 )
 
 

@@ -204,7 +204,7 @@ const Dashboard = () => {
           <span className="welcome-text">Welcome Back, </span>
           <span className="username">{user.username}</span>
         </h1>
-        <h2>PrepMaster AI Dashboard</h2>
+        <h2>PrepMaster Dashboard</h2>
         <p>
           Track your learning progress, interview readiness, and skill development.
         </p>

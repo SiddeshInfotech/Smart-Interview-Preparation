@@ -568,7 +568,7 @@ const InterviewerProfile = () => {
         <button className="ip-menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
-        <span className="ip-mobile-title">PrepMasterAI Profile</span>
+        <span className="ip-mobile-title">PrepMaster Profile</span>
         <div className="ip-mobile-header-right">
           <button
             className="ip-mobile-dashboard-btn"
@@ -605,7 +605,7 @@ const InterviewerProfile = () => {
               <Sparkles size={20} />
             </div>
             <div className="ip-brand-text">
-              <span className="ip-brand-title">PrepMasterAI</span>
+              <span className="ip-brand-title">PrepMaster</span>
               <span className="ip-brand-subtitle">Interviewer Profile</span>
             </div>
           </div>
@@ -863,7 +863,7 @@ const InterviewerProfile = () => {
                         className={`ip-input ${!isEditing ? "readonly" : ""}`}
                         value={profile.company}
                         onChange={(e) => setProfile({ ...profile, company: e.target.value })}
-                        placeholder="e.g., Google / Microsoft / PrepMasterAI"
+                        placeholder="e.g., Google / Microsoft / PrepMaster"
                       />
                     </div>
                   </div>

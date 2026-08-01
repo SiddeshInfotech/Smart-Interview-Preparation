@@ -47,7 +47,7 @@ class FeedbackAPIView(APIView):
 
             # Email to User
             send_mail(
-                subject="Thank You for Your Feedback - PrepMaster AI",
+                subject="Thank You for Your Feedback - PrepMaster",
 
                 message=f"""
 Hello {feedback.name},
@@ -70,10 +70,10 @@ Recommendation:
 Reason:
 {feedback.recommendation_reason}
 
-We appreciate your valuable feedback and will use it to improve PrepMaster AI.
+We appreciate your valuable feedback and will use it to improve PrepMaster.
 
-Regards,
-PrepMaster AI Team
+Best regards,
+PrepMaster Team
 """,
 
                 from_email="projectssvps2026@gmail.com",
@@ -85,7 +85,7 @@ PrepMaster AI Team
 
             # Email to Admin
             send_mail(
-                subject="New Feedback Submitted - PrepMaster AI",
+                subject="New Feedback Submitted - PrepMaster",
 
                 message=f"""
 Hello Admin,
@@ -100,7 +100,7 @@ Name: {feedback.name}
 Email: {feedback.email}
 
 Regards,
-PrepMaster AI Team
+PrepMaster Team
 """,
 
                 from_email="projectssvps2026@gmail.com",

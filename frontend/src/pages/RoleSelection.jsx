@@ -21,7 +21,7 @@ export default function RoleSelection() {
       {/* ================= NAVBAR ================= */}
       <header className="role-navbar">
         <div className="logo">
-          PrepMaster <span>AI</span>
+          PrepMaster
         </div>
 
         <nav className="nav-links">

@@ -150,7 +150,7 @@ class OpenRouterService:
         headers = {
             "Content-Type": "application/json",
             "HTTP-Referer": "https://prepmaster.ai",
-            "X-Title": "PrepMaster AI",
+            "X-Title": "PrepMaster",
         }
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"

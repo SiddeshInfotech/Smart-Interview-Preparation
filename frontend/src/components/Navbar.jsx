@@ -30,7 +30,7 @@ export default function Navbar() {
     <header className="top-navbar">
       <div className="navbar-container">
         <button className="navbar-brand" onClick={() => navigate('/')}>
-          PrepMaster AI
+          PrepMaster
         </button>
         
         <div className="navbar-icons">
