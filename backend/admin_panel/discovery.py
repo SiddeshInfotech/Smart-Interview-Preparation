@@ -139,9 +139,6 @@ def get_model_fields(model):
     """Get all field metadata for a given model."""
     fields = []
     for field in model._meta.get_fields():
-        # Exclude Django auth M2M fields (groups and user_permissions)
-        if field.name in ("groups", "user_permissions"):
-            continue
         # Skip reverse relations (they don't have a column)
         if hasattr(field, "field"):  # This is a reverse relation
             continue
@@ -202,6 +199,7 @@ APP_DISPLAY_NAMES = {
     "resume": "Resumes",
     "quiz": "Quiz",
     "coding": "Coding",
+    "compiler": "Compiler & Code History",
     "notifications": "Notifications",
     "admin_panel": "Admin Panel",
     "auth": "Django Auth",
@@ -217,9 +215,10 @@ APP_GROUP_ORDER = {
     "feedback": 5,
     "quiz": 6,
     "coding": 7,
-    "resume": 8,
-    "common": 9,
-    "notifications": 10,
+    "compiler": 8,
+    "resume": 9,
+    "common": 10,
+    "notifications": 11,
     "admin_panel": 99,
 }
 

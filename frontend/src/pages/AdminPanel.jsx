@@ -27,6 +27,7 @@ const MODEL_ICONS = {
   codingquestion: <IconBook />,
   quizperformance: <IconStar />,
   usercredit: <IconStar />,
+  executionhistory: <IconClock />,
 };
 
 // Legacy path mapping to appLabel / modelName for backward compatibility
@@ -47,6 +48,7 @@ const LEGACY_PATH_MAP = {
   "resume-analysis": "resume/resumeanalysis",
   "notifications": "notifications/notification",
   "otps": "authentication/otpverification",
+  "execution-histories": "compiler/executionhistory",
 };
 
 export default function AdminPanel() {
