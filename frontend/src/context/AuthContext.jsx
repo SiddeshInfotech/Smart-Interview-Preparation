@@ -46,6 +46,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("cached_dashboard_coding");
     localStorage.removeItem("cached_dashboard_ai");
     localStorage.removeItem("cached_dashboard_daily_progress");
+    localStorage.removeItem("cached_user_usage");
   };
 
   // Helper to sync profile state with localStorage

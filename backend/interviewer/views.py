@@ -45,6 +45,16 @@ class InterviewerProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
             profile = Interviewer_Profile.objects.create(user=self.request.user)
             return Interviewer_Profile.objects.select_related("user").get(pk=profile.pk)
 
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        try:
+            from .services import invalidate_interviewer_profile_cache
+            from authentication.services import invalidate_auth_profile_cache
+            invalidate_interviewer_profile_cache(self.request.user.id)
+            invalidate_auth_profile_cache(self.request.user.id)
+        except Exception:
+            pass
+
 
 class InterviewerAvailabilityViewSet(viewsets.ModelViewSet):
     serializer_class = InterviewerAvailabilitySerializer

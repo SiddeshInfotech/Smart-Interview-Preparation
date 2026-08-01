@@ -45,3 +45,8 @@ class ProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     def perform_update(self, serializer):
         super().perform_update(serializer)
         invalidate_candidate_profile_cache(self.request.user.id)
+        try:
+            from authentication.services import invalidate_auth_profile_cache
+            invalidate_auth_profile_cache(self.request.user.id)
+        except Exception:
+            pass

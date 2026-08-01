@@ -208,10 +208,12 @@ def analyze_resume(request):
         if user:
             try:
                 from authentication.models import UserCredit
+                from authentication.services import invalidate_usage_cache
                 credits_obj, _ = UserCredit.objects.get_or_create(user=user)
                 credits_obj.check_and_reset()
                 credits_obj.resume_used += 1
                 credits_obj.save(update_fields=["resume_used", "updated_at"])
+                invalidate_usage_cache(user.id)
             except Exception:
                 pass
 
@@ -359,6 +361,15 @@ def add_to_profile(request):
             print("Experience Years:", profile.experience_years)
 
         profile.save()
+        try:
+            from candidate.services import invalidate_candidate_profile_cache
+            from authentication.services import invalidate_auth_profile_cache
+            user_id = getattr(request.user, "pk", getattr(request.user, "user_id", None))
+            if user_id:
+                invalidate_candidate_profile_cache(user_id)
+                invalidate_auth_profile_cache(user_id)
+        except Exception:
+            pass
         print("Profile saved successfully")
 
         print("===== PROFILE SAVED =====")

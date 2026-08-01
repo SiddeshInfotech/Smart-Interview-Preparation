@@ -4,7 +4,7 @@ from .models import Candidate_Profile
 
 logger = logging.getLogger(__name__)
 
-CACHE_TTL = 60  # 60 seconds
+CACHE_TTL = 300  # 300 seconds (5 minutes)
 
 
 def get_candidate_profile_data(user):
@@ -42,7 +42,8 @@ def get_candidate_profile_data(user):
         ).first()
 
         if not profile:
-            profile = Candidate_Profile.objects.create(user=user)
+            profile_obj = Candidate_Profile.objects.create(user=user)
+            profile = Candidate_Profile.objects.select_related("user").get(pk=profile_obj.pk)
 
         data = {
             "candidate_id": profile.candidate_id,

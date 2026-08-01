@@ -367,8 +367,9 @@ def verify_registration_otp(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_profile(request):
-    serializer = ProfileSerializer(request.user)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    from .services import get_auth_profile_data
+    data = get_auth_profile_data(request.user)
+    return Response(data, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])

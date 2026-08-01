@@ -30,7 +30,14 @@ export default function PageNavbar({
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [usageData, setUsageData] = useState(null);
+  const [usageData, setUsageData] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cached_user_usage");
+      return cached ? JSON.parse(cached) : null;
+    } catch (e) {
+      return null;
+    }
+  });
   const effectiveBrandHref = userProfile?.role === "interviewer" ? "/interview" : brandHref;
 
   useEffect(() => {
@@ -44,15 +51,23 @@ export default function PageNavbar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch usage data when dropdown opens (free users only)
+  // Fetch usage data and sync to localStorage cache
   const fetchUsage = useCallback(async () => {
     try {
       const res = await api.get("/auth/usage/");
       setUsageData(res.data);
+      localStorage.setItem("cached_user_usage", JSON.stringify(res.data));
     } catch (err) {
       console.warn("Could not fetch usage data", err);
     }
   }, []);
+
+  // Pre-fetch usage on mount if authenticated
+  useEffect(() => {
+    if (localStorage.getItem("access_token")) {
+      fetchUsage();
+    }
+  }, [fetchUsage]);
 
   const handleToggleDropdown = () => {
     setProfileMenuOpen((open) => {

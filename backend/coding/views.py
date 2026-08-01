@@ -153,10 +153,12 @@ def submit_code(request):
         if user_obj:
             try:
                 from authentication.models import UserCredit
+                from authentication.services import invalidate_usage_cache
                 credits_obj, _ = UserCredit.objects.get_or_create(user=user_obj)
                 credits_obj.check_and_reset()
                 credits_obj.coding_used += 1
                 credits_obj.save(update_fields=["coding_used", "updated_at"])
+                invalidate_usage_cache(user_obj.id)
             except Exception:
                 pass
 

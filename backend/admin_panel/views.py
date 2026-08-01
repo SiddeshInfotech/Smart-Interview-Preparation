@@ -500,4 +500,18 @@ def user_credits_list(request):
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([IsAdminOrSuperUser])
 def user_credit_detail(request, pk):
+    if request.method in ["PUT", "PATCH", "DELETE"]:
+        try:
+            credit = UserCredit.objects.filter(pk=pk).first()
+            user_id = credit.user_id if credit else None
+        except Exception:
+            user_id = None
+        response = retrieve_update_delete(request, UserCredit, UserCreditAdminSerializer, pk)
+        if user_id:
+            try:
+                from authentication.services import invalidate_usage_cache
+                invalidate_usage_cache(user_id)
+            except Exception:
+                pass
+        return response
     return retrieve_update_delete(request, UserCredit, UserCreditAdminSerializer, pk)

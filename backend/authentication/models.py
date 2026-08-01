@@ -120,6 +120,13 @@ class UserCredit(models.Model):
 
         if updated and self.pk:
             self.save(update_fields=["quiz_used", "quiz_last_reset", "coding_used", "coding_last_reset", "resume_used", "resume_last_reset", "updated_at"])
+            try:
+                from .services import invalidate_usage_cache
+                u_id = getattr(self, "user_id", None) or (self.user.pk if self.user else None)
+                if u_id:
+                    invalidate_usage_cache(u_id)
+            except Exception:
+                pass
 
     def __str__(self):
         return f"{self.user.email}'s Credits"
