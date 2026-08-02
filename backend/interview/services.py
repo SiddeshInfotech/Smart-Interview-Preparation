@@ -20,7 +20,6 @@ def get_interview_performance_summary(user):
         "communication_skills": 0,
         "problem_solving": 0,
         "soft_skills": 0,
-        "code_quality": 0,
         "overall_performance": 0,
     }
 
@@ -56,7 +55,6 @@ def get_interview_performance_summary(user):
             comm=Avg("communication_skills"),
             prob=Avg("problem_solving"),
             soft=Avg("soft_skills"),
-            code=Avg("code_quality"),
             overall=Avg("overall_rating"),
         )
 
@@ -64,12 +62,11 @@ def get_interview_performance_summary(user):
         comm_avg = aggs["comm"] or 0
         prob_avg = aggs["prob"] or 0
         soft_avg = aggs["soft"] or 0
-        code_avg = aggs["code"] or 0
         overall_avg = aggs["overall"] or 0
 
         summary_avg = (
-            (tech_avg + comm_avg + prob_avg + soft_avg + code_avg) / 5.0
-            if any([tech_avg, comm_avg, prob_avg, soft_avg, code_avg])
+            (tech_avg + comm_avg + prob_avg + soft_avg) / 4.0
+            if any([tech_avg, comm_avg, prob_avg, soft_avg])
             else overall_avg
         )
 
@@ -79,7 +76,6 @@ def get_interview_performance_summary(user):
             "communication_skills": round((comm_avg / 5.0) * 100),
             "problem_solving": round((prob_avg / 5.0) * 100),
             "soft_skills": round((soft_avg / 5.0) * 100),
-            "code_quality": round((code_avg / 5.0) * 100),
             "overall_performance": round((summary_avg / 5.0) * 100),
         }
 

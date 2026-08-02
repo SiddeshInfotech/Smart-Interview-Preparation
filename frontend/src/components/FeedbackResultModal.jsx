@@ -74,10 +74,6 @@ const FeedbackResultModal = ({ feedback, onClose }) => {
               <span className="rating-label">Soft Skills & Professionalism</span>
               <span style={{ fontWeight: '700', color: '#2563eb' }}>{feedback.soft_skills} / 5 ★</span>
             </div>
-            <div className="rating-row">
-              <span className="rating-label">Code Quality & Architecture</span>
-              <span style={{ fontWeight: '700', color: '#2563eb' }}>{feedback.code_quality} / 5 ★</span>
-            </div>
           </div>
 
           {feedback.strengths && (

@@ -114,7 +114,6 @@ const Dashboard = () => {
       communication_skills: 0,
       problem_solving: 0,
       soft_skills: 0,
-      code_quality: 0,
       overall_performance: 0,
     })
   );
@@ -575,10 +574,6 @@ const Dashboard = () => {
             <div className="performance-row">
               <span>Soft Skills & Professionalism</span>
               <strong>{interviewPerformance.soft_skills || 0}%</strong>
-            </div>
-            <div className="performance-row">
-              <span>Code Quality & Architecture</span>
-              <strong>{interviewPerformance.code_quality || 0}%</strong>
             </div>
 
             <hr className="performance-divider" />

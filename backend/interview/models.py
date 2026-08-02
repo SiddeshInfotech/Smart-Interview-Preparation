@@ -76,7 +76,6 @@ class InterviewFeedbackReview(models.Model):
     communication_skills = models.IntegerField(default=3)
     problem_solving = models.IntegerField(default=3)
     soft_skills = models.IntegerField(default=3)
-    code_quality = models.IntegerField(default=3)
     overall_rating = models.DecimalField(max_digits=3, decimal_places=1, default=3.0)
     strengths = models.TextField(blank=True, null=True)
     weaknesses = models.TextField(blank=True, null=True)

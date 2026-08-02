@@ -55,7 +55,6 @@ const InterviewerFeedbackModal = ({ schedule, candidateName, onClose, onSubmitSu
   const [communicationSkills, setCommunicationSkills] = useState(4);
   const [problemSolving, setProblemSolving] = useState(4);
   const [softSkills, setSoftSkills] = useState(4);
-  const [codeQuality, setCodeQuality] = useState(4);
   const [recommendation, setRecommendation] = useState('Recommend');
   const [strengths, setStrengths] = useState('');
   const [weaknesses, setWeaknesses] = useState('');
@@ -63,7 +62,7 @@ const InterviewerFeedbackModal = ({ schedule, candidateName, onClose, onSubmitSu
   const [submitting, setSubmitting] = useState(false);
 
   const calculateOverallRating = () => {
-    const avg = (technicalSkills + communicationSkills + problemSolving + softSkills + codeQuality) / 5;
+    const avg = (technicalSkills + communicationSkills + problemSolving + softSkills) / 4;
     return avg.toFixed(1);
   };
 
@@ -91,7 +90,6 @@ const InterviewerFeedbackModal = ({ schedule, candidateName, onClose, onSubmitSu
         communication_skills: communicationSkills,
         problem_solving: problemSolving,
         soft_skills: softSkills,
-        code_quality: codeQuality,
         overall_rating: overallScore,
         strengths: strengths,
         weaknesses: weaknesses,
@@ -160,11 +158,6 @@ const InterviewerFeedbackModal = ({ schedule, candidateName, onClose, onSubmitSu
               label="Soft Skills & Professionalism"
               value={softSkills}
               onChange={setSoftSkills}
-            />
-            <StarRating
-              label="Code Quality & Architecture"
-              value={codeQuality}
-              onChange={setCodeQuality}
             />
           </div>
 

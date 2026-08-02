@@ -78,7 +78,6 @@ class InterviewFeedbackReviewSerializer(serializers.ModelSerializer):
             'communication_skills',
             'problem_solving',
             'soft_skills',
-            'code_quality',
             'overall_rating',
             'strengths',
             'weaknesses',

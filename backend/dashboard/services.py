@@ -52,7 +52,7 @@ def get_optimized_daily_progress(user):
         # 1 Bulk Query for Interview Reviews
         int_reviews = list(
             InterviewFeedbackReview.objects.filter(candidate=candidate_profile)
-            .only("submitted_at", "technical_skills", "communication_skills", "problem_solving", "soft_skills", "code_quality", "overall_rating")
+            .only("submitted_at", "technical_skills", "communication_skills", "problem_solving", "soft_skills", "overall_rating")
             .order_by("submitted_at")
         ) if candidate_profile else []
 
@@ -78,9 +78,8 @@ def get_optimized_daily_progress(user):
                     comm = r.communication_skills or 0
                     prob = r.problem_solving or 0
                     soft = r.soft_skills or 0
-                    code = r.code_quality or 0
                     overall = r.overall_rating or 0
-                    avg_r = (tech + comm + prob + soft + code) / 5.0 if any([tech, comm, prob, soft, code]) else overall
+                    avg_r = (tech + comm + prob + soft) / 4.0 if any([tech, comm, prob, soft]) else overall
                     reviews_sum += avg_r
                 avg_int = (reviews_sum / len(int_sub)) / 5.0 * 100
                 interview_val = round(avg_int, 1)
@@ -137,16 +136,14 @@ def get_optimized_ai_intelligence(user):
                 comm=Avg("communication_skills"),
                 prob=Avg("problem_solving"),
                 soft=Avg("soft_skills"),
-                code=Avg("code_quality"),
                 overall=Avg("overall_rating"),
             )
             tech = aggs["tech"] or 0
             comm = aggs["comm"] or 0
             prob = aggs["prob"] or 0
             soft = aggs["soft"] or 0
-            code = aggs["code"] or 0
             overall = aggs["overall"] or 0
-            summary_avg = (tech + comm + prob + soft + code) / 5.0 if any([tech, comm, prob, soft, code]) else overall
+            summary_avg = (tech + comm + prob + soft) / 4.0 if any([tech, comm, prob, soft]) else overall
             interview_score = round((float(summary_avg) / 5.0) * 100)
         else:
             interview_score = 0
