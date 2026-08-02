@@ -93,7 +93,7 @@ const Dashboard = () => {
     try {
       const stored = localStorage.getItem(`cached_dashboard_${key}`);
       if (stored) return JSON.parse(stored);
-    } catch (e) {}
+    } catch (e) { }
     return fallback;
   };
 
@@ -396,12 +396,11 @@ const Dashboard = () => {
               </div>
               <div className="metric-info-right">
                 {aiIntelligence.metrics?.quiz_mastery > 0 && (
-                  <span className={`metric-status-badge ${
-                    aiIntelligence.metrics.quiz_mastery >= 85 ? "tag-excellent" :
-                    aiIntelligence.metrics.quiz_mastery >= 50 ? "tag-good" : "tag-practice"
-                  }`}>
+                  <span className={`metric-status-badge ${aiIntelligence.metrics.quiz_mastery >= 85 ? "tag-excellent" :
+                      aiIntelligence.metrics.quiz_mastery >= 50 ? "tag-good" : "tag-practice"
+                    }`}>
                     {aiIntelligence.metrics.quiz_mastery >= 85 ? "Excellent" :
-                     aiIntelligence.metrics.quiz_mastery >= 50 ? "Good" : "Needs Practice"}
+                      aiIntelligence.metrics.quiz_mastery >= 50 ? "Good" : "Needs Practice"}
                   </span>
                 )}
                 <div className="score-pill-chip quiz-score-chip">
@@ -423,12 +422,11 @@ const Dashboard = () => {
               </div>
               <div className="metric-info-right">
                 {aiIntelligence.metrics?.coding_ability > 0 && (
-                  <span className={`metric-status-badge ${
-                    aiIntelligence.metrics.coding_ability >= 85 ? "tag-excellent" :
-                    aiIntelligence.metrics.coding_ability >= 50 ? "tag-good" : "tag-practice"
-                  }`}>
+                  <span className={`metric-status-badge ${aiIntelligence.metrics.coding_ability >= 85 ? "tag-excellent" :
+                      aiIntelligence.metrics.coding_ability >= 50 ? "tag-good" : "tag-practice"
+                    }`}>
                     {aiIntelligence.metrics.coding_ability >= 85 ? "Excellent" :
-                     aiIntelligence.metrics.coding_ability >= 50 ? "Good" : "Needs Practice"}
+                      aiIntelligence.metrics.coding_ability >= 50 ? "Good" : "Needs Practice"}
                   </span>
                 )}
                 <div className="score-pill-chip coding-score-chip">
@@ -450,12 +448,11 @@ const Dashboard = () => {
               </div>
               <div className="metric-info-right">
                 {aiIntelligence.metrics?.interview_skill > 0 ? (
-                  <span className={`metric-status-badge ${
-                    aiIntelligence.metrics.interview_skill >= 85 ? "tag-excellent" :
-                    aiIntelligence.metrics.interview_skill >= 50 ? "tag-good" : "tag-practice"
-                  }`}>
+                  <span className={`metric-status-badge ${aiIntelligence.metrics.interview_skill >= 85 ? "tag-excellent" :
+                      aiIntelligence.metrics.interview_skill >= 50 ? "tag-good" : "tag-practice"
+                    }`}>
                     {aiIntelligence.metrics.interview_skill >= 85 ? "Excellent" :
-                     aiIntelligence.metrics.interview_skill >= 50 ? "Good" : "Needs Practice"}
+                      aiIntelligence.metrics.interview_skill >= 50 ? "Good" : "Needs Practice"}
                   </span>
                 ) : (
                   <span className="metric-status-badge tag-unattempted">
@@ -579,7 +576,7 @@ const Dashboard = () => {
             <hr className="performance-divider" />
 
             <div className="performance-row total-performance">
-              <span>Overall Performance (Avg. of All Stats)</span>
+              <span>Overall Interview Performance</span>
               <strong className="performance-score">
                 {interviewPerformance.overall_performance || 0}%
               </strong>
