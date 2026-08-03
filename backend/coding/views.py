@@ -70,6 +70,7 @@ def submit_code(request):
                 )
         # ──────────────────────────────────────────────────────────────────
 
+        is_forfeit = request.data.get("forfeit", False)
         question_id = request.data.get("question_id")
         question_title = request.data.get("question_title", "")
         problem_statement = request.data.get("problem_statement", "")
@@ -77,74 +78,96 @@ def submit_code(request):
         code = request.data.get("code", "")
         user_input = request.data.get("input", "")
 
-        if not code or not code.strip():
-            return Response({
-                "success": False,
-                "error": "No code provided for submission."
-            }, status=400)
-
-        # 1. Execute Code via Piston
-        exec_result = execute_code(language, code, user_input)
-        if not isinstance(exec_result, dict):
-            exec_result = {"status": "error", "output": "", "error": str(exec_result)}
-
-        # 2. Evaluate Code via OpenRouter AI
-        eval_data = None
-        try:
-            eval_data = evaluate_code_submission(
-                language=language,
-                problem_title=question_title or f"{language} Coding Challenge",
-                problem_statement=problem_statement or "Solve the coding task.",
-                code=code,
-                user_input=user_input,
-                execution_output=exec_result.get("output", ""),
-                execution_error=exec_result.get("error", "")
-            )
-        except Exception as e:
-            print("OpenRouter Evaluation Exception:", e)
-            has_error = bool(exec_result.get("error"))
-            output_str = str(exec_result.get("output", "")).strip().lower()
-            code_str = str(code).strip().lower()
-            
-            # Simple heuristic relevance check for fallback
-            is_hello_world = "hello world" in output_str or "hello world" in code_str
-            is_very_short = len(code_str) < 30
-
-            if has_error:
-                fallback_score = 5
-                status = "Failed"
-            elif is_hello_world or is_very_short:
-                fallback_score = 15  # Partial 10-20% for generic / slight match
-                status = "Failed"
-            else:
-                fallback_score = 75
-                status = "Passed"
-
+        if is_forfeit:
             eval_data = {
-                "overall_score": fallback_score,
-                "status": status,
-                "logical_thinking": fallback_score,
-                "code_efficiency": fallback_score,
-                "language_skills": fallback_score,
-                "problem_solving": fallback_score,
-                "time_complexity_notation": "O(N)",
-                "space_complexity_notation": "O(1)",
+                "overall_score": 0,
+                "status": "Failed",
+                "logical_thinking": 0,
+                "code_efficiency": 0,
+                "language_skills": 0,
+                "problem_solving": 0,
+                "time_complexity_notation": "N/A",
+                "space_complexity_notation": "N/A",
                 "criteria": {
-                    "correctness": {
-                        "score": fallback_score,
-                        "feedback": "Code compiled and executed. Detailed evaluation pending AI service." if status == "Passed" else "Code execution output did not match problem requirements."
-                    },
-                    "code_quality": { "score": fallback_score, "feedback": "Code structure and syntax processed." },
-                    "time_complexity": { "score": fallback_score, "feedback": "Standard execution efficiency." },
-                    "space_complexity": { "score": fallback_score, "feedback": "Memory footprint within limits." },
-                    "edge_cases": { "score": min(fallback_score, 60), "feedback": "Verify handling for boundary cases." }
+                    "correctness": { "score": 0, "feedback": "Challenge forfeited after viewing reference solution." },
+                    "code_quality": { "score": 0, "feedback": "Challenge forfeited." },
+                    "time_complexity": { "score": 0, "feedback": "Challenge forfeited." },
+                    "space_complexity": { "score": 0, "feedback": "Challenge forfeited." },
+                    "edge_cases": { "score": 0, "feedback": "Challenge forfeited." }
                 },
-                "summary": f"Program evaluation completed (Score: {fallback_score}%).",
-                "suggestions": [
-                    "Ensure code dynamically processes problem inputs.",
-                    "Verify edge cases and output formatting matches challenge specifications."
-                ]
+                "summary": "Candidate forfeited this coding challenge by viewing the solution.",
+                "suggestions": ["Attempt to solve challenges independently before revealing solutions."]
             }
+            exec_result = {"status": "forfeited", "output": "Challenge Forfeited (Solution Viewed)", "error": ""}
+        else:
+            if not code or not code.strip():
+                return Response({
+                    "success": False,
+                    "error": "No code provided for submission."
+                }, status=400)
+
+            # 1. Execute Code via Piston
+            exec_result = execute_code(language, code, user_input)
+            if not isinstance(exec_result, dict):
+                exec_result = {"status": "error", "output": "", "error": str(exec_result)}
+
+            # 2. Evaluate Code via OpenRouter AI
+            eval_data = None
+            try:
+                eval_data = evaluate_code_submission(
+                    language=language,
+                    problem_title=question_title or f"{language} Coding Challenge",
+                    problem_statement=problem_statement or "Solve the coding task.",
+                    code=code,
+                    user_input=user_input,
+                    execution_output=exec_result.get("output", ""),
+                    execution_error=exec_result.get("error", "")
+                )
+            except Exception as e:
+                print("OpenRouter Evaluation Exception:", e)
+                has_error = bool(exec_result.get("error"))
+                output_str = str(exec_result.get("output", "")).strip().lower()
+                code_str = str(code).strip().lower()
+                
+                # Simple heuristic relevance check for fallback
+                is_hello_world = "hello world" in output_str or "hello world" in code_str
+                is_very_short = len(code_str) < 30
+
+                if has_error:
+                    fallback_score = 5
+                    status = "Failed"
+                elif is_hello_world or is_very_short:
+                    fallback_score = 15  # Partial 10-20% for generic / slight match
+                    status = "Failed"
+                else:
+                    fallback_score = 75
+                    status = "Passed"
+
+                eval_data = {
+                    "overall_score": fallback_score,
+                    "status": status,
+                    "logical_thinking": fallback_score,
+                    "code_efficiency": fallback_score,
+                    "language_skills": fallback_score,
+                    "problem_solving": fallback_score,
+                    "time_complexity_notation": "O(N)",
+                    "space_complexity_notation": "O(1)",
+                    "criteria": {
+                        "correctness": {
+                            "score": fallback_score,
+                            "feedback": "Code compiled and executed. Detailed evaluation pending AI service." if status == "Passed" else "Code execution output did not match problem requirements."
+                        },
+                        "code_quality": { "score": fallback_score, "feedback": "Code structure and syntax processed." },
+                        "time_complexity": { "score": fallback_score, "feedback": "Standard execution efficiency." },
+                        "space_complexity": { "score": fallback_score, "feedback": "Memory footprint within limits." },
+                        "edge_cases": { "score": min(fallback_score, 60), "feedback": "Verify handling for boundary cases." }
+                    },
+                    "summary": f"Program evaluation completed (Score: {fallback_score}%).",
+                    "suggestions": [
+                        "Ensure code dynamically processes problem inputs.",
+                        "Verify edge cases and output formatting matches challenge specifications."
+                    ]
+                }
 
         # 3. Question Lookup
         question_obj = None

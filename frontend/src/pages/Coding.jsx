@@ -34,6 +34,7 @@ const CodingAssessment = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [evalResult, setEvalResult] = useState(null);
   const [showEvalModal, setShowEvalModal] = useState(false);
+  const [showSolutionModal, setShowSolutionModal] = useState(false);
 
   // Active question tab ("problem", "hint")
   const [activeTab, setActiveTab] = useState("problem");
@@ -64,67 +65,8 @@ const CodingAssessment = () => {
     return () => observer.disconnect();
   }, []);
 
-  const templates = {
-    python: `# Python 3
-import sys
-
-def main():
-    try:
-        user_input = sys.stdin.read().strip()
-        if user_input:
-            print(f"Program Output:\\n{user_input}")
-        else:
-            print("No input provided. Type your input in the box below.")
-    except Exception as e:
-        print(f"Error: {e}")
-
-if __name__ == "__main__":
-    main()`,
-
-    c: `#include <stdio.h>
-
-int main() {
-    char input_buffer[1024];
-    if (fgets(input_buffer, sizeof(input_buffer), stdin) != NULL) {
-        printf("Program Output:\\n%s", input_buffer);
-    } else {
-        printf("No input provided. Type your input in the box below.\\n");
-    }
-    return 0;
-}`,
-
-    cpp: `#include <iostream>
-#include <string>
-using namespace std;
-
-int main() {
-    string input_text;
-    if (getline(cin, input_text)) {
-        cout << "Program Output:" << endl << input_text << endl;
-    } else {
-        cout << "No input provided. Type your input in the box below." << endl;
-    }
-    return 0;
-}`,
-
-    java: `import java.util.Scanner;
-
-public class Main {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        if (sc.hasNextLine()) {
-            String input_text = sc.nextLine();
-            System.out.println("Program Output:");
-            System.out.println(input_text);
-        } else {
-            System.out.println("No input provided. Type your input in the box below.");
-        }
-    }
-}`
-  };
-
   useEffect(() => {
-    setCode(templates[languageKey] || templates.python);
+    setCode("");
   }, [languageKey]);
 
   const handleQuit = () => {
@@ -205,6 +147,34 @@ public class Main {
       alert("Submission error. Please ensure the backend server is running.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleShowSolutionClick = () => {
+    const confirmView = window.confirm(
+      "⚠️ WARNING: Viewing the reference solution will forfeit this coding challenge!\n\nUpon closing the solution popup, your attempt will be recorded as 0% and you will be exited from the editor.\n\nDo you want to reveal the solution?"
+    );
+    if (confirmView) {
+      setShowSolutionModal(true);
+    }
+  };
+
+  const handleCloseSolutionAndExit = async () => {
+    setShowSolutionModal(false);
+    try {
+      await api.post("/coding/submit/", {
+        language: displayLanguage,
+        code: code || "# Forfeited Solution View",
+        input: userInput,
+        question_title: questionData?.title || `${displayLanguage} Coding Task`,
+        problem_statement: questionData?.problem_statement || "Write a program to solve the coding challenge requirement.",
+        forfeit: true
+      });
+    } catch (err) {
+      console.warn("Forfeit submission failed:", err);
+    } finally {
+      alert("Challenge forfeited (0% score). Exiting code editor...");
+      navigate("/quiz");
     }
   };
 
@@ -305,6 +275,15 @@ public class Main {
               </div>
 
               <div className="toolbar-right">
+                <button
+                  type="button"
+                  className="show-solution-btn"
+                  onClick={handleShowSolutionClick}
+                  disabled={isRunning || isSubmitting}
+                  title="View solution (forfeits challenge with 0% score)"
+                >
+                  💡 Show Solution
+                </button>
                 <button
                   type="button"
                   className="submit-code-btn"
@@ -512,6 +491,52 @@ public class Main {
                 onClick={() => setShowEvalModal(false)}
               >
                 Close Evaluation Result
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REFERENCE SOLUTION POPUP MODAL (FORFEIT CHALLENGE 0% SCORE) */}
+      {showSolutionModal && (
+        <div className="eval-modal-overlay">
+          <div className="eval-modal solution-modal">
+            <div className="eval-modal-header" style={{ borderBottomColor: "#f43f5e" }}>
+              <div className="eval-modal-title">
+                <Lightbulb size={22} color="#f59e0b" />
+                <h3>Reference Solution</h3>
+              </div>
+              <span className="forfeit-badge" style={{ background: "#ffe4e6", color: "#e11d48", padding: "4px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: "700" }}>
+                ⚠️ Forfeit: 0% Score
+              </span>
+            </div>
+
+            <div className="eval-modal-body">
+              <div className="solution-forfeit-banner" style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: "10px", padding: "14px", marginBottom: "16px" }}>
+                <strong style={{ color: "#be123c", display: "block", marginBottom: "4px" }}>⚠️ Challenge Forfeited!</strong>
+                <p style={{ color: "#9f1239", fontSize: "13px", margin: 0, lineHeight: "1.5" }}>
+                  Viewing the solution forfeits this attempt. Once you close this modal, your score for this challenge will be recorded as <strong>0%</strong> and you will be exited from the code editor.
+                </p>
+              </div>
+
+              <div className="solution-box" style={{ background: "#0f172a", borderRadius: "10px", padding: "16px", border: "1px solid #334155" }}>
+                <div style={{ fontSize: "12px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", marginBottom: "10px", letterSpacing: "0.5px" }}>
+                  Reference Solution Code ({displayLanguage}):
+                </div>
+                <pre style={{ margin: 0, color: "#f8fafc", fontFamily: "Consolas, Monaco, monospace", fontSize: "14px", whiteSpace: "pre-wrap", overflowX: "auto" }}>
+                  {questionData?.solution || "No explicit reference solution provided for this question."}
+                </pre>
+              </div>
+            </div>
+
+            <div className="eval-modal-footer">
+              <button
+                type="button"
+                className="close-solution-btn"
+                onClick={handleCloseSolutionAndExit}
+                style={{ background: "#e11d48", color: "#ffffff", border: "none", padding: "10px 20px", borderRadius: "10px", fontWeight: "700", fontSize: "14px", cursor: "pointer", width: "100%" }}
+              >
+                Close &amp; Exit Code Editor (0% Score)
               </button>
             </div>
           </div>
