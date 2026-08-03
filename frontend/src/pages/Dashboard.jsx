@@ -448,7 +448,7 @@ const Dashboard = () => {
                 </div>
                 <div className="metric-text-group">
                   <span className="metric-title">Interview Skill</span>
-                  <span className="metric-subtitle">Communication & AI Mock</span>
+                  <span className="metric-subtitle">Communication</span>
                 </div>
               </div>
               <div className="metric-info-right">
