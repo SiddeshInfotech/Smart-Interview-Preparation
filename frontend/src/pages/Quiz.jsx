@@ -125,7 +125,7 @@ const Quiz = () => {
   const modes = ['MCQ', 'Coding Challenge'];
   const codingLanguages = ['C', 'C++', 'Java', 'Python'];
   const difficulties = ['Easy', 'Medium', 'Hard'];
-  const questionCounts = [5, 10, 25];
+  const questionCounts = [10];
 
   // --- Visibility toggles ---
   const showTopics = selectedMode !== '';
@@ -392,29 +392,7 @@ const Quiz = () => {
                   </div>
                 </div>
 
-                {/* QUESTION COUNT */}
-                <div className={`slide-section ${showQuestionCount ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 20 }}>
-                  <div className="slide-inner">
-                    <div className="divider"></div>
-                    <div className="setup-section">
-                      <h3 className="section-title">
-                        <ListChecks size={18} className="section-icon" />
-                        Number of Questions
-                      </h3>
-                      <div className="difficulty-grid">
-                        {questionCounts.map((count) => (
-                          <div
-                            key={count}
-                            className={`difficulty-item ${selectedQuestionCount === count ? 'selected' : ''}`}
-                            onClick={() => setSelectedQuestionCount(count)}
-                          >
-                            <strong>{count} Questions</strong>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+
 
                 {/* CUSTOM INSTRUCTIONS */}
                 <div className={`slide-section ${showCustomInstructions ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 10 }}>
