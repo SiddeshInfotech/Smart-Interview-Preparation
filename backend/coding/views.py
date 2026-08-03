@@ -102,27 +102,47 @@ def submit_code(request):
             )
         except Exception as e:
             print("OpenRouter Evaluation Exception:", e)
-            is_success = exec_result.get("status") == "success" and not exec_result.get("error")
+            has_error = bool(exec_result.get("error"))
+            output_str = str(exec_result.get("output", "")).strip().lower()
+            code_str = str(code).strip().lower()
+            
+            # Simple heuristic relevance check for fallback
+            is_hello_world = "hello world" in output_str or "hello world" in code_str
+            is_very_short = len(code_str) < 30
+
+            if has_error:
+                fallback_score = 5
+                status = "Failed"
+            elif is_hello_world or is_very_short:
+                fallback_score = 15  # Partial 10-20% for generic / slight match
+                status = "Failed"
+            else:
+                fallback_score = 75
+                status = "Passed"
+
             eval_data = {
-                "overall_score": 85 if is_success else 40,
-                "status": "Passed" if is_success else "Failed",
-                "logical_thinking": 85 if is_success else 45,
-                "code_efficiency": 80 if is_success else 40,
-                "language_skills": 85 if is_success else 50,
-                "problem_solving": 85 if is_success else 40,
+                "overall_score": fallback_score,
+                "status": status,
+                "logical_thinking": fallback_score,
+                "code_efficiency": fallback_score,
+                "language_skills": fallback_score,
+                "problem_solving": fallback_score,
                 "time_complexity_notation": "O(N)",
                 "space_complexity_notation": "O(1)",
                 "criteria": {
-                    "correctness": { "score": 90 if is_success else 30, "feedback": "Code compiled & executed successfully." if is_success else "Execution encountered runtime error." },
-                    "code_quality": { "score": 85, "feedback": "Code structure and syntax are valid." },
-                    "time_complexity": { "score": 80, "feedback": "Standard execution efficiency." },
-                    "space_complexity": { "score": 85, "feedback": "Memory footprint is within limits." },
-                    "edge_cases": { "score": 75, "feedback": "Verify handling for empty or extreme inputs." }
+                    "correctness": {
+                        "score": fallback_score,
+                        "feedback": "Code compiled and executed. Detailed evaluation pending AI service." if status == "Passed" else "Code execution output did not match problem requirements."
+                    },
+                    "code_quality": { "score": fallback_score, "feedback": "Code structure and syntax processed." },
+                    "time_complexity": { "score": fallback_score, "feedback": "Standard execution efficiency." },
+                    "space_complexity": { "score": fallback_score, "feedback": "Memory footprint within limits." },
+                    "edge_cases": { "score": min(fallback_score, 60), "feedback": "Verify handling for boundary cases." }
                 },
-                "summary": "Program evaluated successfully based on execution results.",
+                "summary": f"Program evaluation completed (Score: {fallback_score}%).",
                 "suggestions": [
-                    "Include concise inline comments for key algorithmic steps.",
-                    "Add boundary validation checks for user inputs."
+                    "Ensure code dynamically processes problem inputs.",
+                    "Verify edge cases and output formatting matches challenge specifications."
                 ]
             }
 

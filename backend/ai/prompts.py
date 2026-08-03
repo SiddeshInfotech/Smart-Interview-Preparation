@@ -248,6 +248,17 @@ Context:
 - Execution Error (stderr/error):
 {execution_error if execution_error else "(None)"}
 
+CRITICAL EVALUATION & SCORING RULES:
+1. COMPLETELY IRRELEVANT / GENERIC CODE (0% - 5% Score):
+   - If the submitted code has NO relation to the problem statement (e.g. submitting `print("Hello World")`, boilerplate, or unrelated code for an addition, sorting, or graph problem), set `overall_score` to 0, `status` to "Failed", `logical_thinking` to 0, and `problem_solving` to 0. Do NOT award high scores just because the code compiled without runtime errors.
+
+2. SLIGHT MATCH / INCOMPLETE SOLUTION (10% - 20% Score):
+   - If the user's code shows a slight match or partial effort toward the problem (e.g., defining `a = 10, b = 20` for a number addition problem, but failing to read dynamic input, compute result, or produce expected output), award ONLY 10% to 20% score (`overall_score` between 10 and 20).
+
+3. VALID ALTERNATIVE SOLUTIONS (High Score 80% - 100%):
+   - Do NOT penalize the user if their solution uses a different valid approach, algorithm, library, or coding style than the expected solution, provided it correctly solves the problem requirements and no specific method was mandated by the problem statement.
+   - If the code correctly solves the problem, award high correctness (85-100%). Score variations should be based on efficiency (time/space complexity), code quality, and edge case handling.
+
 Evaluation Criteria:
 1. Correctness: Does the code fulfill the problem requirement and produce correct output? (0-100)
 2. Code Quality & Style: Is the code well-structured, readable, and following idiomatic conventions? (0-100)
