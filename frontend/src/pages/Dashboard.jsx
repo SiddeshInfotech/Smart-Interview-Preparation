@@ -12,29 +12,41 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  ReferenceLine,
 } from "recharts";
 
-const CustomTooltip = React.memo(({ active, payload, label }) => {
+const CustomTooltip = React.memo(({ active, payload, label, graphViewMode }) => {
   if (active && payload && payload.length) {
+    const rawPayload = payload[0]?.payload || {};
+    const dateLabel = rawPayload.date ? `${label} (${rawPayload.date})` : label;
+    const overallChange = rawPayload.overall_change;
+
     return (
       <div className="custom-chart-tooltip">
         <div className="tooltip-header">
-          <span className="tooltip-day">{label} Progress</span>
-          <span className="tooltip-badge">Live Score</span>
+          <span className="tooltip-day">{dateLabel}</span>
+          <span className="tooltip-badge">Daily Growth Method</span>
         </div>
+
+        {overallChange !== undefined && (
+          <div className="tooltip-growth-summary">
+            <span>Overall Daily Growth: </span>
+            <strong className={overallChange >= 0 ? "growth-pos" : "growth-neg"}>
+              {overallChange >= 0 ? `+${overallChange}%` : `${overallChange}%`}
+            </strong>
+          </div>
+        )}
+
         <div className="tooltip-list">
           {payload.map((item, idx) => {
             const val = item.value;
-            let statusText = "Good";
+            const keyBase = item.dataKey.replace('_change', '');
+            const deltaVal = rawPayload[`${keyBase}_change`] ?? 0;
+
             let statusClass = "status-good";
-            if (val === 0) {
-              statusText = "Not Attempted";
-              statusClass = "status-unattempted";
-            } else if (val >= 85) {
-              statusText = "Excellent";
+            if (deltaVal > 0) {
               statusClass = "status-excellent";
-            } else if (val < 50) {
-              statusText = "Needs Focus";
+            } else if (deltaVal < 0) {
               statusClass = "status-focus";
             }
 
@@ -48,8 +60,12 @@ const CustomTooltip = React.memo(({ active, payload, label }) => {
                   <span className="tooltip-name">{item.name}</span>
                 </div>
                 <div className="tooltip-item-right">
-                  <strong className="tooltip-val">{val}%</strong>
-                  <span className={`tooltip-status-tag ${statusClass}`}>{statusText}</span>
+                  <strong className="tooltip-val">
+                    {graphViewMode === "growth" ? (val > 0 ? `+${val}%` : `${val}%`) : `${val}%`}
+                  </strong>
+                  <span className={`tooltip-status-tag ${statusClass}`}>
+                    {deltaVal > 0 ? `▲ +${deltaVal}%` : deltaVal < 0 ? `▼ ${deltaVal}%` : `▬ 0.0%`}
+                  </span>
                 </div>
               </div>
             );
@@ -68,6 +84,7 @@ const Dashboard = () => {
   });
 
   const [activeMetric, setActiveMetric] = useState("all");
+  const [graphViewMode, setGraphViewMode] = useState("score"); // "score" | "growth"
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -237,42 +254,60 @@ const Dashboard = () => {
 
       {/* Analytics Section */}
       <div className="overview-section">
-        {/* Day-Wise Performance Analytics Graph */}
+        {/* Day-Wise Performance & Daily Growth Analytics Graph */}
         <div className="graph-card">
           <div className="card-header">
             <div>
-              <h3>Performance Analytics</h3>
+              <h3>Performance & Daily Growth</h3>
               <p style={{ margin: "4px 0 0 0", fontSize: "14px" }}>
-                Candidate daily progress tracking & skill trends
+                Candidate daily progress tracking using Daily Growth or Change method
               </p>
             </div>
 
-            {/* Interactive Filter Pills */}
-            <div className="chart-filter-pills">
-              <button
-                className={`filter-pill ${activeMetric === "all" ? "active" : ""}`}
-                onClick={() => handleFilterChange("all")}
-              >
-                All Metrics
-              </button>
-              <button
-                className={`filter-pill quiz-pill ${activeMetric === "quiz" ? "active" : ""}`}
-                onClick={() => handleFilterChange("quiz")}
-              >
-                Quiz
-              </button>
-              <button
-                className={`filter-pill coding-pill ${activeMetric === "coding" ? "active" : ""}`}
-                onClick={() => handleFilterChange("coding")}
-              >
-                Coding
-              </button>
-              <button
-                className={`filter-pill interview-pill ${activeMetric === "interview" ? "active" : ""}`}
-                onClick={() => handleFilterChange("interview")}
-              >
-                Interview
-              </button>
+            <div className="chart-controls-wrapper" style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+              {/* Line Graph View Switcher (Progress Score vs Daily Growth Delta) */}
+              <div className="graph-mode-toggle">
+                <button
+                  className={`mode-toggle-btn ${graphViewMode === "score" ? "active" : ""}`}
+                  onClick={() => setGraphViewMode("score")}
+                >
+                  Progress Score (%)
+                </button>
+                <button
+                  className={`mode-toggle-btn ${graphViewMode === "growth" ? "active" : ""}`}
+                  onClick={() => setGraphViewMode("growth")}
+                >
+                  Daily Growth (Δ)
+                </button>
+              </div>
+
+              {/* Interactive Filter Pills */}
+              <div className="chart-filter-pills">
+                <button
+                  className={`filter-pill ${activeMetric === "all" ? "active" : ""}`}
+                  onClick={() => handleFilterChange("all")}
+                >
+                  All Metrics
+                </button>
+                <button
+                  className={`filter-pill quiz-pill ${activeMetric === "quiz" ? "active" : ""}`}
+                  onClick={() => handleFilterChange("quiz")}
+                >
+                  Quiz
+                </button>
+                <button
+                  className={`filter-pill coding-pill ${activeMetric === "coding" ? "active" : ""}`}
+                  onClick={() => handleFilterChange("coding")}
+                >
+                  Coding
+                </button>
+                <button
+                  className={`filter-pill interview-pill ${activeMetric === "interview" ? "active" : ""}`}
+                  onClick={() => handleFilterChange("interview")}
+                >
+                  Interview
+                </button>
+              </div>
             </div>
           </div>
 
@@ -301,18 +336,22 @@ const Dashboard = () => {
                 tickLine={false}
               />
               <YAxis
-                domain={[0, 100]}
+                domain={graphViewMode === "score" ? [0, 100] : ['auto', 'auto']}
                 tick={{ fill: '#cbd5e1', fontSize: 13, fontWeight: 700 }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(v) => `${v}%`}
+                tickFormatter={(v) => (graphViewMode === "growth" ? (v > 0 ? `+${v}%` : `${v}%`) : `${v}%`)}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip graphViewMode={graphViewMode} />} />
+
+              {graphViewMode === "growth" && (
+                <ReferenceLine y={0} stroke="#64748b" strokeDasharray="3 3" />
+              )}
 
               {showQuiz && (
                 <Area
                   type="monotone"
-                  dataKey="quiz"
+                  dataKey={graphViewMode === "growth" ? "quiz_change" : "quiz"}
                   stroke="#2563EB"
                   strokeWidth={3.5}
                   fill="url(#quizGrad)"
@@ -325,7 +364,7 @@ const Dashboard = () => {
               {showCoding && (
                 <Area
                   type="monotone"
-                  dataKey="coding"
+                  dataKey={graphViewMode === "growth" ? "coding_change" : "coding"}
                   stroke="#10B981"
                   strokeWidth={3.5}
                   fill="url(#codingGrad)"
@@ -338,7 +377,7 @@ const Dashboard = () => {
               {showInterview && (
                 <Area
                   type="monotone"
-                  dataKey="interview"
+                  dataKey={graphViewMode === "growth" ? "interview_change" : "interview"}
                   stroke="#7C3AED"
                   strokeWidth={3.5}
                   fill="url(#interviewGrad)"
