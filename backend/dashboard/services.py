@@ -16,8 +16,9 @@ CACHE_TTL = 60  # 60 seconds
 
 def get_optimized_daily_progress(user):
     """
-    Computes 7-day performance and Daily Growth or Change (deltas) for Quiz, Coding, and Interview.
-    Optimized: Uses 3 bulk database queries and 8-day rolling window for exact day-over-day growth computation.
+    Computes 7-day day-specific performance for Quiz, Coding, and Interview.
+    Evaluates candidate's activity strictly on each specific day.
+    If candidate did not participate in any activity on a given day, that day's score is 0%.
     """
     if not user or not user.is_authenticated:
         return [
@@ -27,10 +28,6 @@ def get_optimized_daily_progress(user):
                 "quiz": 0.0,
                 "coding": 0.0,
                 "interview": 0.0,
-                "quiz_change": 0.0,
-                "coding_change": 0.0,
-                "interview_change": 0.0,
-                "overall_change": 0.0,
             }
             for i in range(6, -1, -1)
         ]
@@ -66,21 +63,21 @@ def get_optimized_daily_progress(user):
             .order_by("submitted_at")
         ) if candidate_profile else []
 
-        # Compute performance scores for 8 days (days 7..0 ago) to enable 7-day Daily Growth/Change deltas
-        daily_scores = []
-        for i in range(7, -1, -1):
+        daily_data = []
+        for i in range(6, -1, -1):
             target_date = today - timedelta(days=i)
+            day_name = target_date.strftime("%a")
 
-            # Cumulative Quiz Avg in memory
-            quiz_sub = [q.score for q in quizzes if q.created_at and q.created_at.date() <= target_date]
+            # 1. Day-specific Quiz Avg (Strictly for activities on target_date)
+            quiz_sub = [q.score for q in quizzes if q.created_at and q.created_at.date() == target_date]
             quiz_val = round(sum(quiz_sub) / len(quiz_sub), 1) if quiz_sub else 0.0
 
-            # Cumulative Coding Avg in memory
-            coding_sub = [c.score for c in coding_submissions if c.submitted_at and c.submitted_at.date() <= target_date]
+            # 2. Day-specific Coding Avg (Strictly for activities on target_date)
+            coding_sub = [c.score for c in coding_submissions if c.submitted_at and c.submitted_at.date() == target_date]
             coding_val = round(sum(coding_sub) / len(coding_sub), 1) if coding_sub else 0.0
 
-            # Cumulative Interview Rating in memory
-            int_sub = [r for r in int_reviews if r.submitted_at and r.submitted_at.date() <= target_date]
+            # 3. Day-specific Interview Rating (Strictly for activities on target_date)
+            int_sub = [r for r in int_reviews if r.submitted_at and r.submitted_at.date() == target_date]
             if int_sub:
                 reviews_sum = 0
                 for r in int_sub:
@@ -96,46 +93,12 @@ def get_optimized_daily_progress(user):
             else:
                 interview_val = 0.0
 
-            quiz_val = min(100.0, max(0.0, quiz_val))
-            coding_val = min(100.0, max(0.0, coding_val))
-            interview_val = min(100.0, max(0.0, interview_val))
-
-            daily_scores.append({
-                "target_date": target_date,
-                "quiz": quiz_val,
-                "coding": coding_val,
-                "interview": interview_val,
-            })
-
-        # Build 7-day progress dataset with "Daily Growth or Change" method
-        daily_data = []
-        for idx in range(1, len(daily_scores)):
-            curr = daily_scores[idx]
-            prev = daily_scores[idx - 1]
-
-            quiz_change = round(curr["quiz"] - prev["quiz"], 1)
-            coding_change = round(curr["coding"] - prev["coding"], 1)
-            interview_change = round(curr["interview"] - prev["interview"], 1)
-
-            # Overall composite score & growth change
-            active_curr = [v for v in [curr["quiz"], curr["coding"], curr["interview"]] if v > 0]
-            curr_overall = round(sum(active_curr) / len(active_curr), 1) if active_curr else 0.0
-
-            active_prev = [v for v in [prev["quiz"], prev["coding"], prev["interview"]] if v > 0]
-            prev_overall = round(sum(active_prev) / len(active_prev), 1) if active_prev else 0.0
-
-            overall_change = round(curr_overall - prev_overall, 1)
-
             daily_data.append({
-                "day": curr["target_date"].strftime("%a"),
-                "date": curr["target_date"].strftime("%b %d"),
-                "quiz": curr["quiz"],
-                "coding": curr["coding"],
-                "interview": curr["interview"],
-                "quiz_change": quiz_change,
-                "coding_change": coding_change,
-                "interview_change": interview_change,
-                "overall_change": overall_change,
+                "day": day_name,
+                "date": target_date.strftime("%b %d"),
+                "quiz": min(100.0, max(0.0, quiz_val)),
+                "coding": min(100.0, max(0.0, coding_val)),
+                "interview": min(100.0, max(0.0, interview_val)),
             })
 
         cache.set(cache_key, daily_data, timeout=CACHE_TTL)
