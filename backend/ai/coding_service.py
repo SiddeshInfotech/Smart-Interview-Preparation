@@ -43,7 +43,7 @@ def generate_coding_question(
                     model=selected_model,
                     prompt=prompt,
                     temperature=0.7,
-                    max_tokens=2500,
+                    max_tokens=4000,
                     expect_json=True,
                 )
 
@@ -70,8 +70,13 @@ def generate_coding_question(
                     "solution": str(parsed.get("solution") or parsed.get("explanation") or "").strip(),
                 }
 
+                sol_code = normalized["solution"]
                 if not normalized["problem_statement"]:
                     raise ValueError("Coding challenge missing non-empty problem_statement field.")
+                if not normalized["sample_output"]:
+                    raise ValueError("Coding challenge missing non-empty sample_output field.")
+                if not sol_code or len(sol_code) < 15 or sol_code.endswith("=") or sol_code.endswith(",") or sol_code.endswith("+"):
+                    raise ValueError("Coding challenge solution code is truncated or incomplete.")
 
                 elapsed = round(time.time() - start_time, 2)
                 logger.info(

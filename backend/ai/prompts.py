@@ -204,13 +204,14 @@ Output Format (JSON Object ONLY):
   "sample_input": "Example input string for standard input (stdin)",
   "sample_output": "Corresponding expected output string for standard output (stdout)",
   "hint": "A clear step-by-step hint explaining the basic logic, algorithm, or approach without revealing the full code.",
-  "solution": "Complete, correct reference solution code written in {language} with concise inline comments."
+  "solution": "Complete, correct, executable reference solution code written in {language} with concise inline comments."
 }}
 
-Rules:
-- Return ONLY the raw JSON object without markdown formatting, code block backticks (no ```json), or wrapping.
-- STRICT COMPLIANCE: If difficulty is Easy, the problem MUST be basic and beginner-friendly.
-- Ensure all JSON fields ("title", "problem_statement", "sample_input", "sample_output", "hint", "solution") are present and non-empty.
+CRITICAL COMPLETENESS RULES:
+1. NON-EMPTY SAMPLE OUTPUT: "sample_output" MUST BE NON-EMPTY and contain the exact expected output matching "sample_input".
+2. FULL UNTRUNCATED SOLUTION: "solution" MUST BE A COMPLETE, FULLY WRITTEN, WORKING REFERENCE SOLUTION in {language}. DO NOT TRUNCATE, stop midway, or leave unassigned variables.
+3. Return ONLY the raw JSON object without markdown formatting, code block backticks (no ```json), or wrapping.
+4. Ensure all JSON fields ("title", "problem_statement", "sample_input", "sample_output", "hint", "solution") are present and non-empty.
 """
 
 
