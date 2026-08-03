@@ -69,5 +69,8 @@ def get_quiz_performance_summary(user):
 
 
 def invalidate_quiz_cache(user_id):
-    """Invalidates quiz performance cache for user."""
+    """Invalidates quiz performance cache and dashboard caches for user."""
     cache.delete(f"quiz_performance_summary_{user_id}")
+    cache.delete(f"daily_progress_data_{user_id}")
+    cache.delete(f"ai_intelligence_data_{user_id}")
+

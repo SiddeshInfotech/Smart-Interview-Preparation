@@ -749,18 +749,13 @@ body.dark-theme body:not(.landing-body) th:not(.home-page *):not(.admin-panel *)
   height: 100%;
   border-radius: 99px;
   transition: width 0.4s ease;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
 }
 
-.usage-bar-fill--quiz {
-  background: linear-gradient(90deg, #10b981, #059669);
-}
-
-.usage-bar-fill--coding {
-  background: linear-gradient(90deg, #3b82f6, #2563eb);
-}
-
+.usage-bar-fill--quiz,
+.usage-bar-fill--coding,
 .usage-bar-fill--resume {
-  background: linear-gradient(90deg, #8b5cf6, #6d28d9);
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
 }
 
 /* When nearing limit (>= 80% used) shift to amber */

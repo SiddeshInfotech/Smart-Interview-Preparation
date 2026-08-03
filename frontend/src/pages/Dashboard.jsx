@@ -168,6 +168,7 @@ const Dashboard = () => {
           ai_intelligence,
           daily_progress,
           profile,
+          usage,
         } = response.data;
 
         if (profile?.full_name && profile.full_name !== "User") {
@@ -193,6 +194,10 @@ const Dashboard = () => {
         if (daily_progress && daily_progress.length > 0) {
           setPerformanceData(daily_progress);
           localStorage.setItem("cached_dashboard_daily_progress", JSON.stringify(daily_progress));
+        }
+        if (usage) {
+          localStorage.setItem("cached_user_usage", JSON.stringify(usage));
+          window.dispatchEvent(new Event("usageUpdate"));
         }
       } catch (err) {
         console.warn("Dashboard bootstrap fetch error:", err);

@@ -158,6 +158,7 @@ const QuizPage = () => {
         skipped_answers: skipped,
         score: Math.round(percentage * 100) / 100,
       });
+      window.dispatchEvent(new Event("usageUpdate"));
     } catch (err) {
       console.warn("Could not save quiz performance:", err);
     }

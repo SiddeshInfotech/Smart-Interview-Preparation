@@ -64,11 +64,29 @@ export default function PageNavbar({
     }
   }, [isInterviewer]);
 
-  // Pre-fetch usage on mount if authenticated candidate
+  // Pre-fetch usage on mount and listen for real-time usage updates
   useEffect(() => {
-    if (localStorage.getItem("access_token") && !isInterviewer) {
+    if (!isInterviewer) {
       fetchUsage();
     }
+
+    const handleUsageUpdate = () => {
+      try {
+        const cached = localStorage.getItem("cached_user_usage");
+        if (cached) {
+          setUsageData(JSON.parse(cached));
+        } else {
+          fetchUsage();
+        }
+      } catch (e) {
+        fetchUsage();
+      }
+    };
+
+    window.addEventListener("usageUpdate", handleUsageUpdate);
+    return () => {
+      window.removeEventListener("usageUpdate", handleUsageUpdate);
+    };
   }, [fetchUsage, isInterviewer]);
 
   const handleToggleDropdown = () => {
