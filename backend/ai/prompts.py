@@ -204,13 +204,14 @@ Output Format (JSON Object ONLY):
   "sample_input": "Example input string for standard input (stdin)",
   "sample_output": "Corresponding expected output string for standard output (stdout)",
   "hint": "A clear step-by-step hint explaining the basic logic, algorithm, or approach without revealing the full code.",
-  "solution": "Complete, correct reference solution code written in {language} with concise inline comments."
+  "solution": "Complete, correct, executable reference solution code written in {language} with concise inline comments."
 }}
 
-Rules:
-- Return ONLY the raw JSON object without markdown formatting, code block backticks (no ```json), or wrapping.
-- STRICT COMPLIANCE: If difficulty is Easy, the problem MUST be basic and beginner-friendly.
-- Ensure all JSON fields ("title", "problem_statement", "sample_input", "sample_output", "hint", "solution") are present and non-empty.
+CRITICAL COMPLETENESS RULES:
+1. NON-EMPTY SAMPLE OUTPUT: "sample_output" MUST BE NON-EMPTY and contain the exact expected output matching "sample_input".
+2. FULL UNTRUNCATED SOLUTION: "solution" MUST BE A COMPLETE, FULLY WRITTEN, WORKING REFERENCE SOLUTION in {language}. DO NOT TRUNCATE, stop midway, or leave unassigned variables.
+3. Return ONLY the raw JSON object without markdown formatting, code block backticks (no ```json), or wrapping.
+4. Ensure all JSON fields ("title", "problem_statement", "sample_input", "sample_output", "hint", "solution") are present and non-empty.
 """
 
 
@@ -247,6 +248,17 @@ Context:
 {execution_output if execution_output else "(None)"}
 - Execution Error (stderr/error):
 {execution_error if execution_error else "(None)"}
+
+CRITICAL EVALUATION & SCORING RULES:
+1. COMPLETELY IRRELEVANT / GENERIC CODE (0% - 5% Score):
+   - If the submitted code has NO relation to the problem statement (e.g. submitting `print("Hello World")`, boilerplate, or unrelated code for an addition, sorting, or graph problem), set `overall_score` to 0, `status` to "Failed", `logical_thinking` to 0, and `problem_solving` to 0. Do NOT award high scores just because the code compiled without runtime errors.
+
+2. SLIGHT MATCH / INCOMPLETE SOLUTION (10% - 20% Score):
+   - If the user's code shows a slight match or partial effort toward the problem (e.g., defining `a = 10, b = 20` for a number addition problem, but failing to read dynamic input, compute result, or produce expected output), award ONLY 10% to 20% score (`overall_score` between 10 and 20).
+
+3. VALID ALTERNATIVE SOLUTIONS (High Score 80% - 100%):
+   - Do NOT penalize the user if their solution uses a different valid approach, algorithm, library, or coding style than the expected solution, provided it correctly solves the problem requirements and no specific method was mandated by the problem statement.
+   - If the code correctly solves the problem, award high correctness (85-100%). Score variations should be based on efficiency (time/space complexity), code quality, and edge case handling.
 
 Evaluation Criteria:
 1. Correctness: Does the code fulfill the problem requirement and produce correct output? (0-100)

@@ -211,17 +211,30 @@ body {
 
 
 .toolbar-right {
-
-
     display: flex;
-
-
     align-items: center;
+    gap: 12px;
+}
 
+.show-solution-btn {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fde68a;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
 
-    gap: 15px;
-
-
+.show-solution-btn:hover {
+    background: #fde68a;
+    color: #b45309;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
 
