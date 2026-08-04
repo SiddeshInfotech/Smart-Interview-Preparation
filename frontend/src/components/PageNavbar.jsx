@@ -66,19 +66,27 @@ export default function PageNavbar({
 
   // Pre-fetch usage on mount and listen for real-time usage updates
   useEffect(() => {
-    if (!isInterviewer) {
-      fetchUsage();
-    }
-
-    const handleUsageUpdate = () => {
+    const syncUsage = () => {
       try {
         const cached = localStorage.getItem("cached_user_usage");
         if (cached) {
           setUsageData(JSON.parse(cached));
-        } else {
-          fetchUsage();
+          return true;
         }
-      } catch (e) {
+      } catch (e) {}
+      return false;
+    };
+
+    if (!isInterviewer) {
+      const hasCached = syncUsage();
+      if (!hasCached) {
+        fetchUsage();
+      }
+    }
+
+    const handleUsageUpdate = () => {
+      const synced = syncUsage();
+      if (!synced && !isInterviewer) {
         fetchUsage();
       }
     };
@@ -91,7 +99,18 @@ export default function PageNavbar({
 
   const handleToggleDropdown = () => {
     setProfileMenuOpen((open) => {
-      if (!open && !isInterviewer) fetchUsage();
+      if (!open && !isInterviewer) {
+        try {
+          const cached = localStorage.getItem("cached_user_usage");
+          if (cached) {
+            setUsageData(JSON.parse(cached));
+          } else if (!usageData) {
+            fetchUsage();
+          }
+        } catch (e) {
+          if (!usageData) fetchUsage();
+        }
+      }
       return !open;
     });
   };
@@ -163,52 +182,62 @@ export default function PageNavbar({
                   <span>{userProfile.email}</span>
                 </div>
 
-                {/* Usage progress bars — candidate free users only */}
-                {!isInterviewer && usageData && !usageData.has_premium && usageData.quiz && (
+                {/* Usage progress bars — candidate users */}
+                {!isInterviewer && usageData && usageData.quiz && (
                   <div className="usage-bars-section">
-                    <div className="usage-bar-row">
-                      <div className="usage-bar-header">
-                        <span className="usage-bar-label">🧠 Quiz</span>
-                        <span className="usage-bar-count">
-                          {usageData.quiz.remaining}/{usageData.quiz.limit} left
-                        </span>
+                    {usageData.has_premium ? (
+                      <div className="premium-badge-info" style={{ padding: '8px 12px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: '#fff', borderRadius: '10px', fontSize: '12px', fontWeight: '700', textAlign: 'center', margin: '4px 0' }}>
+                        ⭐ Premium Plan (Unlimited Access)
                       </div>
-                      <div className="usage-bar-track">
-                        <div
-                          className="usage-bar-fill usage-bar-fill--quiz"
-                          style={{ width: `${(usageData.quiz.remaining / usageData.quiz.limit) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="usage-bar-row">
-                      <div className="usage-bar-header">
-                        <span className="usage-bar-label">💻 Coding</span>
-                        <span className="usage-bar-count">
-                          {usageData.coding.remaining}/{usageData.coding.limit} left
-                        </span>
-                      </div>
-                      <div className="usage-bar-track">
-                        <div
-                          className="usage-bar-fill usage-bar-fill--coding"
-                          style={{ width: `${(usageData.coding.remaining / usageData.coding.limit) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                    {usageData.resume && (
-                      <div className="usage-bar-row">
-                        <div className="usage-bar-header">
-                          <span className="usage-bar-label">📄 Resume Analysis</span>
-                          <span className="usage-bar-count">
-                            {usageData.resume.remaining}/{usageData.resume.limit} left
-                          </span>
+                    ) : (
+                      <>
+                        <div className="usage-bar-row">
+                          <div className="usage-bar-header">
+                            <span className="usage-bar-label">🧠 Quiz</span>
+                            <span className="usage-bar-count">
+                              {usageData.quiz.remaining}/{usageData.quiz.limit} left
+                            </span>
+                          </div>
+                          <div className="usage-bar-track">
+                            <div
+                              className="usage-bar-fill usage-bar-fill--quiz"
+                              style={{ width: `${Math.min(100, Math.max(0, (usageData.quiz.remaining / usageData.quiz.limit) * 100))}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="usage-bar-track">
-                          <div
-                            className="usage-bar-fill usage-bar-fill--resume"
-                            style={{ width: `${(usageData.resume.remaining / usageData.resume.limit) * 100}%` }}
-                          />
-                        </div>
-                      </div>
+                        {usageData.coding && (
+                          <div className="usage-bar-row">
+                            <div className="usage-bar-header">
+                              <span className="usage-bar-label">💻 Coding</span>
+                              <span className="usage-bar-count">
+                                {usageData.coding.remaining}/{usageData.coding.limit} left
+                              </span>
+                            </div>
+                            <div className="usage-bar-track">
+                              <div
+                                className="usage-bar-fill usage-bar-fill--coding"
+                                style={{ width: `${Math.min(100, Math.max(0, (usageData.coding.remaining / usageData.coding.limit) * 100))}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {usageData.resume && (
+                          <div className="usage-bar-row">
+                            <div className="usage-bar-header">
+                              <span className="usage-bar-label">📄 Resume Analysis</span>
+                              <span className="usage-bar-count">
+                                {usageData.resume.remaining}/{usageData.resume.limit} left
+                              </span>
+                            </div>
+                            <div className="usage-bar-track">
+                              <div
+                                className="usage-bar-fill usage-bar-fill--resume"
+                                style={{ width: `${Math.min(100, Math.max(0, (usageData.resume.remaining / usageData.resume.limit) * 100))}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

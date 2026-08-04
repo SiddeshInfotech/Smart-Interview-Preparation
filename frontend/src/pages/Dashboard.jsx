@@ -172,10 +172,33 @@ const Dashboard = () => {
           daily_progress,
           profile,
           usage,
+          notifications,
         } = response.data;
 
         if (profile?.full_name && profile.full_name !== "User") {
           setFullName(profile.full_name);
+        }
+
+        if (profile) {
+          const role = localStorage.getItem("user_role") || "candidate";
+          let profilePic = null;
+          if (profile.profile_picture) {
+            const pic = profile.profile_picture;
+            profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
+          }
+          const updatedProfile = {
+            name: profile.full_name || profile.name || "User",
+            email: profile.email || "",
+            profilePicture: profilePic,
+            role: role,
+          };
+          localStorage.setItem("cached_user_profile", JSON.stringify(updatedProfile));
+          window.dispatchEvent(new Event("profileUpdate"));
+        }
+
+        if (notifications) {
+          localStorage.setItem("cached_notifications", JSON.stringify(notifications));
+          window.dispatchEvent(new CustomEvent("notificationUpdate", { detail: { notifications } }));
         }
 
         if (quiz_performance) {
