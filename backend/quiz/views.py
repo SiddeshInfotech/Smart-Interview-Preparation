@@ -31,7 +31,8 @@ def generate_quiz(request):
     topics = data.get('topics', [])
     difficulty = data.get('difficulty', 'Medium')
     mode = data.get('mode', 'MCQ')
-    question_count = data.get('question_count', 10)
+    # Always enforce exactly 10 questions
+    question_count = 10
     custom_instruction = data.get('custom_instruction', '')
 
     if not topics:
@@ -84,7 +85,7 @@ def save_quiz_result(request):
 
         result = QuizPerformance.objects.create(
             user=request.user,
-            total_questions=data.get("total_questions"),
+            total_questions=data.get("total_questions", 10),
             correct_answers=data.get("correct_answers"),
             wrong_answers=data.get("wrong_answers"),
             skipped_answers=data.get("skipped_answers"),
@@ -112,4 +113,4 @@ def save_quiz_result(request):
     except Exception as e:
         return Response({
             "error": str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+        }, status=status.HTTP_400_BAD_REQUEST)

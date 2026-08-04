@@ -125,7 +125,7 @@ const Quiz = () => {
   const modes = ['MCQ', 'Coding Challenge'];
   const codingLanguages = ['C', 'C++', 'Java', 'Python'];
   const difficulties = ['Easy', 'Medium', 'Hard'];
-  const questionCounts = [5, 10, 25];
+  const questionCounts = [10];
 
   // --- Visibility toggles ---
   const showTopics = selectedMode !== '';
@@ -261,16 +261,18 @@ const Quiz = () => {
                             <BookOpen size={18} className="section-icon" />
                             Select Programming Language
                           </h3>
-                          <div className="question-type-grid lang-grid">
-                            {codingLanguages.map((lang) => (
-                              <div
-                                key={lang}
-                                className={`question-type-item ${selectedCodingLanguage === lang ? 'selected' : ''}`}
-                                onClick={() => setSelectedCodingLanguage(lang)}
-                              >
-                                <strong>{lang}</strong>
-                              </div>
-                            ))}
+                          <div className="language-select-container">
+                            <select
+                              className="language-select-dropdown"
+                              value={selectedCodingLanguage}
+                              onChange={(e) => setSelectedCodingLanguage(e.target.value)}
+                            >
+                              {codingLanguages.map((lang) => (
+                                <option key={lang} value={lang}>
+                                  {lang}
+                                </option>
+                              ))}
+                            </select>
                           </div>
                         </>
                       ) : (
@@ -351,15 +353,22 @@ const Quiz = () => {
                                       key={chip}
                                       className={`suggested-chip-btn ${isAdded ? 'added' : ''}`}
                                       onClick={() => addSuggestedChip(chip)}
+                                      disabled={isAdded}
                                     >
-                                      {isAdded ? <CheckCircle2 size={13} /> : <Plus size={13} />}
-                                      {chip}
+                                      {isAdded ? (
+                                        <>
+                                          <CheckCircle2 size={12} /> {chip}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Plus size={12} /> {chip}
+                                        </>
+                                      )}
                                     </button>
                                   );
                                 })}
                               </div>
                             </div>
-
                           </div>
                         </>
                       )}
@@ -368,7 +377,7 @@ const Quiz = () => {
                 </div>
 
                 {/* DIFFICULTY */}
-                <div className={`slide-section ${showDifficulty ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 50 }}>
+                <div className={`slide-section ${showDifficulty ? 'slide-enter-active' : 'slide-exit-active'}`}>
                   <div className="slide-inner">
                     <div className="divider"></div>
                     <div className="setup-section">
@@ -380,11 +389,10 @@ const Quiz = () => {
                         {difficulties.map((diff) => (
                           <div
                             key={diff}
-                            className={`difficulty-item diff-${diff.toLowerCase()} ${selectedDifficulty === diff ? 'selected' : ''}`}
+                            className={`difficulty-item ${selectedDifficulty === diff ? 'selected' : ''}`}
                             onClick={() => setSelectedDifficulty(diff)}
                           >
-                            <span className={`difficulty-dot ${diff.toLowerCase()}`}></span>
-                            <span>{diff}</span>
+                            <strong>{diff}</strong>
                           </div>
                         ))}
                       </div>
@@ -392,77 +400,61 @@ const Quiz = () => {
                   </div>
                 </div>
 
-                {/* QUESTION COUNT */}
-                <div className={`slide-section ${showQuestionCount ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 20 }}>
-                  <div className="slide-inner">
-                    <div className="divider"></div>
-                    <div className="setup-section">
-                      <h3 className="section-title">
-                        <ListChecks size={18} className="section-icon" />
-                        Number of Questions
-                      </h3>
-                      <div className="difficulty-grid">
-                        {questionCounts.map((count) => (
-                          <div
-                            key={count}
-                            className={`difficulty-item ${selectedQuestionCount === count ? 'selected' : ''}`}
-                            onClick={() => setSelectedQuestionCount(count)}
-                          >
-                            <strong>{count} Questions</strong>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CUSTOM INSTRUCTIONS */}
-                <div className={`slide-section ${showCustomInstructions ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 10 }}>
+                {/* CUSTOM INSTRUCTION PROMPT */}
+                <div className={`slide-section ${showCustomInstructions ? 'slide-enter-active' : 'slide-exit-active'}`}>
                   <div className="slide-inner">
                     <div className="divider"></div>
                     <div className="setup-section">
                       <h3 className="section-title">
                         <MessageSquare size={18} className="section-icon" />
-                        Custom Instructions (Optional)
+                        Custom Focus Area <span className="optional-badge">(Optional)</span>
                       </h3>
-                      <div className="prompt-box-wrapper">
-                        <textarea
-                          className="prompt-box-textarea"
-                          placeholder="e.g. Focus on dynamic programming, system architecture, or async operations..."
-                          value={promptText}
-                          onChange={(e) => setPromptText(e.target.value)}
-                          rows="3"
-                        />
-                      </div>
+                      <p className="section-description">
+                        Provide specific instructions or topics to emphasize in your session (e.g. "Focus on async/await, closures, and performance optimization").
+                      </p>
+                      <textarea
+                        className="custom-prompt-input"
+                        placeholder="e.g., Focus heavily on memory management, edge cases, and architectural best practices..."
+                        value={promptText}
+                        onChange={(e) => setPromptText(e.target.value)}
+                        rows={3}
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* ERROR */}
-                {error && (
-                  <div className="field-error" style={{ marginTop: '16px', marginBottom: '0' }}>
-                    <AlertCircle size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                    {error}
-                  </div>
-                )}
-
-                {/* START BUTTON */}
-                <button
-                  className={`start-quiz-btn ${generating ? 'generating' : ''}`}
-                  onClick={handleGenerate}
-                  disabled={(selectedMode === 'Coding Challenge' ? !selectedCodingLanguage : selectedTopics.length === 0) || !selectedDifficulty || !selectedMode || generating}
-                >
-                  {generating ? (
-                    <span className="quiz-loading-wrapper">
-                      <span className="quiz-spinner" /> Generating Challenge...
-                    </span>
-                  ) : (
-                    <span className="start-btn-content">
-                      <Sparkles size={18} /> Generate Challenge <ArrowRight size={18} />
-                    </span>
+                {/* ACTION BUTTON */}
+                <div className="setup-action">
+                  {error && (
+                    <div className="error-banner">
+                      <AlertCircle size={16} /> {error}
+                    </div>
                   )}
-                </button>
+                  <button
+                    className={`btn-generate ${generating ? 'generating' : ''}`}
+                    onClick={handleGenerate}
+                    disabled={
+                      generating ||
+                      !selectedMode ||
+                      !selectedDifficulty ||
+                      (selectedMode === 'MCQ' && selectedTopics.length === 0) ||
+                      (selectedMode === 'Coding Challenge' && !selectedCodingLanguage)
+                    }
+                  >
+                    {generating ? (
+                      <span className="spinner-wrapper">
+                        <span className="spinner" /> Generating Practice Arena...
+                      </span>
+                    ) : (
+                      <>
+                        Start Practice Arena <ArrowRight size={18} />
+                      </>
+                    )}
+                  </button>
+                </div>
+
               </div>
+
             </div>
           </div>
         </main>
