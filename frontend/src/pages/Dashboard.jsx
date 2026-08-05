@@ -377,10 +377,10 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* AI Profile Intelligence */}
+        {/* Profile Intelligence */}
         <div className="overall-card">
           <div className="ai-profile-header">
-            <h3>🤖 AI Profile Intelligence</h3>
+            <h3>Overall Progress</h3>
             <p>Smart Candidate Performance Analysis</p>
           </div>
 
