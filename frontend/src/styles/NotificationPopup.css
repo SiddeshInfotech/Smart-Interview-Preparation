@@ -105,18 +105,23 @@
 }
 
 .notif-tab__count {
-  background: rgba(255, 255, 255, 0.9);
-  color: #2563eb;
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #2563eb !important;
+  font-size: 10.5px;
   font-weight: 700;
   padding: 0 5px;
   border-radius: 999px;
-  line-height: 15px;
+  line-height: 1;
 }
 
 .notif-tab:not(.notif-tab--active) .notif-tab__count {
   background: #e5e7eb;
-  color: #4b5563;
+  color: #374151 !important;
 }
 
 .notif-list {
@@ -278,15 +283,58 @@ body.dark-theme .notif-header {
 [data-theme="dark"] .notif-item__title,
 [data-theme="dark"] .notif-item__desc,
 [data-theme="dark"] .notif-item__time,
-[data-theme="dark"] .notif-tab:not(.notif-tab--active),
 [data-theme="dark"] .notif-empty,
 body.dark-theme .notif-header__title,
 body.dark-theme .notif-panel__header h4,
 body.dark-theme .notif-item__title,
 body.dark-theme .notif-item__desc,
 body.dark-theme .notif-item__time,
-body.dark-theme .notif-tab:not(.notif-tab--active),
 body.dark-theme .notif-empty {
+  color: #ffffff !important;
+}
+
+/* Dark Mode Tabs & Tab Count Badges */
+[data-theme="dark"] .notif-tabs,
+body.dark-theme .notif-tabs {
+  border-bottom-color: #1e293b;
+}
+
+[data-theme="dark"] .notif-tab:not(.notif-tab--active),
+body.dark-theme .notif-tab:not(.notif-tab--active) {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .notif-tab:not(.notif-tab--active):hover,
+body.dark-theme .notif-tab:not(.notif-tab--active):hover {
+  background: #1e293b;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .notif-tab--active,
+body.dark-theme .notif-tab--active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Dark Mode Notification Count Badge Fix */
+[data-theme="dark"] .notif-tab--active .notif-tab__count,
+body.dark-theme .notif-tab--active .notif-tab__count {
+  background: #ffffff !important;
+  color: #1d4ed8 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .notif-tab:not(.notif-tab--active) .notif-tab__count,
+body.dark-theme .notif-tab:not(.notif-tab--active) .notif-tab__count {
+  background: #334155 !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .notif-badge,
+body.dark-theme .notif-badge {
+  box-shadow: 0 0 0 2px #0f172a !important;
   color: #ffffff !important;
 }
 

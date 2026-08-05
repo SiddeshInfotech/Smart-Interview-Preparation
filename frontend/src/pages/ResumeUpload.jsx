@@ -284,7 +284,18 @@ const ResumeUpload = () => {
                   <div className="file-meta">
                     <span className="file-size">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                     <span className="file-type">{file.type.includes("pdf") ? "PDF" : "DOCX"}</span>
-                    <span className={`file-status ${uploadStatus.includes("success") || uploadStatus.includes("Selected") ? "success" : ""}`}>
+                    <span
+                      className={`file-status ${
+                        uploadStatus.includes("success") || uploadStatus.includes("Selected")
+                          ? "success"
+                          : uploadStatus.toLowerCase().includes("fail") ||
+                            uploadStatus.toLowerCase().includes("error") ||
+                            uploadStatus.toLowerCase().includes("please") ||
+                            uploadStatus.toLowerCase().includes("must")
+                          ? "error"
+                          : ""
+                      }`}
+                    >
                       {uploadStatus}
                     </span>
                   </div>
