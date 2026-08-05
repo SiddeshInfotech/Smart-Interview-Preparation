@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import "../styles/QuizResult.css";
 
@@ -6,8 +6,6 @@ const QuizResult = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const results = location.state?.results;
-
-  const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
 
   if (!results) {
     return (
@@ -44,7 +42,7 @@ const QuizResult = () => {
       <div className="score-content">
         {/* Quiz Header */}
         <div className="quiz-header">
-          <div className="quiz-badge">{passed ? 'PASSED' : 'NEEDS PRACTICE'}</div>
+          <div className={`quiz-badge ${passed ? 'passed' : 'needs-practice'}`}>{passed ? 'PASSED' : 'NEEDS PRACTICE'}</div>
           <h1 className="quiz-title">Quiz Results</h1>
           <div className="quiz-subtitle">
             {passed ? '🎉 Congratulations! You successfully passed the quiz!' : '💪 Great effort! Review your answers below to keep improving.'}
@@ -73,6 +71,16 @@ const QuizResult = () => {
             <div className="stat-label">{percentage.toFixed(0)}%</div>
             <div className="stat-description">Overall Score</div>
           </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          <button className="action-btn retry-btn" onClick={() => navigate('/quiz')}>
+            🔄 Retry Quiz
+          </button>
+          <button className="action-btn dashboard-btn" onClick={() => navigate('/dashboard')}>
+            🏠 Go to Dashboard
+          </button>
         </div>
 
         {/* Question Summary Header */}
@@ -178,50 +186,6 @@ const QuizResult = () => {
               );
             })}
           </div>
-        </div>
-
-        {/* Detailed Analysis Section */}
-        <div className="analysis-section">
-          <button
-            className="analysis-btn"
-            onClick={() => setShowDetailedAnalysis(!showDetailedAnalysis)}
-          >
-            {showDetailedAnalysis ? '📊 Hide Detailed Analysis' : '📊 View Detailed Analysis'}
-          </button>
-
-          {showDetailedAnalysis && (
-            <div className="detailed-analysis slide-up">
-              <h3>Detailed Performance Breakdown</h3>
-              <div className="analysis-grid">
-                <div className="analysis-item fade-in">
-                  <span className="analysis-label">Total Questions</span>
-                  <span className="analysis-value">{total}</span>
-                </div>
-                <div className="analysis-item fade-in delay-1">
-                  <span className="analysis-label">Accuracy Rate</span>
-                  <span className="analysis-value">{((correct / total) * 100).toFixed(0)}%</span>
-                </div>
-                <div className="analysis-item fade-in delay-2">
-                  <span className="analysis-label">Error Rate</span>
-                  <span className="analysis-value">{((wrong / total) * 100).toFixed(0)}%</span>
-                </div>
-                <div className="analysis-item fade-in delay-3">
-                  <span className="analysis-label">Skipped Questions</span>
-                  <span className="analysis-value">{skipped}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="action-buttons">
-          <button className="action-btn retry-btn" onClick={() => navigate('/quiz')}>
-            🔄 Retry Quiz
-          </button>
-          <button className="action-btn dashboard-btn" onClick={() => navigate('/dashboard')}>
-            🏠 Go to Dashboard
-          </button>
         </div>
       </div>
     </div>

@@ -515,7 +515,7 @@ const CodingAssessment = () => {
               <div className="solution-forfeit-banner" style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: "10px", padding: "14px", marginBottom: "16px" }}>
                 <strong style={{ color: "#be123c", display: "block", marginBottom: "4px" }}>⚠️ Challenge Forfeited!</strong>
                 <p style={{ color: "#9f1239", fontSize: "13px", margin: 0, lineHeight: "1.5" }}>
-                  Viewing the solution forfeits this attempt. Once you close this modal, your score for this challenge will be recorded as <strong>0%</strong> and you will be exited from the code editor.
+                  Viewing the solution forfeits this attempt. Once you close this modal, your score for this challenge will be recorded as <strong style={{ color: "#be123c"}}>0%</strong> and you will be exited from the code editor.
                 </p>
               </div>
 

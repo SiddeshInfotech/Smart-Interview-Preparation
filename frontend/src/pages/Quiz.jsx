@@ -7,7 +7,6 @@ import {
   ListChecks,
   MessageSquare,
   ArrowRight,
-  Sparkles,
   Zap,
   AlertCircle,
   Code2,
@@ -213,13 +212,10 @@ const Quiz = () => {
             <div className="setup-container">
               
               <div className="setup-header">
-                <div className="quiz-badge-pill">
-                  <Sparkles size={14} /> AI-POWERED PRACTICE ARENA
-                </div>
                 <h1>
                   <span className="quiz-gradient-title">Choose Your Challenge</span>
                 </h1>
-                <p>Select the mode, topics, and difficulty to generate an AI‑powered practice arena.</p>
+                <p>Select the mode, topics, and difficulty to generate a practice arena.</p>
                 <div className="quiz-header-line" />
               </div>
 

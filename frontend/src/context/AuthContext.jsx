@@ -27,7 +27,14 @@ export const AuthProvider = ({ children }) => {
     };
   });
 
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cached_notifications");
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
@@ -47,6 +54,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("cached_dashboard_ai");
     localStorage.removeItem("cached_dashboard_daily_progress");
     localStorage.removeItem("cached_user_usage");
+    localStorage.removeItem("cached_notifications");
   };
 
   // Helper to sync profile state with localStorage
@@ -119,7 +127,9 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const res = await api.get("/notifications/");
-      setNotifications(Array.isArray(res.data?.data) ? res.data.data : []);
+      const data = Array.isArray(res.data?.data) ? res.data.data : [];
+      setNotifications(data);
+      localStorage.setItem("cached_notifications", JSON.stringify(data));
     } catch (err) {
       console.error("Notification Fetch Error:", err);
     } finally {

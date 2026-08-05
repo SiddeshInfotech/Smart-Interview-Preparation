@@ -162,12 +162,13 @@ def get_optimized_ai_intelligence(user):
         ]
         active_tasks = [t for t in tasks if t["score"] > 0]
 
+        # Calculate overall readiness by averaging all 3 modules (including 0% scores)
+        overall_readiness = round((quiz_score + coding_score + interview_score) / 3.0)
+
         if active_tasks:
-            overall_readiness = round(sum(t["score"] for t in active_tasks) / len(active_tasks))
-            active_tasks.sort(key=lambda x: x["score"], reverse=True)
-            top_skill = active_tasks[0]["name"]
+            sorted_tasks = sorted(tasks, key=lambda x: x["score"], reverse=True)
+            top_skill = sorted_tasks[0]["name"]
         else:
-            overall_readiness = 0
             top_skill = "N/A"
 
         completed_modules = f"{len(active_tasks)} / 3"
