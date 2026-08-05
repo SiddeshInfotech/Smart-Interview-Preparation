@@ -42,7 +42,7 @@ const QuizResult = () => {
       <div className="score-content">
         {/* Quiz Header */}
         <div className="quiz-header">
-          <div className="quiz-badge">{passed ? 'PASSED' : 'NEEDS PRACTICE'}</div>
+          <div className={`quiz-badge ${passed ? 'passed' : 'needs-practice'}`}>{passed ? 'PASSED' : 'NEEDS PRACTICE'}</div>
           <h1 className="quiz-title">Quiz Results</h1>
           <div className="quiz-subtitle">
             {passed ? '🎉 Congratulations! You successfully passed the quiz!' : '💪 Great effort! Review your answers below to keep improving.'}

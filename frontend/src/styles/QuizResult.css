@@ -67,6 +67,16 @@ body {
   margin-bottom: 12px;
 }
 
+.quiz-badge.passed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.quiz-badge.needs-practice {
+  background: #ef4444;
+  color: #ffffff;
+}
+
 .quiz-title {
   font-size: 28px;
   font-weight: 700;
@@ -630,8 +640,13 @@ body.dark-theme .question-card,
 }
 
 [data-theme="dark"] .quiz-badge,
+[data-theme="dark"] .quiz-badge.needs-practice,
 body.dark-theme .quiz-badge,
-.dark-theme .quiz-badge {
+body.dark-theme .quiz-badge.needs-practice,
+.dark-theme .quiz-badge,
+.dark-theme .quiz-badge.needs-practice,
+.dark .quiz-badge,
+.dark .quiz-badge.needs-practice {
   background: #1e3a8a !important;
   color: #818cf8 !important;
 }
