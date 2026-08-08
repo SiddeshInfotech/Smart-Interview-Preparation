@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sun, Moon, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock, HelpCircle } from "lucide-react";
+import { Sun, Moon, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock, HelpCircle, BookOpen } from "lucide-react";
 import NotificationPopup from "./NotificationPopup";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -22,6 +22,7 @@ export default function PageNavbar({
     : [
         { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
         { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
+        { to: "/courses", label: "Courses", icon: <BookOpen size={18} /> },
         { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
         { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
       ];

@@ -20,6 +20,8 @@ import QuizResult from "./pages/QuizResult";
 import FeedbackForm from "./pages/FeedbackForm";
 import Interview from "./pages/Interview";
 import Coding from "./pages/Coding";
+import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
 import AppShell from "./components/AppShell";
 import RequireRole from "./components/RequireRole";
 import InterviewPage from "./pages/InterviewPage";
@@ -67,6 +69,8 @@ function App() {
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="resume-upload" element={<ResumeUpload />} />
                 <Route path="quiz" element={<Quiz />} />
+                <Route path="courses" element={<Courses />} />
+                <Route path="courses/:courseId" element={<CourseDetail />} />
               </Route>
 
               <Route path="profile" element={<Profile />} />

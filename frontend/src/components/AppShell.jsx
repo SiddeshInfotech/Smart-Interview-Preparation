@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, FileText, CalendarClock } from "lucide-react";
+import { LayoutDashboard, ClipboardList, FileText, CalendarClock, BookOpen } from "lucide-react";
 import PageNavbar from "./PageNavbar.jsx";
 import useCurrentUserRole from "../hooks/useCurrentUserRole";
 import "../styles/AppShell.css";
@@ -8,6 +8,7 @@ import "../styles/AppShell.css";
 const allNavItems = [
   { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
   { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
+  { to: "/courses", label: "Courses", icon: <BookOpen size={18} /> },
   { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
   { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
 ];

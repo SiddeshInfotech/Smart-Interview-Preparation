@@ -61,6 +61,7 @@ const CandidateProfile = () => {
   const [profile, setProfile] = useState(() => {
     try {
       const cached = localStorage.getItem("cached_candidate_profile");
+      const savedDomain = localStorage.getItem("candidate_user_domain") || "";
       if (cached) {
         const data = JSON.parse(cached);
         return {
@@ -71,12 +72,14 @@ const CandidateProfile = () => {
           location: data.location || "",
           education: data.education || "",
           experience_years: Math.round(data.experience_years || 0),
+          target_domain: data.target_domain || data.domain || savedDomain || "",
           linkedin_url: data.linkedin_url || "",
           github_url: data.github_url || "",
           portfolio_url: data.portfolio_url || "",
         };
       }
     } catch (e) { }
+    const savedDomain = localStorage.getItem("candidate_user_domain") || "";
     return {
       full_name: userProfile?.full_name || userProfile?.name || "",
       email: userProfile?.email || "",
@@ -85,6 +88,7 @@ const CandidateProfile = () => {
       location: "",
       education: "",
       experience_years: 0,
+      target_domain: savedDomain || "",
       linkedin_url: "",
       github_url: "",
       portfolio_url: "",
@@ -174,6 +178,7 @@ const CandidateProfile = () => {
       // Hydrate from cache immediately to avoid loading spinner
       try {
         const cached = localStorage.getItem("cached_candidate_profile");
+        const savedDomain = localStorage.getItem("candidate_user_domain") || "";
         if (cached) {
           const data = JSON.parse(cached);
           setProfile({
@@ -184,6 +189,7 @@ const CandidateProfile = () => {
             location: data.location || "",
             education: data.education || "",
             experience_years: Math.round(data.experience_years || 0),
+            target_domain: data.target_domain || data.domain || savedDomain || "",
             linkedin_url: data.linkedin_url || "",
             github_url: data.github_url || "",
             portfolio_url: data.portfolio_url || "",
@@ -209,7 +215,9 @@ const CandidateProfile = () => {
       try {
         const response = await api.get("/candidate/profile/");
         const data = response.data;
-        localStorage.setItem("cached_candidate_profile", JSON.stringify(data));
+        const savedDomain = localStorage.getItem("candidate_user_domain") || "";
+        const mergedData = { ...data, target_domain: data.target_domain || data.domain || savedDomain || "" };
+        localStorage.setItem("cached_candidate_profile", JSON.stringify(mergedData));
 
         // Always populate profile state with fetched data
         setProfile({
@@ -220,6 +228,7 @@ const CandidateProfile = () => {
           location: data.location || "",
           education: data.education || "",
           experience_years: Math.round(data.experience_years || 0),
+          target_domain: data.target_domain || data.domain || savedDomain || "",
           linkedin_url: data.linkedin_url || "",
           github_url: data.github_url || "",
           portfolio_url: data.portfolio_url || "",
@@ -423,10 +432,14 @@ const CandidateProfile = () => {
     formData.append("location", profile.location.trim());
     formData.append("education", profile.education.trim());
     formData.append("experience_years", Math.round(profile.experience_years || 0));
+    formData.append("target_domain", profile.target_domain ? profile.target_domain.trim() : "");
     formData.append("skills", skills.map((s) => s.skill_name).join(","));
     formData.append("linkedin_url", profile.linkedin_url);
     formData.append("github_url", profile.github_url);
     formData.append("portfolio_url", profile.portfolio_url);
+
+    // Save target domain locally
+    localStorage.setItem("candidate_user_domain", profile.target_domain ? profile.target_domain.trim() : "");
 
     if (fileInputRef.current && fileInputRef.current.files && fileInputRef.current.files[0]) {
       formData.append("profile_picture", fileInputRef.current.files[0]);
@@ -436,7 +449,8 @@ const CandidateProfile = () => {
       const response = await api.put("/candidate/profile/", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      localStorage.setItem("cached_candidate_profile", JSON.stringify(response.data));
+      const mergedData = { ...response.data, target_domain: profile.target_domain };
+      localStorage.setItem("cached_candidate_profile", JSON.stringify(mergedData));
       setProfilePicture(response.data.profile_picture || profilePicture);
 
       setToastMessage("Candidate profile updated successfully!");
@@ -861,6 +875,58 @@ const CandidateProfile = () => {
                             onClick={() => setProfile({ ...profile, experience_years: yr })}
                           >
                             {yr === 0 ? "Fresher (0 yrs)" : `${yr}+ Years`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Target Domain / Field of Interest (Determines Courses Section Cards) */}
+                  <div className="cp-field-group full-span">
+                    <label className="cp-label">
+                      <span>Target Domain / Learning Field</span>
+                      <span className="cp-field-hint" style={{ fontSize: '0.75rem', color: '#6366f1', marginLeft: '6px' }}>
+                        (Determines course cards in your Course Section)
+                      </span>
+                    </label>
+                    <div className="cp-input-wrapper">
+                      <Sparkles size={18} className="cp-input-icon" />
+                      <input
+                        type="text"
+                        disabled={!isEditing}
+                        className={`cp-input ${!isEditing ? "readonly" : ""}`}
+                        value={profile.target_domain || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setProfile({ ...profile, target_domain: val });
+                          localStorage.setItem("candidate_user_domain", val);
+                        }}
+                        placeholder="e.g., Full Stack Web Development, Data Structures, System Design..."
+                      />
+                    </div>
+
+                    {/* Quick Domain Recommendation Pills */}
+                    {isEditing && (
+                      <div className="cp-quick-suggestions-pills">
+                        <span className="cp-pills-label">Popular Domains:</span>
+                        {[
+                          "Full Stack Web Development",
+                          "Data Structures & Algorithms",
+                          "System Design & Architecture",
+                          "Behavioral & HR Interview Mastery",
+                          "Database Systems & SQL",
+                          "Python & Machine Learning"
+                        ].map((dom, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            className={`cp-pill-btn ${profile.target_domain === dom ? "active" : ""}`}
+                            onClick={() => {
+                              setProfile({ ...profile, target_domain: dom });
+                              localStorage.setItem("candidate_user_domain", dom);
+                            }}
+                          >
+                            + {dom}
                           </button>
                         ))}
                       </div>
