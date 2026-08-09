@@ -10,6 +10,7 @@ class CandidateProfileAdmin(admin.ModelAdmin):
         "candidate_id",
         "user_email",
         "profile_picture_preview",   # shows thumbnail
+        "target_domain",
         "gender",
         "location",
         "education",
@@ -22,8 +23,8 @@ class CandidateProfileAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
-    list_filter = ("gender", "location", "experience_years", "date_of_birth", "created_at")
-    search_fields = ("user__email", "user__full_name", "location", "education", "skills")
+    list_filter = ("target_domain", "gender", "location", "experience_years", "date_of_birth", "created_at")
+    search_fields = ("user__email", "user__full_name", "target_domain", "location", "education", "skills")
     readonly_fields = ("candidate_id", "created_at", "updated_at")
     raw_id_fields = ("user",)
 
@@ -34,7 +35,7 @@ class CandidateProfileAdmin(admin.ModelAdmin):
             "fields": ("user", "profile_picture", "date_of_birth", "gender", "location")
         }),
         ("Professional Details", {
-            "fields": ("education", "experience_years", "skills")
+            "fields": ("target_domain", "education", "experience_years", "skills")
         }),
         ("Online Presence", {
             "fields": ("linkedin_url", "github_url", "portfolio_url")
