@@ -284,6 +284,7 @@ const ResumeUpload = () => {
                   <Sparkles size={18} />
                   Analyze Resume
                 </>
+              )}
             </button>
           </div>
 
