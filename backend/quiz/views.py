@@ -27,16 +27,27 @@ def generate_quiz(request):
             )
     # ──────────────────────────────────────────────────────────────────────
 
+    # Gather candidate personalization context
+    from common.personalization_service import get_candidate_personalization_context
+    personalization_ctx = get_candidate_personalization_context(request.user)
+
     data = request.data
     topics = data.get('topics', [])
-    difficulty = data.get('difficulty', 'Medium')
+    if not topics or not isinstance(topics, list) or len(topics) == 0:
+        # Fallback to candidate domain or profile skills
+        domain = personalization_ctx.get("domain", "Web Development")
+        skills = personalization_ctx.get("profile_skills") or personalization_ctx.get("resume_skills")
+        if skills:
+            topics = [domain] + skills[:3]
+        else:
+            topics = [domain]
+
+    # Automatic internal difficulty calculation
+    difficulty = data.get('difficulty') or personalization_ctx.get('calculated_difficulty', 'Medium')
     mode = data.get('mode', 'MCQ')
     # Always enforce exactly 10 questions
     question_count = 10
     custom_instruction = data.get('custom_instruction', '')
-
-    if not topics:
-        return Response({"error": "At least one topic is required."}, status=400)
 
     try:
         questions = generate_quiz_questions(
@@ -45,6 +56,7 @@ def generate_quiz(request):
             count=question_count,
             mode=mode,
             custom_instruction=custom_instruction,
+            personalization_context=personalization_ctx,
         )
 
         for q in questions:

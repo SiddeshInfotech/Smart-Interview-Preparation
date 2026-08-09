@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 def generate_coding_question(
     language: str,
     difficulty: str = "Medium",
-    custom_instruction: str = ""
+    custom_instruction: str = "",
+    personalization_context: dict = None
 ) -> Dict[str, Any]:
     """
     Generate a coding challenge tailored to language and difficulty using OpenRouter AI.
@@ -28,6 +29,7 @@ def generate_coding_question(
         language=language,
         difficulty=difficulty,
         custom_instruction=custom_instruction,
+        personalization_context=personalization_context,
     )
 
     models = openrouter_service.get_models_for_feature("coding")

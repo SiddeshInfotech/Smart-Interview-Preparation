@@ -57,13 +57,39 @@ def quiz_generation_prompt(
     difficulty: str,
     count: int,
     mode: str,
-    custom_instruction: str = ""
+    custom_instruction: str = "",
+    personalization_context: dict = None
 ) -> str:
     """
     Generate strict prompt for OpenRouter quiz question generation.
     Forces raw JSON array, forbids markdown formatting and preamble/postamble text.
+    Incorporate candidate domain, profile skills, optional resume details, and performance.
     """
     topics_str = ", ".join(topics) if isinstance(topics, list) else str(topics)
+
+    context_details = []
+    if personalization_context:
+        domain = personalization_context.get("domain")
+        if domain:
+            context_details.append(f"- Candidate Career Domain: {domain}")
+        exp = personalization_context.get("experience_years")
+        if exp is not None:
+            context_details.append(f"- Experience: {exp} years")
+        prof_skills = personalization_context.get("profile_skills", [])
+        if prof_skills:
+            context_details.append(f"- Profile Skills: {', '.join(prof_skills)}")
+        if personalization_context.get("resume_available"):
+            res_skills = personalization_context.get("resume_skills", [])
+            if res_skills:
+                context_details.append(f"- Resume Skills: {', '.join(res_skills)}")
+            res_role = personalization_context.get("resume_role")
+            if res_role:
+                context_details.append(f"- Resume Target Role: {res_role}")
+        quiz_avg = personalization_context.get("quiz_avg_score", 0)
+        if quiz_avg > 0:
+            context_details.append(f"- Historical Quiz Average Score: {quiz_avg}%")
+
+    context_str = "\n".join(context_details) if context_details else "- Context: Standard candidate preparation"
 
     if mode == "MCQ":
         mode_rules = (
@@ -129,11 +155,14 @@ def quiz_generation_prompt(
     return f"""You are an elite technical interviewer and domain expert.
 
 TASK:
-Generate EXACTLY {count} unique, non-repetitive, high-quality assessment questions.
+Generate EXACTLY {count} unique, non-repetitive, high-quality assessment questions tailored to the candidate's career domain and profile context.
+
+CANDIDATE PERSONALIZATION CONTEXT:
+{context_str}
 
 PARAMETERS:
-- Topics: {topics_str}
-- Difficulty Level: {difficulty}
+- Primary Topics: {topics_str}
+- Target Internal Complexity Level: {difficulty}
 - Assessment Mode: {mode}
 {custom}
 
@@ -158,11 +187,35 @@ SCHEMA TEMPLATE:
 Begin output now:"""
 
 
-def coding_challenge_prompt(language: str, difficulty: str, custom_instruction: str = "") -> str:
+def coding_challenge_prompt(
+    language: str,
+    difficulty: str,
+    custom_instruction: str = "",
+    personalization_context: dict = None
+) -> str:
     """
-    Generate a prompt for AI to produce a coding challenge with hint and solution.
+    Generate a prompt for AI to produce a coding challenge with hint and solution,
+    tailored to the candidate's career domain and skill level.
     """
     custom = f"Additional guidance: {custom_instruction}" if custom_instruction else ""
+
+    context_details = []
+    if personalization_context:
+        domain = personalization_context.get("domain")
+        if domain:
+            context_details.append(f"- Candidate Career Domain: {domain}")
+        exp = personalization_context.get("experience_years")
+        if exp is not None:
+            context_details.append(f"- Experience: {exp} years")
+        prof_skills = personalization_context.get("profile_skills", [])
+        if prof_skills:
+            context_details.append(f"- Profile Skills: {', '.join(prof_skills)}")
+        if personalization_context.get("resume_available"):
+            res_skills = personalization_context.get("resume_skills", [])
+            if res_skills:
+                context_details.append(f"- Resume Skills: {', '.join(res_skills)}")
+
+    context_str = "\n".join(context_details) if context_details else "- Context: Standard candidate preparation"
 
     difficulty_rules = {
         "Easy": (
@@ -189,9 +242,12 @@ Role:
 You are a senior technical interviewer crafting an interview question.
 
 Task:
-Generate 1 coding challenge question specifically tailored for the programming language: {language}.
+Generate 1 coding challenge question specifically tailored for the programming language: {language} and aligned with the candidate's career domain.
 
-Target Difficulty Level: {difficulty}
+CANDIDATE PERSONALIZATION CONTEXT:
+{context_str}
+
+Target Internal Difficulty Level: {difficulty}
 
 {difficulty_rules}
 

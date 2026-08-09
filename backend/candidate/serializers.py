@@ -9,7 +9,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
         model = Candidate_Profile
         fields = [
             'candidate_id', 'profile_picture', 'date_of_birth', 'gender',
-            'location', 'education', 'experience_years', 'skills',
+            'location', 'education', 'experience_years', 'skills', 'target_domain',
             'linkedin_url', 'github_url', 'portfolio_url',
             'full_name', 'email'
         ]

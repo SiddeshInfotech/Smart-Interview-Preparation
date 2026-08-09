@@ -30,31 +30,12 @@ def generate_quiz_questions(
     difficulty: str = "Medium",
     count: int = 10,
     mode: str = "MCQ",
-    custom_instruction: str = ""
+    custom_instruction: str = "",
+    personalization_context: dict = None
 ) -> List[Dict[str, Any]]:
     """
     Generate quiz questions using OpenRouter AI service with model fallback, retries,
     automatic JSON cleaning, recursive array extraction, and field validation/repair.
-
-    Args:
-        topics: List of topic strings (e.g. ["Python", "Django"]).
-        difficulty: Easy, Medium, Hard.
-        count: Number of questions requested.
-        mode: MCQ / Coding Challenge / Mock Interview.
-        custom_instruction: Additional prompt instructions.
-
-    Returns:
-        List[Dict[str, Any]]: Standardized list of question dictionaries matching:
-        [
-          {
-            "text": str,
-            "options": List[str],
-            "correct": int,
-            "hint": str,
-            "explanation": str
-          },
-          ...
-        ]
     """
     prompt = quiz_generation_prompt(
         topics=topics,
@@ -62,6 +43,7 @@ def generate_quiz_questions(
         count=count,
         mode=mode,
         custom_instruction=custom_instruction,
+        personalization_context=personalization_context,
     )
 
     models = openrouter_service.get_models_for_feature("quiz")

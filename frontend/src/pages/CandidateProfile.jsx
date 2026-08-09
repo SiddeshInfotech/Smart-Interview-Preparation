@@ -409,13 +409,14 @@ const CandidateProfile = () => {
   const handleSaveProfile = async () => {
     setValidationError("");
 
-    // Validate Mandatory Fields: Name, Email, Date of Birth, Location, Education
+    // Validate Mandatory Fields: Name, Email, Date of Birth, Location, Education, Career Domain
     const missing = [];
     if (!profile.full_name && !userProfile?.name) missing.push("Name");
     if (!profile.email && !userProfile?.email) missing.push("Email");
     if (!profile.date_of_birth) missing.push("Date of Birth");
     if (!profile.location || !profile.location.trim()) missing.push("Location");
     if (!profile.education || !profile.education.trim()) missing.push("Education");
+    if (!profile.target_domain || !profile.target_domain.trim()) missing.push("Career Domain");
 
     if (missing.length > 0) {
       setValidationError(`Mandatory fields required: ${missing.join(", ")}`);
@@ -881,41 +882,49 @@ const CandidateProfile = () => {
                     )}
                   </div>
 
-                  {/* Target Domain / Field of Interest (Determines Courses Section Cards) */}
+                  {/* Target Domain / Career Domain (Mandatory) */}
                   <div className="cp-field-group full-span">
                     <label className="cp-label">
-                      <span>Target Domain / Learning Field</span>
+                      <span>Career Domain <span className="cp-required-star">*</span></span>
                       <span className="cp-field-hint" style={{ fontSize: '0.75rem', color: '#6366f1', marginLeft: '6px' }}>
-                        (Determines course cards in your Course Section)
+                        (Determines personalized Quiz, Coding, and Course preparation content)
                       </span>
                     </label>
                     <div className="cp-input-wrapper">
                       <Sparkles size={18} className="cp-input-icon" />
-                      <input
-                        type="text"
+                      <select
                         disabled={!isEditing}
-                        className={`cp-input ${!isEditing ? "readonly" : ""}`}
+                        className={`cp-select ${!isEditing ? "readonly" : ""}`}
                         value={profile.target_domain || ""}
                         onChange={(e) => {
                           const val = e.target.value;
                           setProfile({ ...profile, target_domain: val });
                           localStorage.setItem("candidate_user_domain", val);
                         }}
-                        placeholder="e.g., Full Stack Web Development, Data Structures, System Design..."
-                      />
+                      >
+                        <option value="">Select Primary Career Domain *</option>
+                        <option value="Web Development">Web Development</option>
+                        <option value="Mobile Development">Mobile Development</option>
+                        <option value="Data Science / Analytics">Data Science / Analytics</option>
+                        <option value="Cybersecurity">Cybersecurity</option>
+                        <option value="Game Development">Game Development</option>
+                        <option value="Software Testing / QA">Software Testing / QA</option>
+                        <option value="UI/UX / HCI">UI/UX / HCI</option>
+                      </select>
                     </div>
 
                     {/* Quick Domain Recommendation Pills */}
                     {isEditing && (
                       <div className="cp-quick-suggestions-pills">
-                        <span className="cp-pills-label">Popular Domains:</span>
+                        <span className="cp-pills-label">Core Career Domains:</span>
                         {[
-                          "Full Stack Web Development",
-                          "Data Structures & Algorithms",
-                          "System Design & Architecture",
-                          "Behavioral & HR Interview Mastery",
-                          "Database Systems & SQL",
-                          "Python & Machine Learning"
+                          "Web Development",
+                          "Mobile Development",
+                          "Data Science / Analytics",
+                          "Cybersecurity",
+                          "Game Development",
+                          "Software Testing / QA",
+                          "UI/UX / HCI"
                         ].map((dom, idx) => (
                           <button
                             key={idx}

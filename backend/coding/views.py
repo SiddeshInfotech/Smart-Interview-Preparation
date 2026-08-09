@@ -257,12 +257,20 @@ def get_coding_result(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def generate_coding_question(request):
+    from common.personalization_service import get_candidate_personalization_context
+    personalization_ctx = get_candidate_personalization_context(request.user)
+
     language = request.data.get("language", "Python")
-    difficulty = request.data.get("difficulty", "Medium")
+    difficulty = request.data.get("difficulty") or personalization_ctx.get("calculated_difficulty", "Medium")
     custom_instruction = request.data.get("custom_instruction", "")
 
     try:
-        data = ai_generate_coding_question(language, difficulty, custom_instruction)
+        data = ai_generate_coding_question(
+            language=language,
+            difficulty=difficulty,
+            custom_instruction=custom_instruction,
+            personalization_context=personalization_ctx
+        )
         return Response({
             "success": True,
             "data": data

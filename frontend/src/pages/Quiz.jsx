@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus,
   BookOpen,
-  Gauge,
-  ListChecks,
   MessageSquare,
   ArrowRight,
   Zap,
@@ -12,34 +10,71 @@ import {
   Code2,
   HelpCircle,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles,
+  ShieldCheck,
+  Target
 } from 'lucide-react';
 import api from '../api/axios';
 import '../styles/Quiz.css';
 
-const SUGGESTED_CHIPS = [
-  'JavaScript', 'React', 'Python', 'SQL', 'Data Structures', 'System Design'
-];
+const DOMAIN_TOPICS = {
+  'Web Development': ['React', 'JavaScript', 'Node.js', 'REST APIs', 'HTML/CSS', 'Database / SQL'],
+  'Mobile Development': ['React Native', 'Flutter', 'Swift', 'Kotlin', 'Mobile Architecture', 'REST APIs'],
+  'Data Science / Analytics': ['Python', 'Pandas & NumPy', 'Machine Learning', 'SQL Data Warehouse', 'Statistics', 'Data Visualization'],
+  'Cybersecurity': ['Network Security', 'Ethical Hacking', 'Cryptography', 'Web Application Security', 'SOC & Incident Response', 'Linux Administration'],
+  'Game Development': ['C++', 'C#', 'OOP', 'Data Structures & Algorithms', 'Game Physics', 'Computer Graphics'],
+  'Software Testing / QA': ['Automation Testing', 'Selenium & Cypress', 'Unit Testing', 'API Testing', 'Performance Testing', 'CI/CD Pipelines'],
+  'UI/UX / HCI': ['User Research', 'Wireframing & Prototyping', 'Design Systems', 'Usability Testing', 'Information Architecture', 'Figma & Design Principles'],
+};
 
 const Quiz = () => {
   const navigate = useNavigate();
 
-  // --- Configuration state ---
+  // Candidate Domain State
+  const [candidateDomain, setCandidateDomain] = useState('');
+  
+  // Configuration state
   const [selectedTopics, setSelectedTopics] = useState([]);
   const [newTopic, setNewTopic] = useState('');
   const [topicSuggestions, setTopicSuggestions] = useState([]);
   const [showTopicSuggestions, setShowTopicSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const suggestionRef = useRef(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState('');
-  const [selectedMode, setSelectedMode] = useState('');
+
+  const [selectedMode, setSelectedMode] = useState('MCQ');
   const [selectedCodingLanguage, setSelectedCodingLanguage] = useState('Python');
-  const [selectedQuestionCount, setSelectedQuestionCount] = useState(10);
   const [promptText, setPromptText] = useState('');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
 
-  // --- Topic suggestion logic ---
+  // Fetch candidate profile domain on load
+  useEffect(() => {
+    const loadDomain = async () => {
+      const cachedDomain = localStorage.getItem("candidate_user_domain");
+      if (cachedDomain && cachedDomain.trim()) {
+        setCandidateDomain(cachedDomain.trim());
+      }
+      try {
+        const response = await api.get("/candidate/profile/");
+        if (response.data?.target_domain) {
+          const dom = response.data.target_domain.trim();
+          setCandidateDomain(dom);
+          localStorage.setItem("candidate_user_domain", dom);
+        }
+      } catch (err) {
+        console.warn("Could not fetch candidate profile domain:", err);
+      }
+    };
+    loadDomain();
+  }, []);
+
+  // Set suggested topic chips based on current active domain
+  const currentSuggestedChips = DOMAIN_TOPICS[candidateDomain] || [
+    'JavaScript', 'React', 'Python', 'SQL', 'Data Structures', 'System Design'
+  ];
+
+  // Topic suggestion dropdown outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (suggestionRef.current && !suggestionRef.current.contains(event.target)) {
@@ -120,23 +155,14 @@ const Quiz = () => {
     }
   };
 
-  // --- Options ---
   const modes = ['MCQ', 'Coding Challenge'];
   const codingLanguages = ['C', 'C++', 'Java', 'Python'];
-  const difficulties = ['Easy', 'Medium', 'Hard'];
-  const questionCounts = [10];
 
-  // --- Visibility toggles ---
-  const showTopics = selectedMode !== '';
-  const showDifficulty = selectedMode !== '';
-  const showQuestionCount = selectedMode === 'MCQ';
-  const showCustomInstructions = selectedMode !== '';
-
-  // --- Generate quiz / coding challenge ---
+  // Handle single personalized generator
   const handleGenerate = async () => {
     if (selectedMode === 'Coding Challenge') {
-      if (!selectedCodingLanguage || !selectedDifficulty) {
-        setError('Please select language and difficulty level.');
+      if (!selectedCodingLanguage) {
+        setError('Please select your target programming language.');
         return;
       }
       setError('');
@@ -144,34 +170,27 @@ const Quiz = () => {
       try {
         const response = await api.post('/coding/generate/', {
           language: selectedCodingLanguage,
-          difficulty: selectedDifficulty,
           custom_instruction: promptText,
         });
         navigate('/coding', {
           state: {
             language: selectedCodingLanguage,
             questionData: response.data?.data,
-            difficulty: selectedDifficulty,
           }
         });
       } catch (err) {
-        console.error('Failed to generate coding problem:', err);
+        console.error('Failed to generate coding challenge:', err);
         const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to generate coding problem.';
         setError(msg);
-        navigate('/coding', {
-          state: {
-            language: selectedCodingLanguage,
-            difficulty: selectedDifficulty,
-          }
-        });
       } finally {
         setGenerating(false);
       }
       return;
     }
 
-    if (!(selectedTopics.length > 0 && selectedDifficulty && selectedMode)) {
-      setError('Please select all required fields.');
+    // MCQ Mode
+    if (selectedTopics.length === 0 && !candidateDomain) {
+      setError('Please select at least one topic or configure your career domain.');
       return;
     }
 
@@ -180,10 +199,9 @@ const Quiz = () => {
 
     try {
       const payload = {
-        topics: selectedTopics.map(t => t.name),
-        difficulty: selectedDifficulty,
-        mode: selectedMode,
-        question_count: selectedQuestionCount,
+        topics: selectedTopics.length > 0 ? selectedTopics.map(t => t.name) : [candidateDomain || "Web Development"],
+        mode: 'MCQ',
+        question_count: 10,
         custom_instruction: promptText,
       };
 
@@ -213,18 +231,62 @@ const Quiz = () => {
               
               <div className="setup-header">
                 <h1>
-                  <span className="quiz-gradient-title">Choose Your Challenge</span>
+                  <span className="quiz-gradient-title">Personalized Preparation Arena</span>
                 </h1>
-                <p>Select the mode, topics, and difficulty to generate a practice arena.</p>
+                <p>AI-driven interview assessment dynamically tailored to your Career Domain and profile context.</p>
                 <div className="quiz-header-line" />
               </div>
 
+              {/* DOMAIN & PERSONALIZATION ENGINE BADGE */}
+              <div className="domain-banner-card" style={{
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(168, 85, 247, 0.12) 100%)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                borderRadius: '16px',
+                padding: '18px 24px',
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff'
+                  }}>
+                    <Target size={22} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#6366f1' }}>
+                      Primary Career Domain Context
+                    </span>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', margin: '2px 0 0 0', color: 'var(--text-primary, #0f172a)' }}>
+                      {candidateDomain ? candidateDomain : 'Web Development'}
+                    </h3>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '8px 14px', borderRadius: '20px' }}>
+                  <ShieldCheck size={16} color="#10b981" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: '600', color: '#10b981' }}>
+                    Auto-Adaptive Personalization Engine
+                  </span>
+                </div>
+              </div>
+
               <div className="setup-card">
-                {/* MODE */}
+                {/* PRACTICE FORMAT */}
                 <div className="setup-section">
                   <h3 className="section-title">
                     <Zap size={18} className="section-icon" />
-                    Practice Mode
+                    Assessment Format
                   </h3>
                   <div className="question-type-grid">
                     {modes.map((mode) => (
@@ -237,8 +299,8 @@ const Quiz = () => {
                           {mode === 'MCQ' ? <HelpCircle size={20} /> : <Code2 size={20} />}
                         </span>
                         <div className="mode-text-wrapper">
-                          <strong>{mode}</strong>
-                          <span>{mode === 'MCQ' ? 'Multiple choice assessment' : 'Interactive coding environment'}</span>
+                          <strong>{mode === 'MCQ' ? 'Multiple Choice Assessment' : 'Interactive Coding Challenge'}</strong>
+                          <span>{mode === 'MCQ' ? 'Comprehensive conceptual & technical question evaluation' : 'Live browser code editor with automated Piston execution'}</span>
                         </div>
                       </div>
                     ))}
@@ -248,175 +310,144 @@ const Quiz = () => {
                 <div className="divider"></div>
 
                 {/* TOPICS / LANGUAGE */}
-                <div className={`slide-section ${showTopics ? 'slide-enter-active' : 'slide-exit-active'}`} style={{ position: 'relative', zIndex: 100 }}>
-                  <div className="slide-inner">
-                    <div className="setup-section">
-                      {selectedMode === 'Coding Challenge' ? (
-                        <>
-                          <h3 className="section-title">
-                            <BookOpen size={18} className="section-icon" />
-                            Select Programming Language
-                          </h3>
-                          <div className="language-select-container">
-                            <select
-                              className="language-select-dropdown"
-                              value={selectedCodingLanguage}
-                              onChange={(e) => setSelectedCodingLanguage(e.target.value)}
-                            >
-                              {codingLanguages.map((lang) => (
-                                <option key={lang} value={lang}>
-                                  {lang}
-                                </option>
-                              ))}
-                            </select>
+                <div className="setup-section">
+                  {selectedMode === 'Coding Challenge' ? (
+                    <>
+                      <h3 className="section-title">
+                        <BookOpen size={18} className="section-icon" />
+                        Target Programming Language
+                      </h3>
+                      <div className="language-select-container">
+                        <select
+                          className="language-select-dropdown"
+                          value={selectedCodingLanguage}
+                          onChange={(e) => setSelectedCodingLanguage(e.target.value)}
+                        >
+                          {codingLanguages.map((lang) => (
+                            <option key={lang} value={lang}>
+                              {lang}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="section-title">
+                        <BookOpen size={18} className="section-icon" />
+                        Domain Topics & Focus Areas
+                      </h3>
+                      <div className="skills-container">
+                        {selectedTopics.length > 0 && (
+                          <div className="skill-tags">
+                            {selectedTopics.map((topic) => (
+                              <span key={topic.id} className="skill-tag">
+                                {topic.name}
+                                <button
+                                  type="button"
+                                  className="skill-remove"
+                                  onClick={() => removeTopic(topic.id)}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
                           </div>
-                        </>
-                      ) : (
-                        <>
-                          <h3 className="section-title">
-                            <BookOpen size={18} className="section-icon" />
-                            Select Topics & Technologies
-                          </h3>
-                          <div className="skills-container">
-                            {selectedTopics.length > 0 && (
-                              <div className="skill-tags">
-                                {selectedTopics.map((topic) => (
-                                  <span key={topic.id} className="skill-tag">
-                                    {topic.name}
-                                    <button
-                                      type="button"
-                                      className="skill-remove"
-                                      onClick={() => removeTopic(topic.id)}
-                                    >
-                                      ×
-                                    </button>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            <div className="skill-input-wrapper" ref={suggestionRef}>
-                              <input
-                                type="text"
-                                placeholder="Type a topic (e.g. React, Python) and press Enter..."
-                                value={newTopic}
-                                onChange={(e) => {
-                                  setNewTopic(e.target.value);
-                                  if (e.target.value.trim().length === 0) {
-                                    setTopicSuggestions([]);
-                                    setShowTopicSuggestions(false);
-                                  }
-                                }}
-                                onKeyDown={handleAddTopic}
-                                onFocus={() => {
-                                  const query = newTopic.trim();
-                                  if (topicSuggestions.length > 0 && query.length >= 1) {
-                                    setShowTopicSuggestions(true);
-                                  } else {
-                                    fetchTopicSuggestions(query);
-                                  }
-                                }}
-                              />
-                              <Plus size={18} className="skill-input-icon" />
-                              {showTopicSuggestions && (
-                                <div className="skill-suggestions-dropdown">
-                                  {loadingSuggestions ? (
-                                    <div className="suggestion-loading">Loading suggestions...</div>
-                                  ) : (
-                                    topicSuggestions.map((topic) => (
-                                      <div
-                                        key={topic.id}
-                                        className="suggestion-item"
-                                        onClick={() => addTopicFromSuggestion(topic)}
-                                      >
-                                        <span className="suggestion-name">{topic.skill_name}</span>
-                                        {topic.category && <span className="suggestion-category">{topic.category}</span>}
-                                      </div>
-                                    ))
-                                  )}
-                                </div>
+                        )}
+                        <div className="skill-input-wrapper" ref={suggestionRef}>
+                          <input
+                            type="text"
+                            placeholder="Type a topic (e.g. React, Algorithms) and press Enter..."
+                            value={newTopic}
+                            onChange={(e) => {
+                              setNewTopic(e.target.value);
+                              if (e.target.value.trim().length === 0) {
+                                setTopicSuggestions([]);
+                                setShowTopicSuggestions(false);
+                              }
+                            }}
+                            onKeyDown={handleAddTopic}
+                            onFocus={() => {
+                              const query = newTopic.trim();
+                              if (topicSuggestions.length > 0 && query.length >= 1) {
+                                setShowTopicSuggestions(true);
+                              } else {
+                                fetchTopicSuggestions(query);
+                              }
+                            }}
+                          />
+                          <Plus size={18} className="skill-input-icon" />
+                          {showTopicSuggestions && (
+                            <div className="skill-suggestions-dropdown">
+                              {loadingSuggestions ? (
+                                <div className="suggestion-loading">Loading suggestions...</div>
+                              ) : (
+                                topicSuggestions.map((topic) => (
+                                  <div
+                                    key={topic.id}
+                                    className="suggestion-item"
+                                    onClick={() => addTopicFromSuggestion(topic)}
+                                  >
+                                    <span className="suggestion-name">{topic.skill_name}</span>
+                                    {topic.category && <span className="suggestion-category">{topic.category}</span>}
+                                  </div>
+                                ))
                               )}
                             </div>
+                          )}
+                        </div>
 
-                            {/* Interactive Suggested Topic Chips */}
-                            <div className="suggestions-hint">
-                              <span className="hint-label"><Flame size={14} color="#f59e0b" /> Popular Topics:</span>
-                              <div className="suggested-chips-row">
-                                {SUGGESTED_CHIPS.map((chip) => {
-                                  const isAdded = selectedTopics.some(t => t.name.toLowerCase() === chip.toLowerCase());
-                                  return (
-                                    <button
-                                      type="button"
-                                      key={chip}
-                                      className={`suggested-chip-btn ${isAdded ? 'added' : ''}`}
-                                      onClick={() => addSuggestedChip(chip)}
-                                      disabled={isAdded}
-                                    >
-                                      {isAdded ? (
-                                        <>
-                                          <CheckCircle2 size={12} /> {chip}
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Plus size={12} /> {chip}
-                                        </>
-                                      )}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
+                        {/* Interactive Domain Suggested Topic Chips */}
+                        <div className="suggestions-hint">
+                          <span className="hint-label"><Flame size={14} color="#f59e0b" /> Recommended for {candidateDomain || 'your domain'}:</span>
+                          <div className="suggested-chips-row">
+                            {currentSuggestedChips.map((chip) => {
+                              const isAdded = selectedTopics.some(t => t.name.toLowerCase() === chip.toLowerCase());
+                              return (
+                                <button
+                                  type="button"
+                                  key={chip}
+                                  className={`suggested-chip-btn ${isAdded ? 'added' : ''}`}
+                                  onClick={() => addSuggestedChip(chip)}
+                                  disabled={isAdded}
+                                >
+                                  {isAdded ? (
+                                    <>
+                                      <CheckCircle2 size={12} /> {chip}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Plus size={12} /> {chip}
+                                    </>
+                                  )}
+                                </button>
+                              );
+                            })}
                           </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* DIFFICULTY */}
-                <div className={`slide-section ${showDifficulty ? 'slide-enter-active' : 'slide-exit-active'}`}>
-                  <div className="slide-inner">
-                    <div className="divider"></div>
-                    <div className="setup-section">
-                      <h3 className="section-title">
-                        <Gauge size={18} className="section-icon" />
-                        Difficulty Level
-                      </h3>
-                      <div className="difficulty-grid">
-                        {difficulties.map((diff) => (
-                          <div
-                            key={diff}
-                            className={`difficulty-item ${selectedDifficulty === diff ? 'selected' : ''}`}
-                            onClick={() => setSelectedDifficulty(diff)}
-                          >
-                            <strong>{diff}</strong>
-                          </div>
-                        ))}
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </>
+                  )}
                 </div>
+
+                <div className="divider"></div>
 
                 {/* CUSTOM INSTRUCTION PROMPT */}
-                <div className={`slide-section ${showCustomInstructions ? 'slide-enter-active' : 'slide-exit-active'}`}>
-                  <div className="slide-inner">
-                    <div className="divider"></div>
-                    <div className="setup-section">
-                      <h3 className="section-title">
-                        <MessageSquare size={18} className="section-icon" />
-                        Custom Focus Area <span className="optional-badge">(Optional)</span>
-                      </h3>
-                      <p className="section-description">
-                        Provide specific instructions or topics to emphasize in your session (e.g. "Focus on async/await, closures, and performance optimization").
-                      </p>
-                      <textarea
-                        className="custom-prompt-input"
-                        placeholder="e.g., Focus heavily on memory management, edge cases, and architectural best practices..."
-                        value={promptText}
-                        onChange={(e) => setPromptText(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-                  </div>
+                <div className="setup-section">
+                  <h3 className="section-title">
+                    <MessageSquare size={18} className="section-icon" />
+                    Custom Focus Area <span className="optional-badge">(Optional)</span>
+                  </h3>
+                  <p className="section-description">
+                    Specify key focus topics or concepts (e.g. "Focus heavily on asynchronous code, memory management, and system architecture").
+                  </p>
+                  <textarea
+                    className="custom-prompt-input"
+                    placeholder="e.g., Focus heavily on practical scenario questions, performance optimization, and architectural best practices..."
+                    value={promptText}
+                    onChange={(e) => setPromptText(e.target.value)}
+                    rows={3}
+                  />
                 </div>
 
                 {/* ACTION BUTTON */}
@@ -429,21 +460,15 @@ const Quiz = () => {
                   <button
                     className={`btn-generate ${generating ? 'generating' : ''}`}
                     onClick={handleGenerate}
-                    disabled={
-                      generating ||
-                      !selectedMode ||
-                      !selectedDifficulty ||
-                      (selectedMode === 'MCQ' && selectedTopics.length === 0) ||
-                      (selectedMode === 'Coding Challenge' && !selectedCodingLanguage)
-                    }
+                    disabled={generating}
                   >
                     {generating ? (
                       <span className="spinner-wrapper">
-                        <span className="spinner" /> Generating Practice Arena...
+                        <span className="spinner" /> Generating Personalized Assessment...
                       </span>
                     ) : (
                       <>
-                        Start Practice Arena <ArrowRight size={18} />
+                        <Sparkles size={18} /> Generate Personalized Assessment <ArrowRight size={18} />
                       </>
                     )}
                   </button>

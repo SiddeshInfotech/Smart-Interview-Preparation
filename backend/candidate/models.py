@@ -13,6 +13,7 @@ class Candidate_Profile(models.Model):
     education = models.CharField(max_length=255, blank=True, null=True)
     experience_years = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
     skills = models.TextField(blank=True, null=True)
+    target_domain = models.CharField(max_length=150, blank=True, null=True)
     linkedin_url = models.URLField(max_length=255, blank=True, null=True)
     github_url = models.URLField(max_length=255, blank=True, null=True)
     portfolio_url = models.URLField(max_length=255, blank=True, null=True)
