@@ -7,11 +7,6 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
-    phone_number = serializers.CharField(
-        max_length=20,
-        required=False,
-        allow_blank=True
-    )
     role = serializers.ChoiceField(
         choices=["candidate", "interviewer"]
     )
@@ -65,9 +60,6 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
 class UpdateProfileSerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=150)
-    phone_number = serializers.CharField(
-        max_length=20, required=False, allow_blank=True
-    )
 
 
 class LogoutSerializer(serializers.Serializer):
@@ -95,7 +87,6 @@ class ProfileSerializer(serializers.ModelSerializer):
             "user_id",
             "full_name",
             "email",
-            "phone_number",
             "role",
             "has_premium",
         ]

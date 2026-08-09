@@ -220,7 +220,6 @@ class Users(models.Model):
     email = models.CharField(unique=True, max_length=150)
     password_hash = models.CharField(max_length=255)
     role = models.CharField(max_length=11)
-    phone_number = models.CharField(unique=True, max_length=20, blank=True, null=True)
     is_active = models.IntegerField()
     is_email_verified = models.IntegerField()
     created_at = models.DateTimeField()

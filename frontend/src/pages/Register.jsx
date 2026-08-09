@@ -10,7 +10,6 @@ import {
   Mail,
   Lock,
   UserRound,
-  Phone,
   CheckCircle,
   ArrowRight,
   AlertCircle
@@ -34,7 +33,6 @@ export default function Register() {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    phone_number: "",
     password: "",
     confirmPassword: "",
     otp: "",
@@ -122,7 +120,6 @@ export default function Register() {
       email: form.email,
       password: form.password,
       confirm_password: form.confirmPassword,
-      phone_number: form.phone_number || "",
       role,
     };
 
@@ -354,26 +351,6 @@ export default function Register() {
               </div>
             </div>
           )}
-
-          {/* Phone Number */}
-          <div className="form-group">
-            <label className="field-label" htmlFor="register-phone">
-              Phone Number
-            </label>
-            <div className="field-control">
-              <Phone size={16} className="field-icon" />
-              <input
-                id="register-phone"
-                className="input"
-                type="text"
-                name="phone_number"
-                placeholder="Enter your phone number"
-                value={form.phone_number}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
 
           {/* Create Password */}
           <div className="form-group">

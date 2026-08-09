@@ -38,7 +38,6 @@ def get_candidate_profile_data(user):
             "user__email",
             "user__full_name",
             "user__role",
-            "user__phone_number",
         ).first()
 
         if not profile:
@@ -50,7 +49,6 @@ def get_candidate_profile_data(user):
             "full_name": profile.user.full_name or profile.user.email.split("@")[0],
             "email": profile.user.email,
             "role": profile.user.role,
-            "phone_number": profile.user.phone_number,
             "profile_picture": profile.profile_picture.url if profile.profile_picture else None,
             "location": profile.location,
             "education": profile.education,

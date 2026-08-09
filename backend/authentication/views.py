@@ -48,7 +48,6 @@ def register(request):
         full_name=data["full_name"],
         email=data["email"],
         role=data["role"],
-        phone_number=data.get("phone_number"),
         is_active=True,
         is_email_verified=True,
     )

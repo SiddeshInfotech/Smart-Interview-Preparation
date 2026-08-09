@@ -11,7 +11,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     user_id = models.AutoField(primary_key=True)
     full_name = models.CharField(max_length=150)
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
     role = models.CharField(max_length=20, default='candidate')
 
     is_active = models.BooleanField(default=True)
