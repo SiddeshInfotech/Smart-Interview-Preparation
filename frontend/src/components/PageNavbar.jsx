@@ -86,8 +86,7 @@ export default function PageNavbar({
     }
 
     const handleUsageUpdate = () => {
-      const synced = syncUsage();
-      if (!synced && !isInterviewer) {
+      if (!isInterviewer) {
         fetchUsage();
       }
     };
@@ -101,16 +100,7 @@ export default function PageNavbar({
   const handleToggleDropdown = () => {
     setProfileMenuOpen((open) => {
       if (!open && !isInterviewer) {
-        try {
-          const cached = localStorage.getItem("cached_user_usage");
-          if (cached) {
-            setUsageData(JSON.parse(cached));
-          } else if (!usageData) {
-            fetchUsage();
-          }
-        } catch (e) {
-          if (!usageData) fetchUsage();
-        }
+        fetchUsage();
       }
       return !open;
     });

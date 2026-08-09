@@ -12,7 +12,8 @@ import {
   File,
   ShieldCheck,
   X,
-  Award
+  Award,
+  AlertCircle
 } from "lucide-react";
 import "../styles/ResumeUpload.css";
 import { useTheme } from "../context/ThemeContext";
@@ -25,6 +26,7 @@ const ResumeUpload = () => {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [resumeId, setResumeId] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
+  const [creditError, setCreditError] = useState("");
   const [showScoreModal, setShowScoreModal] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -140,6 +142,8 @@ const ResumeUpload = () => {
 
     setIsLoading(true);
 
+    setCreditError("");
+
     try {
       const formData = new FormData();
       formData.append("resume", file);
@@ -166,17 +170,28 @@ const ResumeUpload = () => {
       setAnalysisResult(analyzeData.data);
       setUploadStatus("Resume analyzed successfully");
       setShowScoreModal(true);
+
+      // Dispatch usage update event to refresh navbar credits dropdown
+      window.dispatchEvent(new Event("usageUpdate"));
     } catch (error) {
       console.log("Analyze Error:", error);
+      const errMsg = error.response?.data?.error || error.response?.data?.detail || "Analysis Failed";
       setUploadStatus("Analysis Failed");
+      if (error.response?.status === 429 || error.response?.data?.limit_reached) {
+        setCreditError(errMsg);
+      }
+      // Dispatch usage update event to sync profile dropdown credits
+      window.dispatchEvent(new Event("usageUpdate"));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Score Tier Evaluation
-  const rawScore = parseInt(analysisResult?.resume_score, 10) || 75;
-  const scorePercent = Math.min(100, Math.max(0, rawScore));
+  // Score Tier Evaluation — handle 0 score correctly without defaulting to 75
+  const rawScore = (analysisResult?.resume_score !== undefined && analysisResult?.resume_score !== null)
+    ? parseInt(analysisResult.resume_score, 10)
+    : 75;
+  const scorePercent = Math.min(100, Math.max(0, isNaN(rawScore) ? 0 : rawScore));
 
   const getScoreTier = (score) => {
     const isDark = theme === "dark";
@@ -203,6 +218,38 @@ const ResumeUpload = () => {
   return (
     <div className="resume-page-wrapper">
       <main className="resume-main-shell">
+
+        {/* CREDIT EXHAUSTED WARNING BANNER */}
+        {creditError && (
+          <div
+            className="credit-error-alert"
+            style={{
+              marginBottom: "20px",
+              padding: "14px 18px",
+              borderRadius: "12px",
+              background: theme === "dark" ? "rgba(239, 68, 68, 0.15)" : "#fee2e2",
+              border: `1px solid ${theme === "dark" ? "#dc2626" : "#ef4444"}`,
+              color: theme === "dark" ? "#f87171" : "#991b1b",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              fontWeight: "600",
+              fontSize: "14px",
+            }}
+          >
+            <AlertCircle size={22} style={{ flexShrink: 0 }} />
+            <div style={{ flexGrow: 1 }}>
+              <strong>Usage Limit Reached:</strong> {creditError}
+            </div>
+            <button
+              onClick={() => setCreditError("")}
+              style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "4px" }}
+              title="Dismiss Alert"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
 
         {/* UPLOAD & CONTROLS CONTAINER */}
         <section className="resume-card">
@@ -320,6 +367,22 @@ const ResumeUpload = () => {
                           <span className="analysis-field__label">Target Domain</span>
                           <span className="analysis-field__value bold-text">{analysisResult.target_domain}</span>
                         </div>
+                      )}
+                      {analysisResult.domain_match_status && (
+                        <>
+                          <div className="analysis-field">
+                            <span className="analysis-field__label">Matched Skills</span>
+                            <span className="analysis-field__value bold-text" style={{ color: "#10b981" }}>
+                              {analysisResult.matched_skills ? analysisResult.matched_skills.split(",").filter(s => s.trim()).length : 0} skills
+                            </span>
+                          </div>
+                          <div className="analysis-field">
+                            <span className="analysis-field__label">Impact Rating</span>
+                            <span className="analysis-field__value bold-text" style={{ color: scoreTier.color }}>
+                              {scorePercent >= 80 ? "High Impact" : scorePercent >= 60 ? "Moderate Impact" : "Low Impact"}
+                            </span>
+                          </div>
+                        </>
                       )}
                       <div className="analysis-field analysis-field--grow">
                         <span className="analysis-field__label">Executive Summary & Domain Alignment</span>
