@@ -1381,5 +1381,98 @@ body.dark-theme .optional-badge {
   color: #94a3b8 !important;
 }
 
+/* DOMAIN BANNER CARD & DARK MODE STYLES */
+.domain-banner-card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 16px;
+  padding: 18px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.domain-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.domain-banner-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.domain-banner-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6366f1;
+  display: block;
+}
+
+.domain-banner-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 2px 0 0 0;
+  color: var(--color-ink, #0f172a);
+}
+
+.domain-banner-engine-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 8px 14px;
+  border-radius: 20px;
+}
+
+.domain-banner-engine-badge span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #10b981;
+}
+
+/* Dark Mode Overrides for Domain Banner Card */
+[data-theme="dark"] .domain-banner-card,
+body.dark-theme .domain-banner-card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18) 0%, rgba(168, 85, 247, 0.18) 100%) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+}
+
+[data-theme="dark"] .domain-banner-label,
+body.dark-theme .domain-banner-label {
+  color: #a5b4fc !important;
+}
+
+[data-theme="dark"] .domain-banner-title,
+body.dark-theme .domain-banner-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .domain-banner-engine-badge,
+body.dark-theme .domain-banner-engine-badge {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+[data-theme="dark"] .domain-banner-engine-badge span,
+body.dark-theme .domain-banner-engine-badge span {
+  color: #34d399 !important;
+}
+
+
 
 

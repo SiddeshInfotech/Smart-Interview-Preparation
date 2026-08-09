@@ -238,44 +238,24 @@ const Quiz = () => {
               </div>
 
               {/* DOMAIN & PERSONALIZATION ENGINE BADGE */}
-              <div className="domain-banner-card" style={{
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(168, 85, 247, 0.12) 100%)',
-                border: '1px solid rgba(99, 102, 241, 0.25)',
-                borderRadius: '16px',
-                padding: '18px 24px',
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '16px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#ffffff'
-                  }}>
+              <div className="domain-banner-card">
+                <div className="domain-banner-left">
+                  <div className="domain-banner-icon">
                     <Target size={22} />
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#6366f1' }}>
+                    <span className="domain-banner-label">
                       Primary Career Domain Context
                     </span>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', margin: '2px 0 0 0', color: 'var(--text-primary, #0f172a)' }}>
+                    <h3 className="domain-banner-title">
                       {candidateDomain ? candidateDomain : 'Web Development'}
                     </h3>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '8px 14px', borderRadius: '20px' }}>
+                <div className="domain-banner-engine-badge">
                   <ShieldCheck size={16} color="#10b981" />
-                  <span style={{ fontSize: '0.82rem', fontWeight: '600', color: '#10b981' }}>
+                  <span>
                     Auto-Adaptive Personalization Engine
                   </span>
                 </div>
