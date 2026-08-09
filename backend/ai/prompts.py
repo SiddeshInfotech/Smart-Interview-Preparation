@@ -15,13 +15,13 @@ def resume_analysis_prompt(resume_text: str, target_domain: str = "") -> str:
     domain_instructions = ""
     if target_domain and target_domain.strip():
         domain_instructions = f"""
-ESSENTIAL DOMAIN MATCHING CRITERIA:
+ESSENTIAL DOMAIN MATCHING & SCORE FORCING CRITERIA:
 - The candidate's selected Target Career Domain is: "{target_domain.strip()}"
-- You MUST evaluate whether the candidate's skills, projects, tools, experience, and overall resume content match this Target Career Domain ("{target_domain.strip()}").
+- You MUST strictly evaluate whether the candidate's skills, projects, tools, experience, and overall resume content match this Target Career Domain ("{target_domain.strip()}").
 - Calculate a "domain_match_score" (0-100) specifically measuring domain alignment.
 - Set "domain_match_status": true if domain_match_score >= 60, otherwise false.
-- Provide "domain_match_feedback": A concise 1-2 sentence assessment explaining whether the resume aligns with the target domain or if there is a domain mismatch (e.g., candidate selected Full Stack Web Development but resume is for Civil Engineering or Graphic Design).
-- CRITICAL: If there is a domain mismatch (domain_match_score < 60), heavily reduce the overall "resume_score" accordingly!
+- Provide "domain_match_feedback": A concise 1-2 sentence assessment explaining whether the resume aligns with the target domain or if there is a domain mismatch (e.g., candidate selected Full Stack Web Development but uploaded a Graphic Design, Civil Engineering, or Marketing resume).
+- STRICT SCORE RULE: If ANY details in the candidate's resume do NOT match the selected target domain ("{target_domain.strip()}") or if there is a domain mismatch (domain_match_score < 60), YOU MUST FORCE THE OVERALL "resume_score" TO EXACTLY 0.
 """
     else:
         domain_instructions = """

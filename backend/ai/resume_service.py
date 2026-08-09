@@ -97,6 +97,11 @@ def analyze_resume(resume_text: str, target_domain: str = "") -> Dict[str, Any]:
         m = re.search(r"\d+", raw_score)
         if m:
             score_val = int(m.group(0))
+
+    # STRICT RULE: Force score to 0 if details do not match target domain
+    if not d_status or d_score_val < 60:
+        score_val = 0
+
     normalized["resume_score"] = max(0, min(100, score_val))
 
     # Helper for normalizing skill arrays

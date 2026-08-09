@@ -180,10 +180,15 @@ def analyze_resume(request):
         s2 = sug_list[1] if len(sug_list) > 1 else ""
         s3 = sug_list[2] if len(sug_list) > 2 else ""
 
+        # Check domain match & force resume_score to 0 if details do not match selected target domain
+        is_matched = bool(result.get("domain_match_status")) and (int(result.get("domain_match_score") or 0) >= 60)
         try:
-            score_val = int(result.get("resume_score", 75))
+            score_val = int(result.get("resume_score", 0))
         except Exception:
-            score_val = 75
+            score_val = 0
+
+        if not is_matched:
+            score_val = 0
 
         analysis, created = ResumeAnalysis.objects.update_or_create(
             resume=resume,
@@ -198,8 +203,8 @@ def analyze_resume(request):
                 "github": safe_url(result.get("github")),
                 "portfolio": safe_url(result.get("portfolio")),
                 "target_domain": str(result.get("target_domain") or target_domain).strip(),
-                "domain_match_score": int(result.get("domain_match_score") or 80),
-                "domain_match_status": bool(result.get("domain_match_status")),
+                "domain_match_score": int(result.get("domain_match_score") or (80 if is_matched else 0)),
+                "domain_match_status": is_matched,
                 "domain_match_feedback": str(result.get("domain_match_feedback") or "").strip(),
                 "summary": str(result.get("summary") or "").strip(),
                 "resume_score": score_val,
@@ -215,7 +220,6 @@ def analyze_resume(request):
         )
 
         # Flag newly uploaded resume as active if content matches candidate's selected domain
-        is_matched = bool(result.get("domain_match_status")) or (int(result.get("domain_match_score") or 0) >= 60)
         resume.status = "analyzed"
         if is_matched:
             resume.is_active = True
@@ -305,116 +309,4 @@ def resume_suggestions(request):
 
         return Response(
             {"error": "Analysis not found"}, status=status.HTTP_404_NOT_FOUND
-        )
-
-
-# ==========================
-# Add To Profile API
-# ==========================
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def add_to_profile(request):
-
-    resume_id = request.data.get("resume_id")
-    print("===== ADD TO PROFILE API CALLED =====")
-    print("Resume ID:", resume_id)
-
-    if not resume_id:
-        return Response(
-            {"error": "Resume ID is required"}, status=status.HTTP_400_BAD_REQUEST
-        )
-
-    try:
-
-        resume = Resume.objects.get(resume_id=resume_id)
-
-        analysis = ResumeAnalysis.objects.get(resume=resume)
-
-        # Verify candidate profile ownership
-        profile, _ = Candidate_Profile.objects.get_or_create(user=request.user)
-
-        # Education
-        if analysis.education:
-            profile.education = analysis.education
-
-        # Location
-        if analysis.location:
-            profile.location = analysis.location
-
-        # Skills
-        if analysis.extracted_skills:
-            profile.skills = analysis.extracted_skills
-
-        # Social Links
-        if analysis.linkedin:
-            profile.linkedin_url = safe_url(analysis.linkedin) or profile.linkedin_url
-        if analysis.github:
-            profile.github_url = safe_url(analysis.github) or profile.github_url
-        if analysis.portfolio:
-            profile.portfolio_url = safe_url(analysis.portfolio) or profile.portfolio_url
-
-        # Experience
-
-        try:
-            import re
-
-            experience_text = analysis.experience or ""
-
-            print("Experience from Gemini:", experience_text)
-
-            match = re.search(r"(\d+(\.\d+)?)\s*(year|years)", experience_text.lower())
-
-            if match:
-                profile.experience_years = float(match.group(1))
-            else:
-                profile.experience_years = 0
-
-        except Exception as e:
-            print("Experience Error:", e)
-            profile.experience_years = 0
-            print("Resume Candidate ID:", resume.candidate_id)
-            print("Profile Candidate ID:", profile.candidate_id)
-
-            print("Education:", analysis.education)
-            print("Location:", analysis.location)
-            print("Skills:", analysis.extracted_skills)
-            print("LinkedIn:", analysis.linkedin)
-            print("Experience Years:", profile.experience_years)
-
-        profile.save()
-        try:
-            from candidate.services import invalidate_candidate_profile_cache
-            from authentication.services import invalidate_auth_profile_cache
-            user_id = getattr(request.user, "pk", getattr(request.user, "user_id", None))
-            if user_id:
-                invalidate_candidate_profile_cache(user_id)
-                invalidate_auth_profile_cache(user_id)
-        except Exception:
-            pass
-        print("Profile saved successfully")
-
-        print("===== PROFILE SAVED =====")
-        print("Education:", profile.education)
-        print("Skills:", profile.skills)
-        print("Location:", profile.location)
-        print("LinkedIn:", profile.linkedin_url)
-        print("GitHub:", profile.github_url)
-        print("Portfolio:", profile.portfolio_url)
-        print("Experience:", profile.experience_years)
-
-        return Response(
-            {"message": "Profile updated successfully"}, status=status.HTTP_200_OK
-        )
-
-    except Resume.DoesNotExist:
-        return Response({"error": "Resume not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    except ResumeAnalysis.DoesNotExist:
-        return Response(
-            {"error": "Resume is not analyzed"}, status=status.HTTP_404_NOT_FOUND
-        )
-
-    except Candidate_Profile.DoesNotExist:
-        return Response(
-            {"error": "Candidate profile not found"}, status=status.HTTP_404_NOT_FOUND
         )

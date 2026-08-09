@@ -10,9 +10,6 @@ import {
   ArrowRight,
   UploadCloud,
   File,
-  RotateCcw,
-  UserPlus,
-  Check,
   ShieldCheck,
   X,
   Award
@@ -28,7 +25,6 @@ const ResumeUpload = () => {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [resumeId, setResumeId] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
-  const [isAddedToProfile, setIsAddedToProfile] = useState(false);
   const [showScoreModal, setShowScoreModal] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -93,7 +89,6 @@ const ResumeUpload = () => {
     setFile(selectedFile);
     setUploadStatus("Selected Successfully");
     setAnalysisResult(null);
-    setIsAddedToProfile(false);
     setShowScoreModal(false);
   };
 
@@ -133,17 +128,6 @@ const ResumeUpload = () => {
     setFile(null);
     setUploadStatus("");
     setAnalysisResult(null);
-    setIsAddedToProfile(false);
-    setShowScoreModal(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleReset = () => {
-    setFile(null);
-    setUploadStatus("");
-    setAnalysisResult(null);
-    setIsLoading(false);
-    setIsAddedToProfile(false);
     setShowScoreModal(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -187,28 +171,6 @@ const ResumeUpload = () => {
       setUploadStatus("Analysis Failed");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleAddToProfile = async () => {
-    if (!resumeId) {
-      alert("Please analyze the resume first.");
-      return;
-    }
-
-    try {
-      const response = await api.post("/resume/add-to-profile/", {
-        resume_id: resumeId,
-      });
-
-      console.log("Add To Profile Response:", response);
-      if (!isAddedToProfile) {
-        setIsAddedToProfile(true);
-        alert("✅ Profile updated successfully!");
-      }
-    } catch (error) {
-      console.log("Add To Profile Error:", error);
-      alert(error.response?.data?.error || "Something went wrong.");
     }
   };
 
@@ -322,32 +284,8 @@ const ResumeUpload = () => {
                   <Sparkles size={18} />
                   Analyze Resume
                 </>
-              )}
-            </button>
-            <button className="btn btn-profile" onClick={handleAddToProfile} disabled={!file || isLoading || isAddedToProfile}>
-              {isAddedToProfile ? (
-                <>
-                  <Check size={18} /> Added to Profile
-                </>
-              ) : (
-                <>
-                  <UserPlus size={18} /> Add to Profile
-                </>
-              )}
-            </button>
-            <button className="btn btn-outline" onClick={handleReset}>
-              <RotateCcw size={16} /> Reset
             </button>
           </div>
-
-          {isLoading && (
-            <div className="loading-container">
-              <div className="progress-bar">
-                <div className="progress-fill"></div>
-              </div>
-              <p className="loading-text">Analyzing Resume with Gemini AI... Please wait.</p>
-            </div>
-          )}
 
           {/* INSIGHTS CARDS */}
           {analysisResult && (
@@ -380,21 +318,6 @@ const ResumeUpload = () => {
                         <div className="analysis-field">
                           <span className="analysis-field__label">Target Domain</span>
                           <span className="analysis-field__value bold-text">{analysisResult.target_domain}</span>
-                          <span
-                            className="status-pill"
-                            style={{
-                              display: "inline-block",
-                              marginTop: "4px",
-                              padding: "2px 8px",
-                              borderRadius: "10px",
-                              fontSize: "11px",
-                              fontWeight: "700",
-                              background: analysisResult.is_active ? "#10b981" : "#ef4444",
-                              color: "#fff",
-                            }}
-                          >
-                            {analysisResult.is_active ? "✓ Active Resume" : "⚠️ Inactive (Mismatch)"}
-                          </span>
                         </div>
                       )}
                       <div className="analysis-field analysis-field--grow">
@@ -642,20 +565,8 @@ const ResumeUpload = () => {
                     : theme === "dark" ? "#f87171" : "#b91c1c",
                 }}
               >
-                <div style={{ fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <span>🎯 Domain: {analysisResult.target_domain}</span>
-                  <span
-                    style={{
-                      padding: "2px 8px",
-                      borderRadius: "12px",
-                      fontWeight: "700",
-                      fontSize: "11px",
-                      background: analysisResult.is_active ? "#10b981" : "#ef4444",
-                      color: "#fff",
-                    }}
-                  >
-                    {analysisResult.is_active ? "✓ Active Resume" : "⚠️ Inactive"}
-                  </span>
+                <div style={{ fontWeight: "700", marginBottom: "4px" }}>
+                  🎯 Target Domain: {analysisResult.target_domain}
                 </div>
                 <div style={{ fontSize: "11px", lineHeight: "1.4", opacity: 0.9 }}>
                   {analysisResult.domain_match_feedback ||
