@@ -14,11 +14,14 @@ def run_tests():
     print("--- Starting API & Personalization Verification ---")
     
     # 1. Get or Create Test User
-    user, created = User.objects.get_or_create(email="test_personalization@example.com", defaults={
-        "full_name": "Test Candidate",
-        "user_type": "candidate"
-    })
-    print(f"User retrieved/created: {user.email} (Created: {created})")
+    user = User.objects.filter(email="test_personalization@example.com").first()
+    if not user:
+        user = User.objects.create_user(
+            email="test_personalization@example.com",
+            password="TestPassword123!",
+            full_name="Test Candidate"
+        )
+    print(f"User retrieved/created: {user.email}")
 
     # 2. Candidate Profile Domain Update Test
     profile, p_created = Candidate_Profile.objects.get_or_create(user=user)
@@ -40,9 +43,9 @@ def run_tests():
     
     assert context['domain'] == "Game Development", "Domain mismatch"
     assert context['calculated_difficulty'] in ["Easy", "Medium", "Hard"], "Invalid calculated difficulty"
-    print("Personalization Engine context test PASSED!")
+    print("[PASS] Personalization Engine context test PASSED!")
 
-    # 4. Quiz Generation API Service Test with Personalization Context
+    # 4. Quiz Generation AI Service Test with Personalization Context
     print("\n--- Quiz Generation AI Service Test ---")
     try:
         quiz_questions = generate_quiz_questions(
@@ -53,7 +56,7 @@ def run_tests():
             custom_instruction="Test domain generation",
             personalization_context=context
         )
-        print(f"Quiz Questions Generated Successfully! Count: {len(quiz_questions)}")
+        print(f"[PASS] Quiz Questions Generated Successfully! Count: {len(quiz_questions)}")
         for idx, q in enumerate(quiz_questions, 1):
             print(f"  Q{idx}: {q['text'][:70]}... (Correct Index: {q['correct']})")
     except Exception as e:
@@ -68,7 +71,7 @@ def run_tests():
             custom_instruction="Test domain coding problem",
             personalization_context=context
         )
-        print("Coding Problem Generated Successfully!")
+        print("[PASS] Coding Problem Generated Successfully!")
         print(f"  Title: {coding_data.get('title')}")
         print(f"  Problem Statement: {coding_data.get('problem_statement')[:80]}...")
         print(f"  Sample Input: {coding_data.get('sample_input')}")

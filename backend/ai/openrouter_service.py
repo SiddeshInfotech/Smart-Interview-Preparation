@@ -100,7 +100,7 @@ class OpenRouterService:
     }
 
     def __init__(self):
-        self.api_key: str = getattr(settings, "OPENROUTER_API_KEY", "")
+        self.api_key: str = getattr(settings, "OPENROUTER_API_KEY", "") or getattr(settings, "GEMINI_API_KEY", "")
         self.api_url: str = getattr(
             settings,
             "OPENROUTER_API_URL",
