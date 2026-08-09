@@ -44,26 +44,37 @@ def register(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    user = User(
-        full_name=data["full_name"],
-        email=data["email"],
-        role=data["role"],
-        is_active=True,
-        is_email_verified=True,
-    )
+    try:
+        user = User(
+            full_name=data["full_name"],
+            email=data["email"],
+            role=data["role"],
+            is_active=True,
+            is_email_verified=True,
+        )
 
-    user.set_password(data["password"])
-    user.save()
-    create_notification(
-        user=user,
-        notification_type="system",
-        title="Welcome to PrepMaster",
-        message="Your account has been created successfully. Welcome aboard!",
-    )
+        user.set_password(data["password"])
+        user.save()
 
-    return Response(
-        {"message": "Registration successful."}, status=status.HTTP_201_CREATED
-    )
+        try:
+            create_notification(
+                user=user,
+                notification_type="system",
+                title="Welcome to PrepMaster",
+                message="Your account has been created successfully. Welcome aboard!",
+            )
+        except Exception as notif_err:
+            logger.warning(f"Failed to create welcome notification: {notif_err}")
+
+        return Response(
+            {"message": "Registration successful."}, status=status.HTTP_201_CREATED
+        )
+    except Exception as e:
+        logger.exception("Registration failed: %s", str(e))
+        return Response(
+            {"message": f"Registration failed: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 @api_view(["POST"])
