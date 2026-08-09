@@ -147,9 +147,17 @@ def analyze_resume(request):
             resume_text = f"Resume document: {resume.file_name}"
         print("2. Resume text extracted")
 
-        # Gemini
-        result = analyze_resume_ai(resume_text)
-        print("3. Gemini response received")
+        # Determine target domain from request body or candidate profile
+        req_domain = request.data.get("target_domain")
+        profile = Candidate_Profile.objects.filter(candidate_id=resume.candidate_id).first()
+        if not profile and request.user and request.user.is_authenticated:
+            profile = Candidate_Profile.objects.filter(user=request.user).first()
+
+        target_domain = (req_domain or (profile.target_domain if profile else "") or "").strip()
+
+        # OpenRouter / Gemini AI
+        result = analyze_resume_ai(resume_text, target_domain)
+        print("3. AI response received for domain:", target_domain)
 
         print("GEMINI RESULT:", result)
 
@@ -189,6 +197,10 @@ def analyze_resume(request):
                 "linkedin": safe_url(result.get("linkedin")),
                 "github": safe_url(result.get("github")),
                 "portfolio": safe_url(result.get("portfolio")),
+                "target_domain": str(result.get("target_domain") or target_domain).strip(),
+                "domain_match_score": int(result.get("domain_match_score") or 80),
+                "domain_match_status": bool(result.get("domain_match_status")),
+                "domain_match_feedback": str(result.get("domain_match_feedback") or "").strip(),
                 "summary": str(result.get("summary") or "").strip(),
                 "resume_score": score_val,
                 "extracted_skills": safe_join(result.get("skills")),
@@ -202,8 +214,17 @@ def analyze_resume(request):
             },
         )
 
+        # Flag newly uploaded resume as active if content matches candidate's selected domain
+        is_matched = bool(result.get("domain_match_status")) or (int(result.get("domain_match_score") or 0) >= 60)
         resume.status = "analyzed"
-        resume.save()
+        if is_matched:
+            resume.is_active = True
+            resume.save()
+            # Set all other resumes for this candidate to inactive
+            Resume.objects.filter(candidate_id=resume.candidate_id).exclude(resume_id=resume.resume_id).update(is_active=False)
+        else:
+            resume.is_active = False
+            resume.save()
 
         if user:
             try:

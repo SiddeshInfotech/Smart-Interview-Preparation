@@ -12,18 +12,19 @@ from .prompts import resume_analysis_prompt
 logger = logging.getLogger(__name__)
 
 
-def analyze_resume(resume_text: str) -> Dict[str, Any]:
+def analyze_resume(resume_text: str, target_domain: str = "") -> Dict[str, Any]:
     """
     Analyze resume text using OpenRouter AI service and return normalized dictionary.
     Guarantees compatibility with ResumeUpload.jsx frontend fields and backend ResumeAnalysis model.
 
     Args:
         resume_text: Extracted plain text from candidate resume file.
+        target_domain: Selected target career domain for domain matching evaluation.
 
     Returns:
         dict: Parsed and normalized evaluation dictionary.
     """
-    prompt = resume_analysis_prompt(resume_text)
+    prompt = resume_analysis_prompt(resume_text, target_domain)
     raw_result = openrouter_service.chat(
         prompt=prompt,
         feature="resume",
@@ -49,6 +50,25 @@ def analyze_resume(resume_text: str) -> Dict[str, Any]:
             parsed = parsed[wrapper]
             break
 
+    # Domain Match fields
+    d_score = parsed.get("domain_match_score")
+    d_score_val = 80
+    if isinstance(d_score, (int, float)):
+        d_score_val = int(d_score)
+    elif isinstance(d_score, str):
+        m = re.search(r"\d+", d_score)
+        if m:
+            d_score_val = int(m.group(0))
+    d_score_val = max(0, min(100, d_score_val))
+
+    raw_status = parsed.get("domain_match_status")
+    if isinstance(raw_status, bool):
+        d_status = raw_status
+    elif isinstance(raw_status, str):
+        d_status = raw_status.lower().strip() == "true"
+    else:
+        d_status = d_score_val >= 60
+
     # Normalize string fields for Candidate Profile & Resume Insights
     normalized: Dict[str, Any] = {
         "candidate_name": str(parsed.get("candidate_name") or "Candidate").strip(),
@@ -62,6 +82,10 @@ def analyze_resume(resume_text: str) -> Dict[str, Any]:
         "portfolio": str(parsed.get("portfolio") or "").strip(),
         "summary": str(parsed.get("summary") or "").strip(),
         "skill_category": str(parsed.get("skill_category") or "Software Engineering").strip(),
+        "target_domain": str(parsed.get("target_domain") or target_domain or "").strip(),
+        "domain_match_score": d_score_val,
+        "domain_match_status": d_status,
+        "domain_match_feedback": str(parsed.get("domain_match_feedback") or "Resume evaluated for domain relevance.").strip(),
     }
 
     # Normalize score integer (0 - 100)

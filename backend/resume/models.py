@@ -20,6 +20,7 @@ class Resume(models.Model):
         choices=STATUS_CHOICES,
         default="uploaded",
     )
+    is_active = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -53,9 +54,14 @@ class ResumeAnalysis(models.Model):
     github = models.URLField(blank=True, null=True)
     portfolio = models.URLField(blank=True, null=True)
 
-
     role = models.CharField(max_length=150, blank=True, null=True)
     experience = models.TextField(blank=True, null=True)
+
+    # Target Domain & Domain Matching Evaluation
+    target_domain = models.CharField(max_length=150, blank=True, null=True)
+    domain_match_score = models.IntegerField(default=0, blank=True, null=True)
+    domain_match_status = models.BooleanField(default=False)
+    domain_match_feedback = models.TextField(blank=True, null=True)
 
     # Skills
     extracted_skills = models.TextField(blank=True, null=True)

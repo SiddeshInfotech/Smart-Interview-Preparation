@@ -10,12 +10,14 @@ class ResumeSerializer(serializers.ModelSerializer):
 
 
 class ResumeAnalysisSerializer(serializers.ModelSerializer):
+    is_active = serializers.BooleanField(source="resume.is_active", read_only=True)
 
     class Meta:
         model = ResumeAnalysis
         fields = [
             "analysis_id",
             "resume",
+            "is_active",
             "candidate_name",
             "email",
             "role",
@@ -25,6 +27,10 @@ class ResumeAnalysisSerializer(serializers.ModelSerializer):
             "linkedin",
             "github",
             "portfolio",
+            "target_domain",
+            "domain_match_score",
+            "domain_match_status",
+            "domain_match_feedback",
             "extracted_skills",
             "matched_skills",
             "missing_skills",

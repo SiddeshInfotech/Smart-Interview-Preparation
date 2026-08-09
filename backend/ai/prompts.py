@@ -6,17 +6,40 @@ Provides strict system prompts for quiz generation, resume analysis, coding chal
 from typing import List
 
 
-def resume_analysis_prompt(resume_text: str) -> str:
+def resume_analysis_prompt(resume_text: str, target_domain: str = "") -> str:
     """
     Generate strict prompt for resume analysis.
     Forces JSON output synchronized with ResumeUpload.jsx frontend fields and backend ResumeAnalysis model.
+    Incorporate domain matching evaluation if target_domain is specified.
     """
+    domain_instructions = ""
+    if target_domain and target_domain.strip():
+        domain_instructions = f"""
+ESSENTIAL DOMAIN MATCHING CRITERIA:
+- The candidate's selected Target Career Domain is: "{target_domain.strip()}"
+- You MUST evaluate whether the candidate's skills, projects, tools, experience, and overall resume content match this Target Career Domain ("{target_domain.strip()}").
+- Calculate a "domain_match_score" (0-100) specifically measuring domain alignment.
+- Set "domain_match_status": true if domain_match_score >= 60, otherwise false.
+- Provide "domain_match_feedback": A concise 1-2 sentence assessment explaining whether the resume aligns with the target domain or if there is a domain mismatch (e.g., candidate selected Full Stack Web Development but resume is for Civil Engineering or Graphic Design).
+- CRITICAL: If there is a domain mismatch (domain_match_score < 60), heavily reduce the overall "resume_score" accordingly!
+"""
+    else:
+        domain_instructions = """
+ESSENTIAL DOMAIN MATCHING CRITERIA:
+- Evaluate candidate's primary domain based on extracted skills and experience.
+- Set "domain_match_score": 80, "domain_match_status": true, "domain_match_feedback": "Resume domain aligned with primary technical skills."
+"""
+
+    clean_domain = target_domain.strip() if target_domain else ""
+
     return f"""You are an expert ATS (Applicant Tracking System) reviewer, Lead Technical Recruiter, and Resume Strategist.
 
 Analyze the following resume text and provide a thorough, structured evaluation.
 
 RESUME TEXT:
 {resume_text}
+
+{domain_instructions}
 
 CRITICAL RULES:
 1. Return ONLY a single raw valid JSON object.
@@ -35,6 +58,10 @@ REQUIRED JSON SCHEMA:
   "linkedin": "LinkedIn profile URL or '' if not found",
   "github": "GitHub profile URL or '' if not found",
   "portfolio": "Portfolio or personal website URL or '' if not found",
+  "target_domain": "{clean_domain}",
+  "domain_match_score": 85,
+  "domain_match_status": true,
+  "domain_match_feedback": "Concise 1-2 sentence feedback on domain relevance",
   "skills": ["Skill 1", "Skill 2", "Skill 3"],
   "matched_skills": ["Matched Skill 1", "Matched Skill 2"],
   "missing_skills": ["Missing Skill 1", "Missing Skill 2"],

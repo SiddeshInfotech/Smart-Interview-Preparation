@@ -170,8 +170,10 @@ const ResumeUpload = () => {
       const id = uploadData.data.resume_id;
       setResumeId(id);
 
+      const savedDomain = localStorage.getItem("candidate_user_domain") || "";
       const analyzeResponse = await api.post("/resume/analyze/", {
         resume_id: id,
+        target_domain: savedDomain,
       });
 
       const analyzeData = analyzeResponse.data;
@@ -374,9 +376,37 @@ const ResumeUpload = () => {
                         <span className="analysis-field__label">Target Role / Title</span>
                         <span className="analysis-field__value bold-text">{analysisResult.role || "—"}</span>
                       </div>
+                      {analysisResult.target_domain && (
+                        <div className="analysis-field">
+                          <span className="analysis-field__label">Target Domain</span>
+                          <span className="analysis-field__value bold-text">{analysisResult.target_domain}</span>
+                          <span
+                            className="status-pill"
+                            style={{
+                              display: "inline-block",
+                              marginTop: "4px",
+                              padding: "2px 8px",
+                              borderRadius: "10px",
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              background: analysisResult.is_active ? "#10b981" : "#ef4444",
+                              color: "#fff",
+                            }}
+                          >
+                            {analysisResult.is_active ? "✓ Active Resume" : "⚠️ Inactive (Mismatch)"}
+                          </span>
+                        </div>
+                      )}
                       <div className="analysis-field analysis-field--grow">
-                        <span className="analysis-field__label">Executive Summary</span>
-                        <span className="analysis-field__value">{analysisResult.summary || "—"}</span>
+                        <span className="analysis-field__label">Executive Summary & Domain Alignment</span>
+                        <span className="analysis-field__value">
+                          {analysisResult.summary || "—"}
+                          {analysisResult.domain_match_feedback && (
+                            <div style={{ marginTop: "6px", fontStyle: "italic", fontSize: "12px", opacity: 0.95 }}>
+                              <strong>Domain Alignment:</strong> {analysisResult.domain_match_feedback}
+                            </div>
+                          )}
+                        </span>
                       </div>
                       <div className="analysis-field analysis-field--score">
                         <span className="analysis-field__label">Power Score</span>
@@ -588,6 +618,53 @@ const ResumeUpload = () => {
               <Award size={14} />
               <span>{scoreTier.label}</span>
             </div>
+
+            {/* DOMAIN RELEVANCE & ACTIVE STATUS BANNER */}
+            {analysisResult.target_domain && (
+              <div
+                className="domain-relevance-banner"
+                style={{
+                  margin: "12px 0 4px",
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  fontSize: "12px",
+                  textAlign: "left",
+                  background: analysisResult.domain_match_status
+                    ? theme === "dark" ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5"
+                    : theme === "dark" ? "rgba(239, 68, 68, 0.15)" : "#fef2f2",
+                  border: `1px solid ${
+                    analysisResult.domain_match_status
+                      ? theme === "dark" ? "#059669" : "#10b981"
+                      : theme === "dark" ? "#dc2626" : "#ef4444"
+                  }`,
+                  color: analysisResult.domain_match_status
+                    ? theme === "dark" ? "#34d399" : "#047857"
+                    : theme === "dark" ? "#f87171" : "#b91c1c",
+                }}
+              >
+                <div style={{ fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                  <span>🎯 Domain: {analysisResult.target_domain}</span>
+                  <span
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: "12px",
+                      fontWeight: "700",
+                      fontSize: "11px",
+                      background: analysisResult.is_active ? "#10b981" : "#ef4444",
+                      color: "#fff",
+                    }}
+                  >
+                    {analysisResult.is_active ? "✓ Active Resume" : "⚠️ Inactive"}
+                  </span>
+                </div>
+                <div style={{ fontSize: "11px", lineHeight: "1.4", opacity: 0.9 }}>
+                  {analysisResult.domain_match_feedback ||
+                    (analysisResult.domain_match_status
+                      ? "Resume skills & projects match candidate's selected domain."
+                      : "Resume content does not align with chosen target domain.")}
+                </div>
+              </div>
+            )}
 
             {/* METRICS GRID */}
             <div className="modal-metrics-grid">

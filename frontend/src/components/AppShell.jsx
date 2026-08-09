@@ -7,9 +7,9 @@ import "../styles/AppShell.css";
 
 const allNavItems = [
   { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-  { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
-  { to: "/courses", label: "Courses", icon: <BookOpen size={18} /> },
   { to: "/resume-upload", label: "Resume Analysis", icon: <FileText size={18} /> },
+  { to: "/courses", label: "Courses", icon: <BookOpen size={18} /> },
+  { to: "/quiz", label: "Practice Mode", icon: <ClipboardList size={18} /> },
   { to: "/interview", label: "Interview", icon: <CalendarClock size={18} /> },
 ];
 
