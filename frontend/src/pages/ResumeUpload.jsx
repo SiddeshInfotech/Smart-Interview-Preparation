@@ -219,38 +219,6 @@ const ResumeUpload = () => {
     <div className="resume-page-wrapper">
       <main className="resume-main-shell">
 
-        {/* CREDIT EXHAUSTED WARNING BANNER */}
-        {creditError && (
-          <div
-            className="credit-error-alert"
-            style={{
-              marginBottom: "20px",
-              padding: "14px 18px",
-              borderRadius: "12px",
-              background: theme === "dark" ? "rgba(239, 68, 68, 0.15)" : "#fee2e2",
-              border: `1px solid ${theme === "dark" ? "#dc2626" : "#ef4444"}`,
-              color: theme === "dark" ? "#f87171" : "#991b1b",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              fontWeight: "600",
-              fontSize: "14px",
-            }}
-          >
-            <AlertCircle size={22} style={{ flexShrink: 0 }} />
-            <div style={{ flexGrow: 1 }}>
-              <strong>Usage Limit Reached:</strong> {creditError}
-            </div>
-            <button
-              onClick={() => setCreditError("")}
-              style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "4px" }}
-              title="Dismiss Alert"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        )}
-
         {/* UPLOAD & CONTROLS CONTAINER */}
         <section className="resume-card">
           <div
@@ -315,6 +283,41 @@ const ResumeUpload = () => {
                   <X size={18} />
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* CREDIT EXHAUSTED WARNING BANNER ABOVE BUTTON */}
+          {creditError && (
+            <div
+              className="credit-error-alert"
+              style={{
+                marginTop: "16px",
+                marginBottom: "14px",
+                padding: "12px 16px",
+                borderRadius: "10px",
+                background: theme === "dark" ? "rgba(239, 68, 68, 0.15)" : "#fee2e2",
+                border: `1px solid ${theme === "dark" ? "#dc2626" : "#ef4444"}`,
+                color: theme === "dark" ? "#f87171" : "#991b1b",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                fontWeight: "600",
+                fontSize: "13.5px",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            >
+              <AlertCircle size={20} style={{ flexShrink: 0 }} />
+              <div style={{ flexGrow: 1 }}>
+                <strong>Usage Limit Reached:</strong> {creditError}
+              </div>
+              <button
+                onClick={() => setCreditError("")}
+                style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "2px" }}
+                title="Dismiss Alert"
+              >
+                <X size={16} />
+              </button>
             </div>
           )}
 
