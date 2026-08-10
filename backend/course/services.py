@@ -2,79 +2,74 @@ from django.utils import timezone
 from .models import (
     Domain,
     Course,
-    DomainCourse,
     CourseModule,
     CourseTopic,
     CourseProgress,
-    CandidateTopicProgress,
 )
 
 
 def recalculate_course_progress(candidate, domain, course):
     """
-    Recalculate course progress percentage for candidate in domain based on completed topics.
+    Recalculate course progress percentage based on completed_topic_ids JSON array.
     """
-    total_topics = CourseTopic.objects.filter(
-        module__course=course,
-        module__is_active=True,
-        is_active=True,
-    ).count()
+    active_topic_ids = list(
+        CourseTopic.objects.filter(
+            module__course=course,
+            module__is_active=True,
+            is_active=True,
+        ).values_list("topic_id", flat=True)
+    )
 
-    if total_topics == 0:
-        pct = 0.0
-    else:
-        completed_topics_count = CandidateTopicProgress.objects.filter(
-            candidate=candidate,
-            domain=domain,
-            topic__module__course=course,
-            topic__module__is_active=True,
-            topic__is_active=True,
-            completed=True,
-        ).count()
-
-        pct = round((completed_topics_count / total_topics) * 100.0, 2)
+    total_topics = len(active_topic_ids)
 
     progress, created = CourseProgress.objects.get_or_create(
         candidate=candidate,
         domain=domain,
         course=course,
-        defaults={"progress_percentage": pct},
+        defaults={"progress_percentage": 0.0, "completed_topic_ids": []},
     )
 
-    if not created or progress.progress_percentage != pct:
-        progress.progress_percentage = pct
-        if pct >= 100.0 and not progress.completed:
-            progress.completed = True
-            progress.completed_at = timezone.now()
-        elif pct < 100.0 and progress.completed:
-            progress.completed = False
-            progress.completed_at = None
-        progress.save()
+    completed_ids = [t_id for t_id in (progress.completed_topic_ids or []) if t_id in active_topic_ids]
 
+    if total_topics == 0:
+        pct = 0.0
+    else:
+        pct = round((len(completed_ids) / float(total_topics)) * 100.0, 2)
+
+    progress.completed_topic_ids = completed_ids
+    progress.progress_percentage = pct
+    if pct >= 100.0 and not progress.completed:
+        progress.completed = True
+        progress.completed_at = timezone.now()
+    elif pct < 100.0 and progress.completed:
+        progress.completed = False
+        progress.completed_at = None
+
+    progress.save()
     return progress
 
 
 def switch_active_domain(candidate, target_domain):
     """
-    Switch active domain for candidate and initialize missing CourseProgress records at 0%.
+    Switch candidate active domain and initialize missing CourseProgress records at 0%.
     Preserves all existing progress records across all domains.
     """
     candidate.active_domain = target_domain
     candidate.save(update_fields=["active_domain"])
 
-    # Get all active courses for target domain
-    domain_courses = DomainCourse.objects.filter(
+    # Get active courses for target domain
+    domain_courses = Course.objects.filter(
         domain=target_domain,
-        course__is_active=True,
-    ).select_related("course")
+        is_active=True,
+    ).order_by("sequence", "course_id")
 
-    # Initialize missing progress records for the target domain
-    for dc in domain_courses:
+    # Initialize missing progress records for target domain
+    for course in domain_courses:
         CourseProgress.objects.get_or_create(
             candidate=candidate,
             domain=target_domain,
-            course=dc.course,
-            defaults={"progress_percentage": 0.0},
+            course=course,
+            defaults={"progress_percentage": 0.0, "completed_topic_ids": []},
         )
 
     return domain_courses

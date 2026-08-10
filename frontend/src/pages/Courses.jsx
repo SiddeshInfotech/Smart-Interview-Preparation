@@ -16,7 +16,7 @@ import {
   AlertCircle,
   CheckCircle2
 } from "lucide-react";
-import { fetchActiveDomain, switchActiveDomain } from "../api/courseApi";
+import { fetchCourseBootstrap, switchActiveDomain } from "../api/courseApi";
 import DomainSelectorModal from "../components/DomainSelectorModal";
 import "../styles/Courses.css";
 
@@ -47,16 +47,16 @@ export default function Courses() {
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const loadDomainData = async () => {
+  const loadBootstrapData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchActiveDomain();
+      const res = await fetchCourseBootstrap();
       setActiveDomain(res.data.active_domain);
       setAvailableDomains(res.data.available_domains || []);
       setDomainCourses(res.data.courses || []);
     } catch (err) {
-      console.error("Failed to load active domain data:", err);
+      console.error("Failed to load bootstrap domain data:", err);
       setError("Failed to connect to course server. Please check your connection.");
     } finally {
       setLoading(false);
@@ -64,7 +64,7 @@ export default function Courses() {
   };
 
   useEffect(() => {
-    loadDomainData();
+    loadBootstrapData();
   }, []);
 
   const handleSelectDomain = async (domainId) => {
@@ -89,7 +89,7 @@ export default function Courses() {
       <div className="courses-container">
         <div className="courses-loading-state">
           <Loader2 size={36} className="spin" color="#4f46e5" />
-          <p>Loading your domain courses...</p>
+          <p>Loading domain courses...</p>
         </div>
       </div>
     );
@@ -102,7 +102,7 @@ export default function Courses() {
           <AlertCircle size={40} color="#ef4444" />
           <h3>Unable to load courses</h3>
           <p>{error}</p>
-          <button className="btn-retry" onClick={loadDomainData}>
+          <button className="btn-retry" onClick={loadBootstrapData}>
             Retry
           </button>
         </div>
@@ -110,12 +110,11 @@ export default function Courses() {
     );
   }
 
-  // Calculate overall domain progress average
   const totalCourses = domainCourses.length;
   const overallDomainProgress = totalCourses > 0
     ? Math.round(
         domainCourses.reduce(
-          (acc, dc) => acc + (parseFloat(dc.progress_percentage) || 0),
+          (acc, c) => acc + (parseFloat(c.progress_percentage) || 0),
           0
         ) / totalCourses
       )
@@ -128,7 +127,7 @@ export default function Courses() {
         <h1>
           <span className="quiz-gradient-title">Domain Courses & Learning Hub</span>
         </h1>
-        <p>Structured preparation courses tailored specifically for your active candidate domain.</p>
+        <p>Courses dynamically added for your active candidate domain.</p>
         <div className="quiz-header-line" />
       </div>
 
@@ -179,15 +178,14 @@ export default function Courses() {
       {/* Courses Grid */}
       <div className="courses-grid">
         {domainCourses.length > 0 ? (
-          domainCourses.map((dc, idx) => {
-            const course = dc.course || {};
-            const progressPct = Math.round(parseFloat(dc.progress_percentage) || 0);
+          domainCourses.map((course, idx) => {
+            const progressPct = Math.round(parseFloat(course.progress_percentage) || 0);
             const gradient = GRADIENTS[idx % GRADIENTS.length];
             const icon = ICONS[idx % ICONS.length];
             const isCompleted = progressPct >= 100;
 
             return (
-              <div key={dc.id || course.course_id} className="course-card">
+              <div key={course.course_id} className="course-card">
                 {/* Card Header */}
                 <div className="course-card-header">
                   <div
@@ -198,15 +196,15 @@ export default function Courses() {
                   </div>
 
                   <div className="course-badges-group">
-                    {dc.is_required ? (
+                    {course.is_required ? (
                       <span className="course-card-badge required">Required</span>
                     ) : (
                       <span className="course-card-badge optional">Elective</span>
                     )}
 
-                    {course.technology?.name && (
+                    {course.technology && (
                       <span className="course-card-badge tech">
-                        {course.technology.name}
+                        {course.technology}
                       </span>
                     )}
                   </div>
@@ -269,8 +267,8 @@ export default function Courses() {
         ) : (
           <div className="courses-empty-state">
             <BookOpen size={48} color="#94a3b8" />
-            <h3>No Courses Available in this Domain</h3>
-            <p>Switch to another domain to view available learning courses.</p>
+            <h3>No Courses Added to this Domain Yet</h3>
+            <p>Admin can add new courses and PDF materials for this domain.</p>
             <button
               className="btn-update-domain mt-4"
               onClick={() => setIsModalOpen(true)}

@@ -1,34 +1,31 @@
-from rest_framework import viewsets, permissions, status, generics
+import time
+import logging
+from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from django.shortcuts import get_object_or_404
-from django.db.models import Prefetch
+from django.db import connection, models
 
 from candidate.models import Candidate_Profile
 from .models import (
     Domain,
-    Technology,
     Course,
-    DomainCourse,
     CourseModule,
     CourseTopic,
-    CourseMaterial,
     CourseProgress,
-    CandidateTopicProgress,
 )
 from .serializers import (
     DomainSerializer,
-    TechnologySerializer,
     CourseSerializer,
-    DomainCourseSerializer,
     CourseModuleSerializer,
     CourseTopicSerializer,
-    CourseMaterialSerializer,
     CourseProgressSerializer,
     ActiveDomainUpdateSerializer,
 )
 from .services import recalculate_course_progress, switch_active_domain
+
+logger = logging.getLogger(__name__)
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -36,6 +33,71 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return request.user and request.user.is_authenticated
         return request.user and (request.user.is_staff or getattr(request.user, "role", "") == "admin")
+
+
+class CourseBootstrapView(APIView):
+    """
+    High-Performance Orchestrator Endpoint:
+    Returns Active Domain, Available Domains, Courses, Modules, Topics, and Progress
+    in a single optimized response payload with pre-fetching.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        t0 = time.perf_counter()
+        queries_before = len(connection.queries)
+
+        candidate, _ = Candidate_Profile.objects.select_related("active_domain").get_or_create(user=request.user)
+        domains = Domain.objects.filter(is_active=True).order_by("name")
+
+        active_domain = candidate.active_domain
+        if not active_domain and domains.exists():
+            first_domain = domains.first()
+            switch_active_domain(candidate, first_domain)
+            active_domain = first_domain
+
+        domains_serialized = DomainSerializer(domains, many=True, context={"request": request}).data
+
+        active_domain_data = None
+        courses_data = []
+
+        if active_domain:
+            active_domain_data = DomainSerializer(active_domain, context={"request": request}).data
+
+            # Pre-fetch courses, modules, topics in 1 query
+            domain_courses = Course.objects.filter(
+                domain=active_domain, is_active=True
+            ).prefetch_related("modules__topics").order_by("sequence", "course_id")
+
+            # Pre-fetch candidate progress records for active domain
+            progress_qs = CourseProgress.objects.filter(
+                candidate=candidate, domain=active_domain
+            )
+            progress_map = {p.course_id: p.progress_percentage for p in progress_qs}
+
+            courses_data = CourseSerializer(
+                domain_courses,
+                many=True,
+                context={
+                    "request": request,
+                    "domain_id": active_domain.domain_id,
+                    "progress_map": progress_map,
+                },
+            ).data
+
+        t_total = (time.perf_counter() - t0) * 1000
+        queries_executed = len(connection.queries) - queries_before
+        logger.info(f"Course Bootstrap executed in {t_total:.2f}ms with {queries_executed} DB queries")
+
+        return Response({
+            "active_domain": active_domain_data,
+            "available_domains": domains_serialized,
+            "courses": courses_data,
+            "performance": {
+                "response_time_ms": round(t_total, 2),
+                "queries_executed": queries_executed,
+            },
+        })
 
 
 class DomainViewSet(viewsets.ModelViewSet):
@@ -51,20 +113,9 @@ class DomainViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
     def courses(self, request, pk=None):
         domain = self.get_object()
-        domain_courses = DomainCourse.objects.filter(
-            domain=domain, course__is_active=True
-        ).select_related("course", "course__technology").order_by("sequence", "id")
-
-        serializer = DomainCourseSerializer(
-            domain_courses, many=True, context={"request": request}
-        )
+        courses = Course.objects.filter(domain=domain, is_active=True).order_by("sequence", "course_id")
+        serializer = CourseSerializer(courses, many=True, context={"request": request, "domain_id": domain.domain_id})
         return Response(serializer.data)
-
-
-class TechnologyViewSet(viewsets.ModelViewSet):
-    queryset = Technology.objects.filter(is_active=True)
-    serializer_class = TechnologySerializer
-    permission_classes = [IsAdminOrReadOnly]
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -80,15 +131,9 @@ class CourseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
     def modules(self, request, pk=None):
         course = self.get_object()
-        active_modules = CourseModule.objects.filter(
-            course=course, is_active=True
-        ).order_by("sequence", "module_id")
-
-        domain_id = request.query_params.get("domain_id")
+        active_modules = CourseModule.objects.filter(course=course, is_active=True).order_by("sequence", "module_id")
         serializer = CourseModuleSerializer(
-            active_modules,
-            many=True,
-            context={"request": request, "domain_id": domain_id},
+            active_modules, many=True, context={"request": request, "domain_id": course.domain_id}
         )
         return Response(serializer.data)
 
@@ -101,15 +146,9 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
     def topics(self, request, pk=None):
         module = self.get_object()
-        active_topics = CourseTopic.objects.filter(
-            module=module, is_active=True
-        ).order_by("sequence", "topic_id")
-
-        domain_id = request.query_params.get("domain_id")
+        active_topics = CourseTopic.objects.filter(module=module, is_active=True).order_by("sequence", "topic_id")
         serializer = CourseTopicSerializer(
-            active_topics,
-            many=True,
-            context={"request": request, "domain_id": domain_id},
+            active_topics, many=True, context={"request": request, "domain_id": module.course.domain_id}
         )
         return Response(serializer.data)
 
@@ -119,88 +158,75 @@ class CourseTopicViewSet(viewsets.ModelViewSet):
     serializer_class = CourseTopicSerializer
     permission_classes = [IsAdminOrReadOnly]
 
-    @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
-    def materials(self, request, pk=None):
-        topic = self.get_object()
-        materials = CourseMaterial.objects.filter(topic=topic, is_active=True).order_by("material_id")
-        serializer = CourseMaterialSerializer(materials, many=True, context={"request": request})
-        return Response(serializer.data)
-
-    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated], url_path="toggle-complete")
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path="toggle-complete",
+    )
     def toggle_complete(self, request, pk=None):
         topic = self.get_object()
         candidate = get_object_or_404(Candidate_Profile, user=request.user)
 
-        domain_id = request.data.get("domain_id") or request.query_params.get("domain_id")
-        if domain_id:
-            domain = get_object_or_404(Domain, pk=domain_id, is_active=True)
-        elif candidate.active_domain:
-            domain = candidate.active_domain
-        else:
-            return Response(
-                {"error": "No domain specified and candidate has no active domain set."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        course = topic.module.course
+        domain = course.domain
 
-        topic_prog, created = CandidateTopicProgress.objects.get_or_create(
+        progress, _ = CourseProgress.objects.get_or_create(
             candidate=candidate,
             domain=domain,
-            topic=topic,
-            defaults={"completed": True},
+            course=course,
+            defaults={"progress_percentage": 0.0, "completed_topic_ids": []},
         )
 
-        if not created:
-            topic_prog.completed = not topic_prog.completed
-            topic_prog.save()
+        completed_ids = list(progress.completed_topic_ids or [])
+        if topic.topic_id in completed_ids:
+            completed_ids.remove(topic.topic_id)
+            is_completed = False
+        else:
+            completed_ids.append(topic.topic_id)
+            is_completed = True
 
-        # Recalculate overall course progress
-        course = topic.module.course
-        course_prog = recalculate_course_progress(candidate, domain, course)
+        progress.completed_topic_ids = completed_ids
+        progress.save()
+
+        updated_prog = recalculate_course_progress(candidate, domain, course)
 
         return Response({
             "topic_id": topic.topic_id,
-            "topic_completed": topic_prog.completed,
+            "topic_completed": is_completed,
             "domain_id": domain.domain_id,
             "course_id": course.course_id,
-            "course_progress": float(course_prog.progress_percentage),
-            "course_completed": course_prog.completed,
+            "course_progress": float(updated_prog.progress_percentage),
+            "course_completed": updated_prog.completed,
         })
-
-
-class CourseMaterialViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = CourseMaterial.objects.filter(is_active=True)
-    serializer_class = CourseMaterialSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
 
 class ActiveDomainView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        candidate, _ = Candidate_Profile.objects.get_or_create(user=request.user)
+        candidate, _ = Candidate_Profile.objects.select_related("active_domain").get_or_create(user=request.user)
         active_domain = candidate.active_domain
 
-        domains = Domain.objects.filter(is_active=True)
+        domains = Domain.objects.filter(is_active=True).order_by("name")
         domain_serializer = DomainSerializer(domains, many=True, context={"request": request})
 
-        if not active_domain:
-            # If no active domain set, default to first domain if exists
+        if not active_domain and domains.exists():
             first_domain = domains.first()
-            if first_domain:
-                switch_active_domain(candidate, first_domain)
-                active_domain = first_domain
+            switch_active_domain(candidate, first_domain)
+            active_domain = first_domain
 
         active_domain_data = None
         courses_data = []
 
         if active_domain:
             active_domain_data = DomainSerializer(active_domain, context={"request": request}).data
-            domain_courses = DomainCourse.objects.filter(
-                domain=active_domain, course__is_active=True
-            ).select_related("course", "course__technology").order_by("sequence", "id")
+            domain_courses = Course.objects.filter(
+                domain=active_domain, is_active=True
+            ).order_by("sequence", "course_id")
 
-            courses_data = DomainCourseSerializer(
-                domain_courses, many=True, context={"request": request}
+            courses_data = CourseSerializer(
+                domain_courses, many=True, context={"request": request, "domain_id": active_domain.domain_id}
             ).data
 
         return Response({
@@ -217,8 +243,7 @@ class ActiveDomainView(APIView):
 
     def _handle_switch(self, request):
         serializer = ActiveDomainUpdateSerializer(data=request.data)
-        serializer.is_validate_obj = serializer.is_valid()
-        if not serializer.is_validate_obj:
+        if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         domain_id = serializer.validated_data["domain_id"]
@@ -228,8 +253,8 @@ class ActiveDomainView(APIView):
         domain_courses = switch_active_domain(candidate, target_domain)
 
         active_domain_data = DomainSerializer(target_domain, context={"request": request}).data
-        courses_data = DomainCourseSerializer(
-            domain_courses, many=True, context={"request": request}
+        courses_data = CourseSerializer(
+            domain_courses, many=True, context={"request": request, "domain_id": target_domain.domain_id}
         ).data
 
         return Response({

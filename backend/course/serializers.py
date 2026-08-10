@@ -1,14 +1,10 @@
 from rest_framework import serializers
 from .models import (
     Domain,
-    Technology,
     Course,
-    DomainCourse,
     CourseModule,
     CourseTopic,
-    CourseMaterial,
     CourseProgress,
-    CandidateTopicProgress,
 )
 
 
@@ -28,53 +24,11 @@ class DomainSerializer(serializers.ModelSerializer):
         ]
 
     def get_course_count(self, obj):
-        return obj.domain_courses.filter(course__is_active=True).count()
-
-
-class TechnologySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Technology
-        fields = [
-            "technology_id",
-            "name",
-            "description",
-            "is_active",
-            "created_at",
-            "updated_at",
-        ]
-
-
-class CourseMaterialSerializer(serializers.ModelSerializer):
-    file_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = CourseMaterial
-        fields = [
-            "material_id",
-            "topic",
-            "title",
-            "description",
-            "file",
-            "file_url",
-            "material_type",
-            "external_url",
-            "file_size",
-            "is_active",
-            "created_at",
-            "updated_at",
-        ]
-
-    def get_file_url(self, obj):
-        if obj.file:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.file.url)
-            return obj.file.url
-        return obj.external_url or None
+        return obj.courses.filter(is_active=True).count()
 
 
 class CourseTopicSerializer(serializers.ModelSerializer):
-    materials = CourseMaterialSerializer(many=True, read_only=True)
+    pdf_url = serializers.SerializerMethodField()
     is_completed = serializers.SerializerMethodField()
 
     class Meta:
@@ -85,27 +39,41 @@ class CourseTopicSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "sequence",
+            "pdf_file",
+            "pdf_title",
+            "pdf_url",
+            "file_size",
             "is_active",
-            "materials",
             "is_completed",
             "created_at",
             "updated_at",
         ]
 
+    def get_pdf_url(self, obj):
+        if obj.pdf_file:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.pdf_file.url)
+            return obj.pdf_file.url
+        return None
+
     def get_is_completed(self, obj):
+        completed_ids = self.context.get("completed_topic_ids")
+        if completed_ids is not None:
+            return obj.topic_id in completed_ids
+
         request = self.context.get("request")
         domain_id = self.context.get("domain_id")
         if request and request.user.is_authenticated:
             try:
                 candidate = request.user.candidate_profile
-                active_dom_id = domain_id or (candidate.active_domain_id if candidate.active_domain else None)
-                if active_dom_id:
-                    return CandidateTopicProgress.objects.filter(
-                        candidate=candidate,
-                        domain_id=active_dom_id,
-                        topic=obj,
-                        completed=True,
-                    ).exists()
+                dom_id = domain_id or (candidate.active_domain_id if candidate.active_domain else None)
+                if dom_id:
+                    prog = CourseProgress.objects.filter(
+                        candidate=candidate, domain_id=dom_id, course=obj.module.course
+                    ).first()
+                    if prog and isinstance(prog.completed_topic_ids, list):
+                        return obj.topic_id in prog.completed_topic_ids
             except Exception:
                 pass
         return False
@@ -134,32 +102,28 @@ class CourseModuleSerializer(serializers.ModelSerializer):
 
 
 class CourseSerializer(serializers.ModelSerializer):
-    technology = TechnologySerializer(read_only=True)
-    technology_id = serializers.PrimaryKeyRelatedField(
-        queryset=Technology.objects.all(),
-        source="technology",
-        write_only=True,
-        required=False,
-        allow_null=True,
-    )
+    domain_name = serializers.CharField(source="domain.name", read_only=True)
     modules = serializers.SerializerMethodField()
     total_modules = serializers.SerializerMethodField()
     total_topics = serializers.SerializerMethodField()
-    progress = serializers.SerializerMethodField()
+    progress_percentage = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
         fields = [
             "course_id",
+            "domain",
+            "domain_name",
             "title",
             "description",
             "technology",
-            "technology_id",
+            "sequence",
+            "is_required",
             "is_active",
             "modules",
             "total_modules",
             "total_topics",
-            "progress",
+            "progress_percentage",
             "created_at",
             "updated_at",
         ]
@@ -174,49 +138,18 @@ class CourseSerializer(serializers.ModelSerializer):
     def get_total_topics(self, obj):
         return CourseTopic.objects.filter(module__course=obj, module__is_active=True, is_active=True).count()
 
-    def get_progress(self, obj):
-        request = self.context.get("request")
-        domain_id = self.context.get("domain_id")
-        if request and request.user.is_authenticated:
-            try:
-                candidate = request.user.candidate_profile
-                dom_id = domain_id or (candidate.active_domain_id if candidate.active_domain else None)
-                if dom_id:
-                    prog = CourseProgress.objects.filter(
-                        candidate=candidate, domain_id=dom_id, course=obj
-                    ).first()
-                    if prog:
-                        return float(prog.progress_percentage)
-            except Exception:
-                pass
-        return 0.0
-
-
-class DomainCourseSerializer(serializers.ModelSerializer):
-    course = CourseSerializer(read_only=True)
-    domain_name = serializers.CharField(source="domain.name", read_only=True)
-    progress_percentage = serializers.SerializerMethodField()
-
-    class Meta:
-        model = DomainCourse
-        fields = [
-            "id",
-            "domain",
-            "domain_name",
-            "course",
-            "sequence",
-            "is_required",
-            "progress_percentage",
-            "created_at",
-        ]
-
     def get_progress_percentage(self, obj):
+        progress_map = self.context.get("progress_map")
+        if progress_map and obj.course_id in progress_map:
+            return float(progress_map[obj.course_id])
+
         request = self.context.get("request")
+        domain_id = self.context.get("domain_id") or obj.domain_id
         if request and request.user.is_authenticated:
             try:
                 candidate = request.user.candidate_profile
                 prog = CourseProgress.objects.filter(
-                    candidate=candidate, domain=obj.domain, course=obj.course
+                    candidate=candidate, domain_id=domain_id, course=obj
                 ).first()
                 if prog:
                     return float(prog.progress_percentage)
@@ -239,10 +172,11 @@ class CourseProgressSerializer(serializers.ModelSerializer):
             "course",
             "course_title",
             "progress_percentage",
-            "started_at",
-            "last_accessed_at",
+            "completed_topic_ids",
             "completed",
             "completed_at",
+            "started_at",
+            "last_accessed_at",
         ]
         read_only_fields = ["progress_id", "candidate", "started_at", "last_accessed_at"]
 

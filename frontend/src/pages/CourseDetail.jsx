@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   BookOpen,
-  Clock,
   Award,
   Layers,
   CheckCircle2,
@@ -13,9 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  AlertCircle,
-  Sparkles,
-  Download
+  AlertCircle
 } from "lucide-react";
 import { fetchCourseDetails, toggleTopicCompletion } from "../api/courseApi";
 import "../styles/Courses.css";
@@ -40,7 +37,6 @@ export default function CourseDetail() {
       const res = await fetchCourseDetails(courseId, domainId);
       setCourse(res.data);
 
-      // Default expand first module
       if (res.data?.modules && res.data.modules.length > 0) {
         setExpandedModules({ [res.data.modules[0].module_id]: true });
       }
@@ -70,7 +66,6 @@ export default function CourseDetail() {
     try {
       const res = await toggleTopicCompletion(topicId, domainId);
       
-      // Update local state for fast reactive UI feedback
       setCourse((prevCourse) => {
         if (!prevCourse) return prevCourse;
 
@@ -86,7 +81,7 @@ export default function CourseDetail() {
 
         return {
           ...prevCourse,
-          progress: res.data.course_progress,
+          progress_percentage: res.data.course_progress,
           modules: updatedModules,
         };
       });
@@ -98,7 +93,7 @@ export default function CourseDetail() {
     }
   };
 
-  const handleOpenMaterial = (url) => {
+  const handleOpenPdf = (url) => {
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer");
     }
@@ -124,7 +119,7 @@ export default function CourseDetail() {
           onClick={() => navigate("/courses")}
         >
           <ArrowLeft size={18} />
-          Back to Courses
+          Back to Domain Courses
         </button>
 
         <div className="courses-error-state">
@@ -136,7 +131,7 @@ export default function CourseDetail() {
     );
   }
 
-  const courseProgress = Math.round(parseFloat(course.progress) || 0);
+  const courseProgress = Math.round(parseFloat(course.progress_percentage) || 0);
 
   return (
     <div className="course-detail-container">
@@ -153,8 +148,11 @@ export default function CourseDetail() {
       {/* Hero Banner */}
       <div className="course-detail-hero">
         <div className="course-detail-header-tags">
-          {course.technology?.name && (
-            <span className="course-detail-badge">{course.technology.name}</span>
+          {course.technology && (
+            <span className="course-detail-badge">{course.technology}</span>
+          )}
+          {course.domain_name && (
+            <span className="course-detail-badge domain-tag">{course.domain_name}</span>
           )}
           <span className="course-detail-level">• Interactive Learning Path</span>
         </div>
@@ -253,6 +251,7 @@ export default function CourseDetail() {
                       {mod.topics && mod.topics.length > 0 ? (
                         mod.topics.map((topic) => {
                           const isToggling = togglingTopicId === topic.topic_id;
+                          const hasPdf = topic.pdf_url || topic.pdf_file;
 
                           return (
                             <div
@@ -309,49 +308,42 @@ export default function CourseDetail() {
                                 </button>
                               </div>
 
-                              {/* Topic Materials Section */}
-                              {topic.materials && topic.materials.length > 0 && (
+                              {/* Topic PDF Material Section */}
+                              {hasPdf && (
                                 <div className="topic-materials-section">
                                   <div className="materials-header">
                                     <FileText size={14} color="#6366f1" />
-                                    <span>Learning Materials & Study PDFs</span>
+                                    <span>Course Material & Study PDF</span>
                                   </div>
 
                                   <div className="materials-grid">
-                                    {topic.materials.map((mat) => (
-                                      <div
-                                        key={mat.material_id}
-                                        className="material-item-card"
-                                      >
-                                        <div className="material-icon">
-                                          <FileText size={20} color="#ef4444" />
-                                        </div>
-
-                                        <div className="material-info">
-                                          <span className="material-title">
-                                            {mat.title}
-                                          </span>
-                                          {mat.file_size > 0 && (
-                                            <span className="material-size">
-                                              {(mat.file_size / 1024).toFixed(1)} KB • PDF
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        <button
-                                          type="button"
-                                          className="btn-open-pdf"
-                                          onClick={() =>
-                                            handleOpenMaterial(
-                                              mat.file_url || mat.file
-                                            )
-                                          }
-                                        >
-                                          <span>Open PDF</span>
-                                          <ExternalLink size={13} />
-                                        </button>
+                                    <div className="material-item-card">
+                                      <div className="material-icon">
+                                        <FileText size={20} color="#ef4444" />
                                       </div>
-                                    ))}
+
+                                      <div className="material-info">
+                                        <span className="material-title">
+                                          {topic.pdf_title || `${topic.title} Notes`}
+                                        </span>
+                                        {topic.file_size > 0 && (
+                                          <span className="material-size">
+                                            {(topic.file_size / 1024).toFixed(1)} KB • PDF
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        className="btn-open-pdf"
+                                        onClick={() =>
+                                          handleOpenPdf(topic.pdf_url || topic.pdf_file)
+                                        }
+                                      >
+                                        <span>Open PDF</span>
+                                        <ExternalLink size={13} />
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               )}

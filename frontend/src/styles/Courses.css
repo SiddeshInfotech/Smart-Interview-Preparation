@@ -592,12 +592,24 @@
 [data-theme="dark"] .content-card-title,
 [data-theme="dark"] .module-text h4,
 [data-theme="dark"] .stat-info span,
+[data-theme="dark"] .module-header-title,
+[data-theme="dark"] .topic-title,
+[data-theme="dark"] .material-title,
+[data-theme="dark"] .domain-modal-header h2,
+[data-theme="dark"] .domain-option-title,
+[data-theme="dark"] .courses-error-state h3,
 body.dark-theme .courses-title-group h1,
 body.dark-theme .course-card-title,
 body.dark-theme .course-detail-title,
 body.dark-theme .content-card-title,
 body.dark-theme .module-text h4,
-body.dark-theme .stat-info span {
+body.dark-theme .stat-info span,
+body.dark-theme .module-header-title,
+body.dark-theme .topic-title,
+body.dark-theme .material-title,
+body.dark-theme .domain-modal-header h2,
+body.dark-theme .domain-option-title,
+body.dark-theme .courses-error-state h3 {
   color: #f8fafc !important;
 }
 
@@ -606,11 +618,23 @@ body.dark-theme .stat-info span {
 [data-theme="dark"] .course-meta,
 [data-theme="dark"] .course-detail-description,
 [data-theme="dark"] .module-text p,
+[data-theme="dark"] .module-header-desc,
+[data-theme="dark"] .topic-desc,
+[data-theme="dark"] .material-size,
+[data-theme="dark"] .domain-option-desc,
+[data-theme="dark"] .domain-modal-header p,
+[data-theme="dark"] .courses-error-state p,
 body.dark-theme .courses-subtitle,
 body.dark-theme .course-card-desc,
 body.dark-theme .course-meta,
 body.dark-theme .course-detail-description,
-body.dark-theme .module-text p {
+body.dark-theme .module-text p,
+body.dark-theme .module-header-desc,
+body.dark-theme .topic-desc,
+body.dark-theme .material-size,
+body.dark-theme .domain-option-desc,
+body.dark-theme .domain-modal-header p,
+body.dark-theme .courses-error-state p {
   color: #94a3b8 !important;
 }
 
@@ -628,14 +652,48 @@ body.dark-theme .quiz-gradient-title {
 [data-theme="dark"] .course-detail-hero,
 [data-theme="dark"] .course-detail-content-card,
 [data-theme="dark"] .back-link-btn,
+[data-theme="dark"] .domain-modal-card,
+[data-theme="dark"] .domain-option-card,
+[data-theme="dark"] .module-accordion-item,
+[data-theme="dark"] .topic-card,
+[data-theme="dark"] .courses-empty-state,
 body.dark-theme .courses-domain-banner,
 body.dark-theme .courses-filter-bar,
 body.dark-theme .course-card,
 body.dark-theme .course-detail-hero,
 body.dark-theme .course-detail-content-card,
-body.dark-theme .back-link-btn {
+body.dark-theme .back-link-btn,
+body.dark-theme .domain-modal-card,
+body.dark-theme .domain-option-card,
+body.dark-theme .module-accordion-item,
+body.dark-theme .topic-card,
+body.dark-theme .courses-empty-state {
   background: #1e293b !important;
   border-color: #334155 !important;
+}
+
+[data-theme="dark"] .module-accordion-header,
+[data-theme="dark"] .module-topics-content,
+[data-theme="dark"] .material-item-card,
+[data-theme="dark"] .btn-toggle-completion:not(.completed),
+[data-theme="dark"] .module-topic-count,
+[data-theme="dark"] .btn-select-domain,
+[data-theme="dark"] .btn-modal-close,
+body.dark-theme .module-accordion-header,
+body.dark-theme .module-topics-content,
+body.dark-theme .material-item-card,
+body.dark-theme .btn-toggle-completion:not(.completed),
+body.dark-theme .module-topic-count,
+body.dark-theme .btn-select-domain,
+body.dark-theme .btn-modal-close {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .module-accordion-header:hover,
+body.dark-theme .module-accordion-header:hover {
+  background: #1e293b !important;
 }
 
 [data-theme="dark"] .domain-banner-icon,
@@ -671,10 +729,12 @@ body.dark-theme .btn-update-domain:hover {
 
 [data-theme="dark"] .courses-search-box input,
 [data-theme="dark"] .course-progress-track,
+[data-theme="dark"] .domain-progress-bar,
 [data-theme="dark"] .stat-icon-wrapper,
 [data-theme="dark"] .module-item,
 body.dark-theme .courses-search-box input,
 body.dark-theme .course-progress-track,
+body.dark-theme .domain-progress-bar,
 body.dark-theme .stat-icon-wrapper,
 body.dark-theme .module-item {
   background: #0f172a !important;
