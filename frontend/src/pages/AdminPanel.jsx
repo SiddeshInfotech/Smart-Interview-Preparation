@@ -28,6 +28,14 @@ const MODEL_ICONS = {
   quizperformance: <IconStar />,
   usercredit: <IconStar />,
   executionhistory: <IconClock />,
+  domain: <IconBook />,
+  technology: <IconBook />,
+  course: <IconBook />,
+  domaincourse: <IconBook />,
+  coursemodule: <IconBook />,
+  coursetopic: <IconBook />,
+  coursematerial: <IconFile />,
+  courseprogress: <IconStar />,
 };
 
 // Legacy path mapping to appLabel / modelName for backward compatibility

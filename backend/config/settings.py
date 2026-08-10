@@ -100,6 +100,7 @@ INSTALLED_APPS = [
     "admin_panel",
     "coding",
     "compiler",
+    "course",
 ]
 
 # ========== PISTON API CONFIGURATION ==========

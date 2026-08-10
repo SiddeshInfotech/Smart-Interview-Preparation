@@ -14,6 +14,13 @@ class Candidate_Profile(models.Model):
     experience_years = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
     skills = models.TextField(blank=True, null=True)
     target_domain = models.CharField(max_length=150, blank=True, null=True)
+    active_domain = models.ForeignKey(
+        "course.Domain",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="candidates",
+    )
     linkedin_url = models.URLField(max_length=255, blank=True, null=True)
     github_url = models.URLField(max_length=255, blank=True, null=True)
     portfolio_url = models.URLField(max_length=255, blank=True, null=True)

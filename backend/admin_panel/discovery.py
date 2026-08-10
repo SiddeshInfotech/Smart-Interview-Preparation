@@ -192,6 +192,7 @@ def get_pk_field_name(model):
 APP_DISPLAY_NAMES = {
     "authentication": "Authentication",
     "candidate": "Candidates",
+    "course": "Courses & Domains",
     "interviewer": "Interviewers",
     "interview": "Interviews & Feedback",
     "feedback": "User Feedback",
@@ -210,15 +211,16 @@ APP_DISPLAY_NAMES = {
 APP_GROUP_ORDER = {
     "authentication": 1,
     "candidate": 2,
-    "interviewer": 3,
-    "interview": 4,
-    "feedback": 5,
-    "quiz": 6,
-    "coding": 7,
-    "compiler": 8,
-    "resume": 9,
-    "common": 10,
-    "notifications": 11,
+    "course": 3,
+    "interviewer": 4,
+    "interview": 5,
+    "feedback": 6,
+    "quiz": 7,
+    "coding": 8,
+    "compiler": 9,
+    "resume": 10,
+    "common": 11,
+    "notifications": 12,
     "admin_panel": 99,
 }
 
