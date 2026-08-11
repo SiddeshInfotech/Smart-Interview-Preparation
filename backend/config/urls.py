@@ -45,9 +45,16 @@ urlpatterns = [
 from django.views.static import serve
 from django.urls import re_path
 
+def serve_media_with_frame_headers(request, path):
+    response = serve(request, path, document_root=settings.MEDIA_ROOT)
+    response["X-Frame-Options"] = "ALLOWALL"
+    response["Content-Security-Policy"] = "frame-ancestors *"
+    return response
+
 urlpatterns += [
-    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    re_path(r'^media/(?P<path>.*)$', serve_media_with_frame_headers),
 ]
+
 
 
     

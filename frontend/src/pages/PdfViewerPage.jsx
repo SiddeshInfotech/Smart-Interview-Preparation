@@ -158,17 +158,26 @@ export default function PdfViewerPage() {
 
       {/* PDF Viewport */}
       <div style={{ flex: 1, width: "100%", height: "100%", background: "#1e293b" }}>
-        <iframe
-          src={pdfUrl}
-          title={pdfTitle}
-          style={{
-            width: "100%",
-            height: "100%",
-            border: "none",
-            background: "#ffffff"
-          }}
-        />
+        <object
+          data={pdfUrl}
+          type="application/pdf"
+          width="100%"
+          height="100%"
+          style={{ width: "100%", height: "100%", border: "none" }}
+        >
+          <iframe
+            src={pdfUrl}
+            title={pdfTitle}
+            style={{
+              width: "100%",
+              height: "100%",
+              border: "none",
+              background: "#ffffff"
+            }}
+          />
+        </object>
       </div>
     </div>
   );
 }
+
