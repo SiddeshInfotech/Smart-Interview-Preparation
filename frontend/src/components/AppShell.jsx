@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { LayoutDashboard, ClipboardList, FileText, CalendarClock, BookOpen } from "lucide-react";
 import PageNavbar from "./PageNavbar.jsx";
 import useCurrentUserRole from "../hooks/useCurrentUserRole";
+import { prefetchCourseData } from "../api/courseApi";
 import "../styles/AppShell.css";
 
 const allNavItems = [
@@ -17,6 +18,13 @@ export default function AppShell() {
   const location = useLocation();
   const activePath = location.pathname;
   const { role } = useCurrentUserRole();
+
+  // Prefetch course data in background as soon as candidate enters app shell
+  useEffect(() => {
+    if (role === "candidate" || !role) {
+      prefetchCourseData();
+    }
+  }, [role]);
 
   // Interviewers get only Interview link (no Dashboard access)
   let visibleNavItems;
@@ -42,4 +50,4 @@ export default function AppShell() {
       </div>
     </div>
   );
-}
+}

@@ -16,7 +16,7 @@ import {
   AlertCircle,
   CheckCircle2
 } from "lucide-react";
-import { fetchCourseBootstrap, switchActiveDomain } from "../api/courseApi";
+import { fetchCourseBootstrap, switchActiveDomain, getCachedBootstrapData } from "../api/courseApi";
 import DomainSelectorModal from "../components/DomainSelectorModal";
 import "../styles/Courses.css";
 
@@ -40,15 +40,20 @@ const ICONS = [
 
 export default function Courses() {
   const navigate = useNavigate();
-  const [activeDomain, setActiveDomain] = useState(null);
-  const [availableDomains, setAvailableDomains] = useState([]);
-  const [domainCourses, setDomainCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Instant Initial State from Cache if available
+  const initialCache = getCachedBootstrapData();
+  const [activeDomain, setActiveDomain] = useState(initialCache?.active_domain || null);
+  const [availableDomains, setAvailableDomains] = useState(initialCache?.available_domains || []);
+  const [domainCourses, setDomainCourses] = useState(initialCache?.courses || []);
+  const [loading, setLoading] = useState(!initialCache);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const loadBootstrapData = async () => {
-    setLoading(true);
+  const loadBootstrapData = async (showLoader = false) => {
+    if (showLoader && !initialCache) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const res = await fetchCourseBootstrap();
@@ -57,15 +62,18 @@ export default function Courses() {
       setDomainCourses(res.data.courses || []);
     } catch (err) {
       console.error("Failed to load bootstrap domain data:", err);
-      setError("Failed to connect to course server. Please check your connection.");
+      if (!initialCache) {
+        setError("Failed to connect to course server. Please check your connection.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadBootstrapData();
+    loadBootstrapData(!initialCache);
   }, []);
+
 
   const handleSelectDomain = async (domainId) => {
     try {

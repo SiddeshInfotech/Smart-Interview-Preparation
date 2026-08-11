@@ -5,6 +5,8 @@ import "../styles/Auth.css";
 import { login } from "../api/axios";
 import WelcomePopup from "../components/WelcomePopup";
 import { useAuth } from "../context/AuthContext";
+import { prefetchCourseData } from "../api/courseApi";
+
 
 // Decode JWT payload without a library
 const decodeToken = (token) => {
@@ -110,8 +112,11 @@ export default function Login() {
       if (role === "interviewer") {
         navigate("/interview");
       } else if (role) {
+        prefetchCourseData();
         navigate("/dashboard");
       }
+
+
     } catch (err) {
       console.log("login submit error:", err);
       setError("Invalid email or password.");

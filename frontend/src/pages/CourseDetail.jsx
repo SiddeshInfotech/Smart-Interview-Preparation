@@ -9,7 +9,7 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react";
-import { fetchCourseDetails } from "../api/courseApi";
+import { fetchCourseDetails, getCachedCourseDetail } from "../api/courseApi";
 import "../styles/Courses.css";
 
 export default function CourseDetail() {
@@ -19,19 +19,25 @@ export default function CourseDetail() {
 
   const domainId = location.state?.domainId || null;
 
-  const [course, setCourse] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Instant Initial State from Cache if available
+  const initialCache = getCachedCourseDetail(courseId);
+  const [course, setCourse] = useState(initialCache || null);
+  const [loading, setLoading] = useState(!initialCache);
   const [error, setError] = useState(null);
 
   const loadCourseData = async () => {
-    setLoading(true);
+    if (!initialCache) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const res = await fetchCourseDetails(courseId, domainId);
       setCourse(res.data);
     } catch (err) {
       console.error("Failed to load course details:", err);
-      setError("Failed to load course details. Please try again.");
+      if (!initialCache) {
+        setError("Failed to load course details. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -42,6 +48,7 @@ export default function CourseDetail() {
       loadCourseData();
     }
   }, [courseId, domainId]);
+
 
   const handleOpenPdfViewer = (mod) => {
     const pdfUrl = mod.pdf_url || mod.pdf_file;
