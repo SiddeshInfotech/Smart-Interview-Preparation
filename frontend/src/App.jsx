@@ -22,6 +22,7 @@ import Interview from "./pages/Interview";
 import Coding from "./pages/Coding";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
+import PdfViewerPage from "./pages/PdfViewerPage";
 import AppShell from "./components/AppShell";
 import RequireRole from "./components/RequireRole";
 import InterviewPage from "./pages/InterviewPage";
@@ -71,7 +72,9 @@ function App() {
                 <Route path="quiz" element={<Quiz />} />
                 <Route path="courses" element={<Courses />} />
                 <Route path="courses/:courseId" element={<CourseDetail />} />
+                <Route path="courses/:courseId/pdf-viewer" element={<PdfViewerPage />} />
               </Route>
+
 
               <Route path="profile" element={<Profile />} />
               <Route path="feedback-form" element={<FeedbackForm />} />

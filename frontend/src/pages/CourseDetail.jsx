@@ -3,16 +3,13 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   BookOpen,
-  Award,
   Layers,
-  CheckCircle2,
-  PlayCircle,
   FileText,
-  ExternalLink,
+  Eye,
   Loader2,
   AlertCircle
 } from "lucide-react";
-import { fetchCourseDetails, toggleModuleCompletion } from "../api/courseApi";
+import { fetchCourseDetails } from "../api/courseApi";
 import "../styles/Courses.css";
 
 export default function CourseDetail() {
@@ -25,7 +22,6 @@ export default function CourseDetail() {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [togglingModuleId, setTogglingModuleId] = useState(null);
 
   const loadCourseData = async () => {
     setLoading(true);
@@ -47,38 +43,20 @@ export default function CourseDetail() {
     }
   }, [courseId, domainId]);
 
-  const handleToggleModule = async (moduleId) => {
-    setTogglingModuleId(moduleId);
-    try {
-      const res = await toggleModuleCompletion(moduleId, domainId);
-      
-      setCourse((prevCourse) => {
-        if (!prevCourse) return prevCourse;
-
-        const updatedModules = prevCourse.modules.map((mod) => {
-          if (mod.module_id === moduleId) {
-            return { ...mod, is_completed: res.data.module_completed };
-          }
-          return mod;
-        });
-
-        return {
-          ...prevCourse,
-          progress_percentage: res.data.course_progress,
-          modules: updatedModules,
-        };
+  const handleOpenPdfViewer = (mod) => {
+    const pdfUrl = mod.pdf_url || mod.pdf_file;
+    if (pdfUrl) {
+      navigate(`/courses/${courseId}/pdf-viewer`, {
+        state: {
+          pdfUrl: pdfUrl,
+          pdfTitle: mod.pdf_title || `${mod.title} Notes`,
+          moduleTitle: mod.title,
+          courseTitle: course?.title || "Course",
+          domainId: domainId,
+        },
       });
-    } catch (err) {
-      console.error("Failed to toggle module completion:", err);
-      alert("Failed to update module completion. Please try again.");
-    } finally {
-      setTogglingModuleId(null);
-    }
-  };
-
-  const handleOpenPdf = (url) => {
-    if (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      alert("No PDF document is attached to this module.");
     }
   };
 
@@ -113,8 +91,6 @@ export default function CourseDetail() {
       </div>
     );
   }
-
-  const courseProgress = Math.round(parseFloat(course.progress_percentage) || 0);
 
   return (
     <div className="course-detail-container">
@@ -166,16 +142,6 @@ export default function CourseDetail() {
               <span>{course.total_modules || 0} PDF Documents</span>
             </div>
           </div>
-
-          <div className="stat-box">
-            <div className="stat-icon-wrapper">
-              <Award size={20} />
-            </div>
-            <div className="stat-info">
-              <label>Your Progress</label>
-              <span>{courseProgress}% Completed</span>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -184,116 +150,79 @@ export default function CourseDetail() {
         <div className="content-card-header">
           <h3 className="content-card-title">
             <Layers size={22} color="#4f46e5" />
-            Course Units & PDF Materials
+            Course Units & PDF Study Materials
           </h3>
-          <div className="course-progress-track hero-track">
-            <div
-              className="course-progress-fill hero-fill"
-              style={{ width: `${courseProgress}%` }}
-            />
-          </div>
         </div>
 
         <div className="module-accordion-list">
           {course.modules && course.modules.length > 0 ? (
             course.modules.map((mod, index) => {
-              const isToggling = togglingModuleId === mod.module_id;
               const hasPdf = mod.pdf_url || mod.pdf_file;
 
               return (
                 <div
                   key={mod.module_id}
-                  className={`topic-card ${mod.is_completed ? "completed" : ""}`}
-                  style={{ marginBottom: "16px", borderRadius: "12px", border: "1px solid #e2e8f0" }}
+                  className="topic-card"
+                  style={{
+                    marginBottom: "16px",
+                    borderRadius: "14px",
+                    border: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+                    padding: "18px 20px"
+                  }}
                 >
-                  <div className="topic-card-top">
-                    <div className="topic-title-wrapper">
-                      <button
-                        type="button"
-                        className={`btn-topic-checkbox ${
-                          mod.is_completed ? "checked" : ""
-                        }`}
-                        onClick={() =>
-                          !isToggling && handleToggleModule(mod.module_id)
-                        }
-                        title={
-                          mod.is_completed
-                            ? "Mark module as incomplete"
-                            : "Mark module as complete"
-                        }
-                      >
-                        {isToggling ? (
-                          <Loader2 size={16} className="spin" />
-                        ) : mod.is_completed ? (
-                          <CheckCircle2 size={18} />
-                        ) : (
-                          <PlayCircle size={18} />
-                        )}
-                      </button>
+                  <div className="topic-card-top" style={{ marginBottom: 0 }}>
+                    <div className="topic-title-wrapper" style={{ gap: "14px" }}>
+                      <span className="module-index-badge" style={{ fontSize: "0.9rem", fontWeight: "700" }}>
+                        {index + 1}
+                      </span>
 
                       <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span className="module-index-badge">{index + 1}</span>
-                          <h5 className="topic-title" style={{ fontSize: "1.05rem", fontWeight: "600" }}>{mod.title}</h5>
-                        </div>
+                        <h5 className="topic-title" style={{ fontSize: "1.05rem", fontWeight: "700", color: "#0f172a" }}>
+                          {mod.title}
+                        </h5>
                         {mod.description && (
-                          <p className="topic-desc" style={{ marginTop: "4px" }}>{mod.description}</p>
+                          <p className="topic-desc" style={{ marginTop: "4px", color: "#64748b" }}>
+                            {mod.description}
+                          </p>
+                        )}
+                        {mod.file_size > 0 && (
+                          <span style={{ fontSize: "0.78rem", color: "#6366f1", fontWeight: "600", marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                            <FileText size={14} color="#6366f1" />
+                            {(mod.file_size / 1024).toFixed(1)} KB • PDF Document
+                          </span>
                         )}
                       </div>
                     </div>
 
+                    {/* Single "View" Button */}
                     <button
                       type="button"
-                      className={`btn-toggle-completion ${
-                        mod.is_completed ? "completed" : ""
-                      }`}
-                      onClick={() =>
-                        !isToggling && handleToggleModule(mod.module_id)
-                      }
+                      style={{
+                        background: "#4f46e5",
+                        color: "#ffffff",
+                        border: "none",
+                        padding: "10px 20px",
+                        borderRadius: "10px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "0.9rem",
+                        fontWeight: "600",
+                        cursor: hasPdf ? "pointer" : "not-allowed",
+                        opacity: hasPdf ? 1 : 0.6,
+                        boxShadow: "0 3px 12px rgba(79, 70, 229, 0.25)",
+                        transition: "all 0.2s ease"
+                      }}
+                      onClick={() => handleOpenPdfViewer(mod)}
+                      disabled={!hasPdf}
+                      title={hasPdf ? "View unit PDF document" : "No PDF available"}
                     >
-                      {mod.is_completed ? "Completed" : "Mark Complete"}
+                      <Eye size={17} />
+                      <span>View</span>
                     </button>
                   </div>
-
-                  {/* Module PDF Material Section */}
-                  {hasPdf && (
-                    <div className="topic-materials-section" style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f1f5f9" }}>
-                      <div className="materials-header">
-                        <FileText size={14} color="#6366f1" />
-                        <span>Unit Study Material PDF</span>
-                      </div>
-
-                      <div className="materials-grid">
-                        <div className="material-item-card">
-                          <div className="material-icon">
-                            <FileText size={20} color="#ef4444" />
-                          </div>
-
-                          <div className="material-info">
-                            <span className="material-title">
-                              {mod.pdf_title || `${mod.title} Notes`}
-                            </span>
-                            {mod.file_size > 0 && (
-                              <span className="material-size">
-                                {(mod.file_size / 1024).toFixed(1)} KB • PDF
-                              </span>
-                            )}
-                          </div>
-
-                          <button
-                            type="button"
-                            className="btn-open-pdf"
-                            onClick={() =>
-                              handleOpenPdf(mod.pdf_url || mod.pdf_file)
-                            }
-                          >
-                            <span>Open PDF</span>
-                            <ExternalLink size={13} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })
