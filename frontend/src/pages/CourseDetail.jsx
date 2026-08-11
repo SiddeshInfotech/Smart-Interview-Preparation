@@ -49,24 +49,8 @@ export default function CourseDetail() {
     }
   }, [courseId, domainId]);
 
-  // Preload PDF documents into browser HTTP cache for instant 0ms viewing
-  useEffect(() => {
-    if (course?.modules && course.modules.length > 0) {
-      course.modules.forEach((mod) => {
-        const rawUrl = mod.pdf_url || mod.pdf_file;
-        const formattedUrl = formatPdfUrl(rawUrl);
-        if (formattedUrl) {
-          const link = document.createElement("link");
-          link.rel = "prefetch";
-          link.href = formattedUrl;
-          link.as = "fetch";
-          document.head.appendChild(link);
-        }
-      });
-    }
-  }, [course]);
-
   const handleOpenPdfViewer = (mod) => {
+
     const rawUrl = mod.pdf_url || mod.pdf_file;
     const formattedUrl = formatPdfUrl(rawUrl);
     const cleanTitle = mod.title.replace(/^Unit\s+\d+[:\s]*/i, "").trim();

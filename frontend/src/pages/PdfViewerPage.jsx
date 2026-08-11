@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, FileText, AlertCircle } from "lucide-react";
+import { ArrowLeft, FileText, AlertCircle, Loader2 } from "lucide-react";
 import { formatPdfUrl } from "../api/courseApi";
 import "../styles/Courses.css";
-
 
 export default function PdfViewerPage() {
   const { courseId } = useParams();
@@ -11,16 +10,60 @@ export default function PdfViewerPage() {
   const location = useLocation();
 
   const statePdfUrl = location.state?.pdfUrl || null;
-  const formattedRawUrl = formatPdfUrl(statePdfUrl);
   const pdfTitle = location.state?.pdfTitle || "Unit Study Material PDF";
   const moduleTitle = location.state?.moduleTitle || "Course Unit";
   const domainId = location.state?.domainId || null;
 
-  // Append viewer parameters for fast streaming and width fitting
-  const pdfUrl = formattedRawUrl
-    ? (formattedRawUrl.includes("#") ? formattedRawUrl : `${formattedRawUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`)
-    : null;
+  const [pdfDisplayUrl, setPdfDisplayUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  const formattedRawUrl = formatPdfUrl(statePdfUrl);
+
+  useEffect(() => {
+    let active = true;
+    let createdBlobUrl = null;
+
+    if (!formattedRawUrl) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    // Fast direct blob fetch to bypass iframe cross-origin negotiation
+    fetch(formattedRawUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (active) {
+          const pdfBlob = new Blob([blob], { type: "application/pdf" });
+          createdBlobUrl = URL.createObjectURL(pdfBlob);
+          setPdfDisplayUrl(createdBlobUrl);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.warn("Direct blob fetch failed, falling back to URL:", err);
+        if (active) {
+          const fallbackUrl = formattedRawUrl.includes("#")
+            ? formattedRawUrl
+            : `${formattedRawUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;
+          setPdfDisplayUrl(fallbackUrl);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+      if (createdBlobUrl) {
+        URL.revokeObjectURL(createdBlobUrl);
+      }
+    };
+  }, [formattedRawUrl]);
 
   const handleBack = () => {
     if (courseId) {
@@ -30,7 +73,7 @@ export default function PdfViewerPage() {
     }
   };
 
-  if (!pdfUrl) {
+  if (!formattedRawUrl) {
     return (
       <div className="course-detail-container" style={{ padding: "40px 20px" }}>
         <button type="button" className="back-link-btn" onClick={handleBack}>
@@ -125,26 +168,43 @@ export default function PdfViewerPage() {
         <div style={{ width: "150px" }} />
       </div>
 
-      {/* Instant PDF Viewport Container */}
-      <div style={{ flex: 1, width: "100%", height: "calc(100vh - 64px)", background: "#1e293b" }}>
-        <object
-          data={pdfUrl}
-          type="application/pdf"
-          width="100%"
-          height="100%"
-          style={{ width: "100%", height: "100%", border: "none" }}
-        >
-          <iframe
-            src={pdfUrl}
-            title={pdfTitle}
+      {/* PDF Viewport Container */}
+      <div style={{ flex: 1, width: "100%", height: "calc(100vh - 64px)", background: "#1e293b", position: "relative" }}>
+        {loading ? (
+          <div
             style={{
-              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
               height: "100%",
-              border: "none",
-              background: "#ffffff"
+              color: "#94a3b8",
+              gap: "12px"
             }}
-          />
-        </object>
+          >
+            <Loader2 size={36} className="spin" color="#818cf8" />
+            <p style={{ fontSize: "0.95rem", fontWeight: "500" }}>Opening document...</p>
+          </div>
+        ) : (
+          <object
+            data={pdfDisplayUrl}
+            type="application/pdf"
+            width="100%"
+            height="100%"
+            style={{ width: "100%", height: "100%", border: "none" }}
+          >
+            <iframe
+              src={pdfDisplayUrl}
+              title={pdfTitle}
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+                background: "#ffffff"
+              }}
+            />
+          </object>
+        )}
       </div>
     </div>
   );
