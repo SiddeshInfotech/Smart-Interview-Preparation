@@ -49,16 +49,17 @@ export default function CourseDetail() {
     }
   }, [courseId, domainId]);
 
-
   const handleOpenPdfViewer = (mod) => {
     const pdfUrl = mod.pdf_url || mod.pdf_file;
+    const cleanTitle = mod.title.replace(/^Unit\s+\d+[:\s]*/i, "").trim();
+
     if (pdfUrl) {
       navigate(`/courses/${courseId}/pdf-viewer`, {
         state: {
           pdfUrl: pdfUrl,
-          pdfTitle: mod.pdf_title || `${mod.title} Notes`,
-          moduleTitle: mod.title,
-          courseTitle: course?.title || "Course",
+          pdfTitle: mod.pdf_title || `${cleanTitle} Notes`,
+          moduleTitle: cleanTitle,
+          courseTitle: course?.title === "React JS Masterclass & Notes" ? "React JS Notes" : (course?.title || "Course"),
           domainId: domainId,
         },
       });
@@ -99,6 +100,8 @@ export default function CourseDetail() {
     );
   }
 
+  const courseDisplayTitle = course.title === "React JS Masterclass & Notes" ? "React JS Notes" : course.title;
+
   return (
     <div className="course-detail-container">
       {/* Back to Courses Link */}
@@ -120,26 +123,12 @@ export default function CourseDetail() {
           {course.domain_name && (
             <span className="course-detail-badge domain-tag">{course.domain_name}</span>
           )}
-          <span className="course-detail-level">• Interactive Learning Path</span>
         </div>
 
-        <h1 className="course-detail-title">{course.title}</h1>
-        {course.description && (
-          <p className="course-detail-description">{course.description}</p>
-        )}
+        <h1 className="course-detail-title">{courseDisplayTitle}</h1>
 
         {/* Stats Row */}
         <div className="course-detail-stats">
-          <div className="stat-box">
-            <div className="stat-icon-wrapper">
-              <Layers size={20} />
-            </div>
-            <div className="stat-info">
-              <label>Modules</label>
-              <span>{course.total_modules || 0} Units</span>
-            </div>
-          </div>
-
           <div className="stat-box">
             <div className="stat-icon-wrapper">
               <BookOpen size={20} />
@@ -165,6 +154,8 @@ export default function CourseDetail() {
           {course.modules && course.modules.length > 0 ? (
             course.modules.map((mod, index) => {
               const hasPdf = mod.pdf_url || mod.pdf_file;
+              // Strip "Unit N" prefix from module title
+              const cleanModuleTitle = mod.title.replace(/^Unit\s+\d+[:\s]*/i, "").trim();
 
               return (
                 <div
@@ -187,15 +178,10 @@ export default function CourseDetail() {
 
                       <div>
                         <h5 className="topic-title" style={{ fontSize: "1.05rem", fontWeight: "700", color: "#0f172a" }}>
-                          {mod.title}
+                          {cleanModuleTitle}
                         </h5>
-                        {mod.description && (
-                          <p className="topic-desc" style={{ marginTop: "4px", color: "#64748b" }}>
-                            {mod.description}
-                          </p>
-                        )}
                         {mod.file_size > 0 && (
-                          <span style={{ fontSize: "0.78rem", color: "#6366f1", fontWeight: "600", marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                          <span style={{ fontSize: "0.78rem", color: "#6366f1", fontWeight: "600", marginTop: "4px", display: "inline-flex", alignItems: "center", gap: "5px" }}>
                             <FileText size={14} color="#6366f1" />
                             {(mod.file_size / 1024).toFixed(1)} KB • PDF Document
                           </span>

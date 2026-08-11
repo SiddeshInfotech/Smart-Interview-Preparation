@@ -40,7 +40,7 @@ const ICONS = [
 
 export default function Courses() {
   const navigate = useNavigate();
-  
+
   // Instant Initial State from Cache if available
   const initialCache = getCachedBootstrapData();
   const [activeDomain, setActiveDomain] = useState(initialCache?.active_domain || null);
@@ -121,11 +121,11 @@ export default function Courses() {
   const totalCourses = domainCourses.length;
   const overallDomainProgress = totalCourses > 0
     ? Math.round(
-        domainCourses.reduce(
-          (acc, c) => acc + (parseFloat(c.progress_percentage) || 0),
-          0
-        ) / totalCourses
-      )
+      domainCourses.reduce(
+        (acc, c) => acc + (parseFloat(c.progress_percentage) || 0),
+        0
+      ) / totalCourses
+    )
     : 0;
 
   return (
@@ -143,16 +143,13 @@ export default function Courses() {
       <div className="courses-domain-banner">
         <div className="domain-banner-left">
           <div className="domain-banner-icon">
-            <UserCheck size={20} />
+            <UserCheck size={22} />
           </div>
           <div>
             <div className="domain-banner-label">Your Active Candidate Domain</div>
             <div className="domain-banner-value">
               {activeDomain ? activeDomain.name : "No Domain Selected"}
             </div>
-            {activeDomain?.description && (
-              <p className="domain-banner-desc">{activeDomain.description}</p>
-            )}
           </div>
         </div>
 
@@ -161,7 +158,7 @@ export default function Courses() {
             <div className="domain-overall-progress">
               <div className="progress-info">
                 <span>Overall Domain Progress</span>
-                <strong>{overallDomainProgress}%</strong>
+                <strong>: {overallDomainProgress}%</strong>
               </div>
               <div className="domain-progress-bar">
                 <div
@@ -219,18 +216,17 @@ export default function Courses() {
                 </div>
 
                 {/* Course Title & Description */}
-                <h3 className="course-card-title">{course.title}</h3>
+                <h3 className="course-card-title">
+                  {course.title === "React JS Masterclass & Notes" ? "React JS Notes" : course.title}
+                </h3>
                 <p className="course-card-desc">{course.description}</p>
+
 
                 {/* Meta stats */}
                 <div className="course-meta-row">
                   <span>
                     <Layers size={14} />
                     {course.total_modules || 0} Modules
-                  </span>
-                  <span>
-                    <BookOpen size={14} />
-                    {course.total_topics || 0} Topics
                   </span>
                 </div>
 
@@ -266,13 +262,14 @@ export default function Courses() {
                   className="btn-go-to-course"
                   onClick={() => handleGoToCourse(course.course_id)}
                 >
-                  <span>View Modules & Materials</span>
+                  <span>View Material</span>
                   <ArrowRight size={15} className="btn-arrow-icon" />
                 </button>
               </div>
             );
           })
         ) : (
+
           <div className="courses-empty-state">
             <BookOpen size={48} color="#94a3b8" />
             <h3>No Courses Added to this Domain Yet</h3>
