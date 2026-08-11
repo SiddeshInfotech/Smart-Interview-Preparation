@@ -3,40 +3,38 @@ from .models import (
     Domain,
     Course,
     CourseModule,
-    CourseTopic,
     CourseProgress,
 )
 
 
 def recalculate_course_progress(candidate, domain, course):
     """
-    Recalculate course progress percentage based on completed_topic_ids JSON array.
+    Recalculate course progress percentage based on completed_module_ids JSON array.
     """
-    active_topic_ids = list(
-        CourseTopic.objects.filter(
-            module__course=course,
-            module__is_active=True,
+    active_module_ids = list(
+        CourseModule.objects.filter(
+            course=course,
             is_active=True,
-        ).values_list("topic_id", flat=True)
+        ).values_list("module_id", flat=True)
     )
 
-    total_topics = len(active_topic_ids)
+    total_modules = len(active_module_ids)
 
     progress, created = CourseProgress.objects.get_or_create(
         candidate=candidate,
         domain=domain,
         course=course,
-        defaults={"progress_percentage": 0.0, "completed_topic_ids": []},
+        defaults={"progress_percentage": 0.0, "completed_module_ids": []},
     )
 
-    completed_ids = [t_id for t_id in (progress.completed_topic_ids or []) if t_id in active_topic_ids]
+    completed_ids = [m_id for m_id in (progress.completed_module_ids or []) if m_id in active_module_ids]
 
-    if total_topics == 0:
+    if total_modules == 0:
         pct = 0.0
     else:
-        pct = round((len(completed_ids) / float(total_topics)) * 100.0, 2)
+        pct = round((len(completed_ids) / float(total_modules)) * 100.0, 2)
 
-    progress.completed_topic_ids = completed_ids
+    progress.completed_module_ids = completed_ids
     progress.progress_percentage = pct
     if pct >= 100.0 and not progress.completed:
         progress.completed = True
@@ -47,6 +45,7 @@ def recalculate_course_progress(candidate, domain, course):
 
     progress.save()
     return progress
+
 
 
 def switch_active_domain(candidate, target_domain):

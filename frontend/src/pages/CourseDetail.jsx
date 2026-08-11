@@ -9,12 +9,10 @@ import {
   PlayCircle,
   FileText,
   ExternalLink,
-  ChevronDown,
-  ChevronUp,
   Loader2,
   AlertCircle
 } from "lucide-react";
-import { fetchCourseDetails, toggleTopicCompletion } from "../api/courseApi";
+import { fetchCourseDetails, toggleModuleCompletion } from "../api/courseApi";
 import "../styles/Courses.css";
 
 export default function CourseDetail() {
@@ -27,8 +25,7 @@ export default function CourseDetail() {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expandedModules, setExpandedModules] = useState({});
-  const [togglingTopicId, setTogglingTopicId] = useState(null);
+  const [togglingModuleId, setTogglingModuleId] = useState(null);
 
   const loadCourseData = async () => {
     setLoading(true);
@@ -36,10 +33,6 @@ export default function CourseDetail() {
     try {
       const res = await fetchCourseDetails(courseId, domainId);
       setCourse(res.data);
-
-      if (res.data?.modules && res.data.modules.length > 0) {
-        setExpandedModules({ [res.data.modules[0].module_id]: true });
-      }
     } catch (err) {
       console.error("Failed to load course details:", err);
       setError("Failed to load course details. Please try again.");
@@ -54,29 +47,19 @@ export default function CourseDetail() {
     }
   }, [courseId, domainId]);
 
-  const toggleModuleAccordion = (moduleId) => {
-    setExpandedModules((prev) => ({
-      ...prev,
-      [moduleId]: !prev[moduleId],
-    }));
-  };
-
-  const handleToggleTopic = async (topicId) => {
-    setTogglingTopicId(topicId);
+  const handleToggleModule = async (moduleId) => {
+    setTogglingModuleId(moduleId);
     try {
-      const res = await toggleTopicCompletion(topicId, domainId);
+      const res = await toggleModuleCompletion(moduleId, domainId);
       
       setCourse((prevCourse) => {
         if (!prevCourse) return prevCourse;
 
         const updatedModules = prevCourse.modules.map((mod) => {
-          const updatedTopics = mod.topics.map((top) => {
-            if (top.topic_id === topicId) {
-              return { ...top, is_completed: res.data.topic_completed };
-            }
-            return top;
-          });
-          return { ...mod, topics: updatedTopics };
+          if (mod.module_id === moduleId) {
+            return { ...mod, is_completed: res.data.module_completed };
+          }
+          return mod;
         });
 
         return {
@@ -86,10 +69,10 @@ export default function CourseDetail() {
         };
       });
     } catch (err) {
-      console.error("Failed to toggle topic completion:", err);
-      alert("Failed to update topic completion. Please try again.");
+      console.error("Failed to toggle module completion:", err);
+      alert("Failed to update module completion. Please try again.");
     } finally {
-      setTogglingTopicId(null);
+      setTogglingModuleId(null);
     }
   };
 
@@ -170,7 +153,7 @@ export default function CourseDetail() {
             </div>
             <div className="stat-info">
               <label>Modules</label>
-              <span>{course.total_modules || 0} Lessons</span>
+              <span>{course.total_modules || 0} Units</span>
             </div>
           </div>
 
@@ -179,8 +162,8 @@ export default function CourseDetail() {
               <BookOpen size={20} />
             </div>
             <div className="stat-info">
-              <label>Total Topics</label>
-              <span>{course.total_topics || 0} Topics</span>
+              <label>Study Materials</label>
+              <span>{course.total_modules || 0} PDF Documents</span>
             </div>
           </div>
 
@@ -196,12 +179,12 @@ export default function CourseDetail() {
         </div>
       </div>
 
-      {/* Course Curriculum Accordion */}
+      {/* Course Curriculum Modules List */}
       <div className="course-detail-content-card">
         <div className="content-card-header">
           <h3 className="content-card-title">
             <Layers size={22} color="#4f46e5" />
-            Course Modules & Learning Topics
+            Course Units & PDF Materials
           </h3>
           <div className="course-progress-track hero-track">
             <div
@@ -214,156 +197,109 @@ export default function CourseDetail() {
         <div className="module-accordion-list">
           {course.modules && course.modules.length > 0 ? (
             course.modules.map((mod, index) => {
-              const isExpanded = expandedModules[mod.module_id];
-              const completedCount = mod.topics
-                ? mod.topics.filter((t) => t.is_completed).length
-                : 0;
-              const totalCount = mod.topics ? mod.topics.length : 0;
+              const isToggling = togglingModuleId === mod.module_id;
+              const hasPdf = mod.pdf_url || mod.pdf_file;
 
               return (
-                <div key={mod.module_id} className="module-accordion-item">
-                  {/* Module Header */}
-                  <div
-                    className="module-accordion-header"
-                    onClick={() => toggleModuleAccordion(mod.module_id)}
-                  >
-                    <div className="module-header-left">
-                      <span className="module-index-badge">{index + 1}</span>
+                <div
+                  key={mod.module_id}
+                  className={`topic-card ${mod.is_completed ? "completed" : ""}`}
+                  style={{ marginBottom: "16px", borderRadius: "12px", border: "1px solid #e2e8f0" }}
+                >
+                  <div className="topic-card-top">
+                    <div className="topic-title-wrapper">
+                      <button
+                        type="button"
+                        className={`btn-topic-checkbox ${
+                          mod.is_completed ? "checked" : ""
+                        }`}
+                        onClick={() =>
+                          !isToggling && handleToggleModule(mod.module_id)
+                        }
+                        title={
+                          mod.is_completed
+                            ? "Mark module as incomplete"
+                            : "Mark module as complete"
+                        }
+                      >
+                        {isToggling ? (
+                          <Loader2 size={16} className="spin" />
+                        ) : mod.is_completed ? (
+                          <CheckCircle2 size={18} />
+                        ) : (
+                          <PlayCircle size={18} />
+                        )}
+                      </button>
+
                       <div>
-                        <h4 className="module-header-title">{mod.title}</h4>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span className="module-index-badge">{index + 1}</span>
+                          <h5 className="topic-title" style={{ fontSize: "1.05rem", fontWeight: "600" }}>{mod.title}</h5>
+                        </div>
                         {mod.description && (
-                          <p className="module-header-desc">{mod.description}</p>
+                          <p className="topic-desc" style={{ marginTop: "4px" }}>{mod.description}</p>
                         )}
                       </div>
                     </div>
 
-                    <div className="module-header-right">
-                      <span className="module-topic-count">
-                        {completedCount}/{totalCount} Completed
-                      </span>
-                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </div>
+                    <button
+                      type="button"
+                      className={`btn-toggle-completion ${
+                        mod.is_completed ? "completed" : ""
+                      }`}
+                      onClick={() =>
+                        !isToggling && handleToggleModule(mod.module_id)
+                      }
+                    >
+                      {mod.is_completed ? "Completed" : "Mark Complete"}
+                    </button>
                   </div>
 
-                  {/* Module Topics List */}
-                  {isExpanded && (
-                    <div className="module-topics-content">
-                      {mod.topics && mod.topics.length > 0 ? (
-                        mod.topics.map((topic) => {
-                          const isToggling = togglingTopicId === topic.topic_id;
-                          const hasPdf = topic.pdf_url || topic.pdf_file;
+                  {/* Module PDF Material Section */}
+                  {hasPdf && (
+                    <div className="topic-materials-section" style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f1f5f9" }}>
+                      <div className="materials-header">
+                        <FileText size={14} color="#6366f1" />
+                        <span>Unit Study Material PDF</span>
+                      </div>
 
-                          return (
-                            <div
-                              key={topic.topic_id}
-                              className={`topic-card ${
-                                topic.is_completed ? "completed" : ""
-                              }`}
-                            >
-                              <div className="topic-card-top">
-                                <div className="topic-title-wrapper">
-                                  <button
-                                    type="button"
-                                    className={`btn-topic-checkbox ${
-                                      topic.is_completed ? "checked" : ""
-                                    }`}
-                                    onClick={() =>
-                                      !isToggling && handleToggleTopic(topic.topic_id)
-                                    }
-                                    title={
-                                      topic.is_completed
-                                        ? "Mark topic as incomplete"
-                                        : "Mark topic as complete"
-                                    }
-                                  >
-                                    {isToggling ? (
-                                      <Loader2 size={16} className="spin" />
-                                    ) : topic.is_completed ? (
-                                      <CheckCircle2 size={18} />
-                                    ) : (
-                                      <PlayCircle size={18} />
-                                    )}
-                                  </button>
+                      <div className="materials-grid">
+                        <div className="material-item-card">
+                          <div className="material-icon">
+                            <FileText size={20} color="#ef4444" />
+                          </div>
 
-                                  <div>
-                                    <h5 className="topic-title">{topic.title}</h5>
-                                    {topic.description && (
-                                      <p className="topic-desc">{topic.description}</p>
-                                    )}
-                                  </div>
-                                </div>
+                          <div className="material-info">
+                            <span className="material-title">
+                              {mod.pdf_title || `${mod.title} Notes`}
+                            </span>
+                            {mod.file_size > 0 && (
+                              <span className="material-size">
+                                {(mod.file_size / 1024).toFixed(1)} KB • PDF
+                              </span>
+                            )}
+                          </div>
 
-                                <button
-                                  type="button"
-                                  className={`btn-toggle-completion ${
-                                    topic.is_completed ? "completed" : ""
-                                  }`}
-                                  onClick={() =>
-                                    !isToggling && handleToggleTopic(topic.topic_id)
-                                  }
-                                >
-                                  {topic.is_completed
-                                    ? "Completed"
-                                    : "Mark Complete"}
-                                </button>
-                              </div>
-
-                              {/* Topic PDF Material Section */}
-                              {hasPdf && (
-                                <div className="topic-materials-section">
-                                  <div className="materials-header">
-                                    <FileText size={14} color="#6366f1" />
-                                    <span>Course Material & Study PDF</span>
-                                  </div>
-
-                                  <div className="materials-grid">
-                                    <div className="material-item-card">
-                                      <div className="material-icon">
-                                        <FileText size={20} color="#ef4444" />
-                                      </div>
-
-                                      <div className="material-info">
-                                        <span className="material-title">
-                                          {topic.pdf_title || `${topic.title} Notes`}
-                                        </span>
-                                        {topic.file_size > 0 && (
-                                          <span className="material-size">
-                                            {(topic.file_size / 1024).toFixed(1)} KB • PDF
-                                          </span>
-                                        )}
-                                      </div>
-
-                                      <button
-                                        type="button"
-                                        className="btn-open-pdf"
-                                        onClick={() =>
-                                          handleOpenPdf(topic.pdf_url || topic.pdf_file)
-                                        }
-                                      >
-                                        <span>Open PDF</span>
-                                        <ExternalLink size={13} />
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="empty-topics-notice">
-                          No topics added for this module yet.
+                          <button
+                            type="button"
+                            className="btn-open-pdf"
+                            onClick={() =>
+                              handleOpenPdf(mod.pdf_url || mod.pdf_file)
+                            }
+                          >
+                            <span>Open PDF</span>
+                            <ExternalLink size={13} />
+                          </button>
                         </div>
-                      )}
+                      </div>
                     </div>
                   )}
                 </div>
               );
             })
           ) : (
-            <div className="courses-empty-state">
-              <BookOpen size={40} color="#94a3b8" />
-              <p>No modules available for this course.</p>
+            <div className="empty-topics-notice">
+              No modules added for this course yet.
             </div>
           )}
         </div>

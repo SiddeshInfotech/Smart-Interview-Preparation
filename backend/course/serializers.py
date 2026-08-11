@@ -3,7 +3,6 @@ from .models import (
     Domain,
     Course,
     CourseModule,
-    CourseTopic,
     CourseProgress,
 )
 
@@ -27,15 +26,15 @@ class DomainSerializer(serializers.ModelSerializer):
         return obj.courses.filter(is_active=True).count()
 
 
-class CourseTopicSerializer(serializers.ModelSerializer):
+class CourseModuleSerializer(serializers.ModelSerializer):
     pdf_url = serializers.SerializerMethodField()
     is_completed = serializers.SerializerMethodField()
 
     class Meta:
-        model = CourseTopic
+        model = CourseModule
         fields = [
-            "topic_id",
-            "module",
+            "module_id",
+            "course",
             "title",
             "description",
             "sequence",
@@ -58,9 +57,9 @@ class CourseTopicSerializer(serializers.ModelSerializer):
         return None
 
     def get_is_completed(self, obj):
-        completed_ids = self.context.get("completed_topic_ids")
+        completed_ids = self.context.get("completed_module_ids")
         if completed_ids is not None:
-            return obj.topic_id in completed_ids
+            return obj.module_id in completed_ids
 
         request = self.context.get("request")
         domain_id = self.context.get("domain_id")
@@ -70,35 +69,13 @@ class CourseTopicSerializer(serializers.ModelSerializer):
                 dom_id = domain_id or (candidate.active_domain_id if candidate.active_domain else None)
                 if dom_id:
                     prog = CourseProgress.objects.filter(
-                        candidate=candidate, domain_id=dom_id, course=obj.module.course
+                        candidate=candidate, domain_id=dom_id, course=obj.course
                     ).first()
-                    if prog and isinstance(prog.completed_topic_ids, list):
-                        return obj.topic_id in prog.completed_topic_ids
+                    if prog and isinstance(prog.completed_module_ids, list):
+                        return obj.module_id in prog.completed_module_ids
             except Exception:
                 pass
         return False
-
-
-class CourseModuleSerializer(serializers.ModelSerializer):
-    topics = serializers.SerializerMethodField()
-
-    class Meta:
-        model = CourseModule
-        fields = [
-            "module_id",
-            "course",
-            "title",
-            "description",
-            "sequence",
-            "is_active",
-            "topics",
-            "created_at",
-            "updated_at",
-        ]
-
-    def get_topics(self, obj):
-        active_topics = obj.topics.filter(is_active=True).order_by("sequence", "topic_id")
-        return CourseTopicSerializer(active_topics, many=True, context=self.context).data
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -136,7 +113,8 @@ class CourseSerializer(serializers.ModelSerializer):
         return obj.modules.filter(is_active=True).count()
 
     def get_total_topics(self, obj):
-        return CourseTopic.objects.filter(module__course=obj, module__is_active=True, is_active=True).count()
+        # Kept for backward compatibility with frontend: total topics equals total modules
+        return obj.modules.filter(is_active=True).count()
 
     def get_progress_percentage(self, obj):
         progress_map = self.context.get("progress_map")
@@ -172,7 +150,7 @@ class CourseProgressSerializer(serializers.ModelSerializer):
             "course",
             "course_title",
             "progress_percentage",
-            "completed_topic_ids",
+            "completed_module_ids",
             "completed",
             "completed_at",
             "started_at",
@@ -183,3 +161,4 @@ class CourseProgressSerializer(serializers.ModelSerializer):
 
 class ActiveDomainUpdateSerializer(serializers.Serializer):
     domain_id = serializers.IntegerField(required=True)
+

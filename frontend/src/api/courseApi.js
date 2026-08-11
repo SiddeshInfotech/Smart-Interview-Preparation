@@ -22,7 +22,10 @@ export const fetchCourseModules = (courseId, domainId) =>
     params: domainId ? { domain_id: domainId } : {},
   });
 
-export const toggleTopicCompletion = (topicId, domainId) =>
-  api.post(`/topics/${topicId}/toggle-complete/`, { domain_id: domainId });
+export const toggleModuleCompletion = (moduleId, domainId) =>
+  api.post(`/modules/${moduleId}/toggle-complete/`, { domain_id: domainId });
+
+export const toggleTopicCompletion = toggleModuleCompletion;
 
 export const fetchCourseProgress = () => api.get("/course-progress/");
+

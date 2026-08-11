@@ -3,18 +3,12 @@ from .models import (
     Domain,
     Course,
     CourseModule,
-    CourseTopic,
     CourseProgress,
 )
 
 
-class CourseModuleInline(admin.TabularInline):
+class CourseModuleInline(admin.StackedInline):
     model = CourseModule
-    extra = 1
-
-
-class CourseTopicInline(admin.StackedInline):
-    model = CourseTopic
     extra = 1
 
 
@@ -35,17 +29,9 @@ class CourseAdmin(admin.ModelAdmin):
 
 @admin.register(CourseModule)
 class CourseModuleAdmin(admin.ModelAdmin):
-    list_display = ["module_id", "title", "course", "sequence", "is_active"]
+    list_display = ["module_id", "title", "course", "sequence", "pdf_file", "file_size", "is_active"]
     list_filter = ["course__domain", "course", "is_active"]
     search_fields = ["title", "description", "course__title"]
-    inlines = [CourseTopicInline]
-
-
-@admin.register(CourseTopic)
-class CourseTopicAdmin(admin.ModelAdmin):
-    list_display = ["topic_id", "title", "module", "sequence", "pdf_file", "file_size", "is_active"]
-    list_filter = ["module__course__domain", "module__course", "is_active"]
-    search_fields = ["title", "description", "module__title"]
 
 
 @admin.register(CourseProgress)
@@ -61,3 +47,4 @@ class CourseProgressAdmin(admin.ModelAdmin):
     ]
     list_filter = ["domain", "completed"]
     search_fields = ["candidate__user__email", "course__title", "domain__name"]
+

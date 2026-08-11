@@ -4,7 +4,6 @@ from .views import (
     DomainViewSet,
     CourseViewSet,
     CourseModuleViewSet,
-    CourseTopicViewSet,
     ActiveDomainView,
     CourseProgressViewSet,
     CourseBootstrapView,
@@ -14,7 +13,6 @@ router = DefaultRouter()
 router.register(r"domains", DomainViewSet, basename="domain")
 router.register(r"courses", CourseViewSet, basename="course")
 router.register(r"modules", CourseModuleViewSet, basename="module")
-router.register(r"topics", CourseTopicViewSet, basename="topic")
 router.register(r"course-progress", CourseProgressViewSet, basename="course-progress")
 
 urlpatterns = [
@@ -23,3 +21,4 @@ urlpatterns = [
     path("candidate/active-domain/", ActiveDomainView.as_view(), name="candidate-active-domain"),
     path("", include(router.urls)),
 ]
+

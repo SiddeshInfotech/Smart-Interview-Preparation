@@ -12,14 +12,12 @@ from .models import (
     Domain,
     Course,
     CourseModule,
-    CourseTopic,
     CourseProgress,
 )
 from .serializers import (
     DomainSerializer,
     CourseSerializer,
     CourseModuleSerializer,
-    CourseTopicSerializer,
     CourseProgressSerializer,
     ActiveDomainUpdateSerializer,
 )
@@ -38,7 +36,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 class CourseBootstrapView(APIView):
     """
     High-Performance Orchestrator Endpoint:
-    Returns Active Domain, Available Domains, Courses, Modules, Topics, and Progress
+    Returns Active Domain, Available Domains, Courses, Modules, and Progress
     in a single optimized response payload with pre-fetching.
     """
     permission_classes = [permissions.IsAuthenticated]
@@ -64,10 +62,10 @@ class CourseBootstrapView(APIView):
         if active_domain:
             active_domain_data = DomainSerializer(active_domain, context={"request": request}).data
 
-            # Pre-fetch courses, modules, topics in 1 query
+            # Pre-fetch courses and modules in 1 query
             domain_courses = Course.objects.filter(
                 domain=active_domain, is_active=True
-            ).prefetch_related("modules__topics").order_by("sequence", "course_id")
+            ).prefetch_related("modules").order_by("sequence", "course_id")
 
             # Pre-fetch candidate progress records for active domain
             progress_qs = CourseProgress.objects.filter(
@@ -143,21 +141,6 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
     serializer_class = CourseModuleSerializer
     permission_classes = [IsAdminOrReadOnly]
 
-    @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
-    def topics(self, request, pk=None):
-        module = self.get_object()
-        active_topics = CourseTopic.objects.filter(module=module, is_active=True).order_by("sequence", "topic_id")
-        serializer = CourseTopicSerializer(
-            active_topics, many=True, context={"request": request, "domain_id": module.course.domain_id}
-        )
-        return Response(serializer.data)
-
-
-class CourseTopicViewSet(viewsets.ModelViewSet):
-    queryset = CourseTopic.objects.filter(is_active=True)
-    serializer_class = CourseTopicSerializer
-    permission_classes = [IsAdminOrReadOnly]
-
     @action(
         detail=True,
         methods=["post"],
@@ -165,40 +148,41 @@ class CourseTopicViewSet(viewsets.ModelViewSet):
         url_path="toggle-complete",
     )
     def toggle_complete(self, request, pk=None):
-        topic = self.get_object()
+        module = self.get_object()
         candidate = get_object_or_404(Candidate_Profile, user=request.user)
 
-        course = topic.module.course
+        course = module.course
         domain = course.domain
 
         progress, _ = CourseProgress.objects.get_or_create(
             candidate=candidate,
             domain=domain,
             course=course,
-            defaults={"progress_percentage": 0.0, "completed_topic_ids": []},
+            defaults={"progress_percentage": 0.0, "completed_module_ids": []},
         )
 
-        completed_ids = list(progress.completed_topic_ids or [])
-        if topic.topic_id in completed_ids:
-            completed_ids.remove(topic.topic_id)
+        completed_ids = list(progress.completed_module_ids or [])
+        if module.module_id in completed_ids:
+            completed_ids.remove(module.module_id)
             is_completed = False
         else:
-            completed_ids.append(topic.topic_id)
+            completed_ids.append(module.module_id)
             is_completed = True
 
-        progress.completed_topic_ids = completed_ids
+        progress.completed_module_ids = completed_ids
         progress.save()
 
         updated_prog = recalculate_course_progress(candidate, domain, course)
 
         return Response({
-            "topic_id": topic.topic_id,
-            "topic_completed": is_completed,
+            "module_id": module.module_id,
+            "module_completed": is_completed,
             "domain_id": domain.domain_id,
             "course_id": course.course_id,
             "course_progress": float(updated_prog.progress_percentage),
             "course_completed": updated_prog.completed,
         })
+
 
 
 class ActiveDomainView(APIView):

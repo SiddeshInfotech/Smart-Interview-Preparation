@@ -50,28 +50,8 @@ class CourseModule(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     sequence = models.PositiveIntegerField(default=1)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        db_table = "Course_Module"
-        ordering = ["sequence", "module_id"]
-
-    def __str__(self):
-        return f"{self.course.title} - {self.title}"
-
-
-class CourseTopic(models.Model):
-    topic_id = models.AutoField(primary_key=True)
-    module = models.ForeignKey(
-        CourseModule, on_delete=models.CASCADE, related_name="topics"
-    )
-    title = models.CharField(max_length=200)
-    description = models.TextField(blank=True, null=True)
-    sequence = models.PositiveIntegerField(default=1)
-    
-    # PDF material attached directly to Topic
+    # PDF material attached directly to Module
     pdf_file = models.FileField(
         upload_to="course_materials/%Y/%m/",
         validators=[validate_pdf_file],
@@ -86,11 +66,11 @@ class CourseTopic(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "Course_Topic"
-        ordering = ["sequence", "topic_id"]
+        db_table = "Course_Module"
+        ordering = ["sequence", "module_id"]
 
     def __str__(self):
-        return f"{self.module.title} - {self.title}"
+        return f"{self.course.title} - {self.title}"
 
     def save(self, *args, **kwargs):
         if self.pdf_file and not self.file_size:
@@ -119,8 +99,8 @@ class CourseProgress(models.Model):
     progress_percentage = models.DecimalField(
         max_digits=5, decimal_places=2, default=0.0
     )
-    completed_topic_ids = models.JSONField(
-        default=list, blank=True, help_text="List of completed topic IDs for this course"
+    completed_module_ids = models.JSONField(
+        default=list, blank=True, help_text="List of completed module IDs for this course"
     )
     completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -134,3 +114,4 @@ class CourseProgress(models.Model):
 
     def __str__(self):
         return f"{self.candidate.user.email} | {self.domain.name} | {self.course.title} | {self.progress_percentage}%"
+
