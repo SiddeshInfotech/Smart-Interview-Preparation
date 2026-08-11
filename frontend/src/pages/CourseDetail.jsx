@@ -9,7 +9,7 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react";
-import { fetchCourseDetails, getCachedCourseDetail } from "../api/courseApi";
+import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl } from "../api/courseApi";
 import "../styles/Courses.css";
 
 export default function CourseDetail() {
@@ -49,14 +49,32 @@ export default function CourseDetail() {
     }
   }, [courseId, domainId]);
 
+  // Preload PDF documents into browser HTTP cache for instant 0ms viewing
+  useEffect(() => {
+    if (course?.modules && course.modules.length > 0) {
+      course.modules.forEach((mod) => {
+        const rawUrl = mod.pdf_url || mod.pdf_file;
+        const formattedUrl = formatPdfUrl(rawUrl);
+        if (formattedUrl) {
+          const link = document.createElement("link");
+          link.rel = "prefetch";
+          link.href = formattedUrl;
+          link.as = "fetch";
+          document.head.appendChild(link);
+        }
+      });
+    }
+  }, [course]);
+
   const handleOpenPdfViewer = (mod) => {
-    const pdfUrl = mod.pdf_url || mod.pdf_file;
+    const rawUrl = mod.pdf_url || mod.pdf_file;
+    const formattedUrl = formatPdfUrl(rawUrl);
     const cleanTitle = mod.title.replace(/^Unit\s+\d+[:\s]*/i, "").trim();
 
-    if (pdfUrl) {
+    if (formattedUrl) {
       navigate(`/courses/${courseId}/pdf-viewer`, {
         state: {
-          pdfUrl: pdfUrl,
+          pdfUrl: formattedUrl,
           pdfTitle: mod.pdf_title || `${cleanTitle} Notes`,
           moduleTitle: cleanTitle,
           courseTitle: course?.title === "React JS Masterclass & Notes" ? "React JS Notes" : (course?.title || "Course"),
@@ -67,6 +85,7 @@ export default function CourseDetail() {
       alert("No PDF document is attached to this module.");
     }
   };
+
 
   if (loading) {
     return (

@@ -55,10 +55,11 @@ function App() {
             <Route path="/coding" element={<Coding />} />
             <Route path="/pricing" element={<Pricing />} />
 
-            {/* Quiz routes – candidate only */}
+            {/* Quiz & PDF Viewer routes – candidate only (Full viewport without AppShell navbar) */}
             <Route element={<RequireRole allowedRoles={["candidate"]} redirectTo="/dashboard" />}>
               <Route path="/quiz-page" element={<QuizPage />} />
               <Route path="/quiz-result" element={<QuizResult />} />
+              <Route path="courses/:courseId/pdf-viewer" element={<PdfViewerPage />} />
             </Route>
 
             {/* Interview Page - Direct Access (Testing Only) */}
@@ -72,8 +73,8 @@ function App() {
                 <Route path="quiz" element={<Quiz />} />
                 <Route path="courses" element={<Courses />} />
                 <Route path="courses/:courseId" element={<CourseDetail />} />
-                <Route path="courses/:courseId/pdf-viewer" element={<PdfViewerPage />} />
               </Route>
+
 
 
               <Route path="profile" element={<Profile />} />

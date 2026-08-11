@@ -5,6 +5,34 @@ const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes TTL
 let inMemoryBootstrap = null;
 let inMemoryCourseDetails = {};
 
+export const formatPdfUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  const envBase = import.meta.env.VITE_API_BASE_URL || "";
+  let origin = "";
+  if (envBase.startsWith("http")) {
+    try {
+      origin = new URL(envBase).origin;
+    } catch {
+      origin = "";
+    }
+  }
+  if (!origin) {
+    if (typeof window !== "undefined") {
+      if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        origin = `${window.location.protocol}//${window.location.hostname}:8000`;
+      } else {
+        origin = window.location.origin;
+      }
+    }
+  }
+  const cleanPath = url.startsWith("/") ? url : `/${url}`;
+  return `${origin}${cleanPath}`;
+};
+
+
 const loadCachedBootstrap = () => {
   if (inMemoryBootstrap) return inMemoryBootstrap;
   try {

@@ -53,8 +53,14 @@ class CourseModuleSerializer(serializers.ModelSerializer):
             request = self.context.get("request")
             if request:
                 return request.build_absolute_uri(obj.pdf_file.url)
-            return obj.pdf_file.url
+            url = obj.pdf_file.url
+            if not url.startswith("http"):
+                from django.conf import settings
+                backend_domain = getattr(settings, "BACKEND_DOMAIN", "http://localhost:8000")
+                return f"{backend_domain.rstrip('/')}{url}"
+            return url
         return None
+
 
     def get_is_completed(self, obj):
         completed_ids = self.context.get("completed_module_ids")

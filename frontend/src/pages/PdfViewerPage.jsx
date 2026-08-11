@@ -1,17 +1,26 @@
 import React from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Download, ExternalLink, FileText, AlertCircle } from "lucide-react";
+import { ArrowLeft, FileText, AlertCircle } from "lucide-react";
+import { formatPdfUrl } from "../api/courseApi";
 import "../styles/Courses.css";
+
 
 export default function PdfViewerPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const pdfUrl = location.state?.pdfUrl || null;
+  const statePdfUrl = location.state?.pdfUrl || null;
+  const formattedRawUrl = formatPdfUrl(statePdfUrl);
   const pdfTitle = location.state?.pdfTitle || "Unit Study Material PDF";
   const moduleTitle = location.state?.moduleTitle || "Course Unit";
   const domainId = location.state?.domainId || null;
+
+  // Append viewer parameters for fast streaming and width fitting
+  const pdfUrl = formattedRawUrl
+    ? (formattedRawUrl.includes("#") ? formattedRawUrl : `${formattedRawUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`)
+    : null;
+
 
   const handleBack = () => {
     if (courseId) {
@@ -41,27 +50,33 @@ export default function PdfViewerPage() {
   return (
     <div
       style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 80px)",
-        maxHeight: "100vh",
+        height: "100vh",
+        width: "100vw",
         background: "#0f172a",
-        margin: "-16px -24px",
         overflow: "hidden"
       }}
     >
-      {/* PDF Header Toolbar */}
+      {/* Fixed Header Toolbar Navbar */}
       <div
         style={{
+          height: "64px",
           background: "#0f172a",
           color: "#ffffff",
-          padding: "12px 24px",
+          padding: "0 24px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           borderBottom: "1px solid #1e293b",
           boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-          zIndex: 10
+          flexShrink: 0
         }}
       >
         {/* Left: Back Button */}
@@ -87,7 +102,7 @@ export default function PdfViewerPage() {
           <span>Back to Modules</span>
         </button>
 
-        {/* Center: Title */}
+        {/* Center: Title Only */}
         <div style={{ textAlign: "center", padding: "0 16px" }}>
           <h2
             style={{
@@ -104,60 +119,14 @@ export default function PdfViewerPage() {
             <FileText size={18} color="#818cf8" />
             {moduleTitle}
           </h2>
-          <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-            {pdfTitle}
-          </span>
         </div>
 
-        {/* Right: Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <a
-            href={pdfUrl}
-            download
-            style={{
-              background: "#4f46e5",
-              color: "#ffffff",
-              padding: "8px 14px",
-              borderRadius: "8px",
-              textDecoration: "none",
-              fontSize: "0.85rem",
-              fontWeight: "600",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              boxShadow: "0 2px 8px rgba(79, 70, 229, 0.3)"
-            }}
-          >
-            <Download size={16} />
-            <span>Download PDF</span>
-          </a>
-
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Open PDF in external browser tab"
-            style={{
-              background: "rgba(255, 255, 255, 0.08)",
-              color: "#cbd5e1",
-              border: "1px solid rgba(255, 255, 255, 0.15)",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              textDecoration: "none",
-              fontSize: "0.85rem",
-              fontWeight: "600",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px"
-            }}
-          >
-            <ExternalLink size={15} />
-          </a>
-        </div>
+        {/* Right: Spacer to keep title centered */}
+        <div style={{ width: "150px" }} />
       </div>
 
-      {/* PDF Viewport */}
-      <div style={{ flex: 1, width: "100%", height: "100%", background: "#1e293b" }}>
+      {/* Instant PDF Viewport Container */}
+      <div style={{ flex: 1, width: "100%", height: "calc(100vh - 64px)", background: "#1e293b" }}>
         <object
           data={pdfUrl}
           type="application/pdf"
@@ -180,4 +149,3 @@ export default function PdfViewerPage() {
     </div>
   );
 }
-
