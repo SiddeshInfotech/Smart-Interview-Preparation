@@ -13,7 +13,8 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
       setError("Email is required.");
       return;
     }
@@ -23,14 +24,14 @@ export default function ForgotPassword() {
     setSending(true);
 
     try {
-      const response = await forgotPassword({ email });
+      const response = await forgotPassword({ email: cleanEmail });
       console.log("Forgot password response:", response.data);
       setSuccess("OTP sent to your email. Redirecting...");
 
-      localStorage.setItem("reset_email", email);
+      localStorage.setItem("reset_email", cleanEmail);
 
       setTimeout(() => {
-        navigate("/otp", { state: { email } });
+        navigate("/otp", { state: { email: cleanEmail, flow: "reset" } });
       }, 1500);
     } catch (err) {
       console.error("Forgot password error:", err);

@@ -170,10 +170,10 @@ def forgot_password(request):
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    email = serializer.validated_data["email"]
+    email = serializer.validated_data["email"].strip().lower()
 
     try:
-        user = User.objects.get(email=email)
+        user = User.objects.get(email__iexact=email)
 
     except User.DoesNotExist:
         return Response(
@@ -207,13 +207,10 @@ def forgot_password(request):
     except Exception as e:
         print("EMAIL ERROR:", str(e))
         logger.exception(e)
-
-    return Response(
-        {"message": str(e)},
-        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    )
-
-    return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(
+            {"message": f"Failed to send OTP email: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 @api_view(["POST"])
@@ -224,11 +221,11 @@ def verify_otp(request):
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    email = serializer.validated_data["email"]
-    otp = serializer.validated_data["otp"]
+    email = serializer.validated_data["email"].strip().lower()
+    otp = serializer.validated_data["otp"].strip()
 
     try:
-        user = User.objects.get(email=email)
+        user = User.objects.get(email__iexact=email)
     except User.DoesNotExist:
         return Response(
             {"message": "Email not registered."}, status=status.HTTP_404_NOT_FOUND
@@ -279,11 +276,11 @@ def reset_password(request):
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    email = serializer.validated_data["email"]
+    email = serializer.validated_data["email"].strip().lower()
     new_password = serializer.validated_data["new_password"]
 
     try:
-        user = User.objects.get(email=email)
+        user = User.objects.get(email__iexact=email)
     except User.DoesNotExist:
         return Response(
             {"message": "User not found."},

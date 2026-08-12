@@ -30,7 +30,7 @@ export default function OTP() {
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const inputsRef = useRef([]);
-  const submittedRef = useRef(false);
+  const lastSubmittedCodeRef = useRef("");
 
   useEffect(() => {
     if (!email) {
@@ -57,6 +57,7 @@ export default function OTP() {
   };
 
   const setDigit = (index, value) => {
+    lastSubmittedCodeRef.current = "";
     setDigits((prev) => {
       const next = [...prev];
       next[index] = value;
@@ -101,6 +102,7 @@ export default function OTP() {
       .slice(0, OTP_LENGTH)
       .split("");
     if (pasted.length === 0) return;
+    lastSubmittedCodeRef.current = "";
     const next = Array(OTP_LENGTH).fill("");
     pasted.forEach((d, i) => (next[i] = d));
     setDigits(next);
@@ -112,8 +114,8 @@ export default function OTP() {
   const isComplete = code.length === OTP_LENGTH;
 
   const handleVerify = async () => {
-    if (!isComplete || !email || submittedRef.current) return;
-    submittedRef.current = true;
+    if (!isComplete || !email || verifying || lastSubmittedCodeRef.current === code) return;
+    lastSubmittedCodeRef.current = code;
 
     setVerifying(true);
     setError("");
@@ -125,7 +127,7 @@ export default function OTP() {
         await verifyRegistrationOTP(email, code);
         setSuccess("Email verified successfully! Redirecting...");
         setTimeout(() => {
-          navigate("/login", { state: { email } }); // or to registration completion
+          navigate("/login", { state: { email } });
         }, 1500);
       } else {
         // Password reset OTP verification
@@ -134,7 +136,6 @@ export default function OTP() {
         localStorage.setItem("reset_email", email);
         setTimeout(() => {
           navigate("/reset-password", { state: { email } });
-          localStorage.removeItem("reset_email");
         }, 1500);
       }
     } catch (err) {
@@ -144,8 +145,6 @@ export default function OTP() {
       else if (err.response?.data?.error) errorMessage = err.response.data.error;
       else if (err.response?.data?.detail) errorMessage = err.response.data.detail;
       setError(errorMessage);
-      submittedRef.current = false;
-      setTimeout(() => setError(""), 5000);
     } finally {
       setVerifying(false);
     }
@@ -157,6 +156,7 @@ export default function OTP() {
     setResending(true);
     setError("");
     setSuccess("");
+    lastSubmittedCodeRef.current = "";
 
     try {
       if (flow === "registration") {
@@ -182,18 +182,11 @@ export default function OTP() {
 
   // Auto-submit when OTP is complete
   useEffect(() => {
-    if (isComplete && !verifying && email && !submittedRef.current) {
+    if (isComplete && !verifying && email && lastSubmittedCodeRef.current !== code) {
       handleVerify();
     }
     // eslint-disable-next-line
-  }, [isComplete, email]);
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      localStorage.removeItem("reset_email");
-    };
-  }, []);
+  }, [isComplete, email, code, verifying]);
 
   if (!email) {
     return (

@@ -49,6 +49,7 @@ function App() {
             <Route path="/role-selection" element={<RoleSelection />} />
             <Route path="/interviewer-profile" element={<InterviewerProfile />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/forget-password" element={<ForgotPassword />} />
             <Route path="/Auth-page" element={<AuthPage />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/candidate-profile" element={<CandidateProfile />} />
