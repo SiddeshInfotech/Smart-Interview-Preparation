@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sun, Moon, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock, HelpCircle, BookOpen } from "lucide-react";
+import { Sun, Moon, UserCircle, Brain, LayoutDashboard, ClipboardList, FileText, CalendarClock, HelpCircle, BookOpen, User, LogOut } from "lucide-react";
 import NotificationPopup from "./NotificationPopup";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -237,6 +237,7 @@ export default function PageNavbar({
                 <button
                   type="button"
                   className="dropdown-item"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                   onClick={() => {
                     setProfileMenuOpen(false);
                     if (userProfile.role === "interviewer") {
@@ -246,7 +247,8 @@ export default function PageNavbar({
                     }
                   }}
                 >
-                  View Profile
+                  <User size={16} />
+                  <span>View Profile</span>
                 </button>
                 {/* Feedback button - icon and text aligned */}
                 <button
@@ -265,12 +267,14 @@ export default function PageNavbar({
                 <button
                   type="button"
                   className="dropdown-item logout"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                   onClick={() => {
                     setProfileMenuOpen(false);
                     handleLogout();
                   }}
                 >
-                  Log Out
+                  <LogOut size={16} />
+                  <span>Log Out</span>
                 </button>
               </div>
             )}

@@ -360,7 +360,7 @@ const ResumeUpload = () => {
                     </div>
                   </div>
                   <div className="ru-result-body">
-                    <div className="analysis-row">
+                    <div className="analysis-row analysis-row--wrap">
                       <div className="analysis-field">
                         <span className="analysis-field__label">Target Role / Title</span>
                         <span className="analysis-field__value bold-text">{analysisResult.role || "—"}</span>
@@ -387,7 +387,13 @@ const ResumeUpload = () => {
                           </div>
                         </>
                       )}
-                      <div className="analysis-field analysis-field--grow">
+                      <div className="analysis-field analysis-field--score">
+                        <span className="analysis-field__label">Power Score</span>
+                        <span className="analysis-field__score-badge" style={{ color: scoreTier.color, background: scoreTier.bg }}>
+                          {analysisResult.resume_score ?? "—"} / 100
+                        </span>
+                      </div>
+                      <div className="analysis-field analysis-field--full">
                         <span className="analysis-field__label">Executive Summary & Domain Alignment</span>
                         <span className="analysis-field__value">
                           {analysisResult.summary || "—"}
@@ -396,12 +402,6 @@ const ResumeUpload = () => {
                               <strong>Domain Alignment:</strong> {analysisResult.domain_match_feedback}
                             </div>
                           )}
-                        </span>
-                      </div>
-                      <div className="analysis-field analysis-field--score">
-                        <span className="analysis-field__label">Power Score</span>
-                        <span className="analysis-field__score-badge" style={{ color: scoreTier.color, background: scoreTier.bg }}>
-                          {analysisResult.resume_score ?? "—"} / 100
                         </span>
                       </div>
                     </div>

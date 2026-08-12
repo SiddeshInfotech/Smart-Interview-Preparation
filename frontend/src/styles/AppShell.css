@@ -240,13 +240,21 @@ body.dark-theme .dropdown-divider {
 }
 
 [data-theme="dark"] .dropdown-item,
-body.dark-theme .dropdown-item {
+body.dark-theme .dropdown-item,
+[data-theme="dark"] .dropdown-item.logout,
+body.dark-theme .dropdown-item.logout {
   color: #ffffff !important;
 }
 
-[data-theme="dark"] .dropdown-item:hover:not(.disabled):not(.logout),
-body.dark-theme .dropdown-item:hover:not(.disabled):not(.logout) {
+[data-theme="dark"] .dropdown-item:hover:not(.disabled),
+body.dark-theme .dropdown-item:hover:not(.disabled) {
   background: #334155 !important;
   color: #ffffff !important;
+}
+
+[data-theme="dark"] .dropdown-item svg,
+body.dark-theme .dropdown-item svg {
+  color: inherit !important;
+  stroke: currentColor !important;
 }
 
