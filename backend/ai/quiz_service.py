@@ -380,8 +380,12 @@ def generate_chapter_quiz_questions(
                     "source_topic": str(src_top).strip(),
                 })
 
-            if len(validated_questions) >= min(count, 5):
-                logger.info(f"[QUIZ_SERVICE] Successfully generated {len(validated_questions)} PDF-grounded questions")
+            supported_count = len(validated_questions)
+            rejected_count = len(raw_questions) - supported_count
+            logger.info(f"[QUIZ] AI generated: {len(raw_questions)} raw questions")
+            logger.info(f"[QUIZ] Validation: {supported_count} supported, {rejected_count} rejected")
+
+            if supported_count >= min(count, 5):
                 return validated_questions[:count]
 
         except Exception as e:

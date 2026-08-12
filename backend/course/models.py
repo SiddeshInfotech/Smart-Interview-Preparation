@@ -108,6 +108,14 @@ class CourseMaterial(models.Model):
         return f"{self.module.title} - {self.title}"
 
     def save(self, *args, **kwargs):
+        if self.pk:
+            try:
+                old_instance = CourseMaterial.objects.get(pk=self.pk)
+                if old_instance.pdf_file != self.pdf_file:
+                    self.extracted_text = None
+                    self.text_extracted_at = None
+            except Exception:
+                pass
         if self.pdf_file and not self.file_size:
             try:
                 self.file_size = self.pdf_file.size
