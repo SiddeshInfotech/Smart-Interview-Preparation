@@ -49,6 +49,9 @@ def serve_media_with_frame_headers(request, path):
     response = serve(request, path, document_root=settings.MEDIA_ROOT)
     response["X-Frame-Options"] = "ALLOWALL"
     response["Content-Security-Policy"] = "frame-ancestors *"
+    response["Cache-Control"] = "public, max-age=31536000, immutable"
+    response["Accept-Ranges"] = "bytes"
+    response["Access-Control-Allow-Origin"] = "*"
     return response
 
 urlpatterns += [

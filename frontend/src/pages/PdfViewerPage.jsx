@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import { formatPdfUrl } from "../api/courseApi";
+import { getCachedPdfBuffer, prefetchPdf } from "../api/pdfCache";
 import "../styles/Courses.css";
 
 // Configure worker URL from cdnjs for lightweight background rendering
@@ -44,6 +45,7 @@ export default function PdfViewerPage() {
     }
   };
 
+  // 1. Fetch PDF Document (Using Memory Cache if Available)
   useEffect(() => {
     let isCancelled = false;
 
@@ -55,22 +57,38 @@ export default function PdfViewerPage() {
     setLoading(true);
     setError(null);
 
-    const loadingTask = pdfjsLib.getDocument({
-      url: formattedRawUrl,
-      cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
-      cMapPacked: true,
-    });
+    const cachedBuffer = getCachedPdfBuffer(formattedRawUrl);
+
+    let loadingTask;
+    if (cachedBuffer) {
+      // Instant load from memory cache
+      loadingTask = pdfjsLib.getDocument({
+        data: new Uint8Array(cachedBuffer),
+        cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+        cMapPacked: true,
+      });
+    } else {
+      // Fast stream load + trigger cache population
+      loadingTask = pdfjsLib.getDocument({
+        url: formattedRawUrl,
+        cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+        cMapPacked: true,
+        disableAutoFetch: false,
+        disableStream: false,
+        rangeChunkSize: 65536,
+      });
+      prefetchPdf(formattedRawUrl);
+    }
 
     loadingTask.promise
       .then((doc) => {
         if (!isCancelled) {
           setPdfDoc(doc);
           setNumPages(doc.numPages);
-          setLoading(false);
         }
       })
       .catch((err) => {
-        console.error("PDF.js loading error:", err);
+        console.error("PDF loading error:", err);
         if (!isCancelled) {
           setError("Failed to load PDF document.");
           setLoading(false);
@@ -82,7 +100,7 @@ export default function PdfViewerPage() {
     };
   }, [formattedRawUrl]);
 
-  // Render pages to canvas when pdfDoc or scale changes
+  // 2. High-Performance Virtualized Page Renderer using IntersectionObserver
   useEffect(() => {
     if (!pdfDoc || !containerRef.current) return;
 
@@ -90,49 +108,127 @@ export default function PdfViewerPage() {
     const container = containerRef.current;
     container.innerHTML = "";
 
-    const renderAllPages = async () => {
-      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-        if (isCancelled) break;
+    const activeRenderTasks = new Map();
 
-        try {
-          const page = await pdfDoc.getPage(pageNum);
-          const viewport = page.getViewport({ scale });
+    const renderPageToCanvas = async (pageNum, pageWrapper, canvas) => {
+      if (isCancelled || pageWrapper.dataset.rendered === "true") return;
+      pageWrapper.dataset.rendered = "rendering";
+
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        if (isCancelled) return;
+
+        const outputScale = window.devicePixelRatio || 1;
+        const viewport = page.getViewport({ scale });
+
+        canvas.width = Math.floor(viewport.width * outputScale);
+        canvas.height = Math.floor(viewport.height * outputScale);
+        canvas.style.width = `${Math.floor(viewport.width)}px`;
+        canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+        const ctx = canvas.getContext("2d");
+        ctx.scale(outputScale, outputScale);
+
+        const renderContext = {
+          canvasContext: ctx,
+          viewport: viewport,
+        };
+
+        const renderTask = page.render(renderContext);
+        activeRenderTasks.set(pageNum, renderTask);
+
+        await renderTask.promise;
+        pageWrapper.dataset.rendered = "true";
+        activeRenderTasks.delete(pageNum);
+
+        // Hide loading spinner as soon as Page 1 completes
+        if (pageNum === 1) {
+          setLoading(false);
+        }
+      } catch (err) {
+        if (err?.name !== "RenderingCancelledException") {
+          console.error(`Page ${pageNum} render error:`, err);
+        }
+        pageWrapper.dataset.rendered = "false";
+      }
+    };
+
+    const setupPages = async () => {
+      try {
+        // Get Page 1 viewport to calculate aspect ratio for smooth layout placeholders
+        const page1 = await pdfDoc.getPage(1);
+        const viewport1 = page1.getViewport({ scale });
+        const height = viewport1.height;
+
+        const pageWrappers = [];
+
+        // Create DOM placeholders for all pages immediately
+        for (let i = 1; i <= pdfDoc.numPages; i++) {
+          const pageWrapper = document.createElement("div");
+          pageWrapper.id = `pdf-page-wrapper-${i}`;
+          pageWrapper.dataset.pageNum = i;
+          pageWrapper.dataset.rendered = "false";
+          pageWrapper.style.position = "relative";
+          pageWrapper.style.display = "flex";
+          pageWrapper.style.justifyContent = "center";
+          pageWrapper.style.alignItems = "center";
+          pageWrapper.style.marginBottom = "24px";
+          pageWrapper.style.minHeight = `${height}px`;
+          pageWrapper.style.width = "100%";
 
           const canvas = document.createElement("canvas");
-          const context = canvas.getContext("2d");
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
           canvas.style.display = "block";
-          canvas.style.margin = "0 auto 20px auto";
           canvas.style.borderRadius = "8px";
           canvas.style.boxShadow = "0 6px 20px rgba(0,0,0,0.35)";
           canvas.style.background = "#ffffff";
 
-          const pageWrapper = document.createElement("div");
-          pageWrapper.style.position = "relative";
-          pageWrapper.style.display = "flex";
-          pageWrapper.style.justifyContent = "center";
           pageWrapper.appendChild(canvas);
-
-          if (container && !isCancelled) {
-            container.appendChild(pageWrapper);
-          }
-
-          const renderContext = {
-            canvasContext: context,
-            viewport: viewport,
-          };
-          await page.render(renderContext).promise;
-        } catch (err) {
-          console.error(`Error rendering PDF page ${pageNum}:`, err);
+          container.appendChild(pageWrapper);
+          pageWrappers.push({ pageNum: i, wrapper: pageWrapper, canvas });
         }
+
+        // Render Page 1 immediately for 0ms perceived delay
+        if (pageWrappers[0]) {
+          await renderPageToCanvas(1, pageWrappers[0].wrapper, pageWrappers[0].canvas);
+        }
+
+        // Use IntersectionObserver to render subsequent pages lazily when within 400px of viewport
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                const pNum = parseInt(entry.target.dataset.pageNum, 10);
+                const targetObj = pageWrappers.find((p) => p.pageNum === pNum);
+                if (targetObj && entry.target.dataset.rendered === "false") {
+                  renderPageToCanvas(pNum, targetObj.wrapper, targetObj.canvas);
+                }
+              }
+            });
+          },
+          {
+            root: container.parentElement,
+            rootMargin: "400px 0px 400px 0px",
+            threshold: 0.01,
+          }
+        );
+
+        pageWrappers.forEach((p) => observer.observe(p.wrapper));
+      } catch (err) {
+        console.error("Setup pages error:", err);
+        setLoading(false);
       }
     };
 
-    renderAllPages();
+    setupPages();
 
     return () => {
       isCancelled = true;
+      activeRenderTasks.forEach((task) => {
+        try {
+          task.cancel();
+        } catch (e) {}
+      });
+      activeRenderTasks.clear();
     };
   }, [pdfDoc, scale]);
 

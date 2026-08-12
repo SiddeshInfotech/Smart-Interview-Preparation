@@ -10,6 +10,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl } from "../api/courseApi";
+import { prefetchPdf } from "../api/pdfCache";
 import "../styles/Courses.css";
 
 export default function CourseDetail() {
@@ -48,6 +49,19 @@ export default function CourseDetail() {
       loadCourseData();
     }
   }, [courseId, domainId]);
+
+  // Background Prefetching of First 3 Module PDFs
+  useEffect(() => {
+    if (course?.modules && course.modules.length > 0) {
+      course.modules.slice(0, 3).forEach((mod) => {
+        const rawUrl = mod.pdf_url || mod.pdf_file;
+        const formattedUrl = formatPdfUrl(rawUrl);
+        if (formattedUrl) {
+          prefetchPdf(formattedUrl);
+        }
+      });
+    }
+  }, [course]);
 
   const handleOpenPdfViewer = (mod) => {
 
@@ -164,6 +178,11 @@ export default function CourseDetail() {
                 <div
                   key={mod.module_id}
                   className="topic-card"
+                  onMouseEnter={() => {
+                    const rawUrl = mod.pdf_url || mod.pdf_file;
+                    const formattedUrl = formatPdfUrl(rawUrl);
+                    if (formattedUrl) prefetchPdf(formattedUrl);
+                  }}
                   style={{
                     marginBottom: "16px",
                     borderRadius: "14px",
