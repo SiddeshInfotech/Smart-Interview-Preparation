@@ -155,8 +155,57 @@ const Quiz = () => {
     }
   };
 
+  const DOMAIN_CODING_LANGUAGES = {
+    'Web Development': ['HTML CSS', 'React JS', 'Python + Django'],
+    'Full Stack Domain': ['HTML CSS', 'React JS', 'Python + Django'],
+    'Data Analysis': ['Python', 'SQL'],
+    'Data Science / Analytics': ['Python', 'SQL'],
+    'Software Testing': ['Python', 'Software Testing'],
+    'Software Testing / QA': ['Python', 'Software Testing'],
+    'Mobile Development': ['React Native', 'Kotlin', 'Java'],
+    'Android Development': ['Java', 'Kotlin'],
+    'Cybersecurity': ['Python', 'C / C++', 'Bash Shell'],
+    'Game Development': ['C++', 'C#', 'Python'],
+    'UI/UX / HCI': ['HTML CSS', 'JavaScript', 'Design Systems']
+  };
+
+  const getDomainLanguages = (domainName) => {
+    if (!domainName) return ['HTML CSS', 'React JS', 'Python + Django'];
+    const norm = domainName.trim();
+    if (DOMAIN_CODING_LANGUAGES[norm]) {
+      return DOMAIN_CODING_LANGUAGES[norm];
+    }
+    const lower = norm.toLowerCase();
+    if (lower.includes('web') || lower.includes('full stack')) {
+      return ['HTML CSS', 'React JS', 'Python + Django'];
+    }
+    if (lower.includes('data')) {
+      return ['Python', 'SQL'];
+    }
+    if (lower.includes('test') || lower.includes('qa')) {
+      return ['Python', 'Software Testing'];
+    }
+    if (lower.includes('mobile') || lower.includes('android')) {
+      return ['React Native', 'Kotlin', 'Java'];
+    }
+    if (lower.includes('cyber') || lower.includes('security')) {
+      return ['Python', 'C / C++', 'Bash Shell'];
+    }
+    if (lower.includes('game')) {
+      return ['C++', 'C#', 'Python'];
+    }
+    return ['HTML CSS', 'React JS', 'Python + Django'];
+  };
+
   const modes = ['MCQ', 'Coding Challenge'];
-  const codingLanguages = ['C', 'C++', 'Java', 'Python'];
+  const codingLanguages = getDomainLanguages(candidateDomain);
+
+  useEffect(() => {
+    const allowed = getDomainLanguages(candidateDomain);
+    if (!allowed.includes(selectedCodingLanguage)) {
+      setSelectedCodingLanguage(allowed[0] || 'HTML CSS');
+    }
+  }, [candidateDomain]);
 
   // Handle single personalized generator
   const handleGenerate = async () => {

@@ -8,9 +8,14 @@ import "../styles/Coding.css";
 const mapLanguageKey = (langStr) => {
   if (!langStr) return "python";
   const lower = langStr.toLowerCase().trim();
-  if (lower === "c") return "c";
-  if (lower === "c++" || lower === "cpp") return "cpp";
-  if (lower === "java") return "java";
+  if (lower.includes("html") || lower.includes("css") || lower.includes("react") || lower.includes("javascript") || lower.includes("js")) return "javascript";
+  if (lower.includes("django") || lower.includes("python") || lower.includes("testing") || lower.includes("pytest")) return "python";
+  if (lower.includes("sql")) return "sql";
+  if (lower.includes("c++") || lower.includes("cpp")) return "cpp";
+  if (lower.includes("c#")) return "csharp";
+  if (lower.includes("c") && !lower.includes("css")) return "c";
+  if (lower.includes("java") && !lower.includes("script")) return "java";
+  if (lower.includes("kotlin")) return "kotlin";
   return "python";
 };
 
