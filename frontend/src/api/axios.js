@@ -1,9 +1,9 @@
 // src/api/axios.js
 import axios from "axios";
 
-// 1️⃣ Create the Axios instance with dynamic base URL
+// 1️⃣ Create the Axios instance with dynamic base URL and 15s timeout
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
-const api = axios.create({ baseURL });
+const api = axios.create({ baseURL, timeout: 15000 });
 
 // 2️⃣ Attach the JWT token interceptor
 api.interceptors.request.use((config) => {
