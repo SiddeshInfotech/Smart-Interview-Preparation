@@ -290,3 +290,102 @@ def get_fallback_quiz_questions(topics: List[str], count: int = 10) -> List[Dict
         }
     ]
     return all_fallbacks[:count]
+
+
+def generate_chapter_quiz_questions(
+    course_name: str,
+    chapter_name: str,
+    pdf_content: str,
+    count: int = 10,
+    difficulty: str = "Medium",
+    materials_list: list = None,
+) -> List[Dict[str, Any]]:
+    """
+    Generate chapter quiz questions strictly grounded in supplied PDF materials context.
+    Performs OpenRouter AI call using Gemini 2.0 Flash, cleaning, extraction, validation, and source traceability.
+    """
+    from .prompts import chapter_quiz_generation_prompt
+
+    prompt = chapter_quiz_generation_prompt(
+        course_name=course_name,
+        chapter_name=chapter_name,
+        pdf_content=pdf_content,
+        count=count,
+        difficulty=difficulty,
+    )
+
+    models = openrouter_service.get_models_for_feature("quiz")
+    primary_model = models[0] if models else "google/gemini-2.0-flash-01"
+
+    for attempt in range(1, 3):
+        try:
+            raw_text = openrouter_service.chat_with_model(
+                model=primary_model,
+                prompt=prompt,
+                temperature=0.4,
+                max_tokens=2500,
+                expect_json=True,
+            )
+            cleaned_text = clean_json_string(raw_text)
+            if not cleaned_text:
+                continue
+
+            parsed_data = parse_json_robust(cleaned_text)
+            raw_questions, _ = extract_questions_list(parsed_data)
+
+            if not raw_questions or not isinstance(raw_questions, list):
+                continue
+
+            validated_questions = []
+            default_material_name = materials_list[0]["filename"] if (materials_list and len(materials_list) > 0) else "Chapter Material PDF"
+
+            for item in raw_questions:
+                if not isinstance(item, dict):
+                    continue
+
+                q_text = item.get("text") or item.get("question") or item.get("question_text")
+                opts = item.get("options") or []
+                exp = item.get("explanation") or "Answer justified directly by chapter study material."
+                src_mat = item.get("source_material") or default_material_name
+                src_top = item.get("source_topic") or f"{chapter_name} Concepts"
+
+                if not q_text or not isinstance(opts, list) or len(opts) != 4:
+                    continue
+
+                # Clean options
+                clean_opts = [str(o).strip() for o in opts if str(o).strip()]
+                if len(clean_opts) != 4:
+                    continue
+
+                correct_idx = item.get("correct")
+                correct_str = item.get("correct_answer")
+
+                if correct_idx is not None and isinstance(correct_idx, int) and 0 <= correct_idx <= 3:
+                    final_correct_idx = correct_idx
+                    final_correct_str = clean_opts[correct_idx]
+                elif correct_str and str(correct_str).strip() in clean_opts:
+                    final_correct_str = str(correct_str).strip()
+                    final_correct_idx = clean_opts.index(final_correct_str)
+                else:
+                    final_correct_idx = 0
+                    final_correct_str = clean_opts[0]
+
+                validated_questions.append({
+                    "text": str(q_text).strip(),
+                    "options": clean_opts,
+                    "correct": final_correct_idx,
+                    "correct_answer": final_correct_str,
+                    "explanation": str(exp).strip(),
+                    "source_material": str(src_mat).strip(),
+                    "source_topic": str(src_top).strip(),
+                })
+
+            if len(validated_questions) >= min(count, 5):
+                logger.info(f"[QUIZ_SERVICE] Successfully generated {len(validated_questions)} PDF-grounded questions")
+                return validated_questions[:count]
+
+        except Exception as e:
+            logger.warning(f"[QUIZ_SERVICE] Chapter quiz generation attempt {attempt} failed: {e}")
+
+    logger.error("[QUIZ_SERVICE] AI chapter quiz generation returned invalid questions or timed out.")
+    return []

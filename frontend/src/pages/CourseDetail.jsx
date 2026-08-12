@@ -368,7 +368,7 @@ export default function CourseDetail() {
                         {generatingQuizModuleId === (mod.module_id || mod.id) ? (
                           <>
                             <Loader2 size={17} className="spin" />
-                            <span>Generating...</span>
+                            <span>Generating quiz from chapter material...</span>
                           </>
                         ) : (
                           <>

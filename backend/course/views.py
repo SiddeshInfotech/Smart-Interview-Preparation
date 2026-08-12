@@ -255,89 +255,91 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
     def generate_quiz(self, request, pk=None):
         module = self.get_object()
         course = module.course
-        domain = course.domain
 
-        # Extract text from module PDF if available
-        pdf_text = ""
-        if module.pdf_file:
-            try:
-                import PyPDF2
-                try:
-                    f = module.pdf_file.open("rb")
-                except Exception:
-                    f = open(module.pdf_file.path, "rb")
+        from .pdf_extractor import get_module_all_pdf_materials, build_chapter_material_context
+        materials = get_module_all_pdf_materials(module)
 
-                with f:
-                    reader = PyPDF2.PdfReader(f)
-                    extracted_pages = []
-                    for i in range(min(len(reader.pages), 15)):
-                        page_text = reader.pages[i].extract_text()
-                        if page_text:
-                            extracted_pages.append(f"--- PAGE {i+1} ---\n" + page_text.strip())
-                    pdf_text = "\n\n".join(extracted_pages).strip()
-            except Exception as e:
-                logger.warning(f"Could not extract text from PDF for module {module.module_id}: {e}")
+        logger.info(f"[QUIZ] Course: {course.title}")
+        logger.info(f"[QUIZ] Chapter: {module.title}")
+        logger.info(f"[QUIZ] Materials found: {len(materials)}")
 
-        if len(pdf_text) > 4000:
-            pdf_text = pdf_text[:4000] + "..."
-
-        topics = [module.title, course.title, domain.name]
-
-        if pdf_text:
-            custom_instruction = (
-                f"MANDATORY 2-STEP PDF READ & QUIZ GENERATION INSTRUCTIONS FOR GEMINI:\n"
-                f"STEP 1: FIRST READ AND COMPREHEND THE FULL PDF STUDY NOTES CONTENT ATTACHED BELOW.\n"
-                f"STEP 2: AFTER READING THE PDF CONTENT, GENERATE EXACTLY 10 MULTIPLE-CHOICE QUESTIONS DERIVED EXCLUSIVELY FROM THE CONCEPTS, CODE SNIPPETS, SYNTAX, DEFINITIONS, AND TECHNICAL FACTS PRESENTED IN THE PDF TEXT YOU JUST READ.\n\n"
-                f"CRITICAL CONSTRAINTS:\n"
-                f"- DO NOT ask generic, meta, or template questions.\n"
-                f"- DO NOT use information outside the provided PDF study notes.\n"
-                f"- Every question, option, and explanation MUST directly reference the specific information read from the PDF document below.\n\n"
-                f"FULL EXTRACTED PDF STUDY NOTES CONTENT:\n"
-                f"==================================================\n"
-                f"{pdf_text}\n"
-                f"==================================================\n"
-            )
-        else:
-            custom_instruction = (
-                f"Generate 10 specific technical multiple-choice questions testing core concepts, syntax, and rules for the unit study notes '{module.title}' from the course '{course.title}' (Domain: {domain.name}). Do NOT ask meta or template questions."
+        if not materials:
+            logger.warning(f"[QUIZ] Chapter '{module.title}' has no active PDF learning material.")
+            return Response(
+                {"error": "This chapter does not have any learning material available for quiz generation."},
+                status=400
             )
 
-        personalization_ctx = {}
-        if request.user and request.user.is_authenticated:
-            from common.personalization_service import get_candidate_personalization_context
-            personalization_ctx = get_candidate_personalization_context(request.user)
+        for mat in materials:
+            logger.info(f"[QUIZ] Processing: {mat['filename']} | Extracted characters: {len(mat['text'])}")
 
-        from ai.quiz_service import generate_quiz_questions
+        pdf_context_str, total_chars = build_chapter_material_context(course.title, module.title, materials)
+        logger.info(f"[QUIZ] Sending chapter material to AI ({total_chars} total characters)")
+
+        from ai.quiz_service import generate_chapter_quiz_questions
 
         try:
-            questions = generate_quiz_questions(
-                topics=topics,
-                difficulty="Medium",
+            questions = generate_chapter_quiz_questions(
+                course_name=course.title,
+                chapter_name=module.title,
+                pdf_content=pdf_context_str,
                 count=10,
-                mode="MCQ",
-                custom_instruction=custom_instruction,
-                personalization_context=personalization_ctx,
+                difficulty="Medium",
+                materials_list=materials,
+            )
+
+            if not questions or len(questions) == 0:
+                logger.error("[QUIZ] AI returned zero valid questions from chapter material.")
+                return Response(
+                    {"error": "Unable to generate the quiz from the available course material."},
+                    status=500
+                )
+
+            logger.info(f"[QUIZ] AI generated: {len(questions)} questions")
+
+            # Persist ChapterQuiz & ChapterQuestion records to DB
+            from quiz.models import ChapterQuiz, ChapterQuestion
+            candidate_profile = getattr(request.user, "candidate_profile", None) if (request.user and request.user.is_authenticated) else None
+
+            quiz_obj = ChapterQuiz.objects.create(
+                course=course,
+                module=module,
+                candidate=candidate_profile,
+                title=f"{module.title} Quiz",
+                difficulty="Medium",
             )
 
             for q in questions:
-                if not isinstance(q, dict) or not all(k in q for k in ('text', 'options', 'correct', 'explanation')):
-                    return Response(
-                        {"error": "Generated questions are missing required fields."},
-                        status=500
-                    )
+                ChapterQuestion.objects.create(
+                    quiz=quiz_obj,
+                    question_text=q["text"],
+                    option_a=q["options"][0],
+                    option_b=q["options"][1],
+                    option_c=q["options"][2],
+                    option_d=q["options"][3],
+                    correct_answer=q.get("correct_answer") or q["options"][q.get("correct", 0)],
+                    explanation=q.get("explanation", ""),
+                    source_material_name=q.get("source_material", materials[0]["filename"]),
+                    source_topic=q.get("source_topic", f"{module.title} Concepts"),
+                )
+
+            logger.info(f"[QUIZ] Quiz #{quiz_obj.quiz_id} saved successfully with {len(questions)} questions.")
 
             return Response({
+                "quiz_id": quiz_obj.quiz_id,
                 "questions": questions,
                 "module_id": module.module_id,
                 "module_title": module.title,
                 "course_id": course.course_id,
                 "course_title": course.title,
-                "domain_name": domain.name,
             }, status=200)
 
         except Exception as e:
-            logger.error(f"[ModuleQuizView] AI generation failed: {e}", exc_info=True)
-            return Response({"error": f"AI generation failed: {str(e)}"}, status=500)
+            logger.error(f"[QUIZ] Chapter quiz generation error for module {module.module_id}: {e}", exc_info=True)
+            return Response(
+                {"error": "Unable to generate the quiz from the available course material."},
+                status=500
+            )
 
 
 

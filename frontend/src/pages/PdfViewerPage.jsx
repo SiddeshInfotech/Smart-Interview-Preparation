@@ -408,7 +408,7 @@ export default function PdfViewerPage() {
               {generatingQuiz ? (
                 <>
                   <Loader2 size={15} className="spin" />
-                  <span>Generating...</span>
+                  <span>Generating quiz from chapter material...</span>
                 </>
               ) : (
                 <>

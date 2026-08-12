@@ -83,6 +83,39 @@ class CourseModule(models.Model):
         super().save(*args, **kwargs)
 
 
+class CourseMaterial(models.Model):
+    material_id = models.AutoField(primary_key=True)
+    module = models.ForeignKey(
+        CourseModule, on_delete=models.CASCADE, related_name="materials"
+    )
+    title = models.CharField(max_length=200)
+    pdf_file = models.FileField(
+        upload_to="course_materials/%Y/%m/",
+        validators=[validate_pdf_file],
+    )
+    file_size = models.PositiveIntegerField(default=0, help_text="File size in bytes")
+    extracted_text = models.TextField(blank=True, null=True, help_text="Cached text extracted from PDF")
+    text_extracted_at = models.DateTimeField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "Course_Material"
+        ordering = ["material_id"]
+
+    def __str__(self):
+        return f"{self.module.title} - {self.title}"
+
+    def save(self, *args, **kwargs):
+        if self.pdf_file and not self.file_size:
+            try:
+                self.file_size = self.pdf_file.size
+            except Exception:
+                pass
+        super().save(*args, **kwargs)
+
+
 class CourseProgress(models.Model):
     progress_id = models.AutoField(primary_key=True)
     candidate = models.ForeignKey(

@@ -436,3 +436,91 @@ Rules:
 - Return ONLY valid raw JSON object without markdown formatting, code block backticks (no ```json), or wrapping.
 - All numbers must be integers. Ensure all keys are present.
 """
+
+
+def chapter_quiz_generation_prompt(
+    course_name: str,
+    chapter_name: str,
+    pdf_content: str,
+    count: int = 10,
+    difficulty: str = "Medium",
+) -> str:
+    """
+    Generate strict prompt for chapter PDF quiz generation matching Section 4 specification.
+    Forces questions to be grounded EXCLUSIVELY in the supplied chapter material.
+    """
+    return f"""You are an educational quiz generator.
+
+Your task is to generate a quiz for a specific chapter of a course.
+
+IMPORTANT SOURCE RULE:
+The supplied course material is the ONLY authoritative source for this quiz.
+Generate questions ONLY from information explicitly contained in the supplied material.
+
+DO NOT:
+- use outside knowledge
+- rely on the chapter title alone
+- invent facts
+- add information that is not present in the material
+- assume information that is not explained in the material
+- create questions about topics that are not covered
+- use general knowledge to fill missing information
+
+If a fact is not supported by the supplied material, DO NOT create a question about it.
+
+The questions must test whether the candidate understood the provided learning material.
+
+COURSE:
+{course_name}
+
+CHAPTER:
+{chapter_name}
+
+SOURCE MATERIAL:
+{pdf_content}
+
+Generate {count} multiple-choice questions at internal difficulty level '{difficulty}'.
+
+Each question must:
+1. Be directly supported by the supplied material.
+2. Test an important concept from the material.
+3. Have exactly four options.
+4. Have exactly one correct answer.
+5. Avoid ambiguous wording.
+6. Avoid duplicate questions.
+7. Avoid questions that depend on information outside the material.
+8. Match the difficulty requested by the application.
+9. Include an explanation based on the supplied material.
+10. Include source_material (filename of the PDF) and source_topic (relevant section/topic from the material).
+
+For every generated question, internally verify:
+"Can this question and its correct answer be justified using only the supplied material?"
+
+If NO:
+discard the question and generate another one.
+
+If the material does not contain enough information to generate {count} valid questions, generate fewer questions rather than inventing information.
+
+Return the result as valid JSON.
+
+JSON FORMAT:
+{{
+  "questions": [
+    {{
+      "text": "Question text testing a concept from the material",
+      "options": [
+        "Option A text",
+        "Option B text",
+        "Option C text",
+        "Option D text"
+      ],
+      "correct": 0,
+      "correct_answer": "Option A text",
+      "explanation": "Explanation based only on the supplied material",
+      "source_material": "Name of the PDF",
+      "source_topic": "Relevant section/topic from the material"
+    }}
+  ]
+}}
+
+Begin JSON output now:"""

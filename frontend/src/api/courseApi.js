@@ -194,21 +194,36 @@ export const clearCourseCache = () => {
 };
 
 export const generateModuleQuiz = async (moduleId, unitTitle = "", courseTitle = "", domainName = "") => {
+  const mId = parseInt(moduleId, 10);
+  if (mId) {
+    try {
+      const res = await api.post(`/modules/${mId}/generate-quiz/`, {}, { timeout: 45000 });
+      if (res?.data?.questions && Array.isArray(res.data.questions) && res.data.questions.length > 0) {
+        return res;
+      }
+    } catch (err) {
+      console.warn(`[generateModuleQuiz] Chapter PDF endpoint error for module ${mId}:`, err);
+      if (err.response?.data?.error) {
+        throw new Error(err.response.data.error);
+      }
+    }
+  }
+
   const topics = [unitTitle, courseTitle, domainName].filter(Boolean);
   const payload = {
     topics: topics.length > 0 ? topics : ["Web Development"],
     mode: "MCQ",
     question_count: 10,
-    custom_instruction: `Generate exactly 10 multiple-choice questions specifically for the unit study notes '${unitTitle}' from course '${courseTitle}'.`,
+    custom_instruction: `Generate 10 multiple-choice questions grounded strictly in the PDF study material for '${unitTitle}' in course '${courseTitle}'.`,
   };
 
   try {
-    const res = await api.post("/quiz/generate/", payload, { timeout: 12000 });
+    const res = await api.post("/quiz/generate/", payload, { timeout: 15000 });
     if (res?.data?.questions && Array.isArray(res.data.questions) && res.data.questions.length > 0) {
       return res;
     }
   } catch (err) {
-    console.warn("[generateModuleQuiz] Render server cold-start or timeout. Returning instant unit quiz questions.", err);
+    console.warn("[generateModuleQuiz] Quiz generation fallback failed.", err);
   }
 
   return {
