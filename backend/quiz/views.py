@@ -35,6 +35,10 @@ def generate_quiz(request):
     personalization_ctx = get_candidate_personalization_context(request.user)
 
     data = request.data
+    req_domain = data.get("domain")
+    if req_domain and str(req_domain).strip():
+        personalization_ctx["domain"] = str(req_domain).strip()
+
     topics = data.get('topics', [])
     if not topics or not isinstance(topics, list) or len(topics) == 0:
         # Fallback to candidate domain or profile skills

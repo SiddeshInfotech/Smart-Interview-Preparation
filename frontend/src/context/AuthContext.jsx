@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import api from "../api/axios";
 
 const AuthContext = createContext(null);
@@ -70,15 +70,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const isFetchingProfileRef = useRef(false);
+  const isFetchingNotificationsRef = useRef(false);
+
   // Fetch complete profile details authoritatively from /auth/profile/
   // Fetch complete profile details authoritatively in a single unified request
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (force = false) => {
     const currentToken = localStorage.getItem("access_token");
     if (!currentToken) {
       setLoadingProfile(false);
       return;
     }
 
+    if (isFetchingProfileRef.current && !force) return;
+    isFetchingProfileRef.current = true;
     setLoadingProfile(true);
 
     try {
@@ -124,14 +129,18 @@ export const AuthProvider = ({ children }) => {
         console.error("Error fetching profile:", error);
       }
     } finally {
+      isFetchingProfileRef.current = false;
       setLoadingProfile(false);
     }
   }, []);
 
   // Fetch Notifications
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (force = false) => {
     const currentToken = localStorage.getItem("access_token");
     if (!currentToken) return;
+
+    if (isFetchingNotificationsRef.current && !force) return;
+    isFetchingNotificationsRef.current = true;
 
     try {
       const res = await api.get("/notifications/");
@@ -145,6 +154,7 @@ export const AuthProvider = ({ children }) => {
         console.error("Notification Fetch Error:", err);
       }
     } finally {
+      isFetchingNotificationsRef.current = false;
       setLoadingNotifications(false);
     }
   }, []);
@@ -195,13 +205,37 @@ export const AuthProvider = ({ children }) => {
       fetchProfile();
       fetchNotifications();
 
-      const interval = setInterval(fetchNotifications, 30000);
-      const onNotifUpdate = () => fetchNotifications();
+      const interval = setInterval(() => {
+        if (!document.hidden) {
+          fetchNotifications();
+        }
+      }, 60000);
+
+      const onNotifUpdate = (e) => {
+        if (e?.detail?.data && Array.isArray(e.detail.data)) {
+          setNotifications(e.detail.data);
+          localStorage.setItem("cached_notifications", JSON.stringify(e.detail.data));
+        } else {
+          fetchNotifications(true);
+        }
+      };
+
+      const onProfileUpdate = () => {
+        try {
+          const cached = localStorage.getItem(STORAGE_PROFILE_KEY);
+          if (cached) {
+            setUserProfile(JSON.parse(cached));
+          }
+        } catch(e) {}
+      };
+
       window.addEventListener("notificationUpdate", onNotifUpdate);
+      window.addEventListener("profileUpdate", onProfileUpdate);
 
       return () => {
         clearInterval(interval);
         window.removeEventListener("notificationUpdate", onNotifUpdate);
+        window.removeEventListener("profileUpdate", onProfileUpdate);
       };
     }
   }, [token, fetchProfile, fetchNotifications]);

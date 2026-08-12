@@ -373,7 +373,7 @@ export default function CourseDetail() {
                         ) : (
                           <>
                             <Sparkles size={17} />
-                            <span>{mod.is_completed ? "Retake Quiz" : "Take Quiz"}</span>
+                            <span>{mod.is_completed ? "Regenerate Quiz" : "Generate Quiz"}</span>
                           </>
                         )}
                       </button>

@@ -413,7 +413,7 @@ export default function PdfViewerPage() {
               ) : (
                 <>
                   <Sparkles size={15} />
-                  <span>{isCompleted ? "Retake Quiz" : "Take Unit Quiz"}</span>
+                  <span>{isCompleted ? "Regenerate Quiz" : "Generate Quiz"}</span>
                 </>
               )}
             </button>

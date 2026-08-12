@@ -248,7 +248,8 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=["post"],
-        permission_classes=[permissions.IsAuthenticated],
+        authentication_classes=[OptionalJWTAuthentication],
+        permission_classes=[permissions.AllowAny],
         url_path="generate-quiz",
     )
     def generate_quiz(self, request, pk=None):
@@ -261,34 +262,50 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
         if module.pdf_file:
             try:
                 import PyPDF2
-                file_path = module.pdf_file.path
-                with open(file_path, "rb") as f:
+                try:
+                    f = module.pdf_file.open("rb")
+                except Exception:
+                    f = open(module.pdf_file.path, "rb")
+
+                with f:
                     reader = PyPDF2.PdfReader(f)
                     extracted_pages = []
-                    for i in range(min(len(reader.pages), 10)):
+                    for i in range(min(len(reader.pages), 15)):
                         page_text = reader.pages[i].extract_text()
                         if page_text:
-                            extracted_pages.append(page_text)
-                    pdf_text = "\n".join(extracted_pages).strip()
+                            extracted_pages.append(f"--- PAGE {i+1} ---\n" + page_text.strip())
+                    pdf_text = "\n\n".join(extracted_pages).strip()
             except Exception as e:
                 logger.warning(f"Could not extract text from PDF for module {module.module_id}: {e}")
 
-        if len(pdf_text) > 3000:
-            pdf_text = pdf_text[:3000] + "..."
+        if len(pdf_text) > 4000:
+            pdf_text = pdf_text[:4000] + "..."
 
         topics = [module.title, course.title, domain.name]
 
-        custom_instruction = (
-            f"Generate exactly 10 multiple-choice questions specifically testing comprehension of the unit study notes '{module.title}' "
-            f"from the course '{course.title}' (Domain: {domain.name})."
-        )
-        if module.description:
-            custom_instruction += f"\nUnit Description: {module.description}"
         if pdf_text:
-            custom_instruction += f"\nKey content extracted from unit PDF notes:\n{pdf_text}"
+            custom_instruction = (
+                f"MANDATORY 2-STEP PDF READ & QUIZ GENERATION INSTRUCTIONS FOR GEMINI:\n"
+                f"STEP 1: FIRST READ AND COMPREHEND THE FULL PDF STUDY NOTES CONTENT ATTACHED BELOW.\n"
+                f"STEP 2: AFTER READING THE PDF CONTENT, GENERATE EXACTLY 10 MULTIPLE-CHOICE QUESTIONS DERIVED EXCLUSIVELY FROM THE CONCEPTS, CODE SNIPPETS, SYNTAX, DEFINITIONS, AND TECHNICAL FACTS PRESENTED IN THE PDF TEXT YOU JUST READ.\n\n"
+                f"CRITICAL CONSTRAINTS:\n"
+                f"- DO NOT ask generic, meta, or template questions.\n"
+                f"- DO NOT use information outside the provided PDF study notes.\n"
+                f"- Every question, option, and explanation MUST directly reference the specific information read from the PDF document below.\n\n"
+                f"FULL EXTRACTED PDF STUDY NOTES CONTENT:\n"
+                f"==================================================\n"
+                f"{pdf_text}\n"
+                f"==================================================\n"
+            )
+        else:
+            custom_instruction = (
+                f"Generate 10 specific technical multiple-choice questions testing core concepts, syntax, and rules for the unit study notes '{module.title}' from the course '{course.title}' (Domain: {domain.name}). Do NOT ask meta or template questions."
+            )
 
-        from common.personalization_service import get_candidate_personalization_context
-        personalization_ctx = get_candidate_personalization_context(request.user)
+        personalization_ctx = {}
+        if request.user and request.user.is_authenticated:
+            from common.personalization_service import get_candidate_personalization_context
+            personalization_ctx = get_candidate_personalization_context(request.user)
 
         from ai.quiz_service import generate_quiz_questions
 

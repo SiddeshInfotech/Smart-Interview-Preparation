@@ -179,15 +179,22 @@ def quiz_generation_prompt(
         else ""
     )
 
-    return f"""You are an elite technical interviewer and domain expert.
+    domain_name = (personalization_context or {}).get("domain") or "Web Development"
+
+    top_mandate = ""
+    if custom_instruction and ("STRICT" in custom_instruction or "CRITICAL" in custom_instruction):
+        top_mandate = f"HIGHEST PRIORITY OVERRIDING SYSTEM MANDATE:\n{custom_instruction.strip()}\n\n"
+
+    return f"""{top_mandate}You are an elite technical interviewer and domain expert in "{domain_name}".
 
 TASK:
-Generate EXACTLY {count} unique, non-repetitive, high-quality assessment questions tailored to the candidate's career domain and profile context.
+Generate EXACTLY {count} unique, non-repetitive, high-quality assessment questions tailored specifically to the candidate's career domain ("{domain_name}") and profile context.
 
 CANDIDATE PERSONALIZATION CONTEXT:
 {context_str}
 
 PARAMETERS:
+- Primary Career Domain: {domain_name}
 - Primary Topics: {topics_str}
 - Target Internal Complexity Level: {difficulty}
 - Assessment Mode: {mode}
@@ -299,15 +306,29 @@ TECHNOLOGY-SPECIFIC MANDATE FOR SOFTWARE TESTING:
 - "solution": Provide complete Python code using pytest or unittest with test functions and assertions.
 """
 
+    domain_name = (personalization_context or {}).get("domain") or "Web Development"
+
+    domain_mandate = f"""
+CRITICAL DOMAIN-SPECIFIC REQUIREMENT:
+The candidate's target career domain is: "{domain_name}".
+The challenge MUST BE RELEVANT AND TAILORED SPECIFICALLY TO THE "{domain_name}" DOMAIN!
+- For example, if the language is Python and the domain is "Software Testing", generate a Python test automation, assertion, or Pytest challenge.
+- If the language is Python and the domain is "Data Science / Analytics", generate a Python data manipulation, Pandas/NumPy array calculation, or statistical processing challenge.
+- If the language is Python and the domain is "Web Development", generate a Python backend API routing, request validation, or web data parsing challenge.
+- If the language is Python and the domain is "Cybersecurity", generate a Python security log parsing, IP validation, or hash checking challenge.
+"""
+
     return f"""
 Role:
 You are a senior technical interviewer crafting an interview question.
 
 Task:
-Generate 1 coding challenge question specifically tailored for the programming language: {language} and aligned with the candidate's career domain.
+Generate 1 coding challenge question specifically for language "{language}", tailored for a candidate specializing in "{domain_name}".
 
 CANDIDATE PERSONALIZATION CONTEXT:
 {context_str}
+
+{domain_mandate}
 
 Target Internal Difficulty Level: {difficulty}
 

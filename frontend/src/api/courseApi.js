@@ -71,9 +71,12 @@ const saveCachedBootstrap = (data) => {
   }
 };
 
+let inFlightBootstrapPromise = null;
+
 export const clearCourseBootstrapCache = () => {
   inMemoryBootstrap = null;
   inMemoryCourseDetails = {};
+  inFlightBootstrapPromise = null;
   try {
     sessionStorage.removeItem("course_bootstrap_cache");
   } catch (e) {}
@@ -96,28 +99,31 @@ export const getCachedCourseDetail = (courseId) => {
 };
 
 export const prefetchCourseData = async () => {
+  if (inFlightBootstrapPromise) return inFlightBootstrapPromise;
   try {
-    const res = await api.get("/courses/bootstrap/");
-    if (res.data) {
-      saveCachedBootstrap(res.data);
-    }
+    inFlightBootstrapPromise = api.get("/courses/bootstrap/").then((res) => {
+      if (res.data) {
+        saveCachedBootstrap(res.data);
+      }
+      return res;
+    }).finally(() => {
+      inFlightBootstrapPromise = null;
+    });
+    return inFlightBootstrapPromise;
   } catch (e) {
-    // Background fetch - silent catch
+    inFlightBootstrapPromise = null;
   }
 };
 
 export const fetchCourseBootstrap = async () => {
   const cached = loadCachedBootstrap();
   if (cached) {
-    // Return cached immediately (0ms delay) and refresh in background (SWR)
-    prefetchCourseData();
     return { data: cached, isCached: true };
   }
-  const res = await api.get("/courses/bootstrap/");
-  if (res.data) {
-    saveCachedBootstrap(res.data);
+  if (inFlightBootstrapPromise) {
+    return inFlightBootstrapPromise;
   }
-  return res;
+  return prefetchCourseData();
 };
 
 export const fetchDomainCourses = (domainId) =>
@@ -215,114 +221,64 @@ export const generateModuleQuiz = async (moduleId, unitTitle = "", courseTitle =
 export const getClientFallbackQuizQuestions = (unitTitle = "Unit Material", courseTitle = "Course Notes") => {
   return [
     {
-      text: `What is a core concept or key topic covered in '${unitTitle}'?`,
-      options: [
-        `Syntax, fundamentals, and core concepts of ${unitTitle}`,
-        "Unrelated legacy operating system protocols",
-        "Deprecating dynamic data types without boundaries",
-        "Bypassing application execution pipelines"
-      ],
+      text: `In Python and programming fundamentals, which keyword is used to define a reusable function?`,
+      options: ["func", "def", "function", "define"],
+      correct: 1,
+      explanation: "The 'def' keyword is used to define functions in Python source code."
+    },
+    {
+      text: `What will be the output of evaluating 'type(3.14)' in standard Python execution?`,
+      options: ["<class 'int'>", "<class 'float'>", "<class 'str'>", "<class 'bool'>"],
+      correct: 1,
+      explanation: "Numbers with decimal points are classified as floating-point numbers (float type)."
+    },
+    {
+      text: `Which operator is used for integer floor division in Python?`,
+      options: ["/", "//", "%", "**"],
+      correct: 1,
+      explanation: "The '//' operator performs floor division, returning the integer quotient."
+    },
+    {
+      text: `Which built-in Python data structure is ordered and mutable?`,
+      options: ["Tuple", "List", "String", "Frozenset"],
+      correct: 1,
+      explanation: "Lists in Python are ordered collections of items that can be mutated dynamically."
+    },
+    {
+      text: `Which symbol is used to start a single-line comment in Python source files?`,
+      options: ["//", "#", "/*", "<!--"],
+      correct: 1,
+      explanation: "In Python, the hash '#' symbol designates a single-line comment."
+    },
+    {
+      text: `Which method is used to add an element to the end of an existing Python list?`,
+      options: ["push()", "add()", "append()", "insert()"],
+      correct: 2,
+      explanation: "The append() method adds a single element to the end of a list."
+    },
+    {
+      text: `What is the boolean evaluation of an empty string ('') in Python?`,
+      options: ["True", "False", "None", "Undefined"],
+      correct: 1,
+      explanation: "Empty strings evaluate to False in a boolean context in Python."
+    },
+    {
+      text: `Which built-in function returns the total number of items in a list or sequence?`,
+      options: ["size()", "count()", "len()", "length()"],
+      correct: 2,
+      explanation: "The len() function returns the total length or item count of a sequence."
+    },
+    {
+      text: `How do you access the last element of a Python sequence using negative indexing?`,
+      options: ["sequence[last]", "sequence[-1]", "sequence[0]", "sequence[end]"],
+      correct: 1,
+      explanation: "Negative index -1 accesses the last item in a Python sequence."
+    },
+    {
+      text: `Which statement block is used to handle runtime exceptions in Python?`,
+      options: ["try ... except", "catch ... throw", "do ... rescue", "error ... handle"],
       correct: 0,
-      explanation: `In '${unitTitle}', understanding the core syntax, fundamentals, and structure is essential for mastering ${courseTitle}.`
-    },
-    {
-      text: `Which of the following represents a recommended best practice when working with ${unitTitle}?`,
-      options: [
-        "Skipping input validation and error handling",
-        `Writing modular, well-structured code adhering to ${unitTitle} standards`,
-        "Hardcoding configuration parameters into binary files",
-        "Disabling compiler warnings and logging diagnostics"
-      ],
-      correct: 1,
-      explanation: `Writing clean, modular code with clear structure ensures long-term maintainability when studying ${unitTitle}.`
-    },
-    {
-      text: `What is the primary benefit of breaking study materials down into units like '${unitTitle}'?`,
-      options: [
-        "Increasing global variable mutation rate",
-        "Improving learning retention through structured, topic-focused mastery",
-        "Disabling automated unit testing suites",
-        "Preventing version control repository tracking"
-      ],
-      correct: 1,
-      explanation: "Topic-focused units allow candidates to master specific domains step-by-step before assessing overall performance."
-    },
-    {
-      text: `When applying concepts from '${unitTitle}', how should exceptional cases or errors be handled?`,
-      options: [
-        "By ignoring failure notifications completely",
-        "By catching exceptions gracefully and logging informative diagnostics",
-        "By terminating system execution without state cleanup",
-        "By suppressing runtime log output"
-      ],
-      correct: 1,
-      explanation: "Proper error handling prevents system crashes, preserves application state, and improves user experience."
-    },
-    {
-      text: `Which statement accurately describes effective implementation in ${courseTitle}?`,
-      options: [
-        "All components must be contained within a single file",
-        "Components should be decoupled, reusable, and clearly specified",
-        "Testing should only take place after final deployment",
-        "Data structures must remain unvalidated"
-      ],
-      correct: 1,
-      explanation: "Decoupled and reusable components allow faster feature iteration and simplified debugging."
-    },
-    {
-      text: `What role does verification play after completing a unit like '${unitTitle}'?`,
-      options: [
-        "Slowing down system compilation steps",
-        "Confirming topic understanding and identifying areas for review",
-        "Deleting historical progress logs",
-        "Bypassing domain skill checks"
-      ],
-      correct: 1,
-      explanation: "Quizzes verify candidate comprehension and reinforce knowledge retention before moving to subsequent units."
-    },
-    {
-      text: `How does structured study of ${unitTitle} contribute to overall technical interview performance?`,
-      options: [
-        "It builds foundational knowledge required for problem-solving under pressure",
-        "It restricts candidate responses to memorized definitions",
-        "It eliminates the need for practical coding exercises",
-        "It lowers candidate confidence"
-      ],
-      correct: 0,
-      explanation: "A solid grasp of unit fundamentals enables candidates to explain architectural choices clearly during technical interviews."
-    },
-    {
-      text: `Which of the following is crucial when managing data structures in ${unitTitle}?`,
-      options: [
-        "Enforcing type consistency, immutability where appropriate, and clean access patterns",
-        "Allowing arbitrary global mutations from nested functions",
-        "Removing schema validation rules",
-        "Relying solely on implicit string coercion"
-      ],
-      correct: 0,
-      explanation: "Clean data patterns prevent state corruption and reduce runtime bugs."
-    },
-    {
-      text: `What is an important optimization consideration for applications built with ${courseTitle}?`,
-      options: [
-        "Minimizing redundant computations, I/O operations, and network roundtrips",
-        "Increasing memory allocations arbitrarily",
-        "Removing cache control headers",
-        "Disabling asynchronous request processing"
-      ],
-      correct: 0,
-      explanation: "Optimizing I/O, database access, and network requests produces fast, responsive user experiences."
-    },
-    {
-      text: `What is the passing score requirement for completing the unit quiz on '${unitTitle}'?`,
-      options: [
-        "1 out of 10 questions correct",
-        "At least 4 out of 10 questions correct (40%)",
-        "10 out of 10 questions correct (100%)",
-        "No passing threshold required"
-      ],
-      correct: 1,
-      explanation: "Scoring at least 4 out of 10 correct answers (40%) marks the unit notes as completed and displays the Completed badge."
+      explanation: "The 'try...except' block catches and handles exceptions gracefully during execution."
     }
   ];
 };
