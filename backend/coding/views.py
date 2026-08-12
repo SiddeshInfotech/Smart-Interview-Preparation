@@ -277,14 +277,105 @@ def generate_coding_question(request):
         })
     except Exception as e:
         print("Error generating coding question via OpenRouter:", e)
+        lang_lower = (language or "").lower()
+        
+        if "html" in lang_lower or "css" in lang_lower:
+            fallback_data = {
+                "title": "Responsive Product Card Layout",
+                "problem_statement": "Design a responsive HTML card component styled with CSS. The card should use Flexbox to center its title, display a product description, and feature a styled primary action button with hover effects.",
+                "sample_input": "Container element with product details and button",
+                "sample_output": "<div class='card'> with display: flex and centered CTA button",
+                "hint": "Use display: flex; flex-direction: column; align-items: center; and border-radius: 8px; in your CSS <style> block.",
+                "solution": """<!-- HTML & CSS Solution -->
+<style>
+  .product-card {
+    max-width: 320px;
+    margin: 20px auto;
+    padding: 24px;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    font-family: sans-serif;
+  }
+  .btn-primary {
+    background: #4f46e5;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover {
+    background: #4338ca;
+  }
+</style>
+
+<div class="product-card">
+  <h2>Smart UI Card</h2>
+  <p>Learn HTML & CSS layouts with responsive Flexbox styling.</p>
+  <button class="btn-primary">Get Started</button>
+</div>"""
+            }
+        elif "react" in lang_lower:
+            fallback_data = {
+                "title": "Interactive Counter Component",
+                "problem_statement": "Write a React component `Counter` using the `useState` hook that displays an integer count and provides 'Increment' and 'Decrement' buttons to update the count dynamically.",
+                "sample_input": "Initial count = 0",
+                "sample_output": "Updated count displayed on button click",
+                "hint": "Initialize state with `const [count, setCount] = useState(0)` and update it in button onClick handlers.",
+                "solution": """import React, { useState } from 'react';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div style={{ padding: '20px', textAlign: 'center' }}>
+      <h2>Count: {count}</h2>
+      <button onClick={() => setCount(count + 1)} style={{ marginRight: '10px' }}>Increment</button>
+      <button onClick={() => setCount(count - 1)}>Decrement</button>
+    </div>
+  );
+}"""
+            }
+        elif "sql" in lang_lower:
+            fallback_data = {
+                "title": "SQL Department Average Salary",
+                "problem_statement": "Write an SQL query to retrieve the department name and average salary from the `employees` table for all departments where the average salary exceeds $50,000.",
+                "sample_input": "employees (id, department, salary)",
+                "sample_output": "department | avg_salary",
+                "hint": "Use SELECT department, AVG(salary) FROM employees GROUP BY department HAVING AVG(salary) > 50000.",
+                "solution": "SELECT department, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING AVG(salary) > 50000;"
+            }
+        elif "testing" in lang_lower or "pytest" in lang_lower:
+            fallback_data = {
+                "title": "Pytest Test Suite for User Authentication",
+                "problem_statement": "Write a Pytest unit test function `test_user_login()` that verifies successful login with valid credentials and checks that an invalid password raises an AuthenticationError.",
+                "sample_input": "valid_user='admin', valid_pass='secret'",
+                "sample_output": "PASSED test_user_login",
+                "hint": "Use `assert login('admin', 'secret') == True` and `with pytest.raises(AuthenticationError):`.",
+                "solution": """import pytest
+
+def test_user_login():
+    assert login('admin', 'secret') is True
+    with pytest.raises(AuthenticationError):
+        login('admin', 'wrong_pass')"""
+            }
+        else:
+            fallback_data = {
+                "title": f"{difficulty} {language} Problem",
+                "problem_statement": f"Write a program in {language} to read a list of numbers from standard input and output their maximum value.",
+                "sample_input": "10 45 23 89 12",
+                "sample_output": "89",
+                "hint": f"Use standard input reading in {language} and track the max element.",
+                "solution": f"// Solution in {language}\n// Read input and output maximum value."
+            }
+
         return Response({
             "success": True,
-            "data": {
-                "title": f"{difficulty} {language} Problem",
-                "problem_statement": f"Write a program in {language} to read integers from standard input and output their sum.",
-                "sample_input": "10 20",
-                "sample_output": "30",
-                "hint": f"Use standard keyboard input reading in {language} and calculate the sum.",
-                "solution": f"// Solution in {language}\n// Read input and print sum."
-            }
+            "data": fallback_data
         })

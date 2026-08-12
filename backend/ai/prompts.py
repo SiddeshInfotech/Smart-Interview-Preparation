@@ -264,6 +264,41 @@ def coding_challenge_prompt(
         )
     }.get(difficulty, f"Generate a problem matching {difficulty} difficulty.")
 
+    # Technology-specific instructions for UI, SQL, & Testing domains
+    tech_instructions = ""
+    lang_lower = (language or "").lower()
+    
+    if "html" in lang_lower or "css" in lang_lower:
+        tech_instructions = """
+TECHNOLOGY-SPECIFIC MANDATE FOR HTML & CSS:
+- The challenge MUST BE SPECIFIC TO HTML elements, CSS styling, flexbox/grid layouts, form styling, responsive UI cards, or CSS selectors/animations.
+- DO NOT generate integer sum, algorithmic loops, mathematical logic, or CLI input reading problems, as HTML & CSS are UI layout technologies!
+- "sample_input": Describe the target UI component or DOM requirement (e.g. "Create a responsive flexbox card with centered title and styled action button").
+- "sample_output": Describe the expected rendered DOM elements or CSS properties (e.g. "<div class='card'> with display: flex; justify-content: center;").
+- "solution": Provide complete, valid HTML code containing embedded CSS <style> rules or inline styling demonstrating the solution.
+"""
+    elif "react" in lang_lower:
+        tech_instructions = """
+TECHNOLOGY-SPECIFIC MANDATE FOR REACT JS:
+- The challenge MUST BE SPECIFIC TO React components, state/props management, JSX structure, event handlers, or hooks (useState, useEffect).
+- DO NOT generate basic CLI input/output integer math. Focus on UI component state, interactive counters, dynamic list rendering, or form inputs.
+- "solution": Provide complete, working React JSX component code.
+"""
+    elif "sql" in lang_lower:
+        tech_instructions = """
+TECHNOLOGY-SPECIFIC MANDATE FOR SQL:
+- The challenge MUST BE SPECIFIC TO SQL database querying (e.g. SELECT statements, JOINs, GROUP BY, HAVING, WHERE filtering, or DDL/DML table operations).
+- "sample_input": Define the table schema and sample data rows.
+- "sample_output": Define the expected tabular query output.
+- "solution": Provide the exact, correct SQL query string.
+"""
+    elif "testing" in lang_lower or "pytest" in lang_lower:
+        tech_instructions = """
+TECHNOLOGY-SPECIFIC MANDATE FOR SOFTWARE TESTING:
+- The challenge MUST BE SPECIFIC TO writing test cases, Pytest assertions, unit testing functions, or testing edge cases.
+- "solution": Provide complete Python code using pytest or unittest with test functions and assertions.
+"""
+
     return f"""
 Role:
 You are a senior technical interviewer crafting an interview question.
@@ -278,15 +313,17 @@ Target Internal Difficulty Level: {difficulty}
 
 {difficulty_rules}
 
+{tech_instructions}
+
 {custom}
 
 Output Format (JSON Object ONLY):
 {{
   "title": "Short descriptive title of the challenge",
   "problem_statement": "Comprehensive problem statement detailing the task requirements, input format, output format, and constraints.",
-  "sample_input": "Example input string for standard input (stdin)",
-  "sample_output": "Corresponding expected output string for standard output (stdout)",
-  "hint": "A clear step-by-step hint explaining the basic logic, algorithm, or approach without revealing the full code.",
+  "sample_input": "Example input string for standard input (stdin) or UI component requirement",
+  "sample_output": "Corresponding expected output string for standard output (stdout) or expected DOM element layout",
+  "hint": "A clear step-by-step hint explaining the basic logic, algorithm, layout approach, or syntax without revealing the full code.",
   "solution": "Complete, correct, executable reference solution code written in {language} with concise inline comments."
 }}
 
