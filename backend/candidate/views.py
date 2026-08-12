@@ -37,19 +37,21 @@ class ProfileRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         try:
-            return Candidate_Profile.objects.select_related("user").get(user=self.request.user)
+            return Candidate_Profile.objects.select_related("user", "active_domain").get(user=self.request.user)
         except Candidate_Profile.DoesNotExist:
             profile = Candidate_Profile.objects.create(user=self.request.user)
-            return Candidate_Profile.objects.select_related("user").get(pk=profile.pk)
+            return Candidate_Profile.objects.select_related("user", "active_domain").get(pk=profile.pk)
 
     def perform_update(self, serializer):
         profile = serializer.save()
         if profile.target_domain:
             try:
                 from course.services import resolve_domain_by_name, switch_active_domain
-                domain_obj = resolve_domain_by_name(profile.target_domain)
-                if domain_obj:
-                    switch_active_domain(profile, domain_obj)
+                target = profile.target_domain.strip()
+                if not profile.active_domain or profile.active_domain.name.lower() != target.lower():
+                    domain_obj = resolve_domain_by_name(target)
+                    if domain_obj:
+                        switch_active_domain(profile, domain_obj)
             except Exception as e:
                 print("Error syncing active_domain in candidate profile update:", e)
 
