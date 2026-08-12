@@ -28,11 +28,27 @@ ALLOWED_HOSTS = os.environ.get(
     "ALLOWED_HOSTS", ".onrender.com,localhost,127.0.0.1"
 ).split(",")
 
-# CORS – allow your frontend only (set via environment variable)
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://192.168.1.100:5173"
-).split(",")
+# CORS Configuration – Allow local development (localhost), Render frontend, and cross-origin requests
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "range",
+]
+CORS_EXPOSE_HEADERS = [
+    "content-type",
+    "content-length",
+    "content-range",
+    "accept-ranges",
+]
 
 # ========== DATABASE (MySQL) ==========
 DATABASES = {

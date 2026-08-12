@@ -46,12 +46,22 @@ from django.views.static import serve
 from django.urls import re_path
 
 def serve_media_with_frame_headers(request, path):
+    if request.method == "OPTIONS":
+        from django.http import HttpResponse
+        response = HttpResponse()
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "GET, OPTIONS, HEAD"
+        response["Access-Control-Allow-Headers"] = "*"
+        return response
+
     response = serve(request, path, document_root=settings.MEDIA_ROOT)
     response["X-Frame-Options"] = "ALLOWALL"
     response["Content-Security-Policy"] = "frame-ancestors *"
     response["Cache-Control"] = "public, max-age=31536000, immutable"
     response["Accept-Ranges"] = "bytes"
     response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "GET, OPTIONS, HEAD"
+    response["Access-Control-Allow-Headers"] = "*"
     return response
 
 urlpatterns += [
