@@ -89,7 +89,11 @@ export default function Login() {
         return "Invalid email or password.";
       };
 
-      setError(extractMessage(err.response?.data));
+      if (err.code === "ERR_NETWORK" || !err.response) {
+        setError("Unable to connect to the backend server. Please verify the server is running on port 8000.");
+      } else {
+        setError(extractMessage(err.response?.data));
+      }
       setLoading(false);
       return false;
     }
