@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus,
   BookOpen,
   MessageSquare,
   ArrowRight,
@@ -9,48 +8,53 @@ import {
   AlertCircle,
   Code2,
   HelpCircle,
-  Flame,
-  CheckCircle2,
-  Sparkles,
-  ShieldCheck,
-  Target
+  Sparkles
 } from 'lucide-react';
 import api from '../api/axios';
+import { fetchCourseBootstrap } from '../api/courseApi';
 import '../styles/Quiz.css';
 
+const cleanCourseTitle = (title) => {
+  if (!title) return "";
+  return title
+    .replace(/\s*Masterclass\s*/gi, " ")
+    .replace(/&\s*&/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const DOMAIN_TOPICS = {
-  'Web Development': ['React', 'JavaScript', 'Node.js', 'REST APIs', 'HTML/CSS', 'Database / SQL'],
-  'Mobile Development': ['React Native', 'Flutter', 'Swift', 'Kotlin', 'Mobile Architecture', 'REST APIs'],
-  'Data Science / Analytics': ['Python', 'Pandas & NumPy', 'Machine Learning', 'SQL Data Warehouse', 'Statistics', 'Data Visualization'],
-  'Cybersecurity': ['Network Security', 'Ethical Hacking', 'Cryptography', 'Web Application Security', 'SOC & Incident Response', 'Linux Administration'],
-  'Game Development': ['C++', 'C#', 'OOP', 'Data Structures & Algorithms', 'Game Physics', 'Computer Graphics'],
-  'Software Testing / QA': ['Automation Testing', 'Selenium & Cypress', 'Unit Testing', 'API Testing', 'Performance Testing', 'CI/CD Pipelines'],
-  'UI/UX / HCI': ['User Research', 'Wireframing & Prototyping', 'Design Systems', 'Usability Testing', 'Information Architecture', 'Figma & Design Principles'],
+  'Web Development': ['React JS Notes', 'HTML & CSS Notes', 'Python & Django Notes'],
+  'Full Stack Domain': ['React JS Notes', 'HTML & CSS Notes', 'Python & Django Notes'],
+  'Mobile Development': ['React Native Notes', 'Flutter Notes', 'Kotlin & Android Notes', 'Swift Notes'],
+  'Android Development': ['Kotlin & Android Notes', 'Java Programming Notes'],
+  'Data Science / Analytics': ['Python Programming Notes', 'Data Analysis Notes', 'Machine Learning Notes', 'SQL Notes'],
+  'Data Analysis': ['Python Programming Notes', 'Data Analysis Notes', 'SQL Notes'],
+  'Cybersecurity': ['Network Security Notes', 'Ethical Hacking Notes', 'Linux Security Notes'],
+  'Game Development': ['C++ Game Development Notes', 'C# Unity Notes', 'Physics & Graphics Notes'],
+  'Software Testing / QA': ['Software Testing Notes', 'Selenium & Automation Notes', 'API Testing Notes'],
+  'Software Testing': ['Software Testing Notes', 'Selenium & Automation Notes'],
+  'UI/UX / HCI': ['UI/UX Design Systems Notes', 'User Research Notes', 'Figma Prototyping Notes'],
 };
 
 const Quiz = () => {
   const navigate = useNavigate();
 
-  // Candidate Domain State
+  // Candidate Domain & Course State
   const [candidateDomain, setCandidateDomain] = useState('');
+  const [availableCourses, setAvailableCourses] = useState([]);
   
   // Configuration state
-  const [selectedTopics, setSelectedTopics] = useState([]);
-  const [newTopic, setNewTopic] = useState('');
-  const [topicSuggestions, setTopicSuggestions] = useState([]);
-  const [showTopicSuggestions, setShowTopicSuggestions] = useState(false);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const suggestionRef = useRef(null);
-
+  const [selectedTopic, setSelectedTopic] = useState('');
   const [selectedMode, setSelectedMode] = useState('MCQ');
   const [selectedCodingLanguage, setSelectedCodingLanguage] = useState('Python');
   const [promptText, setPromptText] = useState('');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
 
-  // Fetch candidate profile domain on load
+  // Fetch candidate profile domain and domain courses on load
   useEffect(() => {
-    const loadDomain = async () => {
+    const loadDomainAndCourses = async () => {
       const cachedDomain = localStorage.getItem("candidate_user_domain");
       if (cachedDomain && cachedDomain.trim()) {
         setCandidateDomain(cachedDomain.trim());
@@ -65,104 +69,49 @@ const Quiz = () => {
       } catch (err) {
         console.warn("Could not fetch candidate profile domain:", err);
       }
-    };
-    loadDomain();
-  }, []);
 
-  // Set suggested topic chips based on current active domain
-  const currentSuggestedChips = DOMAIN_TOPICS[candidateDomain] || [
-    'JavaScript', 'React', 'Python', 'SQL', 'Data Structures', 'System Design'
-  ];
-
-  // Topic suggestion dropdown outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (suggestionRef.current && !suggestionRef.current.contains(event.target)) {
-        setShowTopicSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      if (newTopic.trim().length >= 1) {
-        fetchTopicSuggestions(newTopic.trim());
-      } else {
-        setTopicSuggestions([]);
-        setShowTopicSuggestions(false);
-      }
-    }, 300);
-    return () => clearTimeout(delayDebounce);
-  }, [newTopic]);
-
-  const fetchTopicSuggestions = async (query) => {
-    setLoadingSuggestions(true);
-    try {
-      const response = await api.get(`/common/skills/?search=${encodeURIComponent(query)}`);
-      const data = response.data;
-      const skillsArray = Array.isArray(data) ? data : data.skills || data.results || [];
-      if (skillsArray.length > 0) {
-        setTopicSuggestions(skillsArray);
-        setShowTopicSuggestions(true);
-      } else {
-        setTopicSuggestions([]);
-        setShowTopicSuggestions(false);
-      }
-    } catch (error) {
-      console.error("Error fetching topic suggestions:", error);
-      setTopicSuggestions([]);
-      setShowTopicSuggestions(false);
-    } finally {
-      setLoadingSuggestions(false);
-    }
-  };
-
-  const addTopicFromSuggestion = (topic) => {
-    if (!selectedTopics.some((t) => t.name?.toLowerCase() === topic.skill_name?.toLowerCase())) {
-      setSelectedTopics([...selectedTopics, { id: topic.id, name: topic.skill_name }]);
-    }
-    setNewTopic("");
-    setShowTopicSuggestions(false);
-  };
-
-  const handleAddTopic = (e) => {
-    if (e.key === 'Enter' && newTopic.trim()) {
-      const trimmed = newTopic.trim();
-      const matched = topicSuggestions.find(
-        (t) => t.skill_name.toLowerCase() === trimmed.toLowerCase()
-      );
-      if (matched) {
-        addTopicFromSuggestion(matched);
-      } else {
-        if (!selectedTopics.some(t => t.name.toLowerCase() === trimmed.toLowerCase())) {
-          setSelectedTopics([...selectedTopics, { id: Date.now().toString(), name: trimmed }]);
+      try {
+        const res = await fetchCourseBootstrap();
+        if (res.data?.courses && Array.isArray(res.data.courses)) {
+          const courseTitles = res.data.courses
+            .map((c) => cleanCourseTitle(c.title))
+            .filter(Boolean);
+          if (courseTitles.length > 0) {
+            setAvailableCourses(courseTitles);
+          }
         }
-        setNewTopic('');
-        setShowTopicSuggestions(false);
+      } catch (e) {
+        console.warn("Could not fetch domain courses for quiz topics:", e);
       }
-    }
-  };
+    };
+    loadDomainAndCourses();
+  }, []);
 
-  const removeTopic = (id) => {
-    setSelectedTopics(selectedTopics.filter(t => t.id !== id));
-  };
-
-  const addSuggestedChip = (topicName) => {
-    if (!selectedTopics.some((t) => t.name.toLowerCase() === topicName.toLowerCase())) {
-      setSelectedTopics([...selectedTopics, { id: Date.now().toString() + topicName, name: topicName }]);
+  const getDomainTopics = (domainName) => {
+    if (!domainName) return DOMAIN_TOPICS['Web Development'];
+    const norm = domainName.trim();
+    if (DOMAIN_TOPICS[norm]) {
+      return DOMAIN_TOPICS[norm];
     }
+    const lower = norm.toLowerCase();
+    if (lower.includes('web') || lower.includes('full stack')) return DOMAIN_TOPICS['Web Development'];
+    if (lower.includes('data')) return DOMAIN_TOPICS['Data Science / Analytics'];
+    if (lower.includes('test') || lower.includes('qa')) return DOMAIN_TOPICS['Software Testing / QA'];
+    if (lower.includes('mobile') || lower.includes('android')) return DOMAIN_TOPICS['Mobile Development'];
+    if (lower.includes('cyber') || lower.includes('security')) return DOMAIN_TOPICS['Cybersecurity'];
+    if (lower.includes('game')) return DOMAIN_TOPICS['Game Development'];
+    if (lower.includes('ui') || lower.includes('ux') || lower.includes('design')) return DOMAIN_TOPICS['UI/UX / HCI'];
+    return DOMAIN_TOPICS['Web Development'];
   };
 
   const DOMAIN_CODING_LANGUAGES = {
-    'Web Development': ['HTML CSS', 'React JS', 'Python + Django'],
-    'Full Stack Domain': ['HTML CSS', 'React JS', 'Python + Django'],
+    'Web Development': ['React JS', 'JavaScript', 'HTML CSS', 'Python + Django'],
+    'Full Stack Domain': ['React JS', 'JavaScript', 'HTML CSS', 'Python + Django'],
     'Data Analysis': ['Python', 'SQL'],
     'Data Science / Analytics': ['Python', 'SQL'],
-    'Software Testing': ['Python', 'Software Testing'],
-    'Software Testing / QA': ['Python', 'Software Testing'],
-    'Mobile Development': ['React Native', 'Kotlin', 'Java'],
+    'Software Testing': ['Python', 'JavaScript', 'Software Testing'],
+    'Software Testing / QA': ['Python', 'JavaScript', 'Software Testing'],
+    'Mobile Development': ['React Native', 'Kotlin', 'Java', 'Swift'],
     'Android Development': ['Java', 'Kotlin'],
     'Cybersecurity': ['Python', 'C / C++', 'Bash Shell'],
     'Game Development': ['C++', 'C#', 'Python'],
@@ -170,23 +119,23 @@ const Quiz = () => {
   };
 
   const getDomainLanguages = (domainName) => {
-    if (!domainName) return ['HTML CSS', 'React JS', 'Python + Django'];
+    if (!domainName) return ['React JS', 'JavaScript', 'HTML CSS', 'Python + Django'];
     const norm = domainName.trim();
     if (DOMAIN_CODING_LANGUAGES[norm]) {
       return DOMAIN_CODING_LANGUAGES[norm];
     }
     const lower = norm.toLowerCase();
     if (lower.includes('web') || lower.includes('full stack')) {
-      return ['HTML CSS', 'React JS', 'Python + Django'];
+      return ['React JS', 'JavaScript', 'HTML CSS', 'Python + Django'];
     }
     if (lower.includes('data')) {
       return ['Python', 'SQL'];
     }
     if (lower.includes('test') || lower.includes('qa')) {
-      return ['Python', 'Software Testing'];
+      return ['Python', 'JavaScript', 'Software Testing'];
     }
     if (lower.includes('mobile') || lower.includes('android')) {
-      return ['React Native', 'Kotlin', 'Java'];
+      return ['React Native', 'Kotlin', 'Java', 'Swift'];
     }
     if (lower.includes('cyber') || lower.includes('security')) {
       return ['Python', 'C / C++', 'Bash Shell'];
@@ -194,18 +143,27 @@ const Quiz = () => {
     if (lower.includes('game')) {
       return ['C++', 'C#', 'Python'];
     }
-    return ['HTML CSS', 'React JS', 'Python + Django'];
+    if (lower.includes('ui') || lower.includes('ux') || lower.includes('design')) {
+      return ['HTML CSS', 'JavaScript', 'Design Systems'];
+    }
+    return ['React JS', 'JavaScript', 'HTML CSS', 'Python + Django'];
   };
 
   const modes = ['MCQ', 'Coding Challenge'];
+  const domainTopics = availableCourses.length > 0 ? availableCourses : getDomainTopics(candidateDomain);
   const codingLanguages = getDomainLanguages(candidateDomain);
 
   useEffect(() => {
-    const allowed = getDomainLanguages(candidateDomain);
-    if (!allowed.includes(selectedCodingLanguage)) {
-      setSelectedCodingLanguage(allowed[0] || 'HTML CSS');
+    const allowedLangs = getDomainLanguages(candidateDomain);
+    if (!allowedLangs.includes(selectedCodingLanguage)) {
+      setSelectedCodingLanguage(allowedLangs[0] || 'Python');
     }
-  }, [candidateDomain]);
+
+    const currentTopics = availableCourses.length > 0 ? availableCourses : getDomainTopics(candidateDomain);
+    if (!currentTopics.includes(selectedTopic)) {
+      setSelectedTopic(currentTopics[0] || '');
+    }
+  }, [candidateDomain, availableCourses]);
 
   // Handle single personalized generator
   const handleGenerate = async () => {
@@ -238,17 +196,13 @@ const Quiz = () => {
     }
 
     // MCQ Mode
-    if (selectedTopics.length === 0 && !candidateDomain) {
-      setError('Please select at least one topic or configure your career domain.');
-      return;
-    }
-
     setError('');
     setGenerating(true);
 
     try {
+      const activeTopic = selectedTopic || domainTopics[0] || (candidateDomain || "Web Development");
       const payload = {
-        topics: selectedTopics.length > 0 ? selectedTopics.map(t => t.name) : [candidateDomain || "Web Development"],
+        topics: [activeTopic],
         mode: 'MCQ',
         question_count: 10,
         custom_instruction: promptText,
@@ -282,32 +236,8 @@ const Quiz = () => {
                 <h1>
                   <span className="quiz-gradient-title">Personalized Preparation Arena</span>
                 </h1>
-                <p>AI-driven interview assessment dynamically tailored to your Career Domain and profile context.</p>
+                <p>AI-driven interview assessment dynamically tailored to your profile context.</p>
                 <div className="quiz-header-line" />
-              </div>
-
-              {/* DOMAIN & PERSONALIZATION ENGINE BADGE */}
-              <div className="domain-banner-card">
-                <div className="domain-banner-left">
-                  <div className="domain-banner-icon">
-                    <Target size={22} />
-                  </div>
-                  <div>
-                    <span className="domain-banner-label">
-                      Primary Career Domain Context
-                    </span>
-                    <h3 className="domain-banner-title">
-                      {candidateDomain ? candidateDomain : 'Web Development'}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="domain-banner-engine-badge">
-                  <ShieldCheck size={16} color="#10b981" />
-                  <span>
-                    Auto-Adaptive Personalization Engine
-                  </span>
-                </div>
               </div>
 
               <div className="setup-card">
@@ -345,6 +275,9 @@ const Quiz = () => {
                       <h3 className="section-title">
                         <BookOpen size={18} className="section-icon" />
                         Target Programming Language
+                        <span style={{ fontSize: '0.78rem', color: '#6366f1', marginLeft: '8px', fontWeight: 500 }}>
+                          (Filtered for {candidateDomain || 'Web Development'} Domain)
+                        </span>
                       </h3>
                       <div className="language-select-container">
                         <select
@@ -364,96 +297,23 @@ const Quiz = () => {
                     <>
                       <h3 className="section-title">
                         <BookOpen size={18} className="section-icon" />
-                        Domain Topics & Focus Areas
+                        Domain Topic
+                        <span style={{ fontSize: '0.78rem', color: '#6366f1', marginLeft: '8px', fontWeight: 500 }}>
+                          (Filtered for {candidateDomain || 'Web Development'} Domain)
+                        </span>
                       </h3>
-                      <div className="skills-container">
-                        {selectedTopics.length > 0 && (
-                          <div className="skill-tags">
-                            {selectedTopics.map((topic) => (
-                              <span key={topic.id} className="skill-tag">
-                                {topic.name}
-                                <button
-                                  type="button"
-                                  className="skill-remove"
-                                  onClick={() => removeTopic(topic.id)}
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <div className="skill-input-wrapper" ref={suggestionRef}>
-                          <input
-                            type="text"
-                            placeholder="Type a topic (e.g. React, Algorithms) and press Enter..."
-                            value={newTopic}
-                            onChange={(e) => {
-                              setNewTopic(e.target.value);
-                              if (e.target.value.trim().length === 0) {
-                                setTopicSuggestions([]);
-                                setShowTopicSuggestions(false);
-                              }
-                            }}
-                            onKeyDown={handleAddTopic}
-                            onFocus={() => {
-                              const query = newTopic.trim();
-                              if (topicSuggestions.length > 0 && query.length >= 1) {
-                                setShowTopicSuggestions(true);
-                              } else {
-                                fetchTopicSuggestions(query);
-                              }
-                            }}
-                          />
-                          <Plus size={18} className="skill-input-icon" />
-                          {showTopicSuggestions && (
-                            <div className="skill-suggestions-dropdown">
-                              {loadingSuggestions ? (
-                                <div className="suggestion-loading">Loading suggestions...</div>
-                              ) : (
-                                topicSuggestions.map((topic) => (
-                                  <div
-                                    key={topic.id}
-                                    className="suggestion-item"
-                                    onClick={() => addTopicFromSuggestion(topic)}
-                                  >
-                                    <span className="suggestion-name">{topic.skill_name}</span>
-                                    {topic.category && <span className="suggestion-category">{topic.category}</span>}
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Interactive Domain Suggested Topic Chips */}
-                        <div className="suggestions-hint">
-                          <span className="hint-label"><Flame size={14} color="#f59e0b" /> Recommended for {candidateDomain || 'your domain'}:</span>
-                          <div className="suggested-chips-row">
-                            {currentSuggestedChips.map((chip) => {
-                              const isAdded = selectedTopics.some(t => t.name.toLowerCase() === chip.toLowerCase());
-                              return (
-                                <button
-                                  type="button"
-                                  key={chip}
-                                  className={`suggested-chip-btn ${isAdded ? 'added' : ''}`}
-                                  onClick={() => addSuggestedChip(chip)}
-                                  disabled={isAdded}
-                                >
-                                  {isAdded ? (
-                                    <>
-                                      <CheckCircle2 size={12} /> {chip}
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Plus size={12} /> {chip}
-                                    </>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
+                      <div className="language-select-container">
+                        <select
+                          className="language-select-dropdown"
+                          value={selectedTopic}
+                          onChange={(e) => setSelectedTopic(e.target.value)}
+                        >
+                          {domainTopics.map((topic) => (
+                            <option key={topic} value={topic}>
+                              {topic}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </>
                   )}
@@ -465,11 +325,8 @@ const Quiz = () => {
                 <div className="setup-section">
                   <h3 className="section-title">
                     <MessageSquare size={18} className="section-icon" />
-                    Custom Focus Area <span className="optional-badge">(Optional)</span>
+                    Custom Instruction <span className="optional-badge">(Optional)</span>
                   </h3>
-                  <p className="section-description">
-                    Specify key focus topics or concepts (e.g. "Focus heavily on asynchronous code, memory management, and system architecture").
-                  </p>
                   <textarea
                     className="custom-prompt-input"
                     placeholder="e.g., Focus heavily on practical scenario questions, performance optimization, and architectural best practices..."
