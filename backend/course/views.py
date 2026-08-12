@@ -59,11 +59,8 @@ class CourseBootstrapView(APIView):
         domains = Domain.objects.filter(is_active=True).order_by("name")
 
         if candidate.target_domain:
-            target = candidate.target_domain.strip()
-            domain_obj = Domain.objects.filter(name__iexact=target, is_active=True).first()
-            if not domain_obj and target.split():
-                first_word = target.split()[0]
-                domain_obj = Domain.objects.filter(name__icontains=first_word, is_active=True).first()
+            from .services import resolve_domain_by_name
+            domain_obj = resolve_domain_by_name(candidate.target_domain)
             if domain_obj and candidate.active_domain != domain_obj:
                 switch_active_domain(candidate, domain_obj)
                 candidate.active_domain = domain_obj
@@ -130,7 +127,7 @@ class DomainViewSet(viewsets.ModelViewSet):
             return Domain.objects.all()
         return Domain.objects.filter(is_active=True)
 
-    @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=["get"], authentication_classes=[OptionalJWTAuthentication], permission_classes=[permissions.AllowAny])
     def courses(self, request, pk=None):
         domain = self.get_object()
         courses = Course.objects.filter(domain=domain, is_active=True).order_by("sequence", "course_id")
@@ -148,7 +145,7 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Course.objects.all()
         return Course.objects.filter(is_active=True)
 
-    @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=["get"], authentication_classes=[OptionalJWTAuthentication], permission_classes=[permissions.AllowAny])
     def modules(self, request, pk=None):
         course = self.get_object()
         active_modules = CourseModule.objects.filter(course=course, is_active=True).order_by("sequence", "module_id")
@@ -329,18 +326,23 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
 
 
 class ActiveDomainView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [OptionalJWTAuthentication]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        candidate, _ = Candidate_Profile.objects.select_related("active_domain").get_or_create(user=request.user)
-        active_domain = candidate.active_domain
+        candidate = None
+        active_domain = None
+        if request.user and request.user.is_authenticated:
+            candidate, _ = Candidate_Profile.objects.select_related("active_domain").get_or_create(user=request.user)
+            active_domain = candidate.active_domain
 
         domains = Domain.objects.filter(is_active=True).order_by("name")
         domain_serializer = DomainSerializer(domains, many=True, context={"request": request})
 
         if not active_domain and domains.exists():
             first_domain = domains.first()
-            switch_active_domain(candidate, first_domain)
+            if candidate:
+                switch_active_domain(candidate, first_domain)
             active_domain = first_domain
 
         active_domain_data = None

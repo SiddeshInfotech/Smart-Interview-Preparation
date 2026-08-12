@@ -18,23 +18,24 @@ const cleanCourseTitle = (title) => {
   if (!title) return "";
   return title
     .replace(/\s*Masterclass\s*/gi, " ")
+    .replace(/\s*Notes?\s*/gi, " ")
     .replace(/&\s*&/g, "&")
     .replace(/\s+/g, " ")
     .trim();
 };
 
 const DOMAIN_TOPICS = {
-  'Web Development': ['React JS Notes', 'HTML & CSS Notes', 'Python & Django Notes'],
-  'Full Stack Domain': ['React JS Notes', 'HTML & CSS Notes', 'Python & Django Notes'],
-  'Mobile Development': ['React Native Notes', 'Flutter Notes', 'Kotlin & Android Notes', 'Swift Notes'],
-  'Android Development': ['Kotlin & Android Notes', 'Java Programming Notes'],
-  'Data Science / Analytics': ['Python Programming Notes', 'Data Analysis Notes', 'Machine Learning Notes', 'SQL Notes'],
-  'Data Analysis': ['Python Programming Notes', 'Data Analysis Notes', 'SQL Notes'],
-  'Cybersecurity': ['Network Security Notes', 'Ethical Hacking Notes', 'Linux Security Notes'],
-  'Game Development': ['C++ Game Development Notes', 'C# Unity Notes', 'Physics & Graphics Notes'],
-  'Software Testing / QA': ['Software Testing Notes', 'Selenium & Automation Notes', 'API Testing Notes'],
-  'Software Testing': ['Software Testing Notes', 'Selenium & Automation Notes'],
-  'UI/UX / HCI': ['UI/UX Design Systems Notes', 'User Research Notes', 'Figma Prototyping Notes'],
+  'Web Development': ['React JS', 'HTML & CSS', 'Python & Django'],
+  'Full Stack Domain': ['React JS', 'HTML & CSS', 'Python & Django'],
+  'Mobile Development': ['React Native', 'Flutter', 'Kotlin & Android', 'Swift'],
+  'Android Development': ['Kotlin & Android', 'Java Programming'],
+  'Data Science / Analytics': ['Python Programming', 'Data Analysis', 'Machine Learning', 'SQL'],
+  'Data Analysis': ['Python Programming', 'Data Analysis', 'SQL'],
+  'Cybersecurity': ['Network Security', 'Ethical Hacking', 'Linux Security'],
+  'Game Development': ['C++ Game Development', 'C# Unity', 'Physics & Graphics'],
+  'Software Testing / QA': ['Software Testing', 'Selenium & Automation', 'API Testing'],
+  'Software Testing': ['Software Testing', 'Selenium & Automation'],
+  'UI/UX / HCI': ['UI/UX Design Systems', 'User Research', 'Figma Prototyping'],
 };
 
 const Quiz = () => {

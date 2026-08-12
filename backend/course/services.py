@@ -48,6 +48,55 @@ def recalculate_course_progress(candidate, domain, course):
 
 
 
+def resolve_domain_by_name(target_name):
+    if not target_name:
+        return None
+    target_norm = str(target_name).strip()
+    if not target_norm:
+        return None
+
+    # 1. Exact match
+    domain = Domain.objects.filter(name__iexact=target_norm, is_active=True).first()
+    if domain:
+        return domain
+
+    # 2. Key phrase matching
+    lower = target_norm.lower()
+    if "web" in lower or "full stack" in lower:
+        d = Domain.objects.filter(name__icontains="Web", is_active=True).first()
+        if d:
+            return d
+    if "data" in lower:
+        d = Domain.objects.filter(name__icontains="Data Science", is_active=True).first() or Domain.objects.filter(name__icontains="Data", is_active=True).first()
+        if d:
+            return d
+    if "test" in lower or "qa" in lower:
+        d = Domain.objects.filter(name__icontains="Software Testing", is_active=True).first() or Domain.objects.filter(name__icontains="Testing", is_active=True).first()
+        if d:
+            return d
+    if "mobile" in lower or "android" in lower:
+        d = Domain.objects.filter(name__icontains="Mobile", is_active=True).first()
+        if d:
+            return d
+    if "cyber" in lower or "security" in lower:
+        d = Domain.objects.filter(name__icontains="Cyber", is_active=True).first()
+        if d:
+            return d
+    if "game" in lower:
+        d = Domain.objects.filter(name__icontains="Game", is_active=True).first()
+        if d:
+            return d
+
+    # 3. Fallback to first word
+    words = target_norm.split()
+    if words:
+        d = Domain.objects.filter(name__icontains=words[0], is_active=True).first()
+        if d:
+            return d
+
+    return Domain.objects.filter(is_active=True).first()
+
+
 def switch_active_domain(candidate, target_domain):
     """
     Switch candidate active domain and initialize missing CourseProgress records at 0%.

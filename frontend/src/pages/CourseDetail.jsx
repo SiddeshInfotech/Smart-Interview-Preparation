@@ -49,7 +49,11 @@ export default function CourseDetail() {
   const [generatingQuizModuleId, setGeneratingQuizModuleId] = useState(null);
 
   const loadCourseData = async (retries = 3) => {
-    if (!initialCache) {
+    const cached = getCachedCourseDetail(courseId);
+    if (cached) {
+      setCourse(cached);
+      setLoading(false);
+    } else {
       setLoading(true);
     }
     setError(null);
@@ -61,10 +65,16 @@ export default function CourseDetail() {
         return;
       } catch (err) {
         console.warn(`[CourseDetail] Attempt ${attempt}/${retries} failed:`, err);
+        const fallbackCache = getCachedCourseDetail(courseId);
+        if (fallbackCache) {
+          setCourse(fallbackCache);
+          setLoading(false);
+          return;
+        }
         if (attempt < retries) {
           await new Promise((r) => setTimeout(r, 1500));
-        } else if (!initialCache) {
-          setError("Failed to load course details. Please ensure the Django backend (python manage.py runserver 8000) is running.");
+        } else {
+          setError("Unable to connect to course server. Please check your connection and click Retry.");
         }
       }
     }
