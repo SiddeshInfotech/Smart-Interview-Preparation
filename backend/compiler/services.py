@@ -253,6 +253,68 @@ class PistonExecutionService(AbstractExecutionProvider):
                 "memory_used": None,
             }
 
+    def execute_sqlite_locally(self, code: str, stdin: str = "") -> dict:
+        import sqlite3
+        import time
+
+        start_t = time.time()
+        try:
+            conn = sqlite3.connect(":memory:")
+            cursor = conn.cursor()
+
+            statements = [s.strip() for s in code.split(";") if s.strip()]
+            output_blocks = []
+
+            for stmt in statements:
+                try:
+                    cursor.execute(stmt)
+                    if cursor.description:
+                        headers = [col[0] for col in cursor.description]
+                        rows = cursor.fetchall()
+
+                        block_lines = []
+                        header_str = " | ".join(headers)
+                        block_lines.append(header_str)
+                        block_lines.append("-" * max(len(header_str), 20))
+                        for row in rows:
+                            block_lines.append(" | ".join(str(val) if val is not None else "NULL" for val in row))
+                        output_blocks.append("\n".join(block_lines))
+                    else:
+                        conn.commit()
+                except Exception as stmt_err:
+                    output_blocks.append(f"SQL Error: {stmt_err}")
+
+            conn.close()
+            final_output = "\n\n".join(output_blocks) if output_blocks else "SQL Query executed successfully."
+            elapsed = round(time.time() - start_t, 3)
+
+            has_errors = any("SQL Error:" in block for block in output_blocks)
+            status_val = "runtime_error" if (has_errors and len(output_blocks) == 1) else "success"
+
+            return {
+                "status": status_val,
+                "output": final_output,
+                "error": final_output if has_errors else "",
+                "stdout": final_output,
+                "stderr": final_output if has_errors else "",
+                "exit_code": 1 if has_errors else 0,
+                "execution_time": elapsed,
+                "memory_used": None,
+                "solution": "Query executed on embedded SQLite engine."
+            }
+        except Exception as err:
+            return {
+                "status": "runtime_error",
+                "output": "",
+                "error": f"SQL Execution Error: {str(err)}",
+                "stdout": "",
+                "stderr": str(err),
+                "exit_code": 1,
+                "execution_time": round(time.time() - start_t, 3),
+                "memory_used": None,
+                "solution": "Verify SQL syntax, table names, and column definitions."
+            }
+
     def execute(self, language: str, code: str, stdin: str = "") -> dict:
         start_time = time.time()
 
@@ -270,6 +332,11 @@ class PistonExecutionService(AbstractExecutionProvider):
             }
 
         lang_norm = (language or "python").lower().strip()
+
+        # For SQL / SQLite queries, use embedded SQLite execution engine
+        if lang_norm in ["sql", "sqlite", "sqlite3"]:
+            return self.execute_sqlite_locally(code, stdin)
+
         config = self.get_piston_config(language)
 
         # For Web / JavaScript / HTML / CSS, use local Node engine fallback if requested
