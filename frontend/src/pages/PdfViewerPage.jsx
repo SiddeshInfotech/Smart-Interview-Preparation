@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import { formatPdfUrl } from "../api/courseApi";
-import { getCachedPdfBuffer, prefetchPdf, getFallbackPdfUrls } from "../api/pdfCache";
+import { getCachedPdfBuffer, prefetchPdf, fetchPdfArrayBuffer } from "../api/pdfCache";
 import "../styles/Courses.css";
 
 // Configure worker URL from cdnjs for lightweight background rendering
@@ -45,7 +45,7 @@ export default function PdfViewerPage() {
     }
   };
 
-  // 1. Fetch PDF Document (Using Memory Cache & Resilient Fallback URLs)
+  // 1. Fetch PDF Document (Using Native Resilient Buffer Fetch)
   useEffect(() => {
     let isCancelled = false;
 
@@ -58,51 +58,31 @@ export default function PdfViewerPage() {
     setError(null);
 
     const loadPdfDoc = async () => {
-      const candidateUrls = getFallbackPdfUrls(formattedRawUrl);
-      let doc = null;
-      let lastError = null;
-
-      for (const targetUrl of candidateUrls) {
+      try {
+        const buffer = await fetchPdfArrayBuffer(formattedRawUrl);
         if (isCancelled) return;
 
-        try {
-          const cachedBuffer = getCachedPdfBuffer(targetUrl);
-          let loadingTask;
-
-          if (cachedBuffer) {
-            loadingTask = pdfjsLib.getDocument({
-              data: new Uint8Array(cachedBuffer),
-              cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
-              cMapPacked: true,
-            });
-          } else {
-            loadingTask = pdfjsLib.getDocument({
-              url: targetUrl,
-              cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
-              cMapPacked: true,
-              disableAutoFetch: false,
-              disableStream: false,
-              rangeChunkSize: 65536,
-            });
-          }
-
-          doc = await loadingTask.promise;
-          if (doc && !isCancelled) {
-            setPdfDoc(doc);
-            setNumPages(doc.numPages);
-            prefetchPdf(targetUrl);
-            return;
-          }
-        } catch (err) {
-          lastError = err;
-          console.warn(`PDF load attempt failed for target '${targetUrl}', trying fallback...`);
+        if (!buffer || buffer.byteLength === 0) {
+          throw new Error("Unable to fetch document bytes from any static or server source.");
         }
-      }
 
-      if (!isCancelled) {
-        console.error("All PDF fallback load attempts failed:", lastError);
-        setError("Failed to load PDF document.");
-        setLoading(false);
+        const loadingTask = pdfjsLib.getDocument({
+          data: new Uint8Array(buffer),
+          cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+          cMapPacked: true,
+        });
+
+        const doc = await loadingTask.promise;
+        if (doc && !isCancelled) {
+          setPdfDoc(doc);
+          setNumPages(doc.numPages);
+        }
+      } catch (err) {
+        console.error("PDF load error:", err);
+        if (!isCancelled) {
+          setError("Failed to load PDF document.");
+          setLoading(false);
+        }
       }
     };
 
