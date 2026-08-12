@@ -49,11 +49,8 @@ class CourseBootstrapView(APIView):
         domains = Domain.objects.filter(is_active=True).order_by("name")
 
         if candidate.target_domain:
-            target = candidate.target_domain.strip()
-            domain_obj = Domain.objects.filter(name__iexact=target, is_active=True).first()
-            if not domain_obj and target.split():
-                first_word = target.split()[0]
-                domain_obj = Domain.objects.filter(name__icontains=first_word, is_active=True).first()
+            from .services import resolve_domain_by_name
+            domain_obj = resolve_domain_by_name(candidate.target_domain)
             if domain_obj and candidate.active_domain != domain_obj:
                 switch_active_domain(candidate, domain_obj)
                 candidate.active_domain = domain_obj
