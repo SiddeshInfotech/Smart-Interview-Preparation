@@ -14,15 +14,11 @@ export const getFallbackPdfUrls = (url) => {
   try {
     const filename = url.split("/").pop().split("?")[0];
     if (filename) {
-      if (filename.startsWith("Unit_")) {
-        // React JS unit PDFs
-        candidateUrls.push(`/course_materials/React_JS_Notes_Split/${filename}`);
-        candidateUrls.push(`/course_materials/HTML_and_CSS_Topic_PDFs/${filename}`);
-      } else {
-        // HTML & CSS topic PDFs
-        candidateUrls.push(`/course_materials/HTML_and_CSS_Topic_PDFs/${filename}`);
-        candidateUrls.push(`/course_materials/React_JS_Notes_Split/${filename}`);
-      }
+      // Prioritize static bundle paths across all domains
+      candidateUrls.push(`/course_materials/Django_Notes_Topic_PDFs/${filename}`);
+      candidateUrls.push(`/course_materials/Python_Notes_Topic_PDFs/${filename}`);
+      candidateUrls.push(`/course_materials/HTML_and_CSS_Topic_PDFs/${filename}`);
+      candidateUrls.push(`/course_materials/React_JS_Notes_Split/${filename}`);
 
       // Backend media relative fallback
       candidateUrls.push(`/media/course_materials/2026/08/${filename}`);
