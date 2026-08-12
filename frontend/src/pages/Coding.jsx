@@ -382,11 +382,11 @@ const CodingAssessment = () => {
                 </div>
 
                 {isFrontendTech(displayLanguage) && outputTab === 'preview' ? (
-                  <div className="live-preview-container" style={{ background: '#ffffff', height: '240px', width: '100%', overflow: 'hidden', borderTop: '1px solid #334155' }}>
+                  <div className="live-preview-container" style={{ background: '#ffffff', flex: 1, height: 'calc(100% - 50px)', width: '100%', overflow: 'hidden', borderTop: '1px solid #334155', display: 'flex', flexDirection: 'column' }}>
                     <iframe
                       title="Live HTML/CSS Preview"
                       srcDoc={code.includes('<html') || code.includes('<div') || code.includes('<style') ? code : `<!DOCTYPE html><html><head><style>body { font-family: system-ui, -apple-system, sans-serif; padding: 15px; color: #0f172a; background: #ffffff; }</style></head><body>${code}</body></html>`}
-                      style={{ width: '100%', height: '100%', border: 'none', background: '#ffffff' }}
+                      style={{ width: '100%', height: '100%', flex: 1, border: 'none', background: '#ffffff' }}
                       sandbox="allow-scripts"
                     />
                   </div>
