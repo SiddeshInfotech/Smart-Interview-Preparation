@@ -182,6 +182,7 @@ const Quiz = () => {
         }
         const response = await api.post('/coding/generate/', {
           language: selectedCodingLanguage,
+          domain: candidateDomain,
           custom_instruction: promptText,
         }, { timeout: 120000 });
 
@@ -198,6 +199,7 @@ const Quiz = () => {
       const activeTopic = selectedTopic || domainTopics[0] || (candidateDomain || "Web Development");
       const payload = {
         topics: [activeTopic],
+        domain: candidateDomain,
         mode: 'MCQ',
         question_count: 10,
         custom_instruction: promptText,

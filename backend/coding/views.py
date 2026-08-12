@@ -261,6 +261,10 @@ def generate_coding_question(request):
     personalization_ctx = get_candidate_personalization_context(request.user)
 
     language = request.data.get("language", "Python")
+    req_domain = request.data.get("domain")
+    if req_domain and str(req_domain).strip():
+        personalization_ctx["domain"] = str(req_domain).strip()
+
     difficulty = request.data.get("difficulty") or personalization_ctx.get("calculated_difficulty", "Medium")
     custom_instruction = request.data.get("custom_instruction", "")
 
