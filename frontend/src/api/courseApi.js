@@ -71,9 +71,12 @@ const saveCachedBootstrap = (data) => {
   }
 };
 
+let inFlightBootstrapPromise = null;
+
 export const clearCourseBootstrapCache = () => {
   inMemoryBootstrap = null;
   inMemoryCourseDetails = {};
+  inFlightBootstrapPromise = null;
   try {
     sessionStorage.removeItem("course_bootstrap_cache");
   } catch (e) {}
@@ -96,28 +99,31 @@ export const getCachedCourseDetail = (courseId) => {
 };
 
 export const prefetchCourseData = async () => {
+  if (inFlightBootstrapPromise) return inFlightBootstrapPromise;
   try {
-    const res = await api.get("/courses/bootstrap/");
-    if (res.data) {
-      saveCachedBootstrap(res.data);
-    }
+    inFlightBootstrapPromise = api.get("/courses/bootstrap/").then((res) => {
+      if (res.data) {
+        saveCachedBootstrap(res.data);
+      }
+      return res;
+    }).finally(() => {
+      inFlightBootstrapPromise = null;
+    });
+    return inFlightBootstrapPromise;
   } catch (e) {
-    // Background fetch - silent catch
+    inFlightBootstrapPromise = null;
   }
 };
 
 export const fetchCourseBootstrap = async () => {
   const cached = loadCachedBootstrap();
   if (cached) {
-    // Return cached immediately (0ms delay) and refresh in background (SWR)
-    prefetchCourseData();
     return { data: cached, isCached: true };
   }
-  const res = await api.get("/courses/bootstrap/");
-  if (res.data) {
-    saveCachedBootstrap(res.data);
+  if (inFlightBootstrapPromise) {
+    return inFlightBootstrapPromise;
   }
-  return res;
+  return prefetchCourseData();
 };
 
 export const fetchDomainCourses = (domainId) =>

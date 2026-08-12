@@ -59,16 +59,17 @@ const Quiz = () => {
       const cachedDomain = localStorage.getItem("candidate_user_domain");
       if (cachedDomain && cachedDomain.trim()) {
         setCandidateDomain(cachedDomain.trim());
-      }
-      try {
-        const response = await api.get("/candidate/profile/");
-        if (response.data?.target_domain) {
-          const dom = response.data.target_domain.trim();
-          setCandidateDomain(dom);
-          localStorage.setItem("candidate_user_domain", dom);
+      } else {
+        try {
+          const response = await api.get("/candidate/profile/");
+          if (response.data?.target_domain) {
+            const dom = response.data.target_domain.trim();
+            setCandidateDomain(dom);
+            localStorage.setItem("candidate_user_domain", dom);
+          }
+        } catch (err) {
+          console.warn("Could not fetch candidate profile domain:", err);
         }
-      } catch (err) {
-        console.warn("Could not fetch candidate profile domain:", err);
       }
 
       try {
@@ -106,12 +107,12 @@ const Quiz = () => {
   };
 
   const DOMAIN_CODING_LANGUAGES = {
-    'Web Development': ['React JS', 'JavaScript', 'HTML CSS', 'Python + Django'],
-    'Full Stack Domain': ['React JS', 'JavaScript', 'HTML CSS', 'Python + Django'],
+    'Web Development': ['React JS', 'HTML CSS', 'Python + Django'],
+    'Full Stack Domain': ['React JS', 'HTML CSS', 'Python + Django'],
     'Data Analysis': ['Python', 'SQL'],
     'Data Science / Analytics': ['Python', 'SQL'],
-    'Software Testing': ['Python', 'JavaScript', 'Software Testing'],
-    'Software Testing / QA': ['Python', 'JavaScript', 'Software Testing'],
+    'Software Testing': ['Python'],
+    'Software Testing / QA': ['Python'],
     'Mobile Development': ['React Native', 'Kotlin', 'Java', 'Swift'],
     'Android Development': ['Java', 'Kotlin'],
     'Cybersecurity': ['Python', 'C / C++', 'Bash Shell'],
@@ -120,20 +121,20 @@ const Quiz = () => {
   };
 
   const getDomainLanguages = (domainName) => {
-    if (!domainName) return ['React JS', 'JavaScript', 'HTML CSS', 'Python + Django'];
+    if (!domainName) return ['React JS', 'HTML CSS', 'Python + Django'];
     const norm = domainName.trim();
     if (DOMAIN_CODING_LANGUAGES[norm]) {
       return DOMAIN_CODING_LANGUAGES[norm];
     }
     const lower = norm.toLowerCase();
     if (lower.includes('web') || lower.includes('full stack')) {
-      return ['React JS', 'JavaScript', 'HTML CSS', 'Python + Django'];
+      return ['React JS', 'HTML CSS', 'Python + Django'];
     }
     if (lower.includes('data')) {
       return ['Python', 'SQL'];
     }
     if (lower.includes('test') || lower.includes('qa')) {
-      return ['Python', 'JavaScript', 'Software Testing'];
+      return ['Python'];
     }
     if (lower.includes('mobile') || lower.includes('android')) {
       return ['React Native', 'Kotlin', 'Java', 'Swift'];
@@ -147,7 +148,7 @@ const Quiz = () => {
     if (lower.includes('ui') || lower.includes('ux') || lower.includes('design')) {
       return ['HTML CSS', 'JavaScript', 'Design Systems'];
     }
-    return ['React JS', 'JavaScript', 'HTML CSS', 'Python + Django'];
+    return ['React JS', 'HTML CSS', 'Python + Django'];
   };
 
   const modes = ['MCQ', 'Coding Challenge'];
