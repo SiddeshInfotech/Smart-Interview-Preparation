@@ -182,7 +182,6 @@ const CodingAssessment = () => {
     } catch (err) {
       console.warn("Forfeit submission failed:", err);
     } finally {
-      alert("Challenge forfeited (0% score). Exiting code editor...");
       navigate("/quiz");
     }
   };

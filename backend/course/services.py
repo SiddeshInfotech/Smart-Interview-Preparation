@@ -55,69 +55,99 @@ def resolve_domain_by_name(target_name):
     if not target_norm:
         return None
 
-    # 1. Exact match
-    domain = Domain.objects.filter(name__iexact=target_norm, is_active=True).first()
-    if domain:
-        return domain
+    # Fetch all active domains in 1 fast DB query
+    active_domains = list(Domain.objects.filter(is_active=True))
+    if not active_domains:
+        return None
 
-    # 2. Key phrase matching
+    # 1. Exact match (case-insensitive)
+    for d in active_domains:
+        if d.name.lower() == target_norm.lower():
+            return d
+
+    # 2. Key phrase matching in memory
     lower = target_norm.lower()
     if "web" in lower or "full stack" in lower:
-        d = Domain.objects.filter(name__icontains="Web", is_active=True).first()
-        if d:
-            return d
+        for d in active_domains:
+            if "web" in d.name.lower():
+                return d
     if "data" in lower:
-        d = Domain.objects.filter(name__icontains="Data Science", is_active=True).first() or Domain.objects.filter(name__icontains="Data", is_active=True).first()
-        if d:
-            return d
+        for d in active_domains:
+            if "data science" in d.name.lower() or "data" in d.name.lower():
+                return d
     if "test" in lower or "qa" in lower:
-        d = Domain.objects.filter(name__icontains="Software Testing", is_active=True).first() or Domain.objects.filter(name__icontains="Testing", is_active=True).first()
-        if d:
-            return d
+        for d in active_domains:
+            if "software testing" in d.name.lower() or "testing" in d.name.lower():
+                return d
     if "mobile" in lower or "android" in lower:
-        d = Domain.objects.filter(name__icontains="Mobile", is_active=True).first()
-        if d:
-            return d
+        for d in active_domains:
+            if "mobile" in d.name.lower():
+                return d
     if "cyber" in lower or "security" in lower:
-        d = Domain.objects.filter(name__icontains="Cyber", is_active=True).first()
-        if d:
-            return d
+        for d in active_domains:
+            if "cyber" in d.name.lower():
+                return d
     if "game" in lower:
-        d = Domain.objects.filter(name__icontains="Game", is_active=True).first()
-        if d:
-            return d
+        for d in active_domains:
+            if "game" in d.name.lower():
+                return d
 
-    # 3. Fallback to first word
+    # 3. Fallback to first word match
     words = target_norm.split()
     if words:
-        d = Domain.objects.filter(name__icontains=words[0], is_active=True).first()
-        if d:
-            return d
+        first_word = words[0].lower()
+        for d in active_domains:
+            if first_word in d.name.lower():
+                return d
 
-    return Domain.objects.filter(is_active=True).first()
+    return active_domains[0]
 
 
 def switch_active_domain(candidate, target_domain):
     """
     Switch candidate active domain and initialize missing CourseProgress records at 0%.
     Preserves all existing progress records across all domains.
+    Optimized with single bulk operations.
     """
+    if not target_domain:
+        return []
+
+    # If domain hasn't changed, skip extra DB updates
+    if candidate.active_domain_id == target_domain.domain_id:
+        return Course.objects.filter(domain=target_domain, is_active=True).order_by("sequence", "course_id")
+
     candidate.active_domain = target_domain
     candidate.save(update_fields=["active_domain"])
 
-    # Get active courses for target domain
-    domain_courses = Course.objects.filter(
+    domain_courses = list(Course.objects.filter(
         domain=target_domain,
         is_active=True,
-    ).order_by("sequence", "course_id")
+    ).order_by("sequence", "course_id"))
 
-    # Initialize missing progress records for target domain
-    for course in domain_courses:
-        CourseProgress.objects.get_or_create(
+    if not domain_courses:
+        return []
+
+    # Efficiently bulk-create missing progress records in 1 query
+    existing_course_ids = set(
+        CourseProgress.objects.filter(
+            candidate=candidate,
+            domain=target_domain
+        ).values_list("course_id", flat=True)
+    )
+
+    new_progress_objs = [
+        CourseProgress(
             candidate=candidate,
             domain=target_domain,
             course=course,
-            defaults={"progress_percentage": 0.0, "completed_module_ids": []},
+            progress_percentage=0.0,
+            completed_module_ids=[]
         )
+        for course in domain_courses
+        if course.course_id not in existing_course_ids
+    ]
+
+    if new_progress_objs:
+        CourseProgress.objects.bulk_create(new_progress_objs, ignore_conflicts=True)
 
     return domain_courses
