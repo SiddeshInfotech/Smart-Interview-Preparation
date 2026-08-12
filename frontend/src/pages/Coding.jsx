@@ -19,6 +19,12 @@ const mapLanguageKey = (langStr) => {
   return "python";
 };
 
+const isFrontendTech = (lang) => {
+  if (!lang) return false;
+  const lower = lang.toLowerCase();
+  return lower.includes("html") || lower.includes("css") || lower.includes("react") || lower.includes("javascript") || lower.includes("js");
+};
+
 const CodingAssessment = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -34,6 +40,7 @@ const CodingAssessment = () => {
   const [solution, setSolution] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [outputTab, setOutputTab] = useState(isFrontendTech(displayLanguage) ? "preview" : "console");
 
   // AI Evaluation Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -81,7 +88,13 @@ const CodingAssessment = () => {
   };
 
   const handleRunClick = () => {
-    setShowInputModal(true);
+    if (isFrontendTech(displayLanguage)) {
+      setShowResult(true);
+      setOutputTab("preview");
+      executeCode("");
+    } else {
+      setShowInputModal(true);
+    }
   };
 
   const handleModalSubmit = () => {
@@ -103,34 +116,25 @@ const CodingAssessment = () => {
         input: overrideInput
       });
 
-      const data = response.data;
-
-      if (data.status === "success") {
-        const inputDisplay = overrideInput.trim() ? `>>> ${overrideInput}\n` : "";
-        setOutput(inputDisplay + (data.output || "Program executed successfully with no output."));
-        setError("");
-        setSolution("");
+      if (response.data.status === "success") {
+        setOutput(response.data.output || "Program executed successfully with no output.");
       } else {
-        setOutput("");
-        setError(data.error || data.output || "Execution Error");
-        setSolution(data.solution || "");
+        setError(response.data.error || response.data.output || "Execution failed.");
       }
     } catch (err) {
-      console.error("Execution Request Failed:", err);
-      setOutput("");
-      const errMsg = err.response?.data?.error || err.message || "Unable to connect to execution server.";
-      setError(errMsg);
-      setSolution("Ensure the Django backend (port 8000) and Code Executor service (port 8001) are running.");
+      console.error("Execution error:", err);
+      setError(err.response?.data?.error || err.message || "Failed to execute code.");
     } finally {
       setIsRunning(false);
     }
   };
 
   const handleSubmitClick = async () => {
-    if (!code.trim()) {
-      alert("Please write your program code before submitting.");
+    if (!code || !code.trim()) {
+      alert("Please write your program solution in the editor before submitting.");
       return;
     }
+
     setIsSubmitting(true);
     try {
       const response = await api.post("/coding/submit/", {
@@ -141,11 +145,11 @@ const CodingAssessment = () => {
         problem_statement: questionData?.problem_statement || "Write a program to solve the coding challenge requirement."
       });
 
-      if (response.data?.success) {
+      if (response.data.success) {
         setEvalResult(response.data.evaluation);
         setShowEvalModal(true);
       } else {
-        alert(response.data?.error || "Submission evaluation failed.");
+        alert(response.data.error || "Evaluation failed. Please try again.");
       }
     } catch (err) {
       console.error("Submission failed:", err);
@@ -185,9 +189,6 @@ const CodingAssessment = () => {
 
   return (
     <div className="coding-page">
-      {/* ==========================================
-            TOP HEADER BAR (NO NAVBAR)
-      ========================================== */}
       <header className="coding-header">
         <div className="coding-header-left">
           <h2 className="coding-header-title">💻 Smart Coding Assessment</h2>
@@ -201,13 +202,7 @@ const CodingAssessment = () => {
       </header>
 
       <div className="workspace">
-        {/* ===========================
-              MAIN SECTION
-        =========================== */}
         <div className="left-panel">
-          {/* ===========================
-                QUESTION & TAB SECTION
-          =========================== */}
           <div className="question-card">
             <div className="question-header">
               <div className="question-tabs">
@@ -240,7 +235,7 @@ const CodingAssessment = () => {
                     {questionData?.problem_statement || "Write a program to solve the coding challenge requirement."}
                   </p>
 
-                  {(questionData?.sample_input || questionData?.sample_output) && (
+                  {!isFrontendTech(displayLanguage) && (questionData?.sample_input || questionData?.sample_output) && (
                     <div className="sample-box">
                       {questionData?.sample_input && (
                         <div className="sample-section">
@@ -270,9 +265,6 @@ const CodingAssessment = () => {
             </div>
           </div>
 
-          {/* ===========================
-                CODE EDITOR SECTION
-          =========================== */}
           <div className="editor-card">
             <div className="editor-toolbar">
               <div className="toolbar-left">
@@ -308,7 +300,6 @@ const CodingAssessment = () => {
               </div>
             </div>
 
-            {/* MONACO EDITOR */}
             <div className="editor-container">
               <Editor
                 height="516px"
@@ -329,13 +320,10 @@ const CodingAssessment = () => {
               />
             </div>
 
-            {/* ===========================
-                  RESULT PANEL & CONSOLE
-            =========================== */}
             {showResult && (
               <div className="result-panel">
-                <div className="result-header">
-                  <div className="result-header-left">
+                <div className="result-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="result-header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
                       type="button"
                       className="close-result-btn"
@@ -350,21 +338,70 @@ const CodingAssessment = () => {
                         <span className="dot yellow"></span>
                         <span className="dot green"></span>
                       </div>
-                      <h2>Execution Output</h2>
+                      <h2>{isFrontendTech(displayLanguage) && outputTab === 'preview' ? '🌐 Live Web Preview' : 'Execution Output'}</h2>
                     </div>
                   </div>
+
+                  {isFrontendTech(displayLanguage) && (
+                    <div className="output-tab-toggle" style={{ display: 'flex', gap: '8px', paddingRight: '12px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setOutputTab('preview')}
+                        style={{
+                          background: outputTab === 'preview' ? '#4f46e5' : '#334155',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '6px 14px',
+                          borderRadius: '6px',
+                          fontSize: '0.82rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        🌐 Live Preview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOutputTab('console')}
+                        style={{
+                          background: outputTab === 'console' ? '#4f46e5' : '#334155',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '6px 14px',
+                          borderRadius: '6px',
+                          fontSize: '0.82rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        💻 Console Output
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                <div className="clean-output-body">
-                  <pre className={`clean-output-text ${error ? "error-text" : "success-text"}`}>{isRunning ? "Compiling & executing program..." : error ? error : output || "No output produced."}</pre>
-                </div>
+                {isFrontendTech(displayLanguage) && outputTab === 'preview' ? (
+                  <div className="live-preview-container" style={{ background: '#ffffff', height: '240px', width: '100%', overflow: 'hidden', borderTop: '1px solid #334155' }}>
+                    <iframe
+                      title="Live HTML/CSS Preview"
+                      srcDoc={code.includes('<html') || code.includes('<div') || code.includes('<style') ? code : `<!DOCTYPE html><html><head><style>body { font-family: system-ui, -apple-system, sans-serif; padding: 15px; color: #0f172a; background: #ffffff; }</style></head><body>${code}</body></html>`}
+                      style={{ width: '100%', height: '100%', border: 'none', background: '#ffffff' }}
+                      sandbox="allow-scripts"
+                    />
+                  </div>
+                ) : (
+                  <div className="clean-output-body">
+                    <pre className={`clean-output-text ${error ? "error-text" : "success-text"}`}>{isRunning ? "Compiling & executing program..." : error ? error : output || "No console output produced."}</pre>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* PROGRAM INPUT POPUP MODAL */}
       {showInputModal && (
         <div className="modal-overlay">
           <div className="input-modal">
