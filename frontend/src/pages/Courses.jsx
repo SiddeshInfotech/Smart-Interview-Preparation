@@ -20,6 +20,16 @@ import { fetchCourseBootstrap, switchActiveDomain, getCachedBootstrapData } from
 import DomainSelectorModal from "../components/DomainSelectorModal";
 import "../styles/Courses.css";
 
+const cleanCourseTitle = (title) => {
+  if (!title) return "";
+  return title
+    .replace(/\s*Masterclass\s*/gi, " ")
+    .replace(/&\s*&/g, "&")
+    .replace(/&\s*Notes/gi, "Notes")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const GRADIENTS = [
   "linear-gradient(135deg, #4f46e5, #7c3aed)",
   "linear-gradient(135deg, #0284c7, #2563eb)",
@@ -217,7 +227,7 @@ export default function Courses() {
 
                 {/* Course Title & Description */}
                 <h3 className="course-card-title">
-                  {course.title === "React JS Masterclass & Notes" ? "React JS Notes" : course.title}
+                  {cleanCourseTitle(course.title)}
                 </h3>
                 <p className="course-card-desc">{course.description}</p>
 

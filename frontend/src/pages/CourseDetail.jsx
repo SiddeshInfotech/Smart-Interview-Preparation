@@ -13,6 +13,25 @@ import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl } from "../api/
 import { prefetchPdf } from "../api/pdfCache";
 import "../styles/Courses.css";
 
+const cleanCourseTitle = (title) => {
+  if (!title) return "";
+  return title
+    .replace(/\s*Masterclass\s*/gi, " ")
+    .replace(/&\s*&/g, "&")
+    .replace(/&\s*Notes/gi, "Notes")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const cleanModuleTitle = (title) => {
+  if (!title) return "";
+  return title
+    .replace(/^(Topic\s*\d+(\.\d+)?[:\s_-]*)/i, "")
+    .replace(/^(Unit\s*\d+[:\s_-]*)/i, "")
+    .replace(/^(\d+(\.\d+)?[:\s._-]+)/, "")
+    .trim();
+};
+
 export default function CourseDetail() {
   const { courseId } = useParams();
   const navigate = useNavigate();
@@ -67,15 +86,15 @@ export default function CourseDetail() {
 
     const rawUrl = mod.pdf_url || mod.pdf_file;
     const formattedUrl = formatPdfUrl(rawUrl);
-    const cleanTitle = mod.title.replace(/^Unit\s+\d+[:\s]*/i, "").trim();
+    const cleanTitle = cleanModuleTitle(mod.title);
 
     if (formattedUrl) {
       navigate(`/courses/${courseId}/pdf-viewer`, {
         state: {
           pdfUrl: formattedUrl,
-          pdfTitle: mod.pdf_title || `${cleanTitle} Notes`,
+          pdfTitle: cleanModuleTitle(mod.pdf_title) || `${cleanTitle} Notes`,
           moduleTitle: cleanTitle,
-          courseTitle: course?.title === "React JS Masterclass & Notes" ? "React JS Notes" : (course?.title || "Course"),
+          courseTitle: cleanCourseTitle(course?.title || "Course"),
           domainId: domainId,
         },
       });
@@ -117,7 +136,7 @@ export default function CourseDetail() {
     );
   }
 
-  const courseDisplayTitle = course.title === "React JS Masterclass & Notes" ? "React JS Notes" : course.title;
+  const courseDisplayTitle = cleanCourseTitle(course.title);
 
   return (
     <div className="course-detail-container">
@@ -133,50 +152,25 @@ export default function CourseDetail() {
 
       {/* Hero Banner */}
       <div className="course-detail-hero">
-        <div className="course-detail-header-tags">
-          {course.technology && (
-            <span className="course-detail-badge">{course.technology}</span>
-          )}
-          {course.domain_name && (
-            <span className="course-detail-badge domain-tag">{course.domain_name}</span>
-          )}
-        </div>
-
-        <h1 className="course-detail-title">{courseDisplayTitle}</h1>
-
-        {/* Stats Row */}
-        <div className="course-detail-stats">
-          <div className="stat-box">
-            <div className="stat-icon-wrapper">
-              <BookOpen size={20} />
-            </div>
-            <div className="stat-info">
-              <label>Study Materials</label>
-              <span>{course.total_modules || 0} PDF Documents</span>
-            </div>
-          </div>
+        <div className="course-hero-content">
+          <h1 className="course-hero-title">{courseDisplayTitle}</h1>
+          <p className="course-hero-desc">{course.description}</p>
         </div>
       </div>
 
       {/* Course Curriculum Modules List */}
-      <div className="course-detail-content-card">
-        <div className="content-card-header">
-          <h3 className="content-card-title">
-            <Layers size={22} color="#4f46e5" />
-            Course Units & PDF Study Materials
-          </h3>
-        </div>
+      <div className="course-curriculum-section">
+        <h3 className="curriculum-title">Course Topics & Study Materials</h3>
 
-        <div className="module-accordion-list">
+        <div className="topics-list">
           {course.modules && course.modules.length > 0 ? (
             course.modules.map((mod, index) => {
+              const displayTitle = cleanModuleTitle(mod.title);
               const hasPdf = mod.pdf_url || mod.pdf_file;
-              // Strip "Unit N" prefix from module title
-              const cleanModuleTitle = mod.title.replace(/^Unit\s+\d+[:\s]*/i, "").trim();
 
               return (
                 <div
-                  key={mod.module_id}
+                  key={mod.module_id || index}
                   className="topic-card"
                   onMouseEnter={() => {
                     const rawUrl = mod.pdf_url || mod.pdf_file;
@@ -200,7 +194,7 @@ export default function CourseDetail() {
 
                       <div>
                         <h5 className="topic-title" style={{ fontSize: "1.05rem", fontWeight: "700", color: "#0f172a" }}>
-                          {cleanModuleTitle}
+                          {displayTitle}
                         </h5>
                         {mod.file_size > 0 && (
                           <span style={{ fontSize: "0.78rem", color: "#6366f1", fontWeight: "600", marginTop: "4px", display: "inline-flex", alignItems: "center", gap: "5px" }}>

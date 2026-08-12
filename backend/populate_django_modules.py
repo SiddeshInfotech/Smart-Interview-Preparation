@@ -40,7 +40,7 @@ course, _ = Course.objects.get_or_create(
     domain=domain,
     technology="Django",
     defaults={
-        "title": "Django & REST Framework Masterclass & Notes",
+        "title": "Django & REST Framework Notes",
         "description": "Comprehensive Django web framework study materials, URLs, views, models, ORM, forms, admin, authentication, sessions, and REST framework APIs with React integration.",
         "sequence": 4,
         "is_required": True,

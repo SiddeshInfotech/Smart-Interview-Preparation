@@ -20,7 +20,7 @@ course, _ = Course.objects.get_or_create(
     domain=domain,
     technology="React",
     defaults={
-        "title": "React JS Masterclass & Notes",
+        "title": "React JS Notes",
         "description": "Comprehensive unit-wise React JS documentation and study materials.",
         "sequence": 1
     }

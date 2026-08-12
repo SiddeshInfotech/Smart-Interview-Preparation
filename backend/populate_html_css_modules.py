@@ -38,7 +38,7 @@ course, _ = Course.objects.get_or_create(
     domain=domain,
     technology="HTML/CSS",
     defaults={
-        "title": "HTML & CSS Masterclass & Notes",
+        "title": "HTML & CSS Notes",
         "description": "Comprehensive HTML & CSS topic notes, styling guides, elements, forms, tables, backgrounds, and layout tutorials.",
         "sequence": 1,
         "is_required": True,

@@ -87,14 +87,14 @@ sql_course, _ = Course.objects.get_or_create(
     domain=domain,
     technology="SQL",
     defaults={
-        "title": "SQL Database Masterclass & Topic Notes",
+        "title": "SQL Database Notes",
         "description": "Comprehensive SQL data definition (DDL), manipulation (DML), filtering, aggregates, joins, update statements, transactions, and table operations.",
         "sequence": 2,
         "is_required": True,
         "is_active": True
     }
 )
-sql_course.title = "SQL Database Masterclass & Topic Notes"
+sql_course.title = "SQL Database Notes"
 sql_course.sequence = 2
 sql_course.save()
 

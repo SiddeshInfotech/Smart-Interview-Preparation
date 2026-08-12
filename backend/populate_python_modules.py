@@ -39,7 +39,7 @@ course, _ = Course.objects.get_or_create(
     domain=domain,
     technology="Python",
     defaults={
-        "title": "Python Programming Masterclass & Notes",
+        "title": "Python Programming Notes",
         "description": "Comprehensive Python programming notes, data structures, control flow, functions, OOP, and file handling study materials.",
         "sequence": 3,
         "is_required": True,
