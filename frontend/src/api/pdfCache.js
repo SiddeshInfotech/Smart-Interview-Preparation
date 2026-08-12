@@ -38,6 +38,7 @@ export const getFallbackPdfUrls = (url) => {
     const filename = url.split("/").pop().split("?")[0];
     if (filename) {
       // 1. Same-origin Static Asset Directories FIRST (0ms, 0 CORS, 0 502 errors)
+      candidateUrls.push(`/course_materials/Software_Testing_Notes_Topic_PDFs/${filename}`);
       candidateUrls.push(`/course_materials/SQL_Notes_Topic_PDFs/${filename}`);
       candidateUrls.push(`/course_materials/Python_Notes_Topic_PDFs/${filename}`);
       candidateUrls.push(`/course_materials/Django_Notes_Topic_PDFs/${filename}`);
