@@ -10,11 +10,19 @@ import {
   Send
 } from "lucide-react";
 import api from "../api/axios";
+import { markModuleComplete } from "../api/courseApi";
 import "../styles/QuizPage.css";
 
 const QuizPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isUnitQuiz = location.state?.isUnitQuiz || false;
+  const moduleId = location.state?.moduleId || null;
+  const courseId = location.state?.courseId || null;
+  const unitTitle = location.state?.unitTitle || "";
+  const courseTitle = location.state?.courseTitle || "";
+  const domainId = location.state?.domainId || null;
 
   const [quizData, setQuizData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -183,7 +191,17 @@ const QuizPage = () => {
       else wrong++;
     });
     const percentage = (correct / totalQuestions) * 100;
-    const passed = percentage >= 40;
+    // Score >= 4 out of 10 passes unit quiz
+    const passed = correct >= 4;
+
+    if (isUnitQuiz && moduleId && passed) {
+      try {
+        await markModuleComplete(moduleId);
+      } catch (err) {
+        console.warn("Could not mark module as complete:", err);
+      }
+    }
+
     const resultsData = { 
       correct, 
       wrong, 
@@ -193,7 +211,13 @@ const QuizPage = () => {
       passed, 
       total: totalQuestions,
       questions: quizData,
-      answers: userAnswers
+      answers: userAnswers,
+      isUnitQuiz,
+      moduleId,
+      courseId,
+      unitTitle,
+      courseTitle,
+      domainId,
     };
 
     try {

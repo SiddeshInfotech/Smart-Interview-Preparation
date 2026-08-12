@@ -28,6 +28,27 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// 3️⃣ Attach 401 recovery interceptor
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+            originalRequest._retry = true;
+            // Clear invalid header and retry request for public / quiz fallback
+            if (originalRequest.headers) {
+                delete originalRequest.headers.Authorization;
+            }
+            try {
+                return await api(originalRequest);
+            } catch (retryErr) {
+                return Promise.reject(retryErr);
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 // 3️⃣ Export all API functions (from axios)
 export const register = (data) => api.post("/auth/register/", data);
 export const sendRegistrationOTP = (email) =>

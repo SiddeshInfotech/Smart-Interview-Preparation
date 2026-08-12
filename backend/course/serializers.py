@@ -27,6 +27,7 @@ class DomainSerializer(serializers.ModelSerializer):
 
 
 class CourseModuleSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source="module_id", read_only=True)
     pdf_url = serializers.SerializerMethodField()
     is_completed = serializers.SerializerMethodField()
 
@@ -34,6 +35,7 @@ class CourseModuleSerializer(serializers.ModelSerializer):
         model = CourseModule
         fields = [
             "module_id",
+            "id",
             "course",
             "title",
             "description",

@@ -69,13 +69,11 @@ class OpenRouterService:
         "quiz": {
             "models": [
                 "google/gemini-2.0-flash-01",
-                "deepseek/deepseek-chat",
                 "meta-llama/llama-3.3-70b-instruct",
-                "qwen/qwen-2.5-coder-32b-instruct",
-                "mistralai/mistral-small-24b-instruct-2501",
+                "deepseek/deepseek-chat",
             ],
             "temperature": 0.7,
-            "max_tokens": 2000,
+            "max_tokens": 1200,
             "expect_json": True,
         },
         "coding": {
@@ -106,9 +104,9 @@ class OpenRouterService:
             "OPENROUTER_API_URL",
             "https://openrouter.ai/api/v1/chat/completions",
         )
-        self.connect_timeout: float = float(getattr(settings, "OPENROUTER_CONNECT_TIMEOUT", 4.0))
-        self.read_timeout: float = float(getattr(settings, "OPENROUTER_READ_TIMEOUT", 10.0))
-        self.total_timeout: float = float(getattr(settings, "OPENROUTER_TOTAL_TIMEOUT", 12.0))
+        self.connect_timeout: float = float(getattr(settings, "OPENROUTER_CONNECT_TIMEOUT", 3.0))
+        self.read_timeout: float = float(getattr(settings, "OPENROUTER_READ_TIMEOUT", 8.0))
+        self.total_timeout: float = float(getattr(settings, "OPENROUTER_TOTAL_TIMEOUT", 10.0))
         self.max_retries: int = int(getattr(settings, "OPENROUTER_MAX_RETRIES", 2))
 
         # Connection pooling via persistent session

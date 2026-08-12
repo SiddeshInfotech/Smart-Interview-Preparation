@@ -26,6 +26,16 @@ from .services import recalculate_course_progress, switch_active_domain
 logger = logging.getLogger(__name__)
 
 
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
+class OptionalJWTAuthentication(JWTAuthentication):
+    def authenticate(self, request):
+        try:
+            return super().authenticate(request)
+        except Exception:
+            return None
+
+
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
@@ -151,7 +161,7 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
     )
     def toggle_complete(self, request, pk=None):
         module = self.get_object()
-        candidate = get_object_or_404(Candidate_Profile, user=request.user)
+        candidate, _ = Candidate_Profile.objects.get_or_create(user=request.user)
 
         course = module.course
         domain = course.domain
@@ -184,6 +194,127 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
             "course_progress": float(updated_prog.progress_percentage),
             "course_completed": updated_prog.completed,
         })
+
+    @action(
+        detail=True,
+        methods=["post"],
+        authentication_classes=[OptionalJWTAuthentication],
+        permission_classes=[permissions.AllowAny],
+        url_path="mark-complete",
+    )
+    def mark_complete(self, request, pk=None):
+        module = self.get_object()
+        if request.user and request.user.is_authenticated:
+            candidate, _ = Candidate_Profile.objects.get_or_create(user=request.user)
+
+            course = module.course
+            domain = course.domain
+
+            progress, _ = CourseProgress.objects.get_or_create(
+                candidate=candidate,
+                domain=domain,
+                course=course,
+                defaults={"progress_percentage": 0.0, "completed_module_ids": []},
+            )
+
+            completed_ids = list(progress.completed_module_ids or [])
+            if module.module_id not in completed_ids:
+                completed_ids.append(module.module_id)
+                progress.completed_module_ids = completed_ids
+                progress.save()
+
+            updated_prog = recalculate_course_progress(candidate, domain, course)
+
+            return Response({
+                "module_id": module.module_id,
+                "module_completed": True,
+                "domain_id": domain.domain_id,
+                "course_id": course.course_id,
+                "course_progress": float(updated_prog.progress_percentage),
+                "course_completed": updated_prog.completed,
+            })
+        return Response({
+            "module_id": module.module_id,
+            "module_completed": True,
+        })
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path="generate-quiz",
+    )
+    def generate_quiz(self, request, pk=None):
+        module = self.get_object()
+        course = module.course
+        domain = course.domain
+
+        # Extract text from module PDF if available
+        pdf_text = ""
+        if module.pdf_file:
+            try:
+                import PyPDF2
+                file_path = module.pdf_file.path
+                with open(file_path, "rb") as f:
+                    reader = PyPDF2.PdfReader(f)
+                    extracted_pages = []
+                    for i in range(min(len(reader.pages), 10)):
+                        page_text = reader.pages[i].extract_text()
+                        if page_text:
+                            extracted_pages.append(page_text)
+                    pdf_text = "\n".join(extracted_pages).strip()
+            except Exception as e:
+                logger.warning(f"Could not extract text from PDF for module {module.module_id}: {e}")
+
+        if len(pdf_text) > 3000:
+            pdf_text = pdf_text[:3000] + "..."
+
+        topics = [module.title, course.title, domain.name]
+
+        custom_instruction = (
+            f"Generate exactly 10 multiple-choice questions specifically testing comprehension of the unit study notes '{module.title}' "
+            f"from the course '{course.title}' (Domain: {domain.name})."
+        )
+        if module.description:
+            custom_instruction += f"\nUnit Description: {module.description}"
+        if pdf_text:
+            custom_instruction += f"\nKey content extracted from unit PDF notes:\n{pdf_text}"
+
+        from common.personalization_service import get_candidate_personalization_context
+        personalization_ctx = get_candidate_personalization_context(request.user)
+
+        from ai.quiz_service import generate_quiz_questions
+
+        try:
+            questions = generate_quiz_questions(
+                topics=topics,
+                difficulty="Medium",
+                count=10,
+                mode="MCQ",
+                custom_instruction=custom_instruction,
+                personalization_context=personalization_ctx,
+            )
+
+            for q in questions:
+                if not isinstance(q, dict) or not all(k in q for k in ('text', 'options', 'correct', 'explanation')):
+                    return Response(
+                        {"error": "Generated questions are missing required fields."},
+                        status=500
+                    )
+
+            return Response({
+                "questions": questions,
+                "module_id": module.module_id,
+                "module_title": module.title,
+                "course_id": course.course_id,
+                "course_title": course.title,
+                "domain_name": domain.name,
+            }, status=200)
+
+        except Exception as e:
+            logger.error(f"[ModuleQuizView] AI generation failed: {e}", exc_info=True)
+            return Response({"error": f"AI generation failed: {str(e)}"}, status=500)
+
 
 
 

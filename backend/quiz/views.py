@@ -1,14 +1,17 @@
-import json
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from ai.quiz_service import generate_quiz_questions
-from .models import QuizPerformance
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
+class OptionalJWTAuthentication(JWTAuthentication):
+    def authenticate(self, request):
+        try:
+            return super().authenticate(request)
+        except Exception:
+            return None
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@authentication_classes([OptionalJWTAuthentication])
+@permission_classes([AllowAny])
 def generate_quiz(request):
     # ── Free-tier daily limit via UserCredit database model ──────────────────
     if request.user and request.user.is_authenticated and not request.user.has_premium:

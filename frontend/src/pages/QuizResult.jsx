@@ -32,20 +32,46 @@ const QuizResult = () => {
     passed,
     total,
     questions,
-    answers
+    answers,
+    isUnitQuiz,
+    moduleId,
+    courseId,
+    unitTitle,
+    courseTitle,
+    domainId,
   } = results;
 
   const optionLabels = ['A', 'B', 'C', 'D'];
+
+  const handleBackToCourse = () => {
+    if (courseId) {
+      navigate(`/courses/${courseId}`, { state: { domainId } });
+    } else {
+      navigate('/courses');
+    }
+  };
 
   return (
     <div className="score-container">
       <div className="score-content">
         {/* Quiz Header */}
         <div className="quiz-header">
-          <div className={`quiz-badge ${passed ? 'passed' : 'needs-practice'}`}>{passed ? 'PASSED' : 'NEEDS PRACTICE'}</div>
-          <h1 className="quiz-title">Quiz Results</h1>
+          <div className={`quiz-badge ${passed ? 'passed' : 'needs-practice'}`}>
+            {passed ? 'UNIT COMPLETED' : 'NEEDS PRACTICE'}
+          </div>
+          <h1 className="quiz-title">
+            {isUnitQuiz ? `Unit Quiz: ${unitTitle || 'Study Material'}` : 'Quiz Results'}
+          </h1>
           <div className="quiz-subtitle">
-            {passed ? '🎉 Congratulations! You successfully passed the quiz!' : '💪 Great effort! Review your answers below to keep improving.'}
+            {isUnitQuiz ? (
+              passed ? (
+                `🎉 Congratulations! You scored ${correct}/10 correct answers (>= 4/10 required). This unit notes PDF is now marked as COMPLETED!`
+              ) : (
+                `💪 You scored ${correct}/10. You need at least 4/10 correct answers to mark this unit completed. Review below and try again!`
+              )
+            ) : (
+              passed ? '🎉 Congratulations! You successfully passed the quiz!' : '💪 Great effort! Review your answers below to keep improving.'
+            )}
           </div>
         </div>
 
@@ -68,18 +94,24 @@ const QuizResult = () => {
           </div>
           <div className="stat-card animate-score">
             <div className="stat-icon-wrapper score-bg">📊</div>
-            <div className="stat-label">{percentage.toFixed(0)}%</div>
-            <div className="stat-description">Overall Score</div>
+            <div className="stat-label">{correct}/10</div>
+            <div className="stat-description">Score ({percentage.toFixed(0)}%)</div>
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="action-buttons">
-          <button className="action-btn retry-btn" onClick={() => navigate('/quiz')}>
-            🔄 Retry Quiz
-          </button>
-          <button className="action-btn dashboard-btn" onClick={() => navigate('/dashboard')}>
-            🏠 Go to Dashboard
+          {isUnitQuiz ? (
+            <button className="action-btn dashboard-btn" onClick={handleBackToCourse}>
+              📚 Back to Unit Materials
+            </button>
+          ) : (
+            <button className="action-btn retry-btn" onClick={() => navigate('/quiz')}>
+              🔄 Retry Quiz
+            </button>
+          )}
+          <button className="action-btn dashboard-btn" onClick={() => navigate('/courses')}>
+            🎓 Domain Courses
           </button>
         </div>
 

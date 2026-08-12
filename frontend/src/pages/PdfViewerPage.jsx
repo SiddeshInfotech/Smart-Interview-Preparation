@@ -8,10 +8,12 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  BookOpen
+  BookOpen,
+  Sparkles,
+  CheckCircle2
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
-import { formatPdfUrl } from "../api/courseApi";
+import { formatPdfUrl, generateModuleQuiz } from "../api/courseApi";
 import { getCachedPdfBuffer, prefetchPdf, fetchPdfArrayBuffer } from "../api/pdfCache";
 import "../styles/Courses.css";
 
@@ -27,12 +29,16 @@ export default function PdfViewerPage() {
   const pdfTitle = location.state?.pdfTitle || "Unit Study Material PDF";
   const moduleTitle = location.state?.moduleTitle || "Course Unit";
   const domainId = location.state?.domainId || null;
+  const moduleId = location.state?.moduleId || null;
+  const isCompleted = location.state?.isCompleted || false;
+  const courseTitle = location.state?.courseTitle || "";
 
   const [pdfDoc, setPdfDoc] = useState(null);
   const [numPages, setNumPages] = useState(0);
   const [scale, setScale] = useState(1.25);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [generatingQuiz, setGeneratingQuiz] = useState(false);
 
   const containerRef = useRef(null);
   const formattedRawUrl = formatPdfUrl(statePdfUrl);
@@ -42,6 +48,41 @@ export default function PdfViewerPage() {
       navigate(`/courses/${courseId}`, { state: { domainId } });
     } else {
       navigate("/courses");
+    }
+  };
+
+  const handleTakeQuiz = async () => {
+    if (!moduleId) {
+      alert("Module ID not found.");
+      return;
+    }
+    setGeneratingQuiz(true);
+    try {
+      const res = await generateModuleQuiz(moduleId, moduleTitle, courseTitle);
+      const questions = res.data?.questions || [];
+      if (questions.length === 0) {
+        alert("Failed to generate quiz questions for this unit.");
+        return;
+      }
+      navigate("/quiz-page", {
+        state: {
+          questions,
+          isUnitQuiz: true,
+          moduleId: moduleId,
+          courseId: courseId,
+          domainId: domainId,
+          unitTitle: moduleTitle,
+          courseTitle: courseTitle,
+          pdfUrl: formattedRawUrl,
+          pdfTitle: pdfTitle,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to generate unit quiz:", err);
+      const msg = err.response?.data?.error || err.message || "Failed to generate AI quiz for this unit.";
+      alert(msg);
+    } finally {
+      setGeneratingQuiz(false);
     }
   };
 
@@ -305,7 +346,7 @@ export default function PdfViewerPage() {
         </button>
 
         {/* Center: Module Title */}
-        <div style={{ textAlign: "center", padding: "0 16px" }}>
+        <div style={{ textAlign: "center", padding: "0 16px", display: "flex", alignItems: "center", gap: "10px" }}>
           <h2
             style={{
               margin: 0,
@@ -321,10 +362,63 @@ export default function PdfViewerPage() {
             <FileText size={18} color="#818cf8" />
             {moduleTitle}
           </h2>
+          {isCompleted && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                backgroundColor: "#dcfce7",
+                color: "#15803d",
+                fontSize: "0.72rem",
+                fontWeight: "700",
+                padding: "3px 10px",
+                borderRadius: "12px",
+                border: "1px solid #86efac"
+              }}
+            >
+              <CheckCircle2 size={12} color="#16a34a" /> Completed
+            </span>
+          )}
         </div>
 
-        {/* Right: Controls (Zoom & Page Count) */}
+        {/* Right: Controls (Quiz, Zoom & Page Count) */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {moduleId && (
+            <button
+              type="button"
+              onClick={handleTakeQuiz}
+              disabled={generatingQuiz}
+              style={{
+                background: isCompleted ? "#047857" : "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                color: "#ffffff",
+                border: "none",
+                padding: "6px 14px",
+                borderRadius: "8px",
+                fontSize: "0.85rem",
+                fontWeight: "600",
+                cursor: generatingQuiz ? "wait" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 8px rgba(124, 58, 237, 0.3)"
+              }}
+              title="Take 10-question AI Quiz for this unit"
+            >
+              {generatingQuiz ? (
+                <>
+                  <Loader2 size={15} className="spin" />
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={15} />
+                  <span>{isCompleted ? "Retake Quiz" : "Take Unit Quiz"}</span>
+                </>
+              )}
+            </button>
+          )}
+
           {numPages > 0 && (
             <span
               style={{

@@ -60,24 +60,29 @@ export default function Courses() {
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const loadBootstrapData = async (showLoader = false) => {
+  const loadBootstrapData = async (showLoader = false, retries = 3) => {
     if (showLoader && !initialCache) {
       setLoading(true);
     }
     setError(null);
-    try {
-      const res = await fetchCourseBootstrap();
-      setActiveDomain(res.data.active_domain);
-      setAvailableDomains(res.data.available_domains || []);
-      setDomainCourses(res.data.courses || []);
-    } catch (err) {
-      console.error("Failed to load bootstrap domain data:", err);
-      if (!initialCache) {
-        setError("Failed to connect to course server. Please check your connection.");
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const res = await fetchCourseBootstrap();
+        setActiveDomain(res.data.active_domain);
+        setAvailableDomains(res.data.available_domains || []);
+        setDomainCourses(res.data.courses || []);
+        setLoading(false);
+        return;
+      } catch (err) {
+        console.warn(`[Courses] Attempt ${attempt}/${retries} failed:`, err);
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 1500));
+        } else if (!initialCache) {
+          setError("Failed to connect to course server. Please ensure the Django backend (python manage.py runserver 8000) is running.");
+        }
       }
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   useEffect(() => {

@@ -7,9 +7,11 @@ import {
   FileText,
   Eye,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2,
+  Sparkles
 } from "lucide-react";
-import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl } from "../api/courseApi";
+import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl, generateModuleQuiz } from "../api/courseApi";
 import { prefetchPdf } from "../api/pdfCache";
 import "../styles/Courses.css";
 
@@ -44,23 +46,29 @@ export default function CourseDetail() {
   const [course, setCourse] = useState(initialCache || null);
   const [loading, setLoading] = useState(!initialCache);
   const [error, setError] = useState(null);
+  const [generatingQuizModuleId, setGeneratingQuizModuleId] = useState(null);
 
-  const loadCourseData = async () => {
+  const loadCourseData = async (retries = 3) => {
     if (!initialCache) {
       setLoading(true);
     }
     setError(null);
-    try {
-      const res = await fetchCourseDetails(courseId, domainId);
-      setCourse(res.data);
-    } catch (err) {
-      console.error("Failed to load course details:", err);
-      if (!initialCache) {
-        setError("Failed to load course details. Please try again.");
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const res = await fetchCourseDetails(courseId, domainId);
+        setCourse(res.data);
+        setLoading(false);
+        return;
+      } catch (err) {
+        console.warn(`[CourseDetail] Attempt ${attempt}/${retries} failed:`, err);
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 1500));
+        } else if (!initialCache) {
+          setError("Failed to load course details. Please ensure the Django backend (python manage.py runserver 8000) is running.");
+        }
       }
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -86,6 +94,7 @@ export default function CourseDetail() {
     const rawUrl = mod.pdf_url || mod.pdf_file;
     const formattedUrl = formatPdfUrl(rawUrl);
     const cleanTitle = cleanModuleTitle(mod.title);
+    const mId = mod.module_id || mod.id;
 
     if (formattedUrl) {
       navigate(`/courses/${courseId}/pdf-viewer`, {
@@ -95,10 +104,49 @@ export default function CourseDetail() {
           moduleTitle: cleanTitle,
           courseTitle: cleanCourseTitle(course?.title || "Course"),
           domainId: domainId,
+          moduleId: mId,
+          isCompleted: mod.is_completed,
         },
       });
     } else {
       alert("No PDF document is attached to this module.");
+    }
+  };
+
+  const handleTakeUnitQuiz = async (mod) => {
+    const mId = mod.module_id || mod.id;
+    if (!mId) {
+      alert("Module ID not found.");
+      return;
+    }
+    setGeneratingQuizModuleId(mId);
+    const cleanTitle = cleanModuleTitle(mod.title);
+    try {
+      const res = await generateModuleQuiz(mId, cleanTitle, cleanCourseTitle(course?.title || "Course"), course?.domain_name || "");
+      const questions = res.data?.questions || [];
+      if (questions.length === 0) {
+        alert("Failed to generate quiz questions for this unit.");
+        return;
+      }
+      navigate("/quiz-page", {
+        state: {
+          questions,
+          isUnitQuiz: true,
+          moduleId: mId,
+          courseId: courseId,
+          domainId: domainId,
+          unitTitle: cleanTitle,
+          courseTitle: cleanCourseTitle(course?.title || "Course"),
+          pdfUrl: formatPdfUrl(mod.pdf_url || mod.pdf_file),
+          pdfTitle: cleanModuleTitle(mod.pdf_title) || `${cleanTitle} Notes`,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to generate unit quiz:", err);
+      const msg = err.response?.data?.error || err.message || "Failed to generate AI quiz for this unit.";
+      alert(msg);
+    } finally {
+      setGeneratingQuizModuleId(null);
     }
   };
 
@@ -202,22 +250,53 @@ export default function CourseDetail() {
                   style={{
                     marginBottom: "16px",
                     borderRadius: "14px",
-                    border: "1px solid #e2e8f0",
-                    background: "#ffffff",
+                    border: mod.is_completed ? "1px solid #a7f3d0" : "1px solid #e2e8f0",
+                    background: mod.is_completed ? "#f0fdf4" : "#ffffff",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
                     padding: "18px 20px"
                   }}
                 >
                   <div className="topic-card-top" style={{ marginBottom: 0 }}>
                     <div className="topic-title-wrapper" style={{ gap: "14px" }}>
-                      <span className="module-index-badge" style={{ fontSize: "0.9rem", fontWeight: "700" }}>
+                      <span
+                        className="module-index-badge"
+                        style={{
+                          fontSize: "0.9rem",
+                          fontWeight: "700",
+                          background: mod.is_completed ? "#10b981" : undefined,
+                          color: mod.is_completed ? "#ffffff" : undefined
+                        }}
+                      >
                         {index + 1}
                       </span>
 
                       <div>
-                        <h5 className="topic-title" style={{ fontSize: "1.05rem", fontWeight: "700", color: "#0f172a" }}>
-                          {displayTitle}
-                        </h5>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                          <h5 className="topic-title" style={{ fontSize: "1.05rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+                            {displayTitle}
+                          </h5>
+
+                          {/* Completed Sign in front of PDF */}
+                          {mod.is_completed && (
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                backgroundColor: "#dcfce7",
+                                color: "#15803d",
+                                fontSize: "0.75rem",
+                                fontWeight: "700",
+                                padding: "3px 10px",
+                                borderRadius: "20px",
+                                border: "1px solid #86efac"
+                              }}
+                            >
+                              <CheckCircle2 size={13} color="#16a34a" /> Completed
+                            </span>
+                          )}
+                        </div>
+
                         {mod.file_size > 0 && (
                           <span style={{ fontSize: "0.78rem", color: "#6366f1", fontWeight: "600", marginTop: "4px", display: "inline-flex", alignItems: "center", gap: "5px" }}>
                             <FileText size={14} color="#6366f1" />
@@ -227,32 +306,68 @@ export default function CourseDetail() {
                       </div>
                     </div>
 
-                    {/* Single "View" Button */}
-                    <button
-                      type="button"
-                      style={{
-                        background: "#4f46e5",
-                        color: "#ffffff",
-                        border: "none",
-                        padding: "10px 20px",
-                        borderRadius: "10px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        fontSize: "0.9rem",
-                        fontWeight: "600",
-                        cursor: hasPdf ? "pointer" : "not-allowed",
-                        opacity: hasPdf ? 1 : 0.6,
-                        boxShadow: "0 3px 12px rgba(79, 70, 229, 0.25)",
-                        transition: "all 0.2s ease"
-                      }}
-                      onClick={() => handleOpenPdfViewer(mod)}
-                      disabled={!hasPdf}
-                      title={hasPdf ? "View unit PDF document" : "No PDF available"}
-                    >
-                      <Eye size={17} />
-                      <span>View</span>
-                    </button>
+                    {/* View & Take Quiz Action Buttons */}
+                    <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        style={{
+                          background: "#4f46e5",
+                          color: "#ffffff",
+                          border: "none",
+                          padding: "10px 18px",
+                          borderRadius: "10px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          fontSize: "0.9rem",
+                          fontWeight: "600",
+                          cursor: hasPdf ? "pointer" : "not-allowed",
+                          opacity: hasPdf ? 1 : 0.6,
+                          boxShadow: "0 3px 12px rgba(79, 70, 229, 0.25)",
+                          transition: "all 0.2s ease"
+                        }}
+                        onClick={() => handleOpenPdfViewer(mod)}
+                        disabled={!hasPdf}
+                        title={hasPdf ? "View unit PDF document" : "No PDF available"}
+                      >
+                        <Eye size={17} />
+                        <span>View</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        style={{
+                          background: mod.is_completed ? "#ecfdf5" : "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                          color: mod.is_completed ? "#047857" : "#ffffff",
+                          border: mod.is_completed ? "1px solid #a7f3d0" : "none",
+                          padding: "10px 18px",
+                          borderRadius: "10px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          fontSize: "0.9rem",
+                          fontWeight: "600",
+                          cursor: generatingQuizModuleId === (mod.module_id || mod.id) ? "wait" : "pointer",
+                          boxShadow: mod.is_completed ? "none" : "0 3px 12px rgba(124, 58, 237, 0.3)",
+                          transition: "all 0.2s ease"
+                        }}
+                        onClick={() => handleTakeUnitQuiz(mod)}
+                        disabled={generatingQuizModuleId === (mod.module_id || mod.id)}
+                        title="Take 10-question AI Quiz for this unit"
+                      >
+                        {generatingQuizModuleId === (mod.module_id || mod.id) ? (
+                          <>
+                            <Loader2 size={17} className="spin" />
+                            <span>Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={17} />
+                            <span>{mod.is_completed ? "Retake Quiz" : "Take Quiz"}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -267,3 +382,4 @@ export default function CourseDetail() {
     </div>
   );
 }
+

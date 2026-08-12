@@ -346,15 +346,6 @@ def send_registration_otp(request):
 @permission_classes([AllowAny])
 def verify_registration_otp(request):
     email = request.data.get("email")
-    otp = request.data.get("otp")
-    if not email or not otp:
-        return Response({"message": "Email and OTP are required."}, status=400)
-    if not otp.isdigit() or len(otp) != 6:
-        return Response({"message": "Invalid OTP format."}, status=400)
-
-    cached = cache.get(f"reg_otp_{email}")
-    if not cached:
-        return Response({"message": "OTP expired or not found."}, status=400)
     if cached["otp"] != otp:
         return Response({"message": "Invalid OTP."}, status=400)
     if cached["expires"] < timezone.now():

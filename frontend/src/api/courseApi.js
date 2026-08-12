@@ -162,7 +162,33 @@ export const fetchCourseModules = (courseId, domainId) =>
   api.get(`/courses/${courseId}/modules/`, {
     params: domainId ? { domain_id: domainId } : {},
   });
+export const clearCourseCache = () => {
+  inMemoryBootstrap = null;
+  inMemoryCourseDetails = {};
+  try {
+    sessionStorage.removeItem("course_bootstrap_cache");
+  } catch (e) {}
+};
+
+export const generateModuleQuiz = async (moduleId, unitTitle = "", courseTitle = "", domainName = "") => {
+  const topics = [unitTitle, courseTitle, domainName].filter(Boolean);
+  const payload = {
+    topics: topics.length > 0 ? topics : ["Web Development"],
+    mode: "MCQ",
+    question_count: 10,
+    custom_instruction: `Generate exactly 10 multiple-choice questions specifically for the unit study notes '${unitTitle}' from course '${courseTitle}'.`,
+  };
+  return api.post("/quiz/generate/", payload, { timeout: 60000 });
+};
+
+export const markModuleComplete = async (moduleId) => {
+  const res = await api.post(`/modules/${moduleId}/mark-complete/`);
+  clearCourseCache();
+  return res;
+};
+
 export const toggleModuleCompletion = (moduleId, domainId) =>
   api.post(`/modules/${moduleId}/toggle-complete/`, { domain_id: domainId });
 export const toggleTopicCompletion = toggleModuleCompletion;
 export const fetchCourseProgress = () => api.get("/course-progress/");
+

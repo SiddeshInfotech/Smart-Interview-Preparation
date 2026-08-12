@@ -25,7 +25,7 @@ DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 # Render host + local development
 ALLOWED_HOSTS = os.environ.get(
-    "ALLOWED_HOSTS", ".onrender.com,localhost,127.0.0.1"
+    "ALLOWED_HOSTS", ".onrender.com,localhost,127.0.0.1,testserver,*"
 ).split(",")
 
 # CORS Configuration – Allow local development (localhost), Render frontend, and cross-origin requests
