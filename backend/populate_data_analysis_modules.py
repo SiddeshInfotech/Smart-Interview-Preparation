@@ -21,15 +21,15 @@ if not os.path.exists(SQL_PDF_DIR) or not os.listdir(SQL_PDF_DIR):
     if os.path.exists(USER_SQL_DIR) and os.listdir(USER_SQL_DIR):
         SQL_PDF_DIR = USER_SQL_DIR
 
-# 1. Get or update Data Analysis & Data Science domain
+# 1. Get or update Data Analysis domain
 domain = Domain.objects.filter(name__icontains="Data").first()
 if not domain:
     domain = Domain.objects.create(
-        name="Data Analysis & Data Science",
+        name="Data Analysis",
         description="Master SQL database querying, Python data analysis, pandas, visualization, and statistics."
     )
 else:
-    domain.name = "Data Analysis & Data Science"
+    domain.name = "Data Analysis"
     domain.description = "Master SQL database querying, Python data analysis, pandas, visualization, and statistics."
     domain.save()
 

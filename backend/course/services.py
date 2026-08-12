@@ -68,7 +68,7 @@ def switch_active_domain(candidate, target_domain):
             candidate=candidate,
             domain=target_domain,
             course=course,
-            defaults={"progress_percentage": 0.0, "completed_topic_ids": []},
+            defaults={"progress_percentage": 0.0, "completed_module_ids": []},
         )
 
     return domain_courses
