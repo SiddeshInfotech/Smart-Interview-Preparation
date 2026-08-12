@@ -169,39 +169,32 @@ const Quiz = () => {
 
   // Handle single personalized generator
   const handleGenerate = async () => {
-    if (selectedMode === 'Coding Challenge') {
-      if (!selectedCodingLanguage) {
-        setError('Please select your target programming language.');
-        return;
-      }
-      setError('');
-      setGenerating(true);
-      try {
+    if (generating) return;
+    setError('');
+    setGenerating(true);
+
+    try {
+      if (selectedMode === 'Coding Challenge') {
+        if (!selectedCodingLanguage) {
+          setError('Please select your target programming language.');
+          setGenerating(false);
+          return;
+        }
         const response = await api.post('/coding/generate/', {
           language: selectedCodingLanguage,
           custom_instruction: promptText,
-        });
+        }, { timeout: 120000 });
+
         navigate('/coding', {
           state: {
             language: selectedCodingLanguage,
             questionData: response.data?.data,
           }
         });
-      } catch (err) {
-        console.error('Failed to generate coding challenge:', err);
-        const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to generate coding problem.';
-        setError(msg);
-      } finally {
-        setGenerating(false);
+        return;
       }
-      return;
-    }
 
-    // MCQ Mode
-    setError('');
-    setGenerating(true);
-
-    try {
+      // MCQ Mode
       const activeTopic = selectedTopic || domainTopics[0] || (candidateDomain || "Web Development");
       const payload = {
         topics: [activeTopic],
@@ -210,13 +203,13 @@ const Quiz = () => {
         custom_instruction: promptText,
       };
 
-      const response = await api.post('/quiz/generate/', payload);
+      const response = await api.post('/quiz/generate/', payload, { timeout: 120000 });
       navigate('/quiz-page', {
         state: { questions: response.data.questions }
       });
     } catch (err) {
-      console.error('Failed to generate quiz:', err);
-      const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to generate quiz. Please try again.';
+      console.error('Failed to generate assessment:', err);
+      const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to generate assessment. Please try again.';
       setError(msg);
     } finally {
       setGenerating(false);
