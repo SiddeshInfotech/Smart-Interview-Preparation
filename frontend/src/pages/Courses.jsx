@@ -9,15 +9,12 @@ import {
   Users,
   Database,
   Terminal,
-  Sparkles,
-  Edit3,
   UserCheck,
   Loader2,
   AlertCircle,
   CheckCircle2
 } from "lucide-react";
-import { fetchCourseBootstrap, switchActiveDomain, getCachedBootstrapData } from "../api/courseApi";
-import DomainSelectorModal from "../components/DomainSelectorModal";
+import { fetchCourseBootstrap, getCachedBootstrapData } from "../api/courseApi";
 import "../styles/Courses.css";
 
 const cleanCourseTitle = (title) => {
@@ -58,7 +55,6 @@ export default function Courses() {
   const [domainCourses, setDomainCourses] = useState(initialCache?.courses || []);
   const [loading, setLoading] = useState(!initialCache);
   const [error, setError] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const loadBootstrapData = async (showLoader = false, retries = 3) => {
     if (showLoader && !initialCache) {
@@ -88,18 +84,6 @@ export default function Courses() {
   useEffect(() => {
     loadBootstrapData(!initialCache);
   }, []);
-
-
-  const handleSelectDomain = async (domainId) => {
-    try {
-      const res = await switchActiveDomain(domainId);
-      setActiveDomain(res.data.active_domain);
-      setDomainCourses(res.data.courses || []);
-    } catch (err) {
-      console.error("Failed to switch domain:", err);
-      alert("Could not switch domain. Please try again.");
-    }
-  };
 
   const handleGoToCourse = (courseId) => {
     navigate(`/courses/${courseId}`, {
@@ -183,15 +167,6 @@ export default function Courses() {
               </div>
             </div>
           )}
-
-          <button
-            type="button"
-            className="btn-update-domain"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <Edit3 size={15} />
-            <span>Switch Active Domain</span>
-          </button>
         </div>
       </div>
 
@@ -289,24 +264,9 @@ export default function Courses() {
             <BookOpen size={48} color="#94a3b8" />
             <h3>No Courses Added to this Domain Yet</h3>
             <p>Admin can add new courses and PDF materials for this domain.</p>
-            <button
-              className="btn-update-domain mt-4"
-              onClick={() => setIsModalOpen(true)}
-            >
-              Switch Domain
-            </button>
           </div>
         )}
       </div>
-
-      {/* Domain Selection Modal */}
-      <DomainSelectorModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        domains={availableDomains}
-        activeDomainId={activeDomain?.domain_id}
-        onSelectDomain={handleSelectDomain}
-      />
     </div>
   );
 }

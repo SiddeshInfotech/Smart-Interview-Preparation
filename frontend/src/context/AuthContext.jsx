@@ -89,7 +89,11 @@ export const AuthProvider = ({ children }) => {
       try {
         profileRes = await api.get(roleEndpoint);
       } catch (err) {
-        // Fallback to auth profile if role endpoint fails
+        // If network error, don't attempt fallback endpoint since backend is unreachable
+        if (err.code === "ERR_NETWORK" || !err.response) {
+          throw err;
+        }
+        // Fallback to auth profile if role endpoint fails (e.g. 404 or 500)
         profileRes = await api.get("/auth/profile/");
       }
 
@@ -114,7 +118,11 @@ export const AuthProvider = ({ children }) => {
         }));
       }
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      if (error.code === "ERR_NETWORK" || !error.response) {
+        console.warn("Backend server is offline or unreachable.");
+      } else {
+        console.error("Error fetching profile:", error);
+      }
     } finally {
       setLoadingProfile(false);
     }
@@ -131,7 +139,11 @@ export const AuthProvider = ({ children }) => {
       setNotifications(data);
       localStorage.setItem("cached_notifications", JSON.stringify(data));
     } catch (err) {
-      console.error("Notification Fetch Error:", err);
+      if (err.code === "ERR_NETWORK" || !err.response) {
+        console.warn("Backend server is offline or unreachable for notifications.");
+      } else {
+        console.error("Notification Fetch Error:", err);
+      }
     } finally {
       setLoadingNotifications(false);
     }

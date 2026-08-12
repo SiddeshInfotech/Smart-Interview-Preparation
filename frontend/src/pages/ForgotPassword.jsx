@@ -36,7 +36,9 @@ export default function ForgotPassword() {
     } catch (err) {
       console.error("Forgot password error:", err);
       let errorMessage = "Failed to send OTP. Please try again.";
-      if (err.response?.data?.message) {
+      if (err.code === "ERR_NETWORK" || !err.response) {
+        errorMessage = "Unable to connect to the backend server. Please verify the backend is running.";
+      } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.response?.data?.error) {
         errorMessage = err.response.data.error;

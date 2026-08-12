@@ -31,6 +31,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import { clearCourseBootstrapCache } from "../api/courseApi";
 
 // Custom GitHub Icon Component
 const GitHubIcon = ({ size = 18, className = "" }) => (
@@ -453,6 +454,9 @@ const CandidateProfile = () => {
       const mergedData = { ...response.data, target_domain: profile.target_domain };
       localStorage.setItem("cached_candidate_profile", JSON.stringify(mergedData));
       setProfilePicture(response.data.profile_picture || profilePicture);
+
+      // Invalidate course bootstrap cache so Courses page immediately reflects newly selected domain
+      clearCourseBootstrapCache();
 
       setToastMessage("Candidate profile updated successfully!");
       setShowSuccessToast(true);

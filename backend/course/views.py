@@ -58,6 +58,16 @@ class CourseBootstrapView(APIView):
         candidate, _ = Candidate_Profile.objects.select_related("active_domain").get_or_create(user=request.user)
         domains = Domain.objects.filter(is_active=True).order_by("name")
 
+        if candidate.target_domain:
+            target = candidate.target_domain.strip()
+            domain_obj = Domain.objects.filter(name__iexact=target, is_active=True).first()
+            if not domain_obj and target.split():
+                first_word = target.split()[0]
+                domain_obj = Domain.objects.filter(name__icontains=first_word, is_active=True).first()
+            if domain_obj and candidate.active_domain != domain_obj:
+                switch_active_domain(candidate, domain_obj)
+                candidate.active_domain = domain_obj
+
         active_domain = candidate.active_domain
         if not active_domain and domains.exists():
             first_domain = domains.first()

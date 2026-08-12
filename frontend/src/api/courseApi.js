@@ -71,6 +71,14 @@ const saveCachedBootstrap = (data) => {
   }
 };
 
+export const clearCourseBootstrapCache = () => {
+  inMemoryBootstrap = null;
+  inMemoryCourseDetails = {};
+  try {
+    sessionStorage.removeItem("course_bootstrap_cache");
+  } catch (e) {}
+};
+
 export const getCachedBootstrapData = () => loadCachedBootstrap();
 
 export const getCachedCourseDetail = (courseId) => {
