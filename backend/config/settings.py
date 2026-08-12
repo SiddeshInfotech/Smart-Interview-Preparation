@@ -50,23 +50,34 @@ CORS_EXPOSE_HEADERS = [
     "accept-ranges",
 ]
 
-# ========== DATABASE (MySQL) ==========
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get("DB_NAME"),
-        "USER": os.environ.get("DB_USER"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-        "HOST": os.environ.get("DB_HOST"),
-        "PORT": os.environ.get("DB_PORT"),
-        "OPTIONS": {
-            "ssl": {
-                "ca": BASE_DIR / "certificates" / "ca.pem",
-            },
-            "init_command": "SET time_zone = '+00:00'",
-        },
+# ========== DATABASE (MySQL / SQLite) ==========
+USE_SQLITE = os.environ.get("USE_SQLITE", "False") == "True" or os.environ.get("DB_ENGINE") == "sqlite3"
+
+if USE_SQLITE or not os.environ.get("DB_HOST"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db_local.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.environ.get("DB_NAME"),
+            "USER": os.environ.get("DB_USER"),
+            "PASSWORD": os.environ.get("DB_PASSWORD"),
+            "HOST": os.environ.get("DB_HOST"),
+            "PORT": os.environ.get("DB_PORT"),
+            "OPTIONS": {
+                "connect_timeout": 5,
+                "ssl": {
+                    "ca": BASE_DIR / "certificates" / "ca.pem",
+                },
+                "init_command": "SET time_zone = '+00:00'",
+            },
+        }
+    }
 
 # ========== STATIC & MEDIA FILES ==========
 STATIC_URL = "/static/"

@@ -72,6 +72,7 @@ class CourseBootstrapView(APIView):
                 candidate=candidate, domain=active_domain
             )
             progress_map = {p.course_id: p.progress_percentage for p in progress_qs}
+            completed_modules_map = {p.course_id: set(p.completed_module_ids or []) for p in progress_qs}
 
             courses_data = CourseSerializer(
                 domain_courses,
@@ -80,6 +81,7 @@ class CourseBootstrapView(APIView):
                     "request": request,
                     "domain_id": active_domain.domain_id,
                     "progress_map": progress_map,
+                    "completed_modules_map": completed_modules_map,
                 },
             ).data
 

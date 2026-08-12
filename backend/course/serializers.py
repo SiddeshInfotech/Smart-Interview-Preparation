@@ -112,15 +112,30 @@ class CourseSerializer(serializers.ModelSerializer):
         ]
 
     def get_modules(self, obj):
-        active_modules = obj.modules.filter(is_active=True).order_by("sequence", "module_id")
-        return CourseModuleSerializer(active_modules, many=True, context=self.context).data
+        completed_modules_map = self.context.get("completed_modules_map", {})
+        completed_ids = completed_modules_map.get(obj.course_id, set())
+
+        if hasattr(obj, "_prefetched_objects_cache") and "modules" in obj._prefetched_objects_cache:
+            active_modules = [m for m in obj.modules.all() if m.is_active]
+            active_modules.sort(key=lambda m: (m.sequence, m.module_id))
+        else:
+            active_modules = obj.modules.filter(is_active=True).order_by("sequence", "module_id")
+
+        module_context = {
+            **self.context,
+            "completed_module_ids": completed_ids,
+        }
+
+        return CourseModuleSerializer(active_modules, many=True, context=module_context).data
 
     def get_total_modules(self, obj):
+        if hasattr(obj, "_prefetched_objects_cache") and "modules" in obj._prefetched_objects_cache:
+            return len([m for m in obj.modules.all() if m.is_active])
         return obj.modules.filter(is_active=True).count()
 
     def get_total_topics(self, obj):
         # Kept for backward compatibility with frontend: total topics equals total modules
-        return obj.modules.filter(is_active=True).count()
+        return self.get_total_modules(obj)
 
     def get_progress_percentage(self, obj):
         progress_map = self.context.get("progress_map")
