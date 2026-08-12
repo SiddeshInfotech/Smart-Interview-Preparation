@@ -180,6 +180,9 @@ export default function PdfViewerPage() {
           pageWrappers.push({ pageNum: i, wrapper: pageWrapper, canvas });
         }
 
+        // Hide loading spinner immediately as DOM placeholders are ready
+        setLoading(false);
+
         // Render Page 1 immediately for 0ms perceived delay
         if (pageWrappers[0]) {
           await renderPageToCanvas(1, pageWrappers[0].wrapper, pageWrappers[0].canvas);

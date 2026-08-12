@@ -1,7 +1,7 @@
 // High-Performance Resilient PDF Memory & Browser Cache Service
 const memoryCache = new Map();
 const activeFetches = new Map();
-const MAX_CACHE_ENTRIES = 40;
+const MAX_CACHE_ENTRIES = 50;
 
 /**
  * Validates that an ArrayBuffer actually contains binary PDF data (starts with '%PDF' magic header).
@@ -19,7 +19,7 @@ export const isValidPdfBuffer = (buffer) => {
 };
 
 /**
- * Generates prioritized candidate URLs for PDF documents based on filename signatures.
+ * Generates prioritized candidate URLs across all static course material repositories and backend URLs.
  */
 export const getFallbackPdfUrls = (url) => {
   if (!url) return [];
@@ -28,29 +28,18 @@ export const getFallbackPdfUrls = (url) => {
   try {
     const filename = url.split("/").pop().split("?")[0];
     if (filename) {
-      // 1. Target primary backend media URL if present
+      // 1. Primary backend URL if provided
       if (url.startsWith("http") || url.startsWith("/")) {
         candidateUrls.push(url);
       }
 
-      // 2. Target specific static folder by filename signature
-      if (filename.includes("Django") || filename.startsWith("Unit_1_Django") || filename.startsWith("Unit_5_Django")) {
-        candidateUrls.push(`/course_materials/Django_Notes_Topic_PDFs/${filename}`);
-      } else if (filename.includes("Intro_and_Installation") || filename.includes("Data_Types_Variables") || filename.startsWith("Unit_01_Intro_Data")) {
-        candidateUrls.push(`/course_materials/Python_Notes_Topic_PDFs/${filename}`);
-      } else if (filename.startsWith("Unit_") && !filename.includes("Django")) {
-        candidateUrls.push(`/course_materials/React_JS_Notes_Split/${filename}`);
-      } else {
-        candidateUrls.push(`/course_materials/HTML_and_CSS_Topic_PDFs/${filename}`);
-      }
-
-      // 3. Fallback to all other static asset folders
-      candidateUrls.push(`/course_materials/HTML_and_CSS_Topic_PDFs/${filename}`);
-      candidateUrls.push(`/course_materials/React_JS_Notes_Split/${filename}`);
+      // 2. All Static Frontend CDN Asset Directories (Checked in parallel with magic byte validation)
       candidateUrls.push(`/course_materials/Python_Notes_Topic_PDFs/${filename}`);
       candidateUrls.push(`/course_materials/Django_Notes_Topic_PDFs/${filename}`);
+      candidateUrls.push(`/course_materials/HTML_and_CSS_Topic_PDFs/${filename}`);
+      candidateUrls.push(`/course_materials/React_JS_Notes_Split/${filename}`);
 
-      // 4. Relative backend media route
+      // 3. Backend media storage path
       candidateUrls.push(`/media/course_materials/2026/08/${filename}`);
     }
   } catch (e) {
