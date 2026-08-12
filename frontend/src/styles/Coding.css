@@ -2259,3 +2259,21 @@ body.dark-theme .eval-suggestions-section li {
   color: #e0e7ff !important;
 }
 
+.live-preview-container {
+  flex: 1 !important;
+  height: calc(100% - 50px) !important;
+  width: 100% !important;
+  background: #ffffff !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.live-preview-container iframe {
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1 !important;
+  border: none !important;
+  background: #ffffff !important;
+}
+
