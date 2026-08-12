@@ -83,7 +83,6 @@ export default function CourseDetail() {
   }, [course]);
 
   const handleOpenPdfViewer = (mod) => {
-
     const rawUrl = mod.pdf_url || mod.pdf_file;
     const formattedUrl = formatPdfUrl(rawUrl);
     const cleanTitle = cleanModuleTitle(mod.title);
@@ -102,7 +101,6 @@ export default function CourseDetail() {
       alert("No PDF document is attached to this module.");
     }
   };
-
 
   if (loading) {
     return (
@@ -152,21 +150,45 @@ export default function CourseDetail() {
 
       {/* Hero Banner */}
       <div className="course-detail-hero">
-        <div className="course-hero-content">
-          <h1 className="course-hero-title">{courseDisplayTitle}</h1>
-          <p className="course-hero-desc">{course.description}</p>
+        <div className="course-detail-header-tags">
+          {course.technology && (
+            <span className="course-detail-badge">{course.technology}</span>
+          )}
+          {course.domain_name && (
+            <span className="course-detail-badge domain-tag">{course.domain_name}</span>
+          )}
+        </div>
+
+        <h1 className="course-detail-title">{courseDisplayTitle}</h1>
+
+        {/* Stats Row */}
+        <div className="course-detail-stats">
+          <div className="stat-box">
+            <div className="stat-icon-wrapper">
+              <BookOpen size={20} />
+            </div>
+            <div className="stat-info">
+              <label>Study Materials</label>
+              <span>{course.total_modules || 0} PDF Documents</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Course Curriculum Modules List */}
-      <div className="course-curriculum-section">
-        <h3 className="curriculum-title">Course Topics & Study Materials</h3>
+      <div className="course-detail-content-card">
+        <div className="content-card-header">
+          <h3 className="content-card-title">
+            <Layers size={22} color="#4f46e5" />
+            Course Units & PDF Study Materials
+          </h3>
+        </div>
 
-        <div className="topics-list">
+        <div className="module-accordion-list">
           {course.modules && course.modules.length > 0 ? (
             course.modules.map((mod, index) => {
-              const displayTitle = cleanModuleTitle(mod.title);
               const hasPdf = mod.pdf_url || mod.pdf_file;
+              const displayTitle = cleanModuleTitle(mod.title);
 
               return (
                 <div
