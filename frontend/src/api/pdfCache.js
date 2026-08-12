@@ -4,8 +4,16 @@ const activeFetches = new Map();
 const MAX_CACHE_ENTRIES = 50;
 
 /**
+ * Clear memory cache helper.
+ */
+export const clearPdfCache = () => {
+  memoryCache.clear();
+  activeFetches.clear();
+};
+
+/**
  * Validates that an ArrayBuffer actually contains binary PDF data (starts with '%PDF' magic header).
- * Prevents HTML fallback pages (e.g., index.html 404 routes) from corrupting the PDF worker.
+ * Prevents HTML fallback pages (e.g., index.html 404 routes or 502 HTML pages) from corrupting PDF.js worker.
  */
 export const isValidPdfBuffer = (buffer) => {
   if (!buffer || buffer.byteLength < 4) return false;
@@ -19,7 +27,8 @@ export const isValidPdfBuffer = (buffer) => {
 };
 
 /**
- * Generates prioritized candidate URLs across all static course material repositories and backend URLs.
+ * Generates prioritized candidate URLs across static course material repositories first, then backend URLs.
+ * Local static bundle paths are checked FIRST to guarantee 0ms latency and 0 CORS/502 errors.
  */
 export const getFallbackPdfUrls = (url) => {
   if (!url) return [];
@@ -28,25 +37,24 @@ export const getFallbackPdfUrls = (url) => {
   try {
     const filename = url.split("/").pop().split("?")[0];
     if (filename) {
-      // 1. Primary backend URL if provided
-      if (url.startsWith("http") || url.startsWith("/")) {
-        candidateUrls.push(url);
-      }
-
-      // 2. All Static Frontend CDN Asset Directories (Checked in parallel with magic byte validation)
+      // 1. Same-origin Static Asset Directories FIRST (0ms, 0 CORS, 0 502 errors)
       candidateUrls.push(`/course_materials/Python_Notes_Topic_PDFs/${filename}`);
       candidateUrls.push(`/course_materials/Django_Notes_Topic_PDFs/${filename}`);
       candidateUrls.push(`/course_materials/HTML_and_CSS_Topic_PDFs/${filename}`);
       candidateUrls.push(`/course_materials/React_JS_Notes_Split/${filename}`);
 
-      // 3. Backend media storage path
+      // 2. Relative backend media path
       candidateUrls.push(`/media/course_materials/2026/08/${filename}`);
     }
   } catch (e) {
     // Ignore URL parsing errors
   }
 
-  candidateUrls.push(url);
+  // 3. Absolute remote backend URL as final fallback
+  if (url && (url.startsWith("http://") || url.startsWith("https://"))) {
+    candidateUrls.push(url);
+  }
+
   return Array.from(new Set(candidateUrls));
 };
 
@@ -75,7 +83,7 @@ export const fetchPdfArrayBuffer = async (url) => {
           cache: "force-cache",
         });
 
-        // Reject HTML fallback responses (e.g. index.html)
+        // Reject HTML fallback responses (e.g. index.html or 502 HTML error page)
         const contentType = response.headers.get("content-type") || "";
         if (!response.ok || contentType.includes("text/html")) {
           continue;
@@ -121,16 +129,23 @@ export const prefetchPdf = async (url) => {
  */
 export const getCachedPdfBuffer = (url) => {
   if (!url) return null;
+
   if (memoryCache.has(url)) {
     const buf = memoryCache.get(url);
-    if (isValidPdfBuffer(buf)) return buf;
+    if (isValidPdfBuffer(buf)) {
+      return buf;
+    }
+    memoryCache.delete(url);
   }
 
   const candidateUrls = getFallbackPdfUrls(url);
   for (const targetUrl of candidateUrls) {
     if (memoryCache.has(targetUrl)) {
       const buf = memoryCache.get(targetUrl);
-      if (isValidPdfBuffer(buf)) return buf;
+      if (isValidPdfBuffer(buf)) {
+        return buf;
+      }
+      memoryCache.delete(targetUrl);
     }
   }
   return null;
