@@ -119,7 +119,7 @@ const FeedbackForm = () => {
                   name="name"
                   value={feedback.name}
                   onChange={handleChange}
-                  placeholder="e.g. Alex Morgan"
+                  placeholder="Enter your full name"
                 />
               </div>
             </div>
@@ -134,7 +134,7 @@ const FeedbackForm = () => {
                   name="email"
                   value={feedback.email}
                   onChange={handleChange}
-                  placeholder="e.g. alex@example.com"
+                  placeholder="Enter your email address"
                 />
               </div>
             </div>
