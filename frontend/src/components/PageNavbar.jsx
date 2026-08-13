@@ -5,6 +5,7 @@ import NotificationPopup from "./NotificationPopup";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import api from "../api/axios";
+import { formatMediaUrl } from "../api/courseApi";
 import "../styles/NotificationPopup.css";
 
 export default function PageNavbar({
@@ -158,7 +159,7 @@ export default function PageNavbar({
             >
               <span className="avatar-inner">
                 {userProfile.profilePicture ? (
-                  <img src={userProfile.profilePicture} alt="Profile" />
+                  <img src={formatMediaUrl(userProfile.profilePicture)} alt="Profile" />
                 ) : (
                   <UserCircle size={18} />
                 )}

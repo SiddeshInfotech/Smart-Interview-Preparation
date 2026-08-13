@@ -32,6 +32,8 @@ export const formatPdfUrl = (url) => {
   return `${origin}${cleanPath}`;
 };
 
+export const formatMediaUrl = formatPdfUrl;
+
 
 const loadCachedBootstrap = () => {
   if (inMemoryBootstrap) return inMemoryBootstrap;

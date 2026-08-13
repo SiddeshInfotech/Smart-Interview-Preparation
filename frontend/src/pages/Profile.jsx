@@ -16,6 +16,7 @@ import {
   Edit,
 } from "lucide-react";
 import "../styles/Profile.css";
+import { formatMediaUrl } from "../api/courseApi";
 
 // Custom GitHub Icon
 const GitHubIcon = ({ size = 20 }) => (
@@ -113,7 +114,7 @@ const Profile = () => {
             <div className="profile-info-header">
               <div className="profile-avatar-section">
                 {profile.profile_picture ? (
-                  <img src={profile.profile_picture} alt={profile.name} className="profile-avatar-large" />
+                  <img src={formatMediaUrl(profile.profile_picture)} alt={profile.name} className="profile-avatar-large" />
                 ) : (
                   <div className="profile-avatar-placeholder">
                     <span className="avatar-initials">{getInitials(profile.name)}</span>

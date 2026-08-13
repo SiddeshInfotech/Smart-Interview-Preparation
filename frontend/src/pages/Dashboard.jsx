@@ -4,6 +4,7 @@ import { BookOpen, Code, Video } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
 import { fetchDashboardBootstrap } from "../api/dashboardApi";
+import { formatMediaUrl } from "../api/courseApi";
 
 import {
   ResponsiveContainer,
@@ -184,8 +185,7 @@ const Dashboard = () => {
           const role = localStorage.getItem("user_role") || "candidate";
           let profilePic = null;
           if (profile.profile_picture) {
-            const pic = profile.profile_picture;
-            profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
+            profilePic = formatMediaUrl(profile.profile_picture);
           }
           const updatedProfile = {
             name: profile.full_name || profile.name || "User",

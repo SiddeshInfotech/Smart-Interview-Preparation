@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "../styles/CandidateProfile.css";
+import { formatMediaUrl } from "../api/courseApi";
 import {
   User,
   GraduationCap,
@@ -647,7 +648,7 @@ const CandidateProfile = () => {
                   <div className="cp-avatar-container">
                     <div className="cp-avatar-ring">
                       {profilePicture ? (
-                        <img src={profilePicture} alt="Candidate Profile" className="cp-avatar-image" />
+                        <img src={formatMediaUrl(profilePicture)} alt="Candidate Profile" className="cp-avatar-image" />
                       ) : (
                         <div className="cp-avatar-placeholder">
                           <UserCircle size={68} />

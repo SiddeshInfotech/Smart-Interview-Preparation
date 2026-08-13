@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import api from "../api/axios";
+import { formatMediaUrl } from "../api/courseApi";
 
 const AuthContext = createContext(null);
 
@@ -107,8 +108,7 @@ export const AuthProvider = ({ children }) => {
         const email = profileRes.data.email || "";
         let profilePic = null;
         if (profileRes.data.profile_picture) {
-          const pic = profileRes.data.profile_picture;
-          profilePic = pic.startsWith("http") ? pic : `http://127.0.0.1:8000${pic}`;
+          profilePic = formatMediaUrl(profileRes.data.profile_picture);
         }
 
         const updated = { name, email, profilePicture: profilePic, role };

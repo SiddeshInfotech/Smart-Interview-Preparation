@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { formatMediaUrl } from '../api/courseApi';
 import '../styles/Dashboard.css';
 import NotificationPopup from './NotificationPopup';
 
@@ -43,7 +44,7 @@ export default function Navbar() {
         <div className="navbar-avatar" ref={dropdownRef}>
           <button className="avatar-btn" onClick={() => setMenuOpen(!menuOpen)}>
             {userProfile.profilePicture ? (
-              <img src={userProfile.profilePicture} alt="Profile" className="avatar-img" />
+              <img src={formatMediaUrl(userProfile.profilePicture)} alt="Profile" className="avatar-img" />
             ) : (
               <User size={28} />
             )}
