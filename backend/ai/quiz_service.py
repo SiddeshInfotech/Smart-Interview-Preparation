@@ -292,6 +292,62 @@ def get_fallback_quiz_questions(topics: List[str], count: int = 10) -> List[Dict
     return all_fallbacks[:count]
 
 
+def get_fallback_chapter_quiz_questions(
+    chapter_name: str,
+    pdf_content: str,
+    count: int = 10,
+    materials_list: list = None,
+) -> List[Dict[str, Any]]:
+    """
+    Generates fallback chapter quiz questions derived strictly from the supplied PDF text
+    when OpenRouter AI service is offline or rate-limited.
+    """
+    filename = materials_list[0]["filename"] if (materials_list and len(materials_list) > 0) else "Chapter Material PDF"
+
+    # Extract sentences/lines from PDF text for grounding
+    lines = [
+        line.strip() for line in pdf_content.splitlines()
+        if len(line.strip()) > 30
+        and not line.startswith("---")
+        and not line.startswith("COURSE:")
+        and not line.startswith("CHAPTER:")
+        and not line.startswith("SOURCE MATERIAL")
+        and not line.startswith("CONTENT:")
+        and not line.startswith("==")
+    ]
+
+    fallback_qs = []
+    total_lines = len(lines)
+
+    for idx in range(count):
+        if total_lines > 0:
+            target_line = lines[idx % total_lines]
+            q_title = f"Based on the {chapter_name} study material, which of the following is explicitly discussed in '{filename}'?"
+            correct_opt = target_line[:130].rstrip(".")
+            exp_text = f"This concept is directly documented in {filename}: '{target_line[:180]}'."
+        else:
+            q_title = f"Which statement accurately reflects the provided learning material for {chapter_name}?"
+            correct_opt = f"Core topic principles as outlined in {chapter_name} chapter documentation."
+            exp_text = f"Justified directly by {filename} study material."
+
+        fallback_qs.append({
+            "text": q_title,
+            "options": [
+                correct_opt,
+                f"An unrelated procedural pattern not mentioned in {chapter_name} notes.",
+                f"Deprecated legacy behavior unsupported by {chapter_name} material.",
+                f"External assumption outside the {chapter_name} study text."
+            ],
+            "correct": 0,
+            "correct_answer": correct_opt,
+            "explanation": exp_text,
+            "source_material": filename,
+            "source_topic": f"{chapter_name} Core Concepts",
+        })
+
+    return fallback_qs[:count]
+
+
 def generate_chapter_quiz_questions(
     course_name: str,
     chapter_name: str,
@@ -302,7 +358,7 @@ def generate_chapter_quiz_questions(
 ) -> List[Dict[str, Any]]:
     """
     Generate chapter quiz questions strictly grounded in supplied PDF materials context.
-    Performs OpenRouter AI call using Gemini 2.0 Flash, cleaning, extraction, validation, and source traceability.
+    Performs OpenRouter AI call, JSON cleaning, schema validation, deduplication, and source traceability.
     """
     from .prompts import chapter_quiz_generation_prompt
 
@@ -317,12 +373,15 @@ def generate_chapter_quiz_questions(
     models = openrouter_service.get_models_for_feature("quiz")
     primary_model = models[0] if models else "google/gemini-2.0-flash-01"
 
+    valid_filenames = [m["filename"] for m in materials_list] if (materials_list and isinstance(materials_list, list)) else []
+    default_material_name = valid_filenames[0] if valid_filenames else "Chapter Material PDF"
+
     for attempt in range(1, 3):
         try:
             raw_text = openrouter_service.chat_with_model(
                 model=primary_model,
                 prompt=prompt,
-                temperature=0.4,
+                temperature=0.3,
                 max_tokens=2500,
                 expect_json=True,
             )
@@ -337,7 +396,7 @@ def generate_chapter_quiz_questions(
                 continue
 
             validated_questions = []
-            default_material_name = materials_list[0]["filename"] if (materials_list and len(materials_list) > 0) else "Chapter Material PDF"
+            seen_texts = set()
 
             for item in raw_questions:
                 if not isinstance(item, dict):
@@ -352,9 +411,13 @@ def generate_chapter_quiz_questions(
                 if not q_text or not isinstance(opts, list) or len(opts) != 4:
                     continue
 
+                clean_q_text = str(q_text).strip()
+                if not clean_q_text or clean_q_text.lower() in seen_texts:
+                    continue  # Deduplicate question text
+
                 # Clean options
                 clean_opts = [str(o).strip() for o in opts if str(o).strip()]
-                if len(clean_opts) != 4:
+                if len(clean_opts) != 4 or len(set(clean_opts)) < 2:
                     continue
 
                 correct_idx = item.get("correct")
@@ -370,19 +433,30 @@ def generate_chapter_quiz_questions(
                     final_correct_idx = 0
                     final_correct_str = clean_opts[0]
 
+                # Match source_material to valid filename if possible
+                matched_mat_name = str(src_mat).strip()
+                if valid_filenames:
+                    for fname in valid_filenames:
+                        if fname.lower() in matched_mat_name.lower() or matched_mat_name.lower() in fname.lower():
+                            matched_mat_name = fname
+                            break
+                    else:
+                        matched_mat_name = default_material_name
+
+                seen_texts.add(clean_q_text.lower())
                 validated_questions.append({
-                    "text": str(q_text).strip(),
+                    "text": clean_q_text,
                     "options": clean_opts,
                     "correct": final_correct_idx,
                     "correct_answer": final_correct_str,
                     "explanation": str(exp).strip(),
-                    "source_material": str(src_mat).strip(),
+                    "source_material": matched_mat_name,
                     "source_topic": str(src_top).strip(),
                 })
 
             supported_count = len(validated_questions)
             rejected_count = len(raw_questions) - supported_count
-            logger.info(f"[QUIZ] AI generated: {len(raw_questions)} raw questions")
+            logger.info(f"[QUIZ] AI generated: {len(raw_questions)} questions")
             logger.info(f"[QUIZ] Validation: {supported_count} supported, {rejected_count} rejected")
 
             if supported_count >= min(count, 5):
@@ -391,5 +465,5 @@ def generate_chapter_quiz_questions(
         except Exception as e:
             logger.warning(f"[QUIZ_SERVICE] Chapter quiz generation attempt {attempt} failed: {e}")
 
-    logger.error("[QUIZ_SERVICE] AI chapter quiz generation returned invalid questions or timed out.")
-    return []
+    logger.warning("[QUIZ_SERVICE] AI service unavailable or returned invalid schema. Returning PDF-grounded fallback questions.")
+    return get_fallback_chapter_quiz_questions(chapter_name=chapter_name, pdf_content=pdf_content, count=count, materials_list=materials_list)

@@ -195,42 +195,26 @@ export const clearCourseCache = () => {
 
 export const generateModuleQuiz = async (moduleId, unitTitle = "", courseTitle = "", domainName = "") => {
   const mId = parseInt(moduleId, 10);
-  if (mId) {
-    try {
-      const res = await api.post(`/modules/${mId}/generate-quiz/`, {}, { timeout: 45000 });
-      if (res?.data?.questions && Array.isArray(res.data.questions) && res.data.questions.length > 0) {
-        return res;
-      }
-    } catch (err) {
-      console.warn(`[generateModuleQuiz] Chapter PDF endpoint error for module ${mId}:`, err);
-      if (err.response?.data?.error) {
-        throw new Error(err.response.data.error);
-      }
-    }
+  if (!mId) {
+    throw new Error("Invalid module ID specified for quiz generation.");
   }
 
-  const topics = [unitTitle, courseTitle, domainName].filter(Boolean);
-  const payload = {
-    topics: topics.length > 0 ? topics : ["Web Development"],
-    mode: "MCQ",
-    question_count: 10,
-    custom_instruction: `Generate 10 multiple-choice questions grounded strictly in the PDF study material for '${unitTitle}' in course '${courseTitle}'.`,
-  };
-
   try {
-    const res = await api.post("/quiz/generate/", payload, { timeout: 15000 });
+    const res = await api.post(`/modules/${mId}/generate-quiz/`, {}, { timeout: 60000 });
     if (res?.data?.questions && Array.isArray(res.data.questions) && res.data.questions.length > 0) {
       return res;
     }
+    throw new Error("Unable to generate the quiz from the available course material.");
   } catch (err) {
-    console.warn("[generateModuleQuiz] Quiz generation fallback failed.", err);
-  }
-
-  return {
-    data: {
-      questions: getClientFallbackQuizQuestions(unitTitle || "Unit Notes", courseTitle || "Course Material")
+    console.error(`[generateModuleQuiz] Chapter PDF endpoint error for module ${mId}:`, err);
+    if (err.response?.data?.error) {
+      throw new Error(err.response.data.error);
     }
-  };
+    if (err.message) {
+      throw err;
+    }
+    throw new Error("Unable to generate the quiz from the available course material.");
+  }
 };
 
 export const getClientFallbackQuizQuestions = (unitTitle = "Unit Material", courseTitle = "Course Notes") => {

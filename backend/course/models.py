@@ -51,7 +51,6 @@ class CourseModule(models.Model):
     description = models.TextField(blank=True, null=True)
     sequence = models.PositiveIntegerField(default=1)
 
-    # PDF material attached directly to Module
     pdf_file = models.FileField(
         upload_to="course_materials/%Y/%m/",
         validators=[validate_pdf_file],
@@ -60,6 +59,8 @@ class CourseModule(models.Model):
     )
     pdf_title = models.CharField(max_length=200, blank=True, null=True)
     file_size = models.PositiveIntegerField(default=0, help_text="File size in bytes")
+    extracted_text = models.TextField(blank=True, null=True, help_text="Cached text extracted from PDF")
+    text_extracted_at = models.DateTimeField(blank=True, null=True)
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -73,6 +74,14 @@ class CourseModule(models.Model):
         return f"{self.course.title} - {self.title}"
 
     def save(self, *args, **kwargs):
+        if self.pk:
+            try:
+                old_instance = CourseModule.objects.get(pk=self.pk)
+                if old_instance.pdf_file != self.pdf_file:
+                    self.extracted_text = None
+                    self.text_extracted_at = None
+            except Exception:
+                pass
         if self.pdf_file and not self.file_size:
             try:
                 self.file_size = self.pdf_file.size

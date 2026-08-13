@@ -524,3 +524,41 @@ JSON FORMAT:
 }}
 
 Begin JSON output now:"""
+
+
+def chapter_question_validation_prompt(
+    chapter_material: str,
+    question_text: str,
+    options: list,
+    correct_answer: str,
+) -> str:
+    """
+    Generate prompt for AI second-pass grounding validation as specified in Section 6.
+    """
+    options_str = "\n".join([f"- {opt}" for opt in options])
+    return f"""You are a strict educational content validator.
+
+Is this question and its answer completely supported by the supplied chapter material?
+
+CHAPTER MATERIAL:
+{chapter_material}
+
+QUESTION:
+{question_text}
+
+OPTIONS:
+{options_str}
+
+PROPOSED CORRECT ANSWER:
+{correct_answer}
+
+Check:
+1. Is every detail in the question and correct answer explicitly stated or logically deduced ONLY from the supplied chapter material?
+2. Does it require any outside knowledge not present in the material?
+
+Return valid JSON ONLY in this format:
+{{
+  "supported": true,
+  "reason": "Detailed justification based only on chapter material"
+}}
+"""

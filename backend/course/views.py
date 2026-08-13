@@ -35,9 +35,18 @@ class OptionalJWTAuthentication(JWTAuthentication):
         except Exception:
             return None
 
+class OptionalJWTAuthentication(JWTAuthentication):
+    def authenticate(self, request):
+        try:
+            return super().authenticate(request)
+        except Exception:
+            return None
+
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
+        if getattr(view, "action", None) in ["generate_quiz", "toggle_complete", "mark_complete"]:
+            return True
         if request.method in permissions.SAFE_METHODS:
             return request.user and request.user.is_authenticated
         return request.user and (request.user.is_staff or getattr(request.user, "role", "") == "admin")
@@ -274,7 +283,7 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
             logger.info(f"[QUIZ] Processing: {mat['filename']} | Extracted characters: {len(mat['text'])}")
 
         pdf_context_str, total_chars = build_chapter_material_context(course.title, module.title, materials)
-        logger.info(f"[QUIZ] Sending chapter material to AI ({total_chars} total characters)")
+        logger.info("[QUIZ] Sending chapter material to AI")
 
         from ai.quiz_service import generate_chapter_quiz_questions
 
@@ -295,8 +304,6 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
                     status=500
                 )
 
-            logger.info(f"[QUIZ] AI generated: {len(questions)} questions")
-
             # Persist ChapterQuiz & ChapterQuestion records to DB
             from quiz.models import ChapterQuiz, ChapterQuestion
             candidate_profile = getattr(request.user, "candidate_profile", None) if (request.user and request.user.is_authenticated) else None
@@ -310,6 +317,18 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
             )
 
             for q in questions:
+                src_mat_obj = None
+                src_name = q.get("source_material") or (materials[0]["filename"] if materials else "Chapter PDF")
+
+                if materials:
+                    for m in materials:
+                        if m.get("material_id") and (m["filename"] == src_name or m["title"] == src_name):
+                            try:
+                                src_mat_obj = CourseMaterial.objects.get(pk=m["material_id"])
+                                break
+                            except Exception:
+                                pass
+
                 ChapterQuestion.objects.create(
                     quiz=quiz_obj,
                     question_text=q["text"],
@@ -319,11 +338,12 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
                     option_d=q["options"][3],
                     correct_answer=q.get("correct_answer") or q["options"][q.get("correct", 0)],
                     explanation=q.get("explanation", ""),
-                    source_material_name=q.get("source_material", materials[0]["filename"]),
+                    source_material=src_mat_obj,
+                    source_material_name=src_name,
                     source_topic=q.get("source_topic", f"{module.title} Concepts"),
                 )
 
-            logger.info(f"[QUIZ] Quiz #{quiz_obj.quiz_id} saved successfully with {len(questions)} questions.")
+            logger.info("[QUIZ] Quiz saved successfully")
 
             return Response({
                 "quiz_id": quiz_obj.quiz_id,

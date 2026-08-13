@@ -87,6 +87,39 @@ def get_or_extract_material_text(material) -> str:
     return ""
 
 
+def get_or_extract_module_text(module) -> str:
+    """
+    Returns cached extracted text for a CourseModule's direct pdf_file or extracts and caches it if missing.
+    """
+    if module.extracted_text and module.extracted_text.strip():
+        logger.info(f"[PDF_EXTRACT] Using cached text for module '{module.title}' ({len(module.extracted_text)} chars)")
+        return module.extracted_text
+
+    if not module.pdf_file:
+        return ""
+
+    try:
+        try:
+            f = module.pdf_file.open("rb")
+        except Exception:
+            f = open(module.pdf_file.path, "rb")
+
+        with f:
+            text = extract_clean_text_from_file_obj(f, pdf_name=module.pdf_title or module.title or "Module Notes")
+
+        if text:
+            module.extracted_text = text
+            module.text_extracted_at = timezone.now()
+            module.save(update_fields=["extracted_text", "text_extracted_at"])
+            logger.info(f"[PDF_EXTRACT] Extracted & cached {len(text)} chars for module '{module.title}'")
+            return text
+
+    except Exception as e:
+        logger.warning(f"[PDF_EXTRACT] Could not extract text from CourseModule {module.module_id}: {e}")
+
+    return ""
+
+
 def get_module_all_pdf_materials(module) -> List[Dict[str, str]]:
     """
     Retrieves all active PDF materials associated with a CourseModule/Chapter.
@@ -112,18 +145,7 @@ def get_module_all_pdf_materials(module) -> List[Dict[str, str]]:
         already_included = any(m["filename"] == module_pdf_name for m in materials)
 
         if not already_included:
-            pdf_text = ""
-            try:
-                try:
-                    f = module.pdf_file.open("rb")
-                except Exception:
-                    f = open(module.pdf_file.path, "rb")
-
-                with f:
-                    pdf_text = extract_clean_text_from_file_obj(f, pdf_name=module_pdf_name)
-            except Exception as e:
-                logger.warning(f"[PDF_EXTRACT] Could not extract module.pdf_file for module {module.module_id}: {e}")
-
+            pdf_text = get_or_extract_module_text(module)
             if pdf_text:
                 materials.append({
                     "material_id": None,
@@ -133,6 +155,40 @@ def get_module_all_pdf_materials(module) -> List[Dict[str, str]]:
                 })
 
     return materials
+
+
+def chunk_material_text(text: str, max_chars: int = 15000) -> str:
+    """
+    If extracted material is very large, intelligently chunks text to preserve
+    headings, sections, paragraphs, code examples, and topic boundaries without cutting mid-sentence.
+    """
+    if len(text) <= max_chars:
+        return text
+
+    paragraphs = text.split("\n\n")
+    selected_chunks = []
+    current_length = 0
+
+    for paragraph in paragraphs:
+        p_len = len(paragraph) + 2
+        if current_length + p_len > max_chars:
+            break
+        selected_chunks.append(paragraph)
+        current_length += p_len
+
+    if not selected_chunks and paragraphs:
+        # Fallback: take first paragraph truncated cleanly at line boundary
+        lines = paragraphs[0].splitlines()
+        first_chunk = []
+        c_len = 0
+        for line in lines:
+            if c_len + len(line) + 1 > max_chars:
+                break
+            first_chunk.append(line)
+            c_len += len(line) + 1
+        return "\n".join(first_chunk)
+
+    return "\n\n".join(selected_chunks)
 
 
 def build_chapter_material_context(course_title: str, chapter_title: str, materials: List[Dict[str, str]]) -> Tuple[str, int]:
@@ -148,7 +204,7 @@ def build_chapter_material_context(course_title: str, chapter_title: str, materi
 
     total_chars = 0
     for idx, mat in enumerate(materials, start=1):
-        clean_text = mat["text"].strip()
+        clean_text = chunk_material_text(mat["text"].strip())
         total_chars += len(clean_text)
         context_lines.append(f"SOURCE MATERIAL {idx}: {mat['filename']} (Title: '{mat['title']}')")
         context_lines.append("CONTENT:")
