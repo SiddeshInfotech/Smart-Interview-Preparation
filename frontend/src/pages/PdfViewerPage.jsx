@@ -389,19 +389,16 @@ export default function PdfViewerPage() {
               type="button"
               onClick={handleTakeQuiz}
               disabled={generatingQuiz}
+              className={`pdf-header-quiz-btn ${isCompleted ? "completed" : ""}`}
               style={{
-                background: isCompleted ? "#047857" : "linear-gradient(135deg, #7c3aed, #4f46e5)",
-                color: "#ffffff",
-                border: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
                 padding: "6px 14px",
                 borderRadius: "8px",
                 fontSize: "0.85rem",
                 fontWeight: "600",
                 cursor: generatingQuiz ? "wait" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                boxShadow: "0 2px 8px rgba(124, 58, 237, 0.3)"
               }}
               title="Take 10-question AI Quiz for this unit"
             >

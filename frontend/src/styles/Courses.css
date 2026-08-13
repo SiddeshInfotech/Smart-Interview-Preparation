@@ -1404,3 +1404,121 @@ body.dark-theme .course-progress-header {
   cursor: pointer;
 }
 
+/* ==========================================================================
+   MODULE QUIZ & REGENERATE QUIZ BUTTON STYLES (LIGHT & DARK THEMES)
+   ========================================================================== */
+
+/* Base Quiz Button in Module List */
+.module-quiz-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.module-quiz-btn:disabled {
+  cursor: wait;
+  opacity: 0.85;
+}
+
+/* Generate Quiz (Uncompleted State) */
+.module-quiz-btn:not(.completed) {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 3px 12px rgba(124, 58, 237, 0.3) !important;
+}
+
+.module-quiz-btn:not(.completed) span,
+.module-quiz-btn:not(.completed) svg {
+  color: #ffffff !important;
+}
+
+/* Regenerate Quiz (Completed State - Light Mode) */
+.module-quiz-btn.completed {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+  box-shadow: none !important;
+}
+
+.module-quiz-btn.completed span,
+.module-quiz-btn.completed svg {
+  color: #047857 !important;
+}
+
+/* Regenerate Quiz (Completed State - Dark Mode ONLY) */
+[data-theme="dark"] .module-quiz-btn.completed,
+body.dark-theme .module-quiz-btn.completed,
+.dark-theme .module-quiz-btn.completed,
+.dark .module-quiz-btn.completed {
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.45) !important;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.15) !important;
+}
+
+[data-theme="dark"] .module-quiz-btn.completed span,
+[data-theme="dark"] .module-quiz-btn.completed svg,
+body.dark-theme .module-quiz-btn.completed span,
+body.dark-theme .module-quiz-btn.completed svg,
+.dark-theme .module-quiz-btn.completed span,
+.dark-theme .module-quiz-btn.completed svg,
+.dark .module-quiz-btn.completed span,
+.dark .module-quiz-btn.completed svg {
+  color: #34d399 !important;
+}
+
+/* Base Quiz Button in PDF Viewer Top Bar */
+.pdf-header-quiz-btn:not(.completed) {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3) !important;
+}
+
+.pdf-header-quiz-btn:not(.completed) span,
+.pdf-header-quiz-btn:not(.completed) svg {
+  color: #ffffff !important;
+}
+
+/* PDF Viewer Regenerate Quiz (Completed State - Light Mode) */
+.pdf-header-quiz-btn.completed {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+  box-shadow: none !important;
+}
+
+.pdf-header-quiz-btn.completed span,
+.pdf-header-quiz-btn.completed svg {
+  color: #047857 !important;
+}
+
+/* PDF Viewer Regenerate Quiz (Completed State - Dark Mode ONLY) */
+[data-theme="dark"] .pdf-header-quiz-btn.completed,
+body.dark-theme .pdf-header-quiz-btn.completed,
+.dark-theme .pdf-header-quiz-btn.completed,
+.dark .pdf-header-quiz-btn.completed {
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.45) !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15) !important;
+}
+
+[data-theme="dark"] .pdf-header-quiz-btn.completed span,
+[data-theme="dark"] .pdf-header-quiz-btn.completed svg,
+body.dark-theme .pdf-header-quiz-btn.completed span,
+body.dark-theme .pdf-header-quiz-btn.completed svg,
+.dark-theme .pdf-header-quiz-btn.completed span,
+.dark-theme .pdf-header-quiz-btn.completed svg,
+.dark .pdf-header-quiz-btn.completed span,
+.dark .pdf-header-quiz-btn.completed svg {
+  color: #34d399 !important;
+}
+

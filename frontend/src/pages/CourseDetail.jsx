@@ -346,21 +346,7 @@ export default function CourseDetail() {
 
                       <button
                         type="button"
-                        style={{
-                          background: mod.is_completed ? "#ecfdf5" : "linear-gradient(135deg, #7c3aed, #4f46e5)",
-                          color: mod.is_completed ? "#047857" : "#ffffff",
-                          border: mod.is_completed ? "1px solid #a7f3d0" : "none",
-                          padding: "10px 18px",
-                          borderRadius: "10px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          fontSize: "0.9rem",
-                          fontWeight: "600",
-                          cursor: generatingQuizModuleId === (mod.module_id || mod.id) ? "wait" : "pointer",
-                          boxShadow: mod.is_completed ? "none" : "0 3px 12px rgba(124, 58, 237, 0.3)",
-                          transition: "all 0.2s ease"
-                        }}
+                        className={`module-quiz-btn ${mod.is_completed ? "completed" : ""}`}
                         onClick={() => handleTakeUnitQuiz(mod)}
                         disabled={generatingQuizModuleId === (mod.module_id || mod.id)}
                         title="Take 10-question AI Quiz for this unit"
