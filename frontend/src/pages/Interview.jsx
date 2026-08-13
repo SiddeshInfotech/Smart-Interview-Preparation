@@ -118,7 +118,8 @@ export default function Interview() {
   }
 
   // ---- LiveKit identity from user ----
-  const role = user?.role || "candidate";
+  const storedRole = localStorage.getItem("user_role");
+  const role = storedRole || user?.role || "candidate";
   const hasPremium = user?.has_premium === true;
   const identity = user?.id
     ? `usr_${role}_${user.id}`

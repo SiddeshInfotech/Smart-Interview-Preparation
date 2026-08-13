@@ -42,9 +42,16 @@ const LiveVideo = ({
   const [interviewerTabWarning, setInterviewerTabWarning] = useState(null);
   const warningTimerRef = useRef(null);
 
-  const localIdentity = localParticipant?.identity;
+  const userRoleStr = (
+    role ||
+    selectedInterview?.role ||
+    localStorage.getItem("user_role") ||
+    ""
+  ).toString().toLowerCase();
 
-  const isInterviewerRole = (role || '').toString().toLowerCase() === 'interviewer';
+  const isInterviewerRole =
+    userRoleStr.includes("interviewer") ||
+    userRoleStr === "interviewer";
 
   // Candidate: publish tab switch data message over LiveKit data track when tabSwitchCount changes
   const prevTabSwitchRef = useRef(0);
@@ -286,15 +293,13 @@ const LiveVideo = ({
           {/* INTERVIEWER CONTROLS */}
           {isInterviewerRole && (
             <>
-              {hasRemoteParticipant && (
-                <button
-                  className="control-btn kick-btn"
-                  style={{ background: "#dc2626", color: "#ffffff", fontWeight: "600" }}
-                  onClick={handleKickCandidate}
-                >
-                  🥾 Kick Candidate
-                </button>
-              )}
+              <button
+                className="control-btn kick-btn"
+                style={{ background: "#dc2626", color: "#ffffff", fontWeight: "600" }}
+                onClick={handleKickCandidate}
+              >
+                🥾 Kick Candidate
+              </button>
               <button className="control-btn end-call" onClick={() => handleEndInterview(false)}>
                 📞 End Interview
               </button>
@@ -450,8 +455,18 @@ const InterviewPage = ({
   // ---- Face detection loop ----
   const detectFaceAndEyes = useCallback(
     async (landmarker) => {
-      // Only run if interview is active and not ending
-      if (!isInInterview || isEndingRef.current) return;
+      const userRoleStr = (
+        role ||
+        selectedInterview?.role ||
+        localStorage.getItem("user_role") ||
+        ""
+      ).toString().toLowerCase();
+      const isInterviewerRole =
+        userRoleStr.includes("interviewer") ||
+        userRoleStr === "interviewer";
+
+      // Proctoring checks (face/gaze penalties) apply ONLY to candidates, NEVER to interviewers
+      if (!isInInterview || isEndingRef.current || isInterviewerRole) return;
 
       const video = videoRef.current;
       if (!video || !video.srcObject || video.paused || video.ended) {
@@ -548,8 +563,18 @@ const InterviewPage = ({
   // ---- Tab switch detection ----
   useEffect(() => {
     if (!isInInterview) return;
+    const userRoleStr = (
+      role ||
+      selectedInterview?.role ||
+      localStorage.getItem("user_role") ||
+      ""
+    ).toString().toLowerCase();
+    const isInterviewerRole =
+      userRoleStr.includes("interviewer") ||
+      userRoleStr === "interviewer";
+
     // Tab switching restrictions strictly apply ONLY to candidate role!
-    if (role !== 'candidate') return;
+    if (isInterviewerRole) return;
 
     const handleVisibilityChange = () => {
       if (document.hidden && isInInterview && !isEndingRef.current) {
