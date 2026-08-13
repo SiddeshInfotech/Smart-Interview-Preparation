@@ -33,6 +33,7 @@ const LiveVideo = ({
   participantName,
   selectedInterview,
   tabSwitchCount = 0,
+  isEndingSession = false,
 }) => {
   const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
@@ -296,13 +297,29 @@ const LiveVideo = ({
             <>
               <button
                 className="control-btn kick-btn"
-                style={{ background: "#dc2626", color: "#ffffff", fontWeight: "600" }}
+                disabled={isEndingSession}
+                style={{
+                  background: isEndingSession ? "#94a3b8" : "#dc2626",
+                  color: "#ffffff",
+                  fontWeight: "600",
+                  cursor: isEndingSession ? "not-allowed" : "pointer",
+                  opacity: isEndingSession ? 0.6 : 1,
+                }}
                 onClick={handleKickCandidate}
               >
-                🥾 Kick Candidate
+                {isEndingSession ? "⏳ Kicking Candidate..." : "🥾 Kick Candidate"}
               </button>
-              <button className="control-btn end-call" onClick={() => handleEndInterview(false)}>
-                📞 End Interview
+              <button
+                className="control-btn end-call"
+                disabled={isEndingSession}
+                style={{
+                  cursor: isEndingSession ? "not-allowed" : "pointer",
+                  opacity: isEndingSession ? 0.6 : 1,
+                  background: isEndingSession ? "#64748b" : "",
+                }}
+                onClick={() => handleEndInterview(false)}
+              >
+                {isEndingSession ? "⏳ Ending..." : "📞 End Interview"}
               </button>
             </>
           )}
@@ -381,6 +398,7 @@ const InterviewPage = ({
   // ---- UI states ----
   const [isJoining, setIsJoining] = useState(false);
   const [isInInterview, setIsInInterview] = useState(false);
+  const [isEndingSession, setIsEndingSession] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
   const [timer, setTimer] = useState(0);
@@ -743,24 +761,35 @@ const InterviewPage = ({
   };
 
   const handleKickCandidate = () => {
+    if (isEndingSession || isEndingRef.current) return;
     if (window.confirm('Are you sure you want to kick the candidate? This will cancel the interview.')) {
+      setIsEndingSession(true);
       handleCancelInterview('kicked');
     }
   };
 
   // ---- End interview ----
   const handleEndInterview = async (autoEnded = false) => {
-    if (isEndingRef.current) return; // prevent double execution
+    if (isEndingRef.current || isEndingSession) return; // prevent double execution
 
     const scheduleId = selectedInterview?.id || selectedInterview?.schedule_id;
-    const userRoleStr = (role || selectedInterview?.role || '').toString().toLowerCase();
-    const isInterviewerRole = userRoleStr === 'interviewer';
+    const userRoleStr = (
+      role ||
+      selectedInterview?.role ||
+      localStorage.getItem("user_role") ||
+      ""
+    ).toString().toLowerCase();
+    const isInterviewerRole =
+      userRoleStr.includes("interviewer") ||
+      userRoleStr === "interviewer";
 
     if (isInterviewerRole && !autoEnded) {
       if (!window.confirm('Are you sure you want to end the interview?')) {
         return;
       }
     }
+
+    setIsEndingSession(true);
 
     isEndingRef.current = true;
 
@@ -1055,6 +1084,7 @@ const InterviewPage = ({
                 participantName={participantName}
                 selectedInterview={selectedInterview}
                 tabSwitchCount={tabSwitchCount}
+                isEndingSession={isEndingSession}
               />
             </LiveKitRoom>
           </div>
