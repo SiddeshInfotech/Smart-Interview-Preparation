@@ -35,8 +35,10 @@ def register(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     data = serializer.validated_data
+    email = data["email"]
+    email_clean = email.strip().lower()
 
-    verified = cache.get(f"reg_verified_{data['email']}")
+    verified = cache.get(f"reg_verified_{email}") or cache.get(f"reg_verified_{email_clean}")
 
     if not verified:
         return Response(
@@ -47,7 +49,7 @@ def register(request):
     try:
         user = User(
             full_name=data["full_name"],
-            email=data["email"],
+            email=email_clean,
             role=data["role"],
             is_active=True,
             is_email_verified=True,
@@ -321,41 +323,78 @@ def reset_password(request):
 def send_registration_otp(request):
     email = request.data.get("email")
     if not email:
-        return Response({"message": "Email is required."}, status=400)
-    if User.objects.filter(email=email).exists():
-        return Response({"message": "Email already registered."}, status=400)
+        return Response({"message": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    email_clean = email.strip().lower()
+    if User.objects.filter(email__iexact=email_clean).exists():
+        return Response({"message": "Email already registered."}, status=status.HTTP_400_BAD_REQUEST)
 
     otp = generate_otp()
-    cache.set(
-        f"reg_otp_{email}",
-        {"otp": otp, "expires": timezone.now() + timedelta(minutes=10)},
-        timeout=600,
-    )
+    otp_data = {
+        "otp": otp,
+        "expires": timezone.now() + timedelta(minutes=10),
+        "attempts": 0,
+    }
+    cache.set(f"reg_otp_{email_clean}", otp_data, timeout=600)
+    cache.set(f"reg_otp_{email}", otp_data, timeout=600)
 
     try:
-        send_otp_email(email, otp, "Registration")
-        return Response({"message": "OTP sent to your email."}, status=200)
+        send_otp_email(email_clean, otp, "Registration")
+        return Response({"message": "OTP sent to your email."}, status=status.HTTP_200_OK)
     except Exception as e:
-        logger.exception("Failed to send registration OTP")
+        logger.exception("Failed to send registration OTP: %s", str(e))
         return Response(
-            {"message": "Failed to send OTP. Please try again."}, status=500
+            {"message": "Failed to send OTP. Please try again."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def verify_registration_otp(request):
-    email = request.data.get("email")
-    if cached["otp"] != otp:
-        return Response({"message": "Invalid OTP."}, status=400)
-    if cached["expires"] < timezone.now():
-        cache.delete(f"reg_otp_{email}")
-        return Response({"message": "OTP expired."}, status=400)
+    serializer = VerifyOTPSerializer(data=request.data)
+    if not serializer.is_valid():
+        email = request.data.get("email")
+        otp = request.data.get("otp")
+        if not email or not otp:
+            return Response({"message": "Email and OTP are required."}, status=status.HTTP_400_BAD_REQUEST)
 
+    email = serializer.validated_data.get("email") if serializer.is_valid() else request.data.get("email")
+    otp = serializer.validated_data.get("otp") if serializer.is_valid() else request.data.get("otp")
+
+    if not email or not otp:
+        return Response({"message": "Email and OTP are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    email_clean = email.strip().lower()
+    otp_clean = str(otp).strip()
+
+    cached = cache.get(f"reg_otp_{email_clean}") or cache.get(f"reg_otp_{email}")
+    if not cached:
+        return Response({"message": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if cached.get("expires") and cached["expires"] < timezone.now():
+        cache.delete(f"reg_otp_{email_clean}")
+        cache.delete(f"reg_otp_{email}")
+        return Response({"message": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+    attempts = cached.get("attempts", 0)
+    if attempts >= 5:
+        return Response({"message": "Too many invalid attempts."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if str(cached.get("otp")).strip() != otp_clean:
+        cached["attempts"] = attempts + 1
+        cache.set(f"reg_otp_{email_clean}", cached, timeout=600)
+        cache.set(f"reg_otp_{email}", cached, timeout=600)
+        return Response({"message": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+
+    cache.set(f"reg_verified_{email_clean}", True, timeout=300)
     cache.set(f"reg_verified_{email}", True, timeout=300)
+    cache.delete(f"reg_otp_{email_clean}")
     cache.delete(f"reg_otp_{email}")
+
     return Response(
-        {"message": "OTP verified successfully.", "verified_email": email}, status=200
+        {"message": "OTP verified successfully.", "verified_email": email_clean},
+        status=status.HTTP_200_OK,
     )
 
 
