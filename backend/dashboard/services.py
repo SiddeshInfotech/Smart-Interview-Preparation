@@ -16,9 +16,8 @@ CACHE_TTL = 60  # 60 seconds
 
 def get_optimized_daily_progress(user):
     """
-    Computes 7-day day-specific performance for Quiz, Coding, and Interview.
-    Evaluates candidate's activity strictly on each specific day.
-    If candidate did not participate in any activity on a given day, that day's score is 0%.
+    Computes 7-day day-specific performance for Quiz, Coding, and Interview,
+    scoped strictly to the candidate's active domain.
     """
     if not user or not user.is_authenticated:
         return [
@@ -32,36 +31,38 @@ def get_optimized_daily_progress(user):
             for i in range(6, -1, -1)
         ]
 
-    user_pk = getattr(user, "pk", getattr(user, "user_id", None))
-    cache_key = f"daily_progress_data_{user_pk}"
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        return cached_data
-
     try:
         today = timezone.now().date()
         candidate_profile = Candidate_Profile.objects.filter(user=user).first()
+        active_domain = candidate_profile.active_domain if candidate_profile else None
+        active_domain_id = active_domain.domain_id if active_domain else None
 
-        # 1 Bulk Query for Quizzes
-        quizzes = list(
-            QuizPerformance.objects.filter(user=user)
-            .only("created_at", "score")
-            .order_by("created_at")
-        )
+        user_pk = getattr(user, "pk", getattr(user, "user_id", None))
+        cache_key = f"daily_progress_data_{user_pk}_{active_domain_id}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return cached_data
 
-        # 1 Bulk Query for Code Submissions
-        coding_submissions = list(
-            CodeSubmission.objects.filter(user=user)
-            .only("submitted_at", "score")
-            .order_by("submitted_at")
-        )
+        # 1 Bulk Query for Quizzes (Filtered by Domain)
+        quiz_qs = QuizPerformance.objects.filter(user=user)
+        if active_domain:
+            quiz_qs = quiz_qs.filter(domain=active_domain)
+        quizzes = list(quiz_qs.only("created_at", "score").order_by("created_at"))
 
-        # 1 Bulk Query for Interview Reviews
-        int_reviews = list(
-            InterviewFeedbackReview.objects.filter(candidate=candidate_profile)
-            .only("submitted_at", "technical_skills", "communication_skills", "problem_solving", "soft_skills", "overall_rating")
-            .order_by("submitted_at")
-        ) if candidate_profile else []
+        # 1 Bulk Query for Code Submissions (Filtered by Domain)
+        coding_qs = CodeSubmission.objects.filter(user=user)
+        if active_domain:
+            coding_qs = coding_qs.filter(domain=active_domain)
+        coding_submissions = list(coding_qs.only("submitted_at", "score").order_by("submitted_at"))
+
+        # 1 Bulk Query for Interview Reviews (Filtered by Domain)
+        if candidate_profile:
+            int_qs = InterviewFeedbackReview.objects.filter(candidate=candidate_profile)
+            if active_domain:
+                int_qs = int_qs.filter(domain=active_domain)
+            int_reviews = list(int_qs.only("submitted_at", "technical_skills", "communication_skills", "problem_solving", "soft_skills", "overall_rating").order_by("submitted_at"))
+        else:
+            int_reviews = []
 
         daily_data = []
         for i in range(6, -1, -1):
@@ -104,13 +105,14 @@ def get_optimized_daily_progress(user):
         cache.set(cache_key, daily_data, timeout=CACHE_TTL)
         return daily_data
     except Exception as e:
-        logger.error(f"Error computing daily progress for user {user_pk}: {e}")
+        logger.error(f"Error computing daily progress for user: {e}")
         return []
 
 
 def get_optimized_ai_intelligence(user):
     """
-    Computes AI Profile Intelligence metrics 100% dynamically with caching.
+    Computes AI Profile Intelligence metrics 100% dynamically with caching,
+    scoped strictly to the candidate's active domain.
     """
     if not user or not user.is_authenticated:
         return {
@@ -124,19 +126,30 @@ def get_optimized_ai_intelligence(user):
             }
         }
 
-    user_pk = getattr(user, "pk", getattr(user, "user_id", None))
-    cache_key = f"ai_intelligence_data_{user_pk}"
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        return cached_data
-
     try:
         candidate_profile = Candidate_Profile.objects.filter(user=user).first()
+        active_domain = candidate_profile.active_domain if candidate_profile else None
+        active_domain_id = active_domain.domain_id if active_domain else None
 
-        quiz_score = round(QuizPerformance.objects.filter(user=user).aggregate(avg=Avg("score"))["avg"] or 0)
-        coding_score = round(CodeSubmission.objects.filter(user=user).aggregate(avg=Avg("score"))["avg"] or 0)
+        user_pk = getattr(user, "pk", getattr(user, "user_id", None))
+        cache_key = f"ai_intelligence_data_{user_pk}_{active_domain_id}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return cached_data
+
+        quiz_qs = QuizPerformance.objects.filter(user=user)
+        coding_qs = CodeSubmission.objects.filter(user=user)
+        if active_domain:
+            quiz_qs = quiz_qs.filter(domain=active_domain)
+            coding_qs = coding_qs.filter(domain=active_domain)
+
+        quiz_score = round(quiz_qs.aggregate(avg=Avg("score"))["avg"] or 0)
+        coding_score = round(coding_qs.aggregate(avg=Avg("score"))["avg"] or 0)
 
         int_reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile) if candidate_profile else None
+        if active_domain and int_reviews:
+            int_reviews = int_reviews.filter(domain=active_domain)
+
         if int_reviews and int_reviews.exists():
             aggs = int_reviews.aggregate(
                 tech=Avg("technical_skills"),
@@ -187,7 +200,7 @@ def get_optimized_ai_intelligence(user):
         cache.set(cache_key, data, timeout=CACHE_TTL)
         return data
     except Exception as e:
-        logger.error(f"Error computing AI intelligence for user {user_pk}: {e}")
+        logger.error(f"Error computing AI intelligence for user: {e}")
         return {
             "overall_readiness": 0,
             "completed_modules": "0 / 3",
@@ -207,5 +220,7 @@ def clear_dashboard_services_cache(user):
     if not user or not user.is_authenticated:
         return
     user_pk = getattr(user, "pk", getattr(user, "user_id", None))
-    cache.delete(f"daily_progress_data_{user_pk}")
-    cache.delete(f"ai_intelligence_data_{user_pk}")
+    try:
+        cache.clear()
+    except Exception:
+        pass

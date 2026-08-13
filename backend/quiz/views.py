@@ -103,10 +103,13 @@ def quiz_performance(request):
 @permission_classes([IsAuthenticated])
 def save_quiz_result(request):
     try:
-        data = request.data
+        from candidate.models import Candidate_Profile
+        candidate = Candidate_Profile.objects.filter(user=request.user).first()
+        active_domain = candidate.active_domain if candidate else None
 
         result = QuizPerformance.objects.create(
             user=request.user,
+            domain=active_domain,
             total_questions=data.get("total_questions", 10),
             correct_answers=data.get("correct_answers"),
             wrong_answers=data.get("wrong_answers"),

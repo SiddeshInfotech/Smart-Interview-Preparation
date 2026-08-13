@@ -119,6 +119,12 @@ def switch_active_domain(candidate, target_domain):
     candidate.active_domain = target_domain
     candidate.save(update_fields=["active_domain"])
 
+    try:
+        from dashboard.services import clear_dashboard_services_cache
+        clear_dashboard_services_cache(candidate.user)
+    except Exception:
+        pass
+
     domain_courses = list(Course.objects.filter(
         domain=target_domain,
         is_active=True,

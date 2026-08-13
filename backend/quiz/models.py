@@ -7,6 +7,13 @@ class QuizPerformance(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE
     )
+    domain = models.ForeignKey(
+        "course.Domain",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="quiz_performances",
+    )
     total_questions = models.IntegerField()
     correct_answers = models.IntegerField()
     wrong_answers = models.IntegerField()
@@ -19,6 +26,7 @@ class QuizPerformance(models.Model):
         indexes = [
             models.Index(fields=["user", "-created_at"]),
             models.Index(fields=["user", "score"]),
+            models.Index(fields=["user", "domain", "-created_at"]),
         ]
 
     def __str__(self):

@@ -179,8 +179,13 @@ def submit_code(request):
 
         # 4. Store in Database
         user_obj = request.user if request.user and request.user.is_authenticated else None
+        from candidate.models import Candidate_Profile
+        candidate = Candidate_Profile.objects.filter(user=user_obj).first() if user_obj else None
+        active_domain = candidate.active_domain if candidate else None
+
         submission = CodeSubmission.objects.create(
             user=user_obj,
+            domain=active_domain,
             question=question_obj,
             question_title=question_title or (question_obj.title if question_obj else f"{language} Assessment"),
             language=language,

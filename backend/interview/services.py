@@ -11,8 +11,8 @@ CACHE_TTL = 60  # 60 seconds
 
 def get_interview_performance_summary(user):
     """
-    Service layer function to compute interview performance ratings for a candidate.
-    Uses ORM aggregation and caching to optimize response times.
+    Service layer function to compute interview performance ratings for a candidate,
+    scoped strictly to the candidate's active domain.
     """
     default_res = {
         "total_interviews": 0,
@@ -26,22 +26,27 @@ def get_interview_performance_summary(user):
     if not user or not user.is_authenticated:
         return default_res
 
+    candidate_profile = Candidate_Profile.objects.filter(user=user).first()
+    if not candidate_profile:
+        return default_res
+
+    active_domain = candidate_profile.active_domain
+    active_domain_id = active_domain.domain_id if active_domain else None
+
     user_pk = getattr(user, "pk", getattr(user, "user_id", None))
-    cache_key = f"interview_performance_summary_{user_pk}"
+    cache_key = f"interview_performance_summary_{user_pk}_{active_domain_id}"
     cached_summary = cache.get(cache_key)
     if cached_summary:
         return cached_summary
 
     try:
-        candidate_profile = Candidate_Profile.objects.filter(user=user).first()
-        if not candidate_profile:
-            return default_res
-
         completed_schedules_count = InterviewSchedule.objects.filter(
             candidate=candidate_profile, status="Completed"
         ).count()
 
         reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile)
+        if active_domain:
+            reviews = reviews.filter(domain=active_domain)
         total_reviews_count = reviews.count()
         total_interviews = max(completed_schedules_count, total_reviews_count)
 

@@ -58,6 +58,13 @@ class InterviewFeedbackReview(models.Model):
         related_name='feedback_reviews',
         db_column='candidate_id'
     )
+    domain = models.ForeignKey(
+        "course.Domain",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="feedback_reviews",
+    )
     interviewer = models.ForeignKey(
         Interviewer_Profile,
         on_delete=models.CASCADE,

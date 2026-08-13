@@ -42,6 +42,13 @@ class CodeSubmission(models.Model):
         null=True,
         blank=True
     )
+    domain = models.ForeignKey(
+        "course.Domain",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="code_submissions",
+    )
 
     question = models.ForeignKey(
         CodingQuestion,
