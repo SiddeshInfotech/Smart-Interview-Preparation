@@ -38,6 +38,7 @@ const LiveVideo = ({
   const participants = useParticipants();
   const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone]);
   const room = useRoomContext();
+  const localIdentity = localParticipant?.identity;
 
   const [interviewerTabWarning, setInterviewerTabWarning] = useState(null);
   const warningTimerRef = useRef(null);
@@ -822,7 +823,7 @@ const InterviewPage = ({
       } catch (err) {
         console.warn("Candidate interview status check failed:", err);
       }
-    }, 3000);
+    }, 10000);
 
     return () => clearInterval(checkInterval);
   }, [isInInterview, role, selectedInterview]);
