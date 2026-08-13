@@ -1,6 +1,6 @@
 import logging
 from django.core.cache import cache
-from django.db.models import Avg, Max, Min, Count
+from django.db.models import Avg, Max, Min, Count, Q
 from .models import QuizPerformance
 
 from candidate.models import Candidate_Profile
@@ -13,7 +13,7 @@ CACHE_TTL = 60  # 60 seconds
 def get_quiz_performance_summary(user):
     """
     Service layer function to retrieve quiz performance metrics for a user,
-    scoped strictly to the candidate's active domain.
+    scoped strictly to the candidate's active domain or legacy/general quizzes.
     """
     if not user or not user.is_authenticated:
         return {
@@ -37,7 +37,7 @@ def get_quiz_performance_summary(user):
     try:
         queryset = QuizPerformance.objects.filter(user=user)
         if active_domain:
-            queryset = queryset.filter(domain=active_domain)
+            queryset = queryset.filter(Q(domain=active_domain) | Q(domain__isnull=True))
 
         aggs = queryset.aggregate(
             total_quizzes=Count("id"),

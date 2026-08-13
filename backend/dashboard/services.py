@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta
 from django.utils import timezone
 from django.core.cache import cache
-from django.db.models import Avg
+from django.db.models import Avg, Q
 
 from quiz.models import QuizPerformance
 from coding.models import CodeSubmission
@@ -43,23 +43,23 @@ def get_optimized_daily_progress(user):
         if cached_data:
             return cached_data
 
-        # 1 Bulk Query for Quizzes (Filtered by Domain)
+        # 1 Bulk Query for Quizzes (Filtered by Domain or General)
         quiz_qs = QuizPerformance.objects.filter(user=user)
         if active_domain:
-            quiz_qs = quiz_qs.filter(domain=active_domain)
+            quiz_qs = quiz_qs.filter(Q(domain=active_domain) | Q(domain__isnull=True))
         quizzes = list(quiz_qs.only("created_at", "score").order_by("created_at"))
 
-        # 1 Bulk Query for Code Submissions (Filtered by Domain)
+        # 1 Bulk Query for Code Submissions (Filtered by Domain or General)
         coding_qs = CodeSubmission.objects.filter(user=user)
         if active_domain:
-            coding_qs = coding_qs.filter(domain=active_domain)
+            coding_qs = coding_qs.filter(Q(domain=active_domain) | Q(domain__isnull=True))
         coding_submissions = list(coding_qs.only("submitted_at", "score").order_by("submitted_at"))
 
-        # 1 Bulk Query for Interview Reviews (Filtered by Domain)
+        # 1 Bulk Query for Interview Reviews (Filtered by Domain or General)
         if candidate_profile:
             int_qs = InterviewFeedbackReview.objects.filter(candidate=candidate_profile)
             if active_domain:
-                int_qs = int_qs.filter(domain=active_domain)
+                int_qs = int_qs.filter(Q(domain=active_domain) | Q(domain__isnull=True))
             int_reviews = list(int_qs.only("submitted_at", "technical_skills", "communication_skills", "problem_solving", "soft_skills", "overall_rating").order_by("submitted_at"))
         else:
             int_reviews = []
@@ -140,15 +140,15 @@ def get_optimized_ai_intelligence(user):
         quiz_qs = QuizPerformance.objects.filter(user=user)
         coding_qs = CodeSubmission.objects.filter(user=user)
         if active_domain:
-            quiz_qs = quiz_qs.filter(domain=active_domain)
-            coding_qs = coding_qs.filter(domain=active_domain)
+            quiz_qs = quiz_qs.filter(Q(domain=active_domain) | Q(domain__isnull=True))
+            coding_qs = coding_qs.filter(Q(domain=active_domain) | Q(domain__isnull=True))
 
         quiz_score = round(quiz_qs.aggregate(avg=Avg("score"))["avg"] or 0)
         coding_score = round(coding_qs.aggregate(avg=Avg("score"))["avg"] or 0)
 
         int_reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile) if candidate_profile else None
         if active_domain and int_reviews:
-            int_reviews = int_reviews.filter(domain=active_domain)
+            int_reviews = int_reviews.filter(Q(domain=active_domain) | Q(domain__isnull=True))
 
         if int_reviews and int_reviews.exists():
             aggs = int_reviews.aggregate(

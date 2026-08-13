@@ -1,6 +1,6 @@
 import logging
 from django.core.cache import cache
-from django.db.models import Avg
+from django.db.models import Avg, Q
 from candidate.models import Candidate_Profile
 from .models import InterviewFeedbackReview, InterviewSchedule
 
@@ -12,7 +12,7 @@ CACHE_TTL = 60  # 60 seconds
 def get_interview_performance_summary(user):
     """
     Service layer function to compute interview performance ratings for a candidate,
-    scoped strictly to the candidate's active domain.
+    scoped strictly to the candidate's active domain or legacy reviews.
     """
     default_res = {
         "total_interviews": 0,
@@ -46,7 +46,7 @@ def get_interview_performance_summary(user):
 
         reviews = InterviewFeedbackReview.objects.filter(candidate=candidate_profile)
         if active_domain:
-            reviews = reviews.filter(domain=active_domain)
+            reviews = reviews.filter(Q(domain=active_domain) | Q(domain__isnull=True))
         total_reviews_count = reviews.count()
         total_interviews = max(completed_schedules_count, total_reviews_count)
 

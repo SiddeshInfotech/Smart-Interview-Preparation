@@ -1,5 +1,6 @@
 import logging
 from django.core.cache import cache
+from django.db.models import Q
 from ..models import CodeSubmission
 
 from candidate.models import Candidate_Profile
@@ -12,7 +13,7 @@ CACHE_TTL = 60  # 60 seconds
 def get_coding_performance_summary(user):
     """
     Service layer function to calculate coding performance for a user,
-    scoped strictly to the candidate's active domain.
+    scoped strictly to the candidate's active domain or general submissions.
     """
     if not user or not user.is_authenticated:
         return {
@@ -37,7 +38,7 @@ def get_coding_performance_summary(user):
     try:
         submissions = CodeSubmission.objects.filter(user=user)
         if active_domain:
-            submissions = submissions.filter(domain=active_domain)
+            submissions = submissions.filter(Q(domain=active_domain) | Q(domain__isnull=True))
         submissions = submissions.only("score", "ai_evaluation")
         total = submissions.count()
 
