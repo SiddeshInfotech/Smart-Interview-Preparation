@@ -8,6 +8,7 @@ import json
 import logging
 import time
 from typing import Any, Dict, List
+from django.core.cache import cache
 
 from .json_utils import (
     clean_json_string,
@@ -35,9 +36,17 @@ def generate_quiz_questions(
     personalization_context: dict = None
 ) -> List[Dict[str, Any]]:
     """
-    Generate quiz questions using OpenRouter AI service with model fallback, retries,
+    Generate quiz questions using OpenRouter AI service with fast caching, model fallback,
     automatic JSON cleaning, recursive array extraction, and field validation/repair.
     """
+    # Check cache for fast 0ms return if no custom instructions
+    topics_key = "_".join(sorted([str(t).lower().strip() for t in topics])) if isinstance(topics, list) else str(topics)
+    cache_key = f"practice_quiz_cache_{topics_key}_{difficulty.lower()}_{count}_{mode}"
+    if not custom_instruction:
+        cached = cache.get(cache_key)
+        if cached and isinstance(cached, list) and len(cached) >= min(count, 5):
+            logger.info(f"[QuizService] CACHE HIT for practice quiz topics: {topics}")
+            return cached[:count]
     prompt = quiz_generation_prompt(
         topics=topics,
         difficulty=difficulty,
@@ -375,6 +384,14 @@ def generate_chapter_quiz_questions(
     Generate chapter quiz questions strictly grounded in supplied PDF materials context.
     Performs OpenRouter AI call across all fallback models, JSON cleaning, schema validation, deduplication, and source traceability.
     """
+    import hashlib
+    content_hash = hashlib.md5(f"{course_name}_{chapter_name}_{pdf_content[:2000]}_{count}".encode("utf-8")).hexdigest()
+    cache_key = f"chap_quiz_cache_{content_hash}"
+    cached = cache.get(cache_key)
+    if cached and isinstance(cached, list) and len(cached) >= min(count, 5):
+        logger.info(f"[QUIZ_SERVICE] CACHE HIT for chapter: {chapter_name}")
+        return cached[:count]
+
     from .prompts import chapter_quiz_generation_prompt
 
     prompt = chapter_quiz_generation_prompt(
@@ -390,13 +407,13 @@ def generate_chapter_quiz_questions(
     default_material_name = valid_filenames[0] if valid_filenames else "Chapter Material PDF"
 
     for selected_model in models:
-        for attempt in range(1, 3):
+        for attempt in range(1, 2):
             try:
                 raw_text = openrouter_service.chat_with_model(
                     model=selected_model,
                     prompt=prompt,
                     temperature=0.3,
-                    max_tokens=2500,
+                    max_tokens=1500,
                     expect_json=True,
                 )
                 cleaned_text = clean_json_string(raw_text)
@@ -471,7 +488,9 @@ def generate_chapter_quiz_questions(
                 logger.info(f"[QUIZ] Model '{selected_model}' generated: {len(raw_questions)} raw questions, {supported_count} supported, {rejected_count} rejected")
 
                 if supported_count >= min(count, 5):
-                    return validated_questions[:count]
+                    final_res = validated_questions[:count]
+                    cache.set(cache_key, final_res, timeout=7200)
+                    return final_res
 
             except Exception as e:
                 logger.warning(f"[QUIZ_SERVICE] Chapter quiz generation attempt {attempt} on model '{selected_model}' failed: {e}")

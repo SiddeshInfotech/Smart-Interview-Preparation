@@ -157,10 +157,11 @@ def get_module_all_pdf_materials(module) -> List[Dict[str, str]]:
     return materials
 
 
-def chunk_material_text(text: str, max_chars: int = 15000) -> str:
+def chunk_material_text(text: str, max_chars: int = 6000) -> str:
     """
     If extracted material is very large, intelligently chunks text to preserve
     headings, sections, paragraphs, code examples, and topic boundaries without cutting mid-sentence.
+    Optimized for fast LLM processing speed (<2s latency).
     """
     if len(text) <= max_chars:
         return text
