@@ -710,6 +710,47 @@ body.dark-theme .topic-card,
 body.dark-theme .courses-empty-state {
   background: #1e293b !important;
   border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .back-link-btn,
+body.dark-theme .back-link-btn,
+.dark-theme .back-link-btn,
+.dark .back-link-btn {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .back-link-btn span,
+[data-theme="dark"] .back-link-btn svg,
+body.dark-theme .back-link-btn span,
+body.dark-theme .back-link-btn svg,
+.dark-theme .back-link-btn span,
+.dark-theme .back-link-btn svg,
+.dark .back-link-btn span,
+.dark .back-link-btn svg {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .back-link-btn:hover,
+body.dark-theme .back-link-btn:hover,
+.dark-theme .back-link-btn:hover,
+.dark .back-link-btn:hover {
+  background: #334155 !important;
+  color: #818cf8 !important;
+  border-color: #475569 !important;
+}
+
+[data-theme="dark"] .back-link-btn:hover span,
+[data-theme="dark"] .back-link-btn:hover svg,
+body.dark-theme .back-link-btn:hover span,
+body.dark-theme .back-link-btn:hover svg,
+.dark-theme .back-link-btn:hover span,
+.dark-theme .back-link-btn:hover svg,
+.dark .back-link-btn:hover span,
+.dark .back-link-btn:hover svg {
+  color: #818cf8 !important;
 }
 
 [data-theme="dark"] .module-accordion-header,
