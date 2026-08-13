@@ -11,6 +11,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from django.core.cache import cache
 from django.db.models import Q, Count
 from django.apps import apps
 from django.contrib.admin.models import ADDITION
@@ -57,7 +58,13 @@ def models_list(request):
     """
     GET /api/admin/models/
     Returns all registered models grouped by app, with field metadata.
+    Cached for fast sidebar loading.
     """
+    cache_key = "admin_models_grouped_list_v2"
+    cached = cache.get(cache_key)
+    if cached:
+        return Response({"success": True, "data": cached})
+
     try:
         groups = get_models_grouped()
         # Add record counts
@@ -68,6 +75,7 @@ def models_list(request):
                     model_info["count"] = model.objects.count() if model else 0
                 except Exception:
                     model_info["count"] = 0
+        cache.set(cache_key, groups, timeout=30)
         return Response({"success": True, "data": groups})
     except Exception as exc:
         return Response({"success": False, "message": str(exc)}, status=500)

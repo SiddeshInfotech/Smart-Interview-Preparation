@@ -240,8 +240,8 @@ def discover_models():
 
     for model in registered_models:
         meta = model._meta
-        # Skip proxy models, abstract models, and standalone Group/Permission models
-        if meta.proxy or meta.abstract or meta.model_name in ("group", "permission"):
+        # Skip proxy models and abstract models
+        if meta.proxy or meta.abstract:
             continue
 
         fields = get_model_fields(model)
