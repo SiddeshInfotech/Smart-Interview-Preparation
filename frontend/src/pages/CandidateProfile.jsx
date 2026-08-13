@@ -909,42 +909,10 @@ const CandidateProfile = () => {
                       >
                         <option value="">Select Primary Career Domain *</option>
                         <option value="Web Development">Web Development</option>
-                        <option value="Mobile Development">Mobile Development</option>
-                        <option value="Data Science / Analytics">Data Science / Analytics</option>
-                        <option value="Cybersecurity">Cybersecurity</option>
-                        <option value="Game Development">Game Development</option>
-                        <option value="Software Testing / QA">Software Testing / QA</option>
-                        <option value="UI/UX / HCI">UI/UX / HCI</option>
+                        <option value="Software Testing">Software Testing</option>
+                        <option value="Data Science/Analytics">Data Science/Analytics</option>
                       </select>
                     </div>
-
-                    {/* Quick Domain Recommendation Pills */}
-                    {isEditing && (
-                      <div className="cp-quick-suggestions-pills">
-                        <span className="cp-pills-label">Core Career Domains:</span>
-                        {[
-                          "Web Development",
-                          "Mobile Development",
-                          "Data Science / Analytics",
-                          "Cybersecurity",
-                          "Game Development",
-                          "Software Testing / QA",
-                          "UI/UX / HCI"
-                        ].map((dom, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            className={`cp-pill-btn ${profile.target_domain === dom ? "active" : ""}`}
-                            onClick={() => {
-                              setProfile({ ...profile, target_domain: dom });
-                              localStorage.setItem("candidate_user_domain", dom);
-                            }}
-                          >
-                            + {dom}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1090,7 +1058,7 @@ const CandidateProfile = () => {
                         className={`cp-input ${!isEditing ? "readonly" : ""}`}
                         value={profile.linkedin_url}
                         onChange={(e) => setProfile({ ...profile, linkedin_url: e.target.value })}
-                        placeholder="https://www.linkedin.com/in/kimayanitinpatil"
+                        placeholder="Enter your LinkedIn profile URL"
                       />
                       {profile.linkedin_url && (
                         <a
@@ -1117,7 +1085,7 @@ const CandidateProfile = () => {
                         className={`cp-input ${!isEditing ? "readonly" : ""}`}
                         value={profile.github_url}
                         onChange={(e) => setProfile({ ...profile, github_url: e.target.value })}
-                        placeholder="https://github.com/kimayanitinpatil"
+                        placeholder="Enter your GitHub profile URL"
                       />
                       {profile.github_url && (
                         <a
@@ -1144,7 +1112,7 @@ const CandidateProfile = () => {
                         className={`cp-input ${!isEditing ? "readonly" : ""}`}
                         value={profile.portfolio_url}
                         onChange={(e) => setProfile({ ...profile, portfolio_url: e.target.value })}
-                        placeholder="https://kimayanitinpatil.dev"
+                        placeholder="Enter your portfolio website URL"
                       />
                       {profile.portfolio_url && (
                         <a
