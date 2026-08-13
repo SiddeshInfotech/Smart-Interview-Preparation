@@ -251,7 +251,7 @@ export default function AdminPanel() {
             {Object.entries(LEGACY_PATH_MAP).map(([legacySlug, target]) => (
               <Route
                 key={legacySlug}
-                path={`${legacySlug}/*`}
+                path={legacySlug}
                 element={<Navigate to={`/my_admin_panel/${target}`} replace />}
               />
             ))}
