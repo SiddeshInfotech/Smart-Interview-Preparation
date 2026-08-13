@@ -241,6 +241,10 @@ export const AuthProvider = ({ children }) => {
   }, [token, fetchProfile, fetchNotifications]);
 
   const markAsRead = async (id) => {
+    // Prevent duplicate HTTP POST /read/ calls if notification is already read
+    const existing = notifications.find((n) => n.notification_id === id);
+    if (existing && existing.is_read) return;
+
     try {
       await api.post(`/notifications/${id}/read/`, { notification_id: id });
       setNotifications((prev) =>

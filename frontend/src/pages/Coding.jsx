@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { LogOut, Lightbulb, Code2, Sparkles } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import api from "../api/axios";
+import { notifyDashboardActivityCompleted } from "../api/dashboardApi";
 import "../styles/Coding.css";
 
 const mapLanguageKey = (langStr) => {
@@ -148,6 +149,7 @@ const CodingAssessment = () => {
       if (response.data.success) {
         setEvalResult(response.data.evaluation);
         setShowEvalModal(true);
+        notifyDashboardActivityCompleted();
       } else {
         alert(response.data.error || "Evaluation failed. Please try again.");
       }
@@ -179,6 +181,7 @@ const CodingAssessment = () => {
         problem_statement: questionData?.problem_statement || "Write a program to solve the coding challenge requirement.",
         forfeit: true
       });
+      notifyDashboardActivityCompleted();
     } catch (err) {
       console.warn("Forfeit submission failed:", err);
     } finally {

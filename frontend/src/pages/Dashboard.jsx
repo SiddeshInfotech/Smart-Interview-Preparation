@@ -3,6 +3,7 @@ import "../styles/Dashboard.css";
 import { BookOpen, Code, Video } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
+import { fetchDashboardBootstrap } from "../api/dashboardApi";
 
 import {
   ResponsiveContainer,
@@ -155,14 +156,14 @@ const Dashboard = () => {
     ])
   );
 
-  // SINGLE OPTIMIZED BOOTSTRAP API CALL
+  // SINGLE OPTIMIZED BOOTSTRAP API CALL WITH DEDUPLICATION & AUTO-REFRESH
   useEffect(() => {
     let isMounted = true;
 
-    const fetchBootstrapData = async () => {
+    const loadBootstrap = async (force = false) => {
       try {
-        const response = await api.get("/dashboard/bootstrap/");
-        if (!isMounted || !response.data) return;
+        const data = await fetchDashboardBootstrap(force);
+        if (!isMounted || !data) return;
 
         const {
           quiz_performance,
@@ -173,7 +174,7 @@ const Dashboard = () => {
           profile,
           usage,
           notifications,
-        } = response.data;
+        } = data;
 
         if (profile?.full_name && profile.full_name !== "User") {
           setFullName(profile.full_name);
@@ -232,10 +233,17 @@ const Dashboard = () => {
       }
     };
 
-    fetchBootstrapData();
+    loadBootstrap(false);
+
+    const onDashboardUpdate = () => {
+      loadBootstrap(true);
+    };
+
+    window.addEventListener("dashboardUpdate", onDashboardUpdate);
 
     return () => {
       isMounted = false;
+      window.removeEventListener("dashboardUpdate", onDashboardUpdate);
     };
   }, []);
 

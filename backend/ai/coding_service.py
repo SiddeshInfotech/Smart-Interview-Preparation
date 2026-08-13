@@ -3,6 +3,7 @@
 import logging
 import time
 from typing import Any, Dict
+from django.core.cache import cache
 
 from .json_utils import clean_json_string, parse_json_robust
 from .openrouter_service import (
@@ -23,8 +24,16 @@ def generate_coding_question(
 ) -> Dict[str, Any]:
     """
     Generate a coding challenge tailored to language and difficulty using OpenRouter AI.
-    Implements multi-model fallback, retries, and robust JSON parsing/repair.
+    Implements multi-model fallback, retries, safe 3000 max_tokens limit, and fast Django caching.
     """
+    # Check cache for fast 0ms return if no custom instructions
+    cache_key = f"coding_q_cache_{str(language).lower().strip()}_{str(difficulty).lower().strip()}"
+    if not custom_instruction:
+        cached = cache.get(cache_key)
+        if cached and isinstance(cached, dict) and cached.get("problem_statement") and cached.get("solution"):
+            logger.info(f"[CodingService] CACHE HIT for {language} ({difficulty})")
+            return cached
+
     prompt = coding_challenge_prompt(
         language=language,
         difficulty=difficulty,
@@ -84,6 +93,8 @@ def generate_coding_question(
                 logger.info(
                     f"[CodingService] SUCCESS | Model: '{selected_model}' | Attempt: {attempt}/{max_retries} | Time: {elapsed}s"
                 )
+                if not custom_instruction:
+                    cache.set(cache_key, normalized, timeout=3600)
                 return normalized
 
             except OpenRouterNonRetryableError as non_retryable_err:

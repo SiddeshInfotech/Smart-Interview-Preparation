@@ -176,7 +176,7 @@ export default function NotificationPopup() {
                   <div
                     key={n.notification_id}
                     className={`notif-item ${!n.is_read ? "notif-item--unread" : ""}`}
-                    onClick={() => markAsRead(n.notification_id)}
+                    onClick={() => { if (!n.is_read) markAsRead(n.notification_id); }}
                   >
                     <span
                       className={`notif-item__icon notif-item__icon--${n.notification_type}`}

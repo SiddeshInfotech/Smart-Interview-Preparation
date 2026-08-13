@@ -198,3 +198,14 @@ def get_optimized_ai_intelligence(user):
                 "interview_skill": 0,
             }
         }
+
+
+def clear_dashboard_services_cache(user):
+    """
+    Invalidates cached daily progress and AI intelligence for a given user.
+    """
+    if not user or not user.is_authenticated:
+        return
+    user_pk = getattr(user, "pk", getattr(user, "user_id", None))
+    cache.delete(f"daily_progress_data_{user_pk}")
+    cache.delete(f"ai_intelligence_data_{user_pk}")

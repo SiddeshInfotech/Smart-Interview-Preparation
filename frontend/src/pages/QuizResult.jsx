@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import "../styles/QuizResult.css";
+import { notifyDashboardActivityCompleted } from "../api/dashboardApi";
 
 const QuizResult = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const results = location.state?.results;
+
+  useEffect(() => {
+    if (results) {
+      notifyDashboardActivityCompleted();
+    }
+  }, [results]);
 
   if (!results) {
     return (
