@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "../styles/InterviewerProfile.css";
+import { formatMediaUrl } from "../api/courseApi";
 import {
   User,
   Briefcase,
@@ -731,7 +732,7 @@ const InterviewerProfile = () => {
                   <div className="ip-avatar-container">
                     <div className="ip-avatar-ring">
                       {profilePicture ? (
-                        <img src={profilePicture} alt="Interviewer Profile" className="ip-avatar-image" />
+                        <img src={formatMediaUrl(profilePicture)} alt="Interviewer Profile" className="ip-avatar-image" />
                       ) : (
                         <div className="ip-avatar-placeholder">
                           <UserCircle size={68} />

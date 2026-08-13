@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { formatMediaUrl } from "../api/courseApi";
 import {
   BrainCircuit,
   LayoutGrid,
@@ -343,7 +344,7 @@ function ScheduleForm({ onSchedule, hasPremium = true }) {
                     <div className="interviewer-profile-info">
                       <div className="interviewer-pic-container">
                         {interviewer.profilePicture ? (
-                          <img src={interviewer.profilePicture} alt={interviewer.name} className="interviewer-pic" />
+                          <img src={formatMediaUrl(interviewer.profilePicture)} alt={interviewer.name} className="interviewer-pic" />
                         ) : (
                           <User size={30} color="#9ca3af" />
                         )}

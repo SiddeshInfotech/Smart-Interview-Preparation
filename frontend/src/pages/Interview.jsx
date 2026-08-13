@@ -28,18 +28,18 @@ export default function Interview() {
   useEffect(() => {
     const fetchUser = async () => {
       let currentUser = getCurrentUser();
-      if (currentUser && !currentUser.user_id) {
+      if (!currentUser || !currentUser.user_id) {
         try {
-          const res = await api.get("/auth/profile/");
+          const res = await api.get("/candidate/profile/");
           const userData = res.data;
-          if (userData && userData.user_id) {
+          if (userData) {
             localStorage.setItem("user", JSON.stringify(userData));
             setUser(userData);
             setLoading(false);
             return;
           }
         } catch (err) {
-          console.error("Failed to fetch user profile:", err);
+          console.warn("Candidate profile endpoint fallback:", err);
         }
       }
       setUser(currentUser);
