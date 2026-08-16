@@ -8,9 +8,6 @@ from django.db import connection
 from candidate.services import get_candidate_profile_data
 from notifications.services import get_recent_notifications, get_unread_notifications_count
 from authentication.services import get_user_usage_summary
-from quiz.services import get_quiz_performance_summary
-from coding.services import get_coding_performance_summary
-from interview.services import get_interview_performance_summary
 from .services import get_optimized_daily_progress, get_optimized_ai_intelligence
 
 logger = logging.getLogger(__name__)
@@ -69,27 +66,12 @@ def get_dashboard_bootstrap(request):
     usage_data = get_user_usage_summary(user)
     t_usage = (time.perf_counter() - t0) * 1000
 
-    # 4. Quiz Performance Service
-    t0 = time.perf_counter()
-    quiz_data = get_quiz_performance_summary(user)
-    t_quiz = (time.perf_counter() - t0) * 1000
-
-    # 5. Coding Performance Service
-    t0 = time.perf_counter()
-    coding_data = get_coding_performance_summary(user)
-    t_coding = (time.perf_counter() - t0) * 1000
-
-    # 6. Interview Performance Service
-    t0 = time.perf_counter()
-    interview_data = get_interview_performance_summary(user)
-    t_interview = (time.perf_counter() - t0) * 1000
-
-    # 7. Daily Progress Service
+    # 4. Daily Progress Service
     t0 = time.perf_counter()
     daily_progress_data = get_optimized_daily_progress(user)
     t_daily_progress = (time.perf_counter() - t0) * 1000
 
-    # 8. AI Intelligence Service
+    # 5. AI Intelligence Service
     t0 = time.perf_counter()
     ai_intelligence_data = get_optimized_ai_intelligence(user)
     t_ai_intelligence = (time.perf_counter() - t0) * 1000
@@ -101,9 +83,6 @@ def get_dashboard_bootstrap(request):
     logger.info(f"Profile Service: {t_profile:.2f} ms")
     logger.info(f"Notification Service: {t_notifications:.2f} ms")
     logger.info(f"Usage Service: {t_usage:.2f} ms")
-    logger.info(f"Quiz Performance Service: {t_quiz:.2f} ms")
-    logger.info(f"Coding Performance Service: {t_coding:.2f} ms")
-    logger.info(f"Interview Performance Service: {t_interview:.2f} ms")
     logger.info(f"Daily Progress Service: {t_daily_progress:.2f} ms")
     logger.info(f"AI Intelligence Service: {t_ai_intelligence:.2f} ms")
     logger.info(f"Bootstrap API Total Execution Time: {t_total:.2f} ms (SQL Queries: {queries_executed})")
@@ -115,9 +94,6 @@ def get_dashboard_bootstrap(request):
         "unread_notifications_count": unread_notifications_count,
         "daily_progress": daily_progress_data,
         "ai_intelligence": ai_intelligence_data,
-        "quiz_performance": quiz_data,
-        "coding_performance": coding_data,
-        "interview_performance": interview_data,
         "performance_meta": {
             "execution_time_ms": round(t_total, 2),
             "sql_queries": queries_executed,

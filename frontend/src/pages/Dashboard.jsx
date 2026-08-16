@@ -14,6 +14,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Label,
 } from "recharts";
 
 const CustomTooltip = React.memo(({ active, payload, label }) => {
@@ -102,37 +103,7 @@ const Dashboard = () => {
     return fallback;
   };
 
-  const [quizPerformance, setQuizPerformance] = useState(() =>
-    getCachedDashboard("quiz", {
-      total_quizzes: 0,
-      minimum_score: 0,
-      maximum_score: 0,
-      average_score: 0,
-      overall_score: 0,
-    })
-  );
 
-  const [interviewPerformance, setInterviewPerformance] = useState(() =>
-    getCachedDashboard("interview", {
-      total_interviews: 0,
-      technical_skills: 0,
-      communication_skills: 0,
-      problem_solving: 0,
-      soft_skills: 0,
-      overall_performance: 0,
-    })
-  );
-
-  const [codingPerformance, setCodingPerformance] = useState(() =>
-    getCachedDashboard("coding", {
-      total_submissions: 0,
-      logical_thinking: 0,
-      code_efficiency: 0,
-      language_skills: 0,
-      problem_solving: 0,
-      overall_score: 0,
-    })
-  );
 
   const [aiIntelligence, setAiIntelligence] = useState(() =>
     getCachedDashboard("ai", {
@@ -202,18 +173,7 @@ const Dashboard = () => {
           window.dispatchEvent(new CustomEvent("notificationUpdate", { detail: { notifications } }));
         }
 
-        if (quiz_performance) {
-          setQuizPerformance(quiz_performance);
-          localStorage.setItem("cached_dashboard_quiz", JSON.stringify(quiz_performance));
-        }
-        if (interview_performance) {
-          setInterviewPerformance(interview_performance);
-          localStorage.setItem("cached_dashboard_interview", JSON.stringify(interview_performance));
-        }
-        if (coding_performance) {
-          setCodingPerformance(coding_performance);
-          localStorage.setItem("cached_dashboard_coding", JSON.stringify(coding_performance));
-        }
+
         if (ai_intelligence?.metrics) {
           setAiIntelligence(ai_intelligence);
           localStorage.setItem("cached_dashboard_ai", JSON.stringify(ai_intelligence));
@@ -260,7 +220,7 @@ const Dashboard = () => {
       {/* Dashboard Header */}
       <div className="dashboard-header">
         <h1>
-          <span className="welcome-text">Welcome Back, </span>
+          <span className="welcome-text">Welcome, </span>
           <span className="username">{user.username}</span>
         </h1>
         <h2>PrepMaster Dashboard</h2>
@@ -311,7 +271,7 @@ const Dashboard = () => {
           </div>
 
           <ResponsiveContainer width="100%" height={360}>
-            <AreaChart data={performanceData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
+            <AreaChart data={performanceData} margin={{ top: 15, right: 25, left: 35, bottom: 35 }}>
               <defs>
                 <linearGradient id="quizGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#2563EB" stopOpacity={0.4} />
@@ -333,14 +293,31 @@ const Dashboard = () => {
                 tick={{ fill: '#cbd5e1', fontSize: 13, fontWeight: 700 }}
                 axisLine={false}
                 tickLine={false}
-              />
+                tickMargin={10}
+              >
+                <Label
+                  value="Days of the Week"
+                  position="insideBottom"
+                  offset={-20}
+                  style={{ fill: '#94a3b8', fontSize: 13, fontWeight: 600 }}
+                />
+              </XAxis>
               <YAxis
                 domain={[0, 100]}
                 tick={{ fill: '#cbd5e1', fontSize: 13, fontWeight: 700 }}
                 axisLine={false}
                 tickLine={false}
+                tickMargin={12}
                 tickFormatter={(v) => `${v}%`}
-              />
+              >
+                <Label
+                  value="Performance Score (%)"
+                  angle={-90}
+                  position="insideLeft"
+                  offset={-20}
+                  style={{ textAnchor: 'middle', fill: '#94a3b8', fontSize: 13, fontWeight: 600 }}
+                />
+              </YAxis>
               <Tooltip content={<CustomTooltip />} />
 
               {showQuiz && (
@@ -507,122 +484,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Performance Cards */}
-      <div className="performance-section">
-        {/* Quiz Performance */}
-        <div className="performance-card quiz-card">
-          <div className="performance-title">
-            <div className="category-badge quiz-badge">
-              <BookOpen size={22} />
-            </div>
-            <h3>Quiz Performance</h3>
-          </div>
 
-          <div className="performance-content">
-            <div className="performance-row">
-              <span>Total Quizzes</span>
-              <strong>{quizPerformance.total_quizzes}</strong>
-            </div>
-            <div className="performance-row">
-              <span>Minimum Score</span>
-              <strong>{quizPerformance.minimum_score}%</strong>
-            </div>
-            <div className="performance-row">
-              <span>Maximum Score</span>
-              <strong>{quizPerformance.maximum_score}%</strong>
-            </div>
-            <div className="performance-row">
-              <span>Average Score</span>
-              <strong>{quizPerformance.average_score}%</strong>
-            </div>
-
-            <hr className="performance-divider" />
-
-            <div className="performance-row total-performance">
-              <span>Overall Quiz Performance</span>
-              <strong className="performance-score">{quizPerformance.overall_score}%</strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Coding Performance */}
-        <div className="performance-card coding-card">
-          <div className="performance-title">
-            <div className="category-badge coding-badge">
-              <Code size={22} />
-            </div>
-            <h3>Coding Performance</h3>
-          </div>
-
-          <div className="performance-content">
-            <div className="performance-row">
-              <span>Logical Thinking</span>
-              <strong>{codingPerformance.logical_thinking || 0}%</strong>
-            </div>
-            <div className="performance-row">
-              <span>Code Efficiency</span>
-              <strong>{codingPerformance.code_efficiency || 0}%</strong>
-            </div>
-            <div className="performance-row">
-              <span>Language Skills</span>
-              <strong>{codingPerformance.language_skills || 0}%</strong>
-            </div>
-            <div className="performance-row">
-              <span>Problem Solving</span>
-              <strong>{codingPerformance.problem_solving || 0}%</strong>
-            </div>
-
-            <hr className="performance-divider" />
-
-            <div className="performance-row total-performance">
-              <span>Overall Coding Performance</span>
-              <strong className="performance-score">{codingPerformance.overall_score || 0}%</strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Interview Performance */}
-        <div className="performance-card interview-card">
-          <div className="performance-title">
-            <div className="category-badge interview-badge">
-              <Video size={22} />
-            </div>
-            <h3>Interview Performance</h3>
-          </div>
-
-          <div className="performance-content">
-            <div className="performance-row">
-              <span>Total Interviews</span>
-              <strong>{interviewPerformance.total_interviews || 0}</strong>
-            </div>
-            <div className="performance-row">
-              <span>Technical Competency</span>
-              <strong>{interviewPerformance.technical_skills || 0}%</strong>
-            </div>
-            <div className="performance-row">
-              <span>Communication Skills</span>
-              <strong>{interviewPerformance.communication_skills || 0}%</strong>
-            </div>
-            <div className="performance-row">
-              <span>Problem Solving & Logic</span>
-              <strong>{interviewPerformance.problem_solving || 0}%</strong>
-            </div>
-            <div className="performance-row">
-              <span>Soft Skills & Professionalism</span>
-              <strong>{interviewPerformance.soft_skills || 0}%</strong>
-            </div>
-
-            <hr className="performance-divider" />
-
-            <div className="performance-row total-performance">
-              <span>Overall Interview Performance</span>
-              <strong className="performance-score">
-                {interviewPerformance.overall_performance || 0}%
-              </strong>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
