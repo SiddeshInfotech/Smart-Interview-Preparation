@@ -45,6 +45,13 @@ def upload_resume(request):
             {"error": "Resume file is required"}, status=status.HTTP_400_BAD_REQUEST
         )
 
+    ext = os.path.splitext(resume_file.name)[1].lower()
+    if ext not in ['.pdf', '.docx', '.doc']:
+        return Response(
+            {"error": "Invalid file format. File should be in DOCX or PDF format."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
     resume_folder = os.path.join(settings.MEDIA_ROOT, "resumes")
     os.makedirs(resume_folder, exist_ok=True)
 

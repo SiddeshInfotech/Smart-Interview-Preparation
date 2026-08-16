@@ -27,6 +27,7 @@ const ResumeUpload = () => {
   const [resumeId, setResumeId] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [creditError, setCreditError] = useState("");
+  const [fileError, setFileError] = useState("");
   const [showScoreModal, setShowScoreModal] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -74,20 +75,28 @@ const ResumeUpload = () => {
     const validTypes = [
       "application/pdf",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
     ];
-    const validExtensions = ["pdf", "docx"];
+    const validExtensions = ["pdf", "docx", "doc"];
     const fileExtension = selectedFile.name.split(".").pop().toLowerCase();
 
     if (!validTypes.includes(selectedFile.type) && !validExtensions.includes(fileExtension)) {
+      setFile(null);
+      setFileError("Invalid file type. File should be in DOCX or PDF format.");
       setUploadStatus("Please upload a PDF or DOCX file");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
     if (selectedFile.size > 5 * 1024 * 1024) {
+      setFile(null);
+      setFileError("File size exceeds 5MB limit. Please upload a smaller file.");
       setUploadStatus("File size must be less than 5MB");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
+    setFileError("");
     setFile(selectedFile);
     setUploadStatus("Selected Successfully");
     setAnalysisResult(null);
@@ -128,6 +137,7 @@ const ResumeUpload = () => {
 
   const handleRemoveFile = () => {
     setFile(null);
+    setFileError("");
     setUploadStatus("");
     setAnalysisResult(null);
     setShowScoreModal(false);
@@ -179,6 +189,8 @@ const ResumeUpload = () => {
       setUploadStatus("Analysis Failed");
       if (error.response?.status === 429 || error.response?.data?.limit_reached) {
         setCreditError(errMsg);
+      } else {
+        setFileError(errMsg);
       }
       // Dispatch usage update event to sync profile dropdown credits
       window.dispatchEvent(new Event("usageUpdate"));
@@ -283,6 +295,39 @@ const ResumeUpload = () => {
                   <X size={18} />
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* FILE FORMAT / SIZE ERROR BANNER */}
+          {fileError && (
+            <div
+              className="file-format-error-alert"
+              style={{
+                marginTop: "16px",
+                marginBottom: "14px",
+                padding: "12px 16px",
+                borderRadius: "10px",
+                background: theme === "dark" ? "rgba(239, 68, 68, 0.15)" : "#fee2e2",
+                border: `1px solid ${theme === "dark" ? "#dc2626" : "#ef4444"}`,
+                color: theme === "dark" ? "#f87171" : "#991b1b",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                fontWeight: "600",
+                fontSize: "13.5px",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            >
+              <AlertCircle size={20} style={{ flexShrink: 0 }} />
+              <div style={{ flexGrow: 1 }}>{fileError}</div>
+              <button
+                onClick={() => setFileError("")}
+                style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "2px" }}
+                title="Dismiss Alert"
+              >
+                <X size={16} />
+              </button>
             </div>
           )}
 
