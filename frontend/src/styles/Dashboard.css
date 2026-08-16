@@ -3,6 +3,22 @@
 ================================== */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
 
+:root {
+  --chart-tick-color: #334155;
+  --chart-label-color: #0f172a;
+  --chart-grid-color: #cbd5e1;
+}
+
+[data-theme="dark"],
+body.dark-theme,
+body.dark-mode,
+.dark-theme,
+.dark-mode {
+  --chart-tick-color: #e2e8f0;
+  --chart-label-color: #ffffff;
+  --chart-grid-color: #475569;
+}
+
 .dashboard-container {
   font-family: "Poppins", sans-serif;
   width: 100%;

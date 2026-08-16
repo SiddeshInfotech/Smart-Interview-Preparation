@@ -287,10 +287,10 @@ const Dashboard = () => {
                 </linearGradient>
               </defs>
 
-              <CartesianGrid strokeDasharray="4 4" stroke="#334155" vertical={false} />
+              <CartesianGrid strokeDasharray="4 4" stroke="var(--chart-grid-color, #cbd5e1)" vertical={false} />
               <XAxis
                 dataKey="day"
-                tick={{ fill: '#cbd5e1', fontSize: 13, fontWeight: 700 }}
+                tick={{ fill: 'var(--chart-tick-color, #334155)', fontSize: 13, fontWeight: 700 }}
                 axisLine={false}
                 tickLine={false}
                 tickMargin={10}
@@ -299,12 +299,12 @@ const Dashboard = () => {
                   value="Days of the Week"
                   position="insideBottom"
                   offset={-20}
-                  style={{ fill: '#94a3b8', fontSize: 13, fontWeight: 600 }}
+                  style={{ fill: 'var(--chart-label-color, #0f172a)', fontSize: 13, fontWeight: 700 }}
                 />
               </XAxis>
               <YAxis
                 domain={[0, 100]}
-                tick={{ fill: '#cbd5e1', fontSize: 13, fontWeight: 700 }}
+                tick={{ fill: 'var(--chart-tick-color, #334155)', fontSize: 13, fontWeight: 700 }}
                 axisLine={false}
                 tickLine={false}
                 tickMargin={12}
@@ -315,7 +315,7 @@ const Dashboard = () => {
                   angle={-90}
                   position="insideLeft"
                   offset={-20}
-                  style={{ textAnchor: 'middle', fill: '#94a3b8', fontSize: 13, fontWeight: 600 }}
+                  style={{ textAnchor: 'middle', fill: 'var(--chart-label-color, #0f172a)', fontSize: 13, fontWeight: 700 }}
                 />
               </YAxis>
               <Tooltip content={<CustomTooltip />} />
