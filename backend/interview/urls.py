@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import (
     create_interview_schedule,
+    unscheduled_interviews,
+    apply_interview,
     get_livekit_token,
     accept_interview,
     decline_interview,
@@ -14,6 +16,8 @@ from .views import (
 
 urlpatterns = [
     path('schedule/', create_interview_schedule, name='schedule-interview'),
+    path('unscheduled/', unscheduled_interviews, name='unscheduled-interviews'),
+    path('apply/<int:pk>/', apply_interview, name='apply-interview'),
     path('livekit-token/', get_livekit_token, name='livekit-token'),
     path('accept/<int:pk>/', accept_interview, name='accept-interview'),
     path('decline/<int:pk>/', decline_interview, name='decline-interview'),

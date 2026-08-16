@@ -5,6 +5,8 @@ from interviewer.models import Interviewer_Profile
 
 class InterviewSchedule(models.Model):
     STATUS_CHOICES = [
+        ('Open', 'Open'),
+        ('Requested', 'Requested'),
         ('Scheduled', 'Scheduled'),
         ('Completed', 'Completed'),
         ('Cancelled', 'Cancelled'),
@@ -15,12 +17,22 @@ class InterviewSchedule(models.Model):
     candidate = models.ForeignKey(
         Candidate_Profile,
         models.DO_NOTHING,
-        db_column='candidate_id'
+        db_column='candidate_id',
+        null=True,
+        blank=True
     )
     interviewer = models.ForeignKey(
         Interviewer_Profile,
         models.DO_NOTHING,
         db_column='interviewer_id'
+    )
+    domain = models.ForeignKey(
+        "course.Domain",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='domain_id',
+        related_name='scheduled_interviews'
     )
     scheduled_date = models.DateField()
     scheduled_time = models.TimeField()
@@ -40,7 +52,8 @@ class InterviewSchedule(models.Model):
         db_table = 'Interview_Schedule'
 
     def __str__(self):
-        return f"{self.candidate.user.full_name} with {self.interviewer.user.full_name} on {self.scheduled_date}"
+        cand_name = self.candidate.user.full_name if self.candidate and hasattr(self.candidate, 'user') else 'Open Slot'
+        return f"{cand_name} with {self.interviewer.user.full_name} on {self.scheduled_date}"
 
 
 class InterviewFeedbackReview(models.Model):

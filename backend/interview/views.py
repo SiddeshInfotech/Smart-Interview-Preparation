@@ -23,84 +23,162 @@ if not LIVEKIT_API_KEY or not LIVEKIT_API_SECRET:
     logger.warning("LiveKit API credentials are not set in environment.")
 
 
-# ========== SCHEDULING VIEW ==========
+# ========== SCHEDULING VIEW (INTERVIEWER ONLY) ==========
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_interview_schedule(request):
     """
-    Candidate sends an interview request.
-    Bypasses DRF serializer validation to avoid choice/field validation issues.
-    Creates the InterviewSchedule row directly via ORM and notifies the interviewer.
+    Interviewer creates an interview slot.
+    Accessible ONLY to users with role 'interviewer' or having an interviewer_profile.
+    Requires domain selection, date, time, and duration.
+    Creates an Open slot (candidate=None, status='Open').
     """
-    from rest_framework.exceptions import ValidationError as DRFValidationError
     from interviewer.models import Interviewer_Profile
+    from course.models import Domain
 
-    if not hasattr(request.user, 'candidate_profile'):
-        return Response({"detail": "Only candidates can send interview requests."}, status=403)
+    user_role = getattr(request.user, 'role', '')
+    is_interviewer = user_role == 'interviewer' or hasattr(request.user, 'interviewer_profile')
 
-    interviewer_id = request.data.get('interviewer')
+    if not is_interviewer:
+        return Response({"detail": "Interview scheduling is only accessible to users with the interviewer role."}, status=403)
+
+    interviewer_profile = getattr(request.user, 'interviewer_profile', None)
+    if not interviewer_profile:
+        interviewer_profile, _ = Interviewer_Profile.objects.get_or_create(user=request.user)
+
     scheduled_date = request.data.get('scheduled_date')
     scheduled_time = request.data.get('scheduled_time')
-    duration_minutes = request.data.get('duration_minutes')
+    duration_minutes = request.data.get('duration_minutes', 60)
+    domain_id_raw = request.data.get('domain') or request.data.get('domain_id')
 
     errors = {}
-    if not interviewer_id:
-        errors['interviewer'] = 'This field is required.'
     if not scheduled_date:
-        errors['scheduled_date'] = 'This field is required.'
+        errors['scheduled_date'] = 'Scheduled date is required.'
     if not scheduled_time:
-        errors['scheduled_time'] = 'This field is required.'
-    if not duration_minutes:
-        errors['duration_minutes'] = 'This field is required.'
+        errors['scheduled_time'] = 'Scheduled time is required.'
+    if not domain_id_raw:
+        errors['domain'] = 'Domain selection is required.'
+
     if errors:
         return Response(errors, status=400)
 
-    try:
-        interviewer_profile = Interviewer_Profile.objects.get(pk=interviewer_id)
-    except Interviewer_Profile.DoesNotExist:
-        return Response({"interviewer": f"No interviewer found with id={interviewer_id}."}, status=400)
+    domain_obj = None
+    if isinstance(domain_id_raw, int) or (isinstance(domain_id_raw, str) and domain_id_raw.isdigit()):
+        domain_obj = Domain.objects.filter(pk=int(domain_id_raw)).first()
+    if not domain_obj and isinstance(domain_id_raw, str):
+        domain_obj = Domain.objects.filter(name__iexact=domain_id_raw.strip()).first()
 
-    candidate_profile = request.user.candidate_profile
+    if not domain_obj:
+        return Response({"domain": f"Selected domain '{domain_id_raw}' not found."}, status=400)
+
     room_name = f"room-{uuid.uuid4().hex[:8]}"
 
     try:
         schedule = InterviewSchedule.objects.create(
-            candidate=candidate_profile,
+            candidate=None,
             interviewer=interviewer_profile,
+            domain=domain_obj,
             scheduled_date=scheduled_date,
             scheduled_time=scheduled_time,
             duration_minutes=int(duration_minutes),
-            status='Scheduled',
+            status='Open',
             meeting_link='',
             room_name=room_name,
         )
     except Exception as db_err:
         return Response({"detail": f"Database error: {str(db_err)}"}, status=400)
 
+    serializer = InterviewScheduleSerializer(schedule)
+    return Response(serializer.data, status=201)
+
+
+# ========== GET UNSCHEDULED INTERVIEWS (CANDIDATE VIEW) ==========
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def unscheduled_interviews(request):
+    """
+    Returns list of open/unscheduled interview slots created by interviewers.
+    Filters by domain matching candidate's active/target domain if available.
+    """
+    from candidate.models import Candidate_Profile
+    from course.models import Domain
+
+    qs = InterviewSchedule.objects.filter(status='Open', candidate__isnull=True).select_related(
+        'interviewer__user', 'domain'
+    ).order_by('scheduled_date', 'scheduled_time')
+
+    cand_domain_id = None
+    cand_domain_name = None
+
+    if hasattr(request.user, 'candidate_profile'):
+        candidate = request.user.candidate_profile
+        if candidate.active_domain:
+            cand_domain_id = candidate.active_domain.domain_id
+            cand_domain_name = candidate.active_domain.name
+        elif candidate.target_domain:
+            d_obj = Domain.objects.filter(name__iexact=candidate.target_domain.strip()).first()
+            if d_obj:
+                cand_domain_id = d_obj.domain_id
+                cand_domain_name = d_obj.name
+
+    serialized = InterviewScheduleSerializer(qs, many=True).data
+
+    return Response({
+        "candidate_domain_id": cand_domain_id,
+        "candidate_domain_name": cand_domain_name,
+        "results": serialized
+    })
+
+
+# ========== APPLY FOR UNSCHEDULED INTERVIEW (CANDIDATE) ==========
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def apply_interview(request, pk):
+    """
+    Candidate submits a proposal to apply for an unscheduled interview slot.
+    Updates slot status to 'Requested' and notifies the interviewer.
+    """
+    from candidate.models import Candidate_Profile
+
+    if not hasattr(request.user, 'candidate_profile'):
+        return Response({"detail": "Only candidates can apply for interview slots."}, status=403)
+
+    try:
+        schedule = InterviewSchedule.objects.select_related(
+            'interviewer__user', 'domain'
+        ).get(pk=pk)
+    except InterviewSchedule.DoesNotExist:
+        return Response({"error": "Interview schedule slot not found."}, status=404)
+
+    if schedule.status != 'Open' or schedule.candidate is not None:
+        return Response({"error": "This interview slot is no longer available."}, status=400)
+
+    candidate_profile = request.user.candidate_profile
+    schedule.candidate = candidate_profile
+    schedule.status = 'Requested'
+    schedule.save(update_fields=['candidate', 'status', 'updated_at'])
+
     try:
         from notifications.utils import create_notification
+        domain_name = schedule.domain.name if schedule.domain else "General"
         create_notification(
             user=schedule.interviewer.user,
             notification_type="interview",
             title="New Interview Request",
             message=(
-                f"Candidate {request.user.full_name} has requested an interview "
+                f"Candidate {request.user.full_name} has requested an interview proposal for {domain_name} "
                 f"on {schedule.scheduled_date} at {schedule.scheduled_time}. "
                 f"Schedule ID: {schedule.schedule_id}"
             )
         )
     except Exception as e:
-        print("Failed to send notification:", e)
+        logger.error(f"Failed to send proposal notification to interviewer: {e}")
 
+    serializer = InterviewScheduleSerializer(schedule)
     return Response({
-        "schedule_id": schedule.schedule_id,
-        "room_name": schedule.room_name,
-        "status": schedule.status,
-        "meeting_link": schedule.meeting_link,
-        "scheduled_date": str(schedule.scheduled_date),
-        "scheduled_time": str(schedule.scheduled_time),
-        "duration_minutes": schedule.duration_minutes,
-    }, status=201)
+        "message": "Interview proposal submitted successfully. Waiting for interviewer approval.",
+        "schedule": serializer.data
+    }, status=200)
 
 
 # ========== LIVEKIT TOKEN ENDPOINT ==========
@@ -112,7 +190,6 @@ def get_livekit_token(request):
     display_name = request.data.get('name')
     role = request.data.get('role', 'participant')
 
-    # ✅ Convert identity to string (LiveKit requires string)
     if identity is not None:
         identity = str(identity)
 
@@ -129,11 +206,9 @@ def get_livekit_token(request):
             status=400
         )
 
-    # ✅ Debug: log credentials and identity
     logger.info(f"LIVEKIT_API_KEY: {LIVEKIT_API_KEY[:5]}... (length {len(LIVEKIT_API_KEY)})")
     logger.info(f"Identity: {identity}, Room: {room_name}, Role: {role}")
 
-    # Validate timing constraints and authorization for room sessions
     try:
         schedule = InterviewSchedule.objects.filter(room_name=room_name).first()
         if schedule:
@@ -144,7 +219,7 @@ def get_livekit_token(request):
                 return Response({'error': 'This interview has been cancelled.'}, status=400)
 
             if request.user.role == 'candidate':
-                if schedule.candidate.user != request.user:
+                if schedule.candidate and schedule.candidate.user != request.user:
                     return Response({'error': 'You are not authorized for this interview.'}, status=403)
             elif request.user.role == 'interviewer':
                 if schedule.interviewer.user != request.user:
@@ -154,7 +229,6 @@ def get_livekit_token(request):
             scheduled_start = timezone.make_aware(dt_naive) if timezone.is_naive(dt_naive) else dt_naive
             now = timezone.now()
 
-            # Auto cancel if 15 mins past start time and status is Scheduled
             if now > (scheduled_start + timedelta(minutes=15)) and schedule.status == 'Scheduled':
                 schedule.status = 'Cancelled'
                 schedule.save(update_fields=['status', 'updated_at'])
@@ -180,7 +254,7 @@ def get_livekit_token(request):
     try:
         token = (
             api.AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
-            .with_identity(identity)          # ✅ now a string
+            .with_identity(identity)
             .with_name(display_name)
             .with_metadata(f'{{"role":"{role}"}}')
             .with_grants(
@@ -195,7 +269,6 @@ def get_livekit_token(request):
         )
         jwt_token = token.to_jwt()
 
-        # ✅ Log the generated token (first 100 chars)
         logger.info(f"Generated token: {jwt_token[:100]}...")
 
         return Response({'token': jwt_token})
@@ -214,7 +287,7 @@ def get_livekit_token(request):
 def accept_interview(request, pk):
     try:
         schedule = InterviewSchedule.objects.select_related(
-            'candidate__user', 'interviewer__user'
+            'candidate__user', 'interviewer__user', 'domain'
         ).get(pk=pk)
     except InterviewSchedule.DoesNotExist:
         return Response({'error': 'Interview schedule not found.'}, status=404)
@@ -222,22 +295,26 @@ def accept_interview(request, pk):
     if schedule.interviewer.user != request.user:
         return Response({'error': 'You are not the interviewer for this session.'}, status=403)
 
+    if not schedule.candidate:
+        return Response({'error': 'No candidate has requested this interview slot.'}, status=400)
+
     schedule.status = 'Scheduled'
     schedule.meeting_link = schedule.room_name
     schedule.save(update_fields=['status', 'meeting_link', 'updated_at'])
 
     try:
         from notifications.utils import create_notification
+        domain_name = schedule.domain.name if schedule.domain else "General"
         create_notification(
             user=schedule.candidate.user,
             notification_type="interview",
             title="Interview Request Accepted",
-            message=f"Interviewer {request.user.full_name} has accepted your interview request on {schedule.scheduled_date} at {schedule.scheduled_time}."
+            message=f"Interviewer {request.user.full_name} has accepted your interview proposal for {domain_name} on {schedule.scheduled_date} at {schedule.scheduled_time}."
         )
     except Exception as e:
-        print("Failed to notify candidate:", e)
+        logger.error(f"Failed to notify candidate of acceptance: {e}")
 
-    return Response({'message': 'Interview request accepted and scheduled.'})
+    return Response({'message': 'Interview proposal accepted and scheduled.', 'schedule_id': schedule.schedule_id, 'status': 'Scheduled'})
 
 
 # ========== DECLINE INTERVIEW ==========
@@ -246,7 +323,7 @@ def accept_interview(request, pk):
 def decline_interview(request, pk):
     try:
         schedule = InterviewSchedule.objects.select_related(
-            'candidate__user', 'interviewer__user'
+            'candidate__user', 'interviewer__user', 'domain'
         ).get(pk=pk)
     except InterviewSchedule.DoesNotExist:
         return Response({'error': 'Interview schedule not found.'}, status=404)
@@ -254,21 +331,26 @@ def decline_interview(request, pk):
     if schedule.interviewer.user != request.user:
         return Response({'error': 'You are not the interviewer for this session.'}, status=403)
 
-    schedule.status = 'Cancelled'
-    schedule.save(update_fields=['status', 'updated_at'])
+    cand_user = schedule.candidate.user if (schedule.candidate and hasattr(schedule.candidate, 'user')) else None
 
-    try:
-        from notifications.utils import create_notification
-        create_notification(
-            user=schedule.candidate.user,
-            notification_type="interview",
-            title="Interview Request Declined",
-            message=f"Interviewer {request.user.full_name} has declined your interview request on {schedule.scheduled_date} at {schedule.scheduled_time}."
-        )
-    except Exception as e:
-        print("Failed to notify candidate:", e)
+    schedule.candidate = None
+    schedule.status = 'Open'
+    schedule.save(update_fields=['candidate', 'status', 'updated_at'])
 
-    return Response({'message': 'Interview request declined.'})
+    if cand_user:
+        try:
+            from notifications.utils import create_notification
+            domain_name = schedule.domain.name if schedule.domain else "General"
+            create_notification(
+                user=cand_user,
+                notification_type="interview",
+                title="Interview Request Declined",
+                message=f"Interviewer {request.user.full_name} has declined your interview proposal for {domain_name} on {schedule.scheduled_date} at {schedule.scheduled_time}."
+            )
+        except Exception as e:
+            logger.error(f"Failed to notify candidate of declination: {e}")
+
+    return Response({'message': 'Interview proposal declined and slot re-opened.', 'schedule_id': schedule.schedule_id, 'status': 'Open'})
 
 
 # ========== CANCEL INTERVIEW SESSION ==========

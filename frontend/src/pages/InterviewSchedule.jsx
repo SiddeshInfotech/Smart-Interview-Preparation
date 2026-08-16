@@ -20,46 +20,33 @@ import {
   Clock as ClockIcon,
   Hourglass,
   CalendarPlus,
+  Briefcase,
+  Sparkles,
+  Send,
+  AlertTriangle,
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "../styles/InterviewSchedule.css";
 import api from "../api/axios";
+import FeedbackResultModal from "../components/FeedbackResultModal";
+import { useAuth } from "../context/AuthContext";
 
-// Fallback seed data (only used if no `interviews` prop is provided)
-const initialInterviews = [
-  {
-    id: 1,
-    interviewer: "Asha Patel",
-    date: "2026-07-18",
-    time: "10:30",
-    type: "Technical",
-    status: "Scheduled",
-    roomName: "demo-room-1",
-  },
-  {
-    id: 2,
-    interviewer: "Rahul Verma",
-    date: "2026-07-16",
-    time: "15:00",
-    type: "HR Round",
-    status: "Completed",
-    roomName: "demo-room-2",
-  },
-  {
-    id: 3,
-    interviewer: "Neha Singh",
-    date: "2026-07-14",
-    time: "12:00",
-    type: "Managerial",
-    status: "Cancelled",
-    roomName: "demo-room-3",
-  },
+// Fallback domain choices if API fetch is pending
+const DEFAULT_DOMAINS = [
+  { domain_id: 1, name: "Web Development" },
+  { domain_id: 2, name: "Software Testing" },
+  { domain_id: 3, name: "Data Analysis" },
+  { domain_id: 4, name: "Data Science" },
+  { domain_id: 5, name: "Mobile Development" },
+  { domain_id: 6, name: "DevOps & Cloud" },
 ];
 
 // --- Helpers ---
 function StatusBadge({ status }) {
   const map = {
+    Open: { icon: Circle, className: "badge badge--open" },
+    Requested: { icon: Hourglass, className: "badge badge--requested" },
     Scheduled: { icon: Circle, className: "badge badge--scheduled" },
     Completed: { icon: CheckCircle2, className: "badge badge--completed" },
     Cancelled: { icon: XCircle, className: "badge badge--cancelled" },
@@ -68,7 +55,7 @@ function StatusBadge({ status }) {
   return (
     <span className={className}>
       <Icon size={13} strokeWidth={2.5} />
-      {status}
+      {status === 'Requested' ? 'Proposal Pending' : status}
     </span>
   );
 }
@@ -96,7 +83,6 @@ function formatTime12(timeStr) {
   return `${hStr}:${m} ${period}`;
 }
 
-// --- Helper to generate time options in 12-hour AM/PM format ---
 const generateTimeOptions = () => {
   const times = [];
   for (let h = 0; h < 24; h++) {
@@ -118,29 +104,111 @@ const generateTimeOptions = () => {
 
 const TIME_OPTIONS = generateTimeOptions();
 
-// --- ScheduleForm with Search Interviewers button ---
+// =========================================================
+// 15-MINUTE CANDIDATE INTERVIEW REMINDER BANNER
+// =========================================================
+function InterviewReminderBanner({ interviews, onJoinLobby }) {
+  const [upcomingReminders, setUpcomingReminders] = useState([]);
+
+  useEffect(() => {
+    const checkReminders = () => {
+      if (!Array.isArray(interviews)) return;
+      const now = new Date();
+
+      const reminders = interviews.filter((iv) => {
+        if (iv.status !== "Scheduled" || (!iv.date && !iv.scheduled_date) || (!iv.time && !iv.scheduled_time)) return false;
+        try {
+          const dateVal = iv.date || iv.scheduled_date;
+          const timeVal = iv.time || iv.scheduled_time;
+          const scheduledTime = new Date(`${dateVal}T${timeVal}`);
+          const diffMs = scheduledTime.getTime() - now.getTime();
+          const diffMinutes = Math.floor(diffMs / (60 * 1000));
+          return diffMinutes >= -5 && diffMinutes <= 15;
+        } catch {
+          return false;
+        }
+      });
+
+      setUpcomingReminders(reminders);
+    };
+
+    checkReminders();
+    const interval = setInterval(checkReminders, 10000);
+    return () => clearInterval(interval);
+  }, [interviews]);
+
+  if (upcomingReminders.length === 0) return null;
+
+  return (
+    <div className="interview-reminder-container">
+      {upcomingReminders.map((rem) => {
+        const dateVal = rem.date || rem.scheduled_date;
+        const timeVal = rem.time || rem.scheduled_time;
+        const scheduledTime = new Date(`${dateVal}T${timeVal}`);
+        const now = new Date();
+        const diffMs = scheduledTime.getTime() - now.getTime();
+        const minutesLeft = Math.max(0, Math.ceil(diffMs / (60 * 1000)));
+
+        return (
+          <div key={rem.id || rem.schedule_id} className="interview-reminder-banner">
+            <div className="reminder-content">
+              <div className="reminder-icon-badge">
+                <Bell className="reminder-bell-icon pulse" size={20} />
+              </div>
+              <div className="reminder-text-info">
+                <h4>
+                  ⏰ Upcoming Interview Reminder ({minutesLeft === 0 ? "Starting Now!" : `In ${minutesLeft} minute(s)`})
+                </h4>
+                <p>
+                  Your <strong>{rem.domain_name || rem.domain || "Mock"}</strong> interview session with{" "}
+                  <strong>{rem.interviewer || rem.interviewer_name}</strong> is scheduled for{" "}
+                  <strong>{formatTime12(timeVal)}</strong>.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn-join-reminder"
+              onClick={() => onJoinLobby(rem)}
+            >
+              <Sparkles size={15} /> Join Interview Lobby Now →
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// =========================================================
+// INTERVIEWER SCHEDULE FORM (Interviewer Role Only)
+// =========================================================
 function ScheduleForm({ onSchedule, hasPremium = true }) {
   const [selectedDate, setSelectedDate] = useState(null);
-  const [slots, setSlots] = useState([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedTime, setSelectedTime] = useState("");
-  // Free users are locked to 30 min; premium users default to 60 min
-  const [durationFilter, setDurationFilter] = useState(hasPremium ? "60" : "30");
-  const [hasSearched, setHasSearched] = useState(false);
-  const [submittingRequestId, setSubmittingRequestId] = useState(null);
+  const [durationFilter, setDurationFilter] = useState("60");
+  const [selectedDomain, setSelectedDomain] = useState("");
+  const [availableDomains, setAvailableDomains] = useState(DEFAULT_DOMAINS);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Reset slots when inputs change
   useEffect(() => {
-    setSlots([]);
-    setHasSearched(false);
-  }, [selectedDate, selectedTime, durationFilter]);
-
-  // Convert time string "HH:MM" or "HH:MM:SS" to minutes since midnight
-  const timeToMinutes = (timeStr) => {
-    if (!timeStr) return 0;
-    const parts = timeStr.split(":");
-    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-  };
+    const fetchDomains = async () => {
+      try {
+        const res = await api.get("/course/domains/");
+        const fetched = res.data.results || res.data || [];
+        if (Array.isArray(fetched) && fetched.length > 0) {
+          setAvailableDomains(fetched);
+          setSelectedDomain(fetched[0].domain_id || fetched[0].name);
+        } else {
+          setSelectedDomain(DEFAULT_DOMAINS[0].domain_id);
+        }
+      } catch (err) {
+        console.warn("Could not fetch domains endpoint, using default choices:", err);
+        setSelectedDomain(DEFAULT_DOMAINS[0].domain_id);
+      }
+    };
+    fetchDomains();
+  }, []);
 
   const getLocalDateString = (date) => {
     if (!date) return "";
@@ -150,74 +218,36 @@ function ScheduleForm({ onSchedule, hasPremium = true }) {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // Search for interviewers
-  const handleSearch = async () => {
-    if (!selectedDate) return;
-    const dateStr = getLocalDateString(selectedDate);
-    setLoadingSlots(true);
-    setHasSearched(true);
-    try {
-      const res = await api.get(`/interviewer/available-slots/?date=${dateStr}`);
-      setSlots(res.data);
-    } catch (err) {
-      console.error("Failed to fetch slots", err);
-      setSlots([]);
-    } finally {
-      setLoadingSlots(false);
+  const handleCreateSlot = async () => {
+    if (!selectedDate || !selectedTime || !selectedDomain) {
+      alert("Please fill in Date, Time, and Domain.");
+      return;
     }
-  };
-
-  // Filter slots locally (by start time and duration)
-  const durationMin = parseInt(durationFilter, 10) || 0;
-  const candStart = timeToMinutes(selectedTime);
-  const candEnd = candStart + durationMin;
-
-  const filteredSlots = slots.filter((slot) => {
-    const slotStart = timeToMinutes(slot.start_time);
-    const slotEnd = timeToMinutes(slot.end_time);
-    return candStart >= slotStart && candEnd <= slotEnd;
-  });
-
-  // Deduplicate interviewers
-  const availableInterviewers = [];
-  const seen = new Set();
-  filteredSlots.forEach((slot) => {
-    if (!seen.has(slot.interviewer)) {
-      seen.add(slot.interviewer);
-      availableInterviewers.push({
-        id: slot.interviewer,
-        name: slot.interviewer_name || "Interviewer",
-        designation: slot.interviewer_designation || "",
-        email: slot.interviewer_email || "",
-        profilePicture: slot.interviewer_profile_picture || null,
-      });
-    }
-  });
-
-  const handleSendRequest = async (interviewer) => {
-    if (!selectedDate || !selectedTime || !durationFilter) return;
     const dateStr = getLocalDateString(selectedDate);
-    setSubmittingRequestId(interviewer.id);
+    setSubmitting(true);
+
     try {
       const res = await api.post("/interview/schedule/", {
-        interviewer: interviewer.id,
         scheduled_date: dateStr,
         scheduled_time: selectedTime,
-        duration_minutes: durationMin,
+        duration_minutes: parseInt(durationFilter, 10),
+        domain: selectedDomain,
       });
-      alert(`Interview request sent successfully to ${interviewer.name}!`);
-      // Pass the raw response to the parent (which will transform it)
-      onSchedule(res.data);
+
+      alert("🎉 Interview slot created successfully! Candidates in this domain will now be able to view and apply for your slot.");
+      if (onSchedule) onSchedule(res.data);
+      setSelectedDate(null);
+      setSelectedTime("");
     } catch (err) {
-      console.error("Failed to send request", err);
-      alert("Failed to send interview request: " + JSON.stringify(err.response?.data || err.message));
+      console.error("Failed to create interview slot", err);
+      const errMsg = err.response?.data?.detail || err.response?.data?.domain || err.message;
+      alert("Failed to create slot: " + JSON.stringify(errMsg));
     } finally {
-      setSubmittingRequestId(null);
+      setSubmitting(false);
     }
   };
 
-  // Determine if search button should be enabled
-  const isSearchEnabled = selectedDate && selectedTime !== "" && durationFilter !== "";
+  const isFormValid = selectedDate && selectedTime && selectedDomain;
 
   const datePickerStyles = {
     wrapper: "custom-datepicker-wrapper",
@@ -227,11 +257,35 @@ function ScheduleForm({ onSchedule, hasPremium = true }) {
 
   return (
     <form className="card form" onSubmit={(e) => e.preventDefault()}>
+      <div className="form-header-badge">
+        <CalendarPlus size={18} color="#2563eb" />
+        <h3>Schedule New Interview Slot (Interviewer Portal)</h3>
+      </div>
+
       <div className="form__grid">
+        {/* Domain Field */}
+        <label className="field" style={{ gridColumn: "1 / -1" }}>
+          <span className="field__label">
+            <Briefcase size={14} className="field__icon" /> Select Domain (Interview Category)
+          </span>
+          <select
+            className="field__input"
+            value={selectedDomain}
+            onChange={(e) => setSelectedDomain(e.target.value)}
+          >
+            <option value="">Select Domain...</option>
+            {availableDomains.map((dom) => (
+              <option key={dom.domain_id || dom.id || dom.name} value={dom.domain_id || dom.name}>
+                {dom.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
         {/* Date Picker */}
         <label className="field">
           <span className="field__label">
-            <CalendarIcon size={14} className="field__icon" /> Select Date
+            <CalendarIcon size={14} className="field__icon" /> Scheduled Date
           </span>
           <div className={datePickerStyles.wrapper}>
             <DatePicker
@@ -239,7 +293,7 @@ function ScheduleForm({ onSchedule, hasPremium = true }) {
               onChange={(date) => setSelectedDate(date)}
               minDate={new Date()}
               dateFormat="dd/MM/yyyy"
-              placeholderText="Choose a date..."
+              placeholderText="Choose date..."
               className={datePickerStyles.input}
               calendarClassName={datePickerStyles.calendar}
               isClearable
@@ -251,10 +305,10 @@ function ScheduleForm({ onSchedule, hasPremium = true }) {
           </div>
         </label>
 
-        {/* Time slot selection dropdown */}
+        {/* Time Dropdown */}
         <label className="field">
           <span className="field__label">
-            <ClockIcon size={14} className="field__icon" /> Select Time
+            <ClockIcon size={14} className="field__icon" /> Scheduled Start Time
           </span>
           <select
             className="field__input"
@@ -270,147 +324,207 @@ function ScheduleForm({ onSchedule, hasPremium = true }) {
           </select>
         </label>
 
-        {/* Duration dropdown */}
+        {/* Duration Dropdown */}
         <label className="field">
           <span className="field__label">
             <Hourglass size={14} className="field__icon" /> Duration
-            {!hasPremium && (
-              <span style={{
-                marginLeft: 8,
-                fontSize: 10,
-                fontWeight: 700,
-                background: '#fef3c7',
-                color: '#92400e',
-                padding: '2px 7px',
-                borderRadius: 20,
-                letterSpacing: '0.3px',
-              }}>Free plan</span>
-            )}
           </span>
-          {hasPremium ? (
-            <select
-              className="field__input"
-              value={durationFilter}
-              onChange={(e) => setDurationFilter(e.target.value)}
-            >
-              <option value="30">30 min</option>
-              <option value="60">60 min</option>
-              <option value="90">90 min</option>
-            </select>
-          ) : (
-            <select
-              className="field__input"
-              value="30"
-              disabled
-              title="Upgrade to Premium for sessions up to 90 minutes"
-              style={{ cursor: 'not-allowed', opacity: 0.7 }}
-            >
-              <option value="30">30 min (max on Free plan)</option>
-            </select>
-          )}
+          <select
+            className="field__input"
+            value={durationFilter}
+            onChange={(e) => setDurationFilter(e.target.value)}
+          >
+            <option value="30">30 minutes</option>
+            <option value="60">60 minutes</option>
+            <option value="90">90 minutes</option>
+          </select>
         </label>
 
-        {/* Search button */}
-        <div className="field" style={{ gridColumn: "1 / -1" }}>
+        {/* Create Slot Action */}
+        <div className="field" style={{ gridColumn: "1 / -1", marginTop: "8px" }}>
           <button
             type="button"
             className="btn btn--primary"
-            onClick={handleSearch}
-            disabled={!isSearchEnabled || loadingSlots}
-            style={{ width: "100%", justifyContent: "center" }}
+            onClick={handleCreateSlot}
+            disabled={!isFormValid || submitting}
+            style={{ width: "100%", justifyContent: "center", height: "46px", fontSize: "15px", fontWeight: "600" }}
           >
-            {loadingSlots ? "Searching..." : "🔍 Search Interviewers"}
+            {submitting ? "Publishing Slot..." : "🚀 Publish Interview Slot"}
           </button>
         </div>
-
-        {/* Available Interviewers list – only shown after search */}
-        {hasSearched && (
-          <div className="field slots-section" style={{ gridColumn: "1 / -1" }}>
-            <span className="field__label">
-              <CalendarClock size={14} className="field__icon" /> Available Interviewers
-            </span>
-            {loadingSlots ? (
-              <div style={{ textAlign: "center", padding: "20px" }}>
-                Finding available interviewers...
-              </div>
-            ) : availableInterviewers.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "20px" }}>
-                No interviewers available for this time slot.
-              </div>
-            ) : (
-              <div className="interviewer-list">
-                {availableInterviewers.map((interviewer) => (
-                  <div key={interviewer.id} className="interviewer-row">
-                    <div className="interviewer-profile-info">
-                      <div className="interviewer-pic-container">
-                        {interviewer.profilePicture ? (
-                          <img src={formatMediaUrl(interviewer.profilePicture)} alt={interviewer.name} className="interviewer-pic" />
-                        ) : (
-                          <User size={30} color="#9ca3af" />
-                        )}
-                      </div>
-                      <div className="interviewer-details">
-                        <span className="interviewer-username">{interviewer.name}</span>
-                        <span className="interviewer-email">{interviewer.email}</span>
-                      </div>
-                    </div>
-                    <div className="interviewer-actions">
-                      <a
-                        href={`/interviewer-profile?interviewer_id=${interviewer.id}`}
-                        className="btn-see-details"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        See more details
-                      </a>
-                      <button
-                        type="button"
-                        className="btn-send-request"
-                        disabled={submittingRequestId === interviewer.id}
-                        onClick={() => handleSendRequest(interviewer)}
-                      >
-                        {submittingRequestId === interviewer.id ? "Sending..." : "Send request"}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </form>
   );
 }
 
-import FeedbackResultModal from "../components/FeedbackResultModal";
-import { useAuth } from "../context/AuthContext";
+// =========================================================
+// CANDIDATE UNSCHEDULED INTERVIEWS LIST (Candidate Role Only)
+// =========================================================
+function UnscheduledInterviewsList({ onApplySuccess }) {
+  const [slots, setSlots] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [applyingId, setApplyingId] = useState(null);
+  const [candidateDomain, setCandidateDomain] = useState("");
 
-// --- Descriptive InterviewList ---
+  const fetchUnscheduled = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/interview/unscheduled/");
+      const data = res.data.results || res.data || [];
+      setSlots(Array.isArray(data) ? data : []);
+      if (res.data.candidate_domain_name) {
+        setCandidateDomain(res.data.candidate_domain_name);
+      }
+    } catch (err) {
+      console.error("Failed to fetch unscheduled slots:", err);
+      setSlots([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnscheduled();
+  }, []);
+
+  const handleApply = async (slot) => {
+    const schedId = slot.schedule_id || slot.id;
+    setApplyingId(schedId);
+    try {
+      await api.post(`/interview/apply/${schedId}/`);
+      alert("✅ Application submitted successfully! The interviewer will review your proposal.");
+      fetchUnscheduled();
+      if (onApplySuccess) onApplySuccess();
+    } catch (err) {
+      console.error("Apply error:", err);
+      const msg = err.response?.data?.error || err.response?.data?.detail || err.message;
+      alert("Could not apply for interview: " + msg);
+    } finally {
+      setApplyingId(null);
+    }
+  };
+
+  return (
+    <div className="card unscheduled-section">
+      <div className="unscheduled-header">
+        <div>
+          <h3>Available Open Interviews</h3>
+          <p className="subtitle">
+            Browse unscheduled interview slots published by interviewers and submit your proposal.
+          </p>
+        </div>
+        {candidateDomain && (
+          <span className="active-domain-pill">
+            <Sparkles size={14} /> Active Domain: <strong>{candidateDomain}</strong>
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="empty">Loading available interview slots...</div>
+      ) : slots.length === 0 ? (
+        <div className="empty">
+          <CalendarClock size={28} style={{ color: "#9ca3af", marginBottom: "8px" }} />
+          <p>No unscheduled interview slots are currently open for application.</p>
+          <span style={{ fontSize: "12px", color: "#6b7280" }}>
+            Interviewers publish new slots regularly. Please check back soon!
+          </span>
+        </div>
+      ) : (
+        <div className="unscheduled-grid">
+          {slots.map((slot) => {
+            const schedId = slot.schedule_id || slot.id;
+            const isApplying = applyingId === schedId;
+            const domName = slot.domain_name || slot.domain || "General";
+            const isMatchingDomain = candidateDomain && domName.toLowerCase() === candidateDomain.toLowerCase();
+
+            return (
+              <div
+                key={schedId}
+                className={`unscheduled-card ${isMatchingDomain ? "unscheduled-card--matching" : ""}`}
+              >
+                <div className="unscheduled-card__header">
+                  <span className="domain-tag">
+                    <Briefcase size={12} /> {domName}
+                  </span>
+                  {isMatchingDomain && (
+                    <span className="matching-badge">🎯 Matches Your Domain</span>
+                  )}
+                </div>
+
+                <div className="unscheduled-card__body">
+                  <div className="interviewer-profile-box">
+                    <div className="interviewer-avatar">
+                      {slot.interviewer_profile_picture ? (
+                        <img src={formatMediaUrl(slot.interviewer_profile_picture)} alt={slot.interviewer_name} />
+                      ) : (
+                        <User size={24} color="#6b7280" />
+                      )}
+                    </div>
+                    <div>
+                      <strong className="interviewer-name">{slot.interviewer_name || "Interviewer"}</strong>
+                      <span className="interviewer-designation">{slot.interviewer_designation || "Technical Interviewer"}</span>
+                    </div>
+                  </div>
+
+                  <div className="slot-timing-details">
+                    <div className="timing-item">
+                      <Calendar size={14} className="icon" />
+                      <span>{formatDate(slot.scheduled_date)}</span>
+                    </div>
+                    <div className="timing-item">
+                      <Clock size={14} className="icon" />
+                      <span>{formatTime12(slot.scheduled_time)} ({slot.duration_minutes || 60} mins)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="unscheduled-card__footer">
+                  <button
+                    type="button"
+                    className="btn-apply-slot"
+                    disabled={isApplying}
+                    onClick={() => handleApply(slot)}
+                  >
+                    <Send size={14} />
+                    {isApplying ? "Submitting Proposal..." : "Apply for Interview"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =========================================================
+// DESCRIPTIVE INTERVIEW LIST (MY INTERVIEWS)
+// =========================================================
 function InterviewList({ interviews, onSelectInterview, userRole }) {
   const [filter, setFilter] = useState("Scheduled");
-  const filters = ["Scheduled", "Completed", "Cancelled", "All"];
+  const filters = ["Scheduled", "Requested", "Completed", "Cancelled", "All"];
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [loadingResultId, setLoadingResultId] = useState(null);
   const [acceptingId, setAcceptingId] = useState(null);
   const [decliningId, setDecliningId] = useState(null);
-  // Optimistic UI: track status overrides to trigger re-renders without mutating props
   const [statusOverrides, setStatusOverrides] = useState({});
 
   const safeInterviews = Array.isArray(interviews) ? interviews : [];
 
-  // Check 15m timeout auto cancellation
   const processedInterviews = safeInterviews.map((iv) => {
     const scheduleId = iv.id || iv.schedule_id;
-    // Apply optimistic status overrides
     const effectiveStatus = statusOverrides[scheduleId]?.status || iv.status;
     const effectiveMeetingLink = statusOverrides[scheduleId]?.meeting_link || iv.meeting_link;
     const effectiveIv = { ...iv, status: effectiveStatus, meeting_link: effectiveMeetingLink };
 
-    if (effectiveIv.status === "Scheduled" && effectiveIv.date && effectiveIv.time) {
+    if (effectiveIv.status === "Scheduled" && (effectiveIv.date || effectiveIv.scheduled_date) && (effectiveIv.time || effectiveIv.scheduled_time)) {
       try {
-        const scheduledTime = new Date(`${effectiveIv.date}T${effectiveIv.time}`);
+        const dateVal = effectiveIv.date || effectiveIv.scheduled_date;
+        const timeVal = effectiveIv.time || effectiveIv.scheduled_time;
+        const scheduledTime = new Date(`${dateVal}T${timeVal}`);
         const now = new Date();
         const timeoutMs = 15 * 60 * 1000;
         if (now.getTime() > scheduledTime.getTime() + timeoutMs) {
@@ -433,12 +547,11 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
     setAcceptingId(scheduleId);
     try {
       await api.post(`/interview/accept/${scheduleId}/`);
-      // Optimistic UI update via React state (not direct mutation)
       setStatusOverrides((prev) => ({
         ...prev,
         [scheduleId]: { status: "Scheduled", meeting_link: iv.room_name || `room-${scheduleId}` },
       }));
-      // Trigger notification refresh
+      alert("✅ Interview proposal accepted!");
       window.dispatchEvent(new Event("notificationUpdate"));
     } catch (err) {
       console.error("Failed to accept request:", err);
@@ -454,12 +567,11 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
     setDecliningId(scheduleId);
     try {
       await api.post(`/interview/decline/${scheduleId}/`);
-      // Optimistic UI update via React state (not direct mutation)
       setStatusOverrides((prev) => ({
         ...prev,
-        [scheduleId]: { status: "Cancelled", meeting_link: iv.meeting_link },
+        [scheduleId]: { status: "Open", meeting_link: "" },
       }));
-      // Trigger notification refresh
+      alert("Interview proposal declined and slot re-opened.");
       window.dispatchEvent(new Event("notificationUpdate"));
     } catch (err) {
       console.error("Failed to decline request:", err);
@@ -518,11 +630,13 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
         <div className="descriptive-interview-list">
           {filtered.map((iv, index) => {
             const isMeetingReady = Boolean(iv.meeting_link);
-            const candidateUser = iv.candidate_username || iv.candidate_name || iv.candidate || "candidate";
-            const interviewerUser = iv.interviewer_username || iv.interviewer_name || iv.interviewer || "interviewer";
+            const candidateUser = iv.candidate_name || iv.candidate_username || iv.candidate || "Open / Unassigned";
+            const interviewerUser = iv.interviewer_name || iv.interviewer_username || iv.interviewer || "Interviewer";
+            const domName = iv.domain_name || iv.domain || "General";
             const scheduleId = iv.id || iv.schedule_id;
             const isAccepting = acceptingId === scheduleId;
             const isDeclining = decliningId === scheduleId;
+            const isPendingProposal = iv.status === "Requested";
 
             const handleCardClick = () => {
               if (iv.status === "Completed") {
@@ -546,6 +660,9 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                 }}
               >
                 <div className="descriptive-card__header">
+                  <span className="domain-tag">
+                    <Briefcase size={12} /> {domName}
+                  </span>
                   <div className="descriptive-card__status-wrap">
                     <StatusBadge status={iv.status} />
                   </div>
@@ -573,7 +690,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                       <Calendar size={15} className="info-icon" />
                       <div>
                         <span className="info-label">Scheduled Date</span>
-                        <strong className="info-value">{formatDate(iv.date)}</strong>
+                        <strong className="info-value">{formatDate(iv.date || iv.scheduled_date)}</strong>
                       </div>
                     </div>
 
@@ -582,7 +699,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                       <div>
                         <span className="info-label">Time & Duration</span>
                         <strong className="info-value">
-                          {formatTime12(iv.time)} ({iv.duration_minutes || 60} mins)
+                          {formatTime12(iv.time || iv.scheduled_time)} ({iv.duration_minutes || 60} mins)
                         </strong>
                       </div>
                     </div>
@@ -599,14 +716,16 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                       <span className="meeting-badge cancelled badge--cancelled">
                         ❌ Cancelled
                       </span>
+                    ) : iv.status === "Requested" ? (
+                      <span className="meeting-badge pending">🟡 Proposal Pending Review</span>
                     ) : isMeetingReady ? (
                       <span className="meeting-badge ready">🟢 Meeting Link Ready</span>
                     ) : (
-                      <span className="meeting-badge pending">🟡 Pending Acceptance</span>
+                      <span className="meeting-badge pending">⚪ Slot Published</span>
                     )}
                   </div>
 
-                  {userRole === "interviewer" && iv.status !== "Completed" && iv.status !== "Cancelled" && !isMeetingReady ? (
+                  {userRole === "interviewer" && isPendingProposal ? (
                     <div style={{ display: "flex", gap: "8px" }} onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
@@ -625,7 +744,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                         }}
                         onClick={(e) => handleAccept(iv, e)}
                       >
-                        {isAccepting ? "Accepting..." : "Accept"}
+                        {isAccepting ? "Accepting..." : "Accept Proposal"}
                       </button>
                       <button
                         type="button"
@@ -644,7 +763,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                         }}
                         onClick={(e) => handleDecline(iv, e)}
                       >
-                        {isDeclining ? "Declining..." : "Decline"}
+                        {isDeclining ? "Declining..." : "Decline Proposal"}
                       </button>
                     </div>
                   ) : iv.status === "Completed" ? (
@@ -688,7 +807,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                       }
                       title={
                         !isMeetingReady
-                          ? "Waiting for interviewer to accept the interview request"
+                          ? "Waiting for interviewer acceptance"
                           : "View and join the live interview lobby"
                       }
                       onClick={(e) => {
@@ -735,8 +854,8 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
 
       <div className="details__header">
         <div>
-          <h2>{interview.interviewer}</h2>
-          <span className="tag">{interview.type || "Interview"}</span>
+          <h2>{interview.interviewer || "Interviewer"}</h2>
+          <span className="tag">{interview.domain_name || interview.domain || "Mock Interview"}</span>
         </div>
         <StatusBadge status={interview.status} />
       </div>
@@ -746,25 +865,25 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
           <span className="details__label">
             <User size={14} /> Candidate
           </span>
-          <span className="details__value">{interview.candidate || "Candidate"}</span>
+          <span className="details__value">{interview.candidate_name || interview.candidate || "Open Slot"}</span>
         </div>
         <div className="details__item">
           <span className="details__label">
             <User size={14} /> Interviewer
           </span>
-          <span className="details__value">{interview.interviewer || "Interviewer"}</span>
+          <span className="details__value">{interview.interviewer_name || interview.interviewer || "Interviewer"}</span>
         </div>
         <div className="details__item">
           <span className="details__label">
             <Calendar size={14} /> Date
           </span>
-          <span className="details__value">{formatDate(interview.date)}</span>
+          <span className="details__value">{formatDate(interview.date || interview.scheduled_date)}</span>
         </div>
         <div className="details__item">
           <span className="details__label">
             <Clock size={14} /> Time
           </span>
-          <span className="details__value">{interview.time} ({interview.duration_minutes || 60} mins)</span>
+          <span className="details__value">{interview.time || interview.scheduled_time} ({interview.duration_minutes || 60} mins)</span>
         </div>
       </div>
 
@@ -790,7 +909,9 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
   );
 }
 
-// --- Main export ---
+// =========================================================
+// MAIN EXPORT COMPONENT
+// =========================================================
 export default function InterviewSchedule({
   standalone = false,
   interviews: propInterviews,
@@ -800,20 +921,22 @@ export default function InterviewSchedule({
 }) {
   const { userProfile } = useAuth();
   const userRole = userProfile?.role || localStorage.getItem("user_role") || "candidate";
-  const isCandidate = userRole === "candidate";
+  const isInterviewer = userRole === "interviewer";
+  const isCandidate = !isInterviewer;
 
-  const [localInterviews, setLocalInterviews] = useState(initialInterviews);
+  const [localInterviews, setLocalInterviews] = useState([]);
   const interviews = propInterviews || localInterviews;
 
-  // Interviewers only have access to "upcoming" tab
-  const [tab, setTab] = useState(isCandidate ? "schedule" : "upcoming");
+  const [tab, setTab] = useState(isInterviewer ? "schedule" : "available");
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    if (!isCandidate && tab === "schedule") {
-      setTab("upcoming");
+    if (isInterviewer && tab === "available") {
+      setTab("schedule");
+    } else if (isCandidate && tab === "schedule") {
+      setTab("available");
     }
-  }, [isCandidate, tab]);
+  }, [isInterviewer, isCandidate, tab]);
 
   const handleSchedule = (newInterview) => {
     if (propOnSchedule) {
@@ -821,7 +944,7 @@ export default function InterviewSchedule({
     } else {
       setLocalInterviews([newInterview, ...localInterviews]);
     }
-    setTab("upcoming");
+    setTab("my_slots");
   };
 
   const handleSelect = (iv) => {
@@ -843,51 +966,86 @@ export default function InterviewSchedule({
 
   return (
     <div className={standalone ? "interview-schedule-standalone" : "page"}>
-      {!standalone && <Navbar active="Interview Scheduling" />}
-
       <main className={standalone ? "" : "page__content"}>
+        {/* 15-Minute Countdown Reminder Banner for Candidates */}
+        {isCandidate && (
+          <InterviewReminderBanner
+            interviews={interviews}
+            onJoinLobby={handleSelect}
+          />
+        )}
+
         <div className="page__header">
           <div>
-            <h1>Interview Scheduling</h1>
+            <h1>Interview Scheduling & Management</h1>
             <p>
-              {isCandidate
-                ? "Request and track upcoming mock interview sessions."
-                : "View and manage scheduled candidate interviews."}
+              {isInterviewer
+                ? "Schedule domain interview slots and manage candidate proposals."
+                : "Explore unscheduled domain interviews, apply for slots, and track upcoming sessions."}
             </p>
           </div>
         </div>
 
+        {/* Tab Navigation */}
         <div className="tabs">
-          {isCandidate && (
-            <button
-              className={`tabs__item ${tab === "schedule" ? "tabs__item--active" : ""}`}
-              onClick={() => setTab("schedule")}
-              type="button"
-            >
-              Schedule Interview
-            </button>
+          {isInterviewer ? (
+            <>
+              <button
+                className={`tabs__item ${tab === "schedule" ? "tabs__item--active" : ""}`}
+                onClick={() => setTab("schedule")}
+                type="button"
+              >
+                Schedule New Slot
+              </button>
+              <button
+                className={`tabs__item ${tab === "my_slots" || tab === "details" ? "tabs__item--active" : ""}`}
+                onClick={() => setTab("my_slots")}
+                type="button"
+              >
+                My Slots & Proposals
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className={`tabs__item ${tab === "available" ? "tabs__item--active" : ""}`}
+                onClick={() => setTab("available")}
+                type="button"
+              >
+                Available Unscheduled Interviews
+              </button>
+              <button
+                className={`tabs__item ${tab === "my_interviews" || tab === "details" ? "tabs__item--active" : ""}`}
+                onClick={() => setTab("my_interviews")}
+                type="button"
+              >
+                My Scheduled Interviews
+              </button>
+            </>
           )}
-          <button
-            className={`tabs__item ${tab === "upcoming" || tab === "details" ? "tabs__item--active" : ""}`}
-            onClick={() => setTab("upcoming")}
-            type="button"
-          >
-            Upcoming Interviews
-          </button>
         </div>
 
-        {isCandidate && tab === "schedule" && <ScheduleForm onSchedule={handleSchedule} hasPremium={hasPremium} />}
-        {tab === "upcoming" && (
+        {/* Tab Contents */}
+        {isInterviewer && tab === "schedule" && (
+          <ScheduleForm onSchedule={handleSchedule} hasPremium={hasPremium} />
+        )}
+
+        {isCandidate && tab === "available" && (
+          <UnscheduledInterviewsList onApplySuccess={() => setTab("my_interviews")} />
+        )}
+
+        {(tab === "my_slots" || tab === "my_interviews") && (
           <InterviewList
             interviews={interviews}
             onSelectInterview={handleSelect}
             userRole={userRole}
           />
         )}
+
         {tab === "details" && selected && (
           <InterviewDetails
             interview={selected}
-            onBack={() => setTab("upcoming")}
+            onBack={() => setTab(isInterviewer ? "my_slots" : "my_interviews")}
             onUpdateStatus={handleUpdateStatus}
           />
         )}
