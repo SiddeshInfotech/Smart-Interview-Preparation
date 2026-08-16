@@ -237,7 +237,7 @@ export default function Courses() {
                   className="btn-go-to-course"
                   onClick={() => handleGoToCourse(course.course_id)}
                 >
-                  <span>View Material</span>
+                  <span>View Notes</span>
                   <ArrowRight size={15} className="btn-arrow-icon" />
                 </button>
               </div>

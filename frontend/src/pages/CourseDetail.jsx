@@ -208,15 +208,6 @@ export default function CourseDetail() {
 
       {/* Hero Banner */}
       <div className="course-detail-hero">
-        <div className="course-detail-header-tags">
-          {course.technology && (
-            <span className="course-detail-badge">{course.technology}</span>
-          )}
-          {course.domain_name && (
-            <span className="course-detail-badge domain-tag">{course.domain_name}</span>
-          )}
-        </div>
-
         <h1 className="course-detail-title">{courseDisplayTitle}</h1>
 
         {/* Stats Row */}
@@ -226,7 +217,7 @@ export default function CourseDetail() {
               <BookOpen size={20} />
             </div>
             <div className="stat-info">
-              <label>Study Materials</label>
+              <label>Study Notes</label>
               <span>{course.total_modules || 0} PDF Documents</span>
             </div>
           </div>
@@ -238,7 +229,7 @@ export default function CourseDetail() {
         <div className="content-card-header">
           <h3 className="content-card-title">
             <Layers size={22} color="#4f46e5" />
-            Course Units & PDF Study Materials
+            Course Units & PDF Study Notes
           </h3>
         </div>
 
@@ -317,7 +308,7 @@ export default function CourseDetail() {
                     </div>
 
                     {/* View & Take Quiz Action Buttons */}
-                    <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "nowrap", flexShrink: 0 }}>
                       <button
                         type="button"
                         style={{
@@ -331,6 +322,7 @@ export default function CourseDetail() {
                           gap: "8px",
                           fontSize: "0.9rem",
                           fontWeight: "600",
+                          whiteSpace: "nowrap",
                           cursor: hasPdf ? "pointer" : "not-allowed",
                           opacity: hasPdf ? 1 : 0.6,
                           boxShadow: "0 3px 12px rgba(79, 70, 229, 0.25)",
@@ -341,12 +333,13 @@ export default function CourseDetail() {
                         title={hasPdf ? "View unit PDF document" : "No PDF available"}
                       >
                         <Eye size={17} />
-                        <span>View</span>
+                        <span>View Notes</span>
                       </button>
 
                       <button
                         type="button"
                         className={`module-quiz-btn ${mod.is_completed ? "completed" : ""}`}
+                        style={{ whiteSpace: "nowrap" }}
                         onClick={() => handleTakeUnitQuiz(mod)}
                         disabled={generatingQuizModuleId === (mod.module_id || mod.id)}
                         title="Take 10-question AI Quiz for this unit"
@@ -354,7 +347,7 @@ export default function CourseDetail() {
                         {generatingQuizModuleId === (mod.module_id || mod.id) ? (
                           <>
                             <Loader2 size={17} className="spin" />
-                            <span>Generating quiz from chapter material...</span>
+                            <span>Generating Quiz...</span>
                           </>
                         ) : (
                           <>
