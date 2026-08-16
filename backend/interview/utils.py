@@ -4,6 +4,8 @@ from django.conf import settings
 def send_interview_assignment_email(interview_schedule):
     """Send an email notification to the interviewer about a new assignment."""
     try:
+        if not interview_schedule.candidate or not hasattr(interview_schedule.candidate, 'user'):
+            return
         interviewer_user = interview_schedule.interviewer.user
         candidate_user = interview_schedule.candidate.user
         subject = f"New Interview Assignment: {candidate_user.full_name}"
@@ -29,6 +31,6 @@ Your Team
             [interviewer_user.email],
             fail_silently=False,
         )
-    except AttributeError as e:
+    except Exception as e:
         import logging
         logging.getLogger(__name__).error(f"Failed to send interview email: {e}")
