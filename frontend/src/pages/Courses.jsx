@@ -132,9 +132,8 @@ export default function Courses() {
       {/* Page Header */}
       <div className="setup-header">
         <h1>
-          <span className="quiz-gradient-title">Domain Courses & Learning Hub</span>
+          <span className="quiz-gradient-title">Domain Courses</span>
         </h1>
-        <p>Courses dynamically added for your active candidate domain.</p>
         <div className="quiz-header-line" />
       </div>
 
@@ -145,7 +144,7 @@ export default function Courses() {
             <UserCheck size={22} />
           </div>
           <div>
-            <div className="domain-banner-label">Your Active Candidate Domain</div>
+            <div className="domain-banner-label">Your Active Domain</div>
             <div className="domain-banner-value">
               {activeDomain ? activeDomain.name : "No Domain Selected"}
             </div>
@@ -188,20 +187,6 @@ export default function Courses() {
                     style={{ background: gradient }}
                   >
                     {icon}
-                  </div>
-
-                  <div className="course-badges-group">
-                    {course.is_required ? (
-                      <span className="course-card-badge required">Required</span>
-                    ) : (
-                      <span className="course-card-badge optional">Elective</span>
-                    )}
-
-                    {course.technology && (
-                      <span className="course-card-badge tech">
-                        {course.technology}
-                      </span>
-                    )}
                   </div>
                 </div>
 
