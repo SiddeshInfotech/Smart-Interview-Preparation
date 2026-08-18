@@ -868,6 +868,14 @@ const InterviewPage = ({
     return () => clearInterval(checkInterval);
   }, [isInInterview, role, selectedInterview]);
 
+  // ---- Auto-join Live Session directly on mount ----
+  const autoJoinedRef = useRef(false);
+  useEffect(() => {
+    if (!autoJoinedRef.current && roomName && identity) {
+      autoJoinedRef.current = true;
+      handleJoinInterview();
+    }
+  }, [roomName, identity]);
 
   // ---- Toggle camera & mic ----
   const toggleCamera = () => {
@@ -929,135 +937,25 @@ const InterviewPage = ({
         )}
 
         {!isInInterview ? (
-          // ---- LOBBY ----
-          <div>
+          // ---- DIRECT JOIN LOADER (No Intermediate Lobby) ----
+          <div style={{ padding: "60px 20px", textAlign: "center", maxWidth: "480px", margin: "60px auto", background: "#ffffff", borderRadius: "12px", boxShadow: "0 10px 25px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
+            <div className="feedback-spinner" style={{ width: "36px", height: "36px", borderWidth: "3px", borderColor: "#2563eb", borderTopColor: "transparent", margin: "0 auto 20px" }}></div>
+            <h3 style={{ fontSize: "19px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
+              {isJoining ? "Connecting to Live Interview..." : "Joining Room Directly..."}
+            </h3>
+            <p style={{ color: "#64748b", fontSize: "14px", lineHeight: "1.5", marginBottom: "20px" }}>
+              Establishing secure media tracks and LiveKit session token for <strong>{roomName}</strong>.
+            </p>
             {onBack && (
               <button
                 type="button"
+                className="btn btn--secondary"
                 onClick={onBack}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#2563eb',
-                  fontWeight: '600',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  marginBottom: '16px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: 0,
-                }}
+                style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "8px 16px", borderRadius: "8px", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
               >
-                ← Back to Upcoming Interviews
+                Cancel & Return
               </button>
             )}
-            <div className="main-grid">
-            <div className="left-section">
-              <div className="lobby-card">
-                <div className="lobby-header">
-                  <h3>Interview Lobby</h3>
-                  <div className="live-badge">LIVE PREVIEW</div>
-                </div>
-                <div className="lobby-preview">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="video-element"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-              </div>
-              <div className="upcoming-card">
-                <h3>Interview Session Details</h3>
-                <div className="interview-details">
-                  <div className="detail-item">
-                    <span className="detail-label">Room / Session</span>
-                    <span className="detail-value">{selectedInterview?.roomName || roomName || "room_101"}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Candidate</span>
-                    <span className="detail-value">
-                      {selectedInterview?.candidate_name || selectedInterview?.candidate_username || selectedInterview?.candidate || (role === 'candidate' ? participantName : "Candidate")}
-                    </span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Interviewer</span>
-                    <span className="detail-value">
-                      {selectedInterview?.interviewer_name || selectedInterview?.interviewer_username || selectedInterview?.interviewer || (role === 'interviewer' ? participantName : "Interviewer")}
-                    </span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Scheduled Time</span>
-                    <span className="detail-value">
-                      {selectedInterview?.date ? formatDate(selectedInterview.date) : "Today"},{" "}
-                      {selectedInterview?.time ? formatTime12(selectedInterview.time) : "Live Session"} ({selectedInterview?.duration_minutes || 60} mins)
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="right-section">
-              <div className="ready-card">
-                <h2>Ready to join?</h2>
-                <p className="ready-subtitle">
-                  Check your camera and microphone preview before joining the room.
-                </p>
-                <div className="device-settings">
-                  <div className="device-item">
-                    <div className="device-info">
-                      <span className="device-icon">🎤</span>
-                      <div>
-                        <div className="device-name">Microphone</div>
-                        <div className="device-detail">{micDeviceName}</div>
-                      </div>
-                    </div>
-                    <div className="device-status excellent">✅ Ready</div>
-                  </div>
-                  <div className="device-item">
-                    <div className="device-info">
-                      <span className="device-icon">📷</span>
-                      <div>
-                        <div className="device-name">Camera</div>
-                        <div className="device-detail">{cameraDeviceName}</div>
-                      </div>
-                    </div>
-                    <div className="device-status">✅ Ready</div>
-                  </div>
-                </div>
-                {!isAccepted && selectedInterview?.status === 'Scheduled' && (
-                  <div style={{ background: '#fef3c7', color: '#92400e', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '13px', border: '1px solid #fde68a' }}>
-                    ⚠️ This interview request has not been accepted by the interviewer yet. Joining is disabled until accepted.
-                  </div>
-                )}
-                <div className="action-buttons">
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleJoinInterview}
-                    disabled={isJoining || (!isAccepted && selectedInterview?.status === 'Scheduled')}
-                    style={
-                      !isAccepted && selectedInterview?.status === 'Scheduled'
-                        ? { opacity: 0.6, cursor: 'not-allowed', background: '#94a3b8' }
-                        : {}
-                    }
-                    title={
-                      !isAccepted && selectedInterview?.status === 'Scheduled'
-                        ? 'Waiting for interviewer to accept the request'
-                        : 'Join Interview'
-                    }
-                  >
-                    {isJoining
-                      ? 'Joining...'
-                      : !isAccepted && selectedInterview?.status === 'Scheduled'
-                      ? '⏳ Pending Interviewer Acceptance'
-                      : '🚀 Join Interview'}
-                  </button>
-                </div>
-                <div className="security-badge">
-                  <span>🔒</span>
-                  <span>End-to-end encrypted and secure</span>
                 </div>
               </div>
             </div>
