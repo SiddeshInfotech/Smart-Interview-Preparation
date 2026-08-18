@@ -594,7 +594,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
       ) : (
         <div className="descriptive-interview-list">
           {filtered.map((iv, index) => {
-            const isMeetingReady = Boolean(iv.meeting_link);
+            const isMeetingReady = iv.status === "Scheduled" || Boolean(iv.meeting_link || iv.room_name || iv.roomName);
             const candidateUser = iv.candidate_name || iv.candidate_username || iv.candidate || "Open / Unassigned";
             const interviewerUser = iv.interviewer_name || iv.interviewer_username || iv.interviewer || "Interviewer";
             const domName = (iv.domain_name || iv.domain || "").trim();
@@ -609,9 +609,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                   handleViewResult(iv);
                 }
               } else if (iv.status === "Scheduled") {
-                if (isMeetingReady) {
-                  onSelectInterview(iv);
-                }
+                onSelectInterview(iv);
               } else {
                 onSelectInterview(iv);
               }
@@ -623,7 +621,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                 className="descriptive-interview-card"
                 onClick={handleCardClick}
                 style={{
-                  cursor: (iv.status === "Completed" && userRole === "interviewer") || (iv.status === "Scheduled" && !isMeetingReady) ? "default" : "pointer"
+                  cursor: (iv.status === "Completed" && userRole === "interviewer") ? "default" : "pointer"
                 }}
               >
                 <div className="descriptive-card__header">

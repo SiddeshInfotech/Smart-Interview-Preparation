@@ -113,7 +113,7 @@ export default function Interview() {
   };
 
   if (loading) {
-    return <div className="loading-spinner">Loading profile...</div>;
+    return <div className="loading-spinner">Loading...</div>;
   }
 
   // ---- LiveKit identity from user ----

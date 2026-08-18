@@ -460,8 +460,13 @@ class UserInterviewListView(generics.ListAPIView):
                                 logger.error(f"Error sending request decline notification: {notif_err}")
 
                 elif sched.status == 'Scheduled':
+                    scheduled_end = scheduled_start + timedelta(minutes=sched.duration_minutes)
+                    # If current time is past scheduled end time:
+                    if now >= scheduled_end:
+                        sched.status = 'Completed'
+                        sched.save(update_fields=['status', 'updated_at'])
                     # If 15 minutes have passed after scheduled start time without joining:
-                    if now > (scheduled_start + timedelta(minutes=15)):
+                    elif now > (scheduled_start + timedelta(minutes=15)):
                         sched.status = 'Cancelled'
                         sched.save(update_fields=['status', 'updated_at'])
             except Exception as e:

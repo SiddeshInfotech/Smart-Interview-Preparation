@@ -569,16 +569,38 @@ const InterviewPage = ({
     [isInInterview, faceLandmarker, showEyeWarning]
   );
 
-  // ---- Timer & Duration Expiration Check ----
+  // ---- Timer & Scheduled Date/Time Duration Expiration Check ----
   useEffect(() => {
     if (isInInterview) {
-      const maxDurationSeconds = (parseInt(selectedInterview?.duration_minutes || 60, 10)) * 60;
+      const durationMins = parseInt(selectedInterview?.duration_minutes || 60, 10);
+      const maxDurationSeconds = durationMins * 60;
+
+      const dateStr = selectedInterview?.date || selectedInterview?.scheduled_date;
+      const timeStr = selectedInterview?.time || selectedInterview?.scheduled_time;
+      let scheduledEndTime = null;
+
+      if (dateStr && timeStr) {
+        try {
+          const startDt = new Date(`${dateStr}T${timeStr}`);
+          if (!isNaN(startDt.getTime())) {
+            scheduledEndTime = new Date(startDt.getTime() + durationMins * 60 * 1000);
+          }
+        } catch (e) {
+          console.warn("Date parsing error:", e);
+        }
+      }
+
       timerInterval.current = setInterval(() => {
         setTimer((prevTimer) => {
           const nextTimer = prevTimer + 1;
-          if (nextTimer >= maxDurationSeconds && !isEndingRef.current) {
-            console.log("Interview duration expired. Auto-terminating session as Completed.");
-            alert(`⏱️ The scheduled interview duration (${selectedInterview?.duration_minutes || 60} minutes) has ended. The session is now being completed.`);
+          const now = new Date();
+
+          const isTimerExpired = nextTimer >= maxDurationSeconds;
+          const isDateExpired = scheduledEndTime ? now >= scheduledEndTime : false;
+
+          if ((isTimerExpired || isDateExpired) && !isEndingRef.current) {
+            console.log("Interview duration expired based on scheduled date/time and timer. Auto-terminating session as Completed.");
+            alert(`⏱️ The scheduled interview session duration (${durationMins} minutes) has ended. The session is now being completed.`);
             handleEndInterview(true);
           }
           return nextTimer;
@@ -956,10 +978,6 @@ const InterviewPage = ({
                 Cancel & Return
               </button>
             )}
-                </div>
-              </div>
-            </div>
-          </div>
           </div>
         ) : (
           // ---- LIVE INTERVIEW FULLSCREEN OVERLAY ----
