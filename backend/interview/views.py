@@ -103,9 +103,33 @@ def unscheduled_interviews(request):
     from candidate.models import Candidate_Profile
     from course.models import Domain
 
+    now = timezone.now()
+    today = timezone.localdate()
+
     qs = InterviewSchedule.objects.filter(status='Open', candidate__isnull=True).select_related(
         'interviewer__user', 'domain'
     ).order_by('scheduled_date', 'scheduled_time')
+
+    active_slots = []
+    expired_ids = []
+
+    for slot in qs:
+        # Check if the slot date is in the past
+        if today > slot.scheduled_date:
+            expired_ids.append(slot.pk)
+            continue
+
+        dt_naive = datetime.combine(slot.scheduled_date, slot.scheduled_time)
+        scheduled_start = timezone.make_aware(dt_naive) if timezone.is_naive(dt_naive) else dt_naive
+
+        if now > scheduled_start:
+            expired_ids.append(slot.pk)
+        else:
+            active_slots.append(slot)
+
+    if expired_ids:
+        # Auto-cancel expired slots in the database
+        InterviewSchedule.objects.filter(pk__in=expired_ids).update(status='Cancelled', updated_at=now)
 
     cand_domain_id = None
     cand_domain_name = None
@@ -121,7 +145,7 @@ def unscheduled_interviews(request):
                 cand_domain_id = d_obj.domain_id
                 cand_domain_name = d_obj.name
 
-    serialized = InterviewScheduleSerializer(qs, many=True).data
+    serialized = InterviewScheduleSerializer(active_slots, many=True).data
 
     return Response({
         "candidate_domain_id": cand_domain_id,
@@ -152,6 +176,15 @@ def apply_interview(request, pk):
 
     if schedule.status != 'Open' or schedule.candidate is not None:
         return Response({"error": "This interview slot is no longer available."}, status=400)
+
+    # Check if the slot has already passed
+    now = timezone.now()
+    dt_naive = datetime.combine(schedule.scheduled_date, schedule.scheduled_time)
+    scheduled_start = timezone.make_aware(dt_naive) if timezone.is_naive(dt_naive) else dt_naive
+    if now > scheduled_start:
+        schedule.status = 'Cancelled'
+        schedule.save(update_fields=['status', 'updated_at'])
+        return Response({"error": "This interview slot has already passed and is no longer available."}, status=400)
 
     candidate_profile = request.user.candidate_profile
     schedule.candidate = candidate_profile
@@ -438,10 +471,10 @@ class UserInterviewListView(generics.ListAPIView):
             'candidate__user', 'interviewer__user'
         ).distinct()
 
-        # Check for date passing, 15-minute auto-cancellation for 'Scheduled' status & 15-min unaccepted expiration for 'Requested' status
+        # Check for date passing, 15-minute auto-cancellation for 'Scheduled' status & 15-min unaccepted expiration for 'Requested' status & past 'Open' slot cancellation
         now = timezone.now()
-        today = now.date()
-        for sched in all_qs.filter(status__in=['Scheduled', 'Requested']):
+        today = timezone.localdate()
+        for sched in all_qs.filter(status__in=['Scheduled', 'Requested', 'Open']):
             try:
                 # If current date > scheduled date, auto-cancel irrespective of current time
                 if today > sched.scheduled_date:
@@ -452,9 +485,19 @@ class UserInterviewListView(generics.ListAPIView):
                 dt_naive = datetime.combine(sched.scheduled_date, sched.scheduled_time)
                 scheduled_start = timezone.make_aware(dt_naive) if timezone.is_naive(dt_naive) else dt_naive
 
-                if sched.status == 'Requested':
+                if sched.status == 'Open':
+                    # If open slot is in the past, cancel it
+                    if now > scheduled_start:
+                        sched.status = 'Cancelled'
+                        sched.save(update_fields=['status', 'updated_at'])
+
+                elif sched.status == 'Requested':
+                    # If start time has passed, cancel it
+                    if now > scheduled_start:
+                        sched.status = 'Cancelled'
+                        sched.save(update_fields=['status', 'updated_at'])
                     # If 15 minutes before scheduled start time has passed and interviewer hasn't accepted:
-                    if now >= (scheduled_start - timedelta(minutes=15)):
+                    elif now >= (scheduled_start - timedelta(minutes=15)):
                         cand_user = sched.candidate.user if (sched.candidate and hasattr(sched.candidate, 'user')) else None
                         sched.candidate = None
                         sched.status = 'Open'

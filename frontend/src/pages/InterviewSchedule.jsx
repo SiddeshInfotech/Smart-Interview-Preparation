@@ -486,7 +486,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
     const effectiveIv = { ...iv, status: effectiveStatus, meeting_link: effectiveMeetingLink };
 
     const dateVal = effectiveIv.date || effectiveIv.scheduled_date;
-    if (dateVal && (effectiveIv.status === "Scheduled" || effectiveIv.status === "Requested")) {
+    if (dateVal && (effectiveIv.status === "Scheduled" || effectiveIv.status === "Requested" || effectiveIv.status === "Open")) {
       try {
         const todayStr = new Date().toISOString().split("T")[0];
         if (todayStr > dateVal) {
