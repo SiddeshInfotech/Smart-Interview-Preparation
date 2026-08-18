@@ -229,6 +229,11 @@ def get_livekit_token(request):
             scheduled_start = timezone.make_aware(dt_naive) if timezone.is_naive(dt_naive) else dt_naive
             now = timezone.now()
 
+            if now.date() > schedule.scheduled_date:
+                schedule.status = 'Cancelled'
+                schedule.save(update_fields=['status', 'updated_at'])
+                return Response({'error': 'This interview has been cancelled because the scheduled date has passed.'}, status=400)
+
             if now > (scheduled_start + timedelta(minutes=15)) and schedule.status == 'Scheduled':
                 schedule.status = 'Cancelled'
                 schedule.save(update_fields=['status', 'updated_at'])
@@ -433,10 +438,17 @@ class UserInterviewListView(generics.ListAPIView):
             'candidate__user', 'interviewer__user'
         ).distinct()
 
-        # Check for 15-minute auto-cancellation for 'Scheduled' status & 15-min unaccepted expiration for 'Requested' status
+        # Check for date passing, 15-minute auto-cancellation for 'Scheduled' status & 15-min unaccepted expiration for 'Requested' status
         now = timezone.now()
+        today = now.date()
         for sched in all_qs.filter(status__in=['Scheduled', 'Requested']):
             try:
+                # If current date > scheduled date, auto-cancel irrespective of current time
+                if today > sched.scheduled_date:
+                    sched.status = 'Cancelled'
+                    sched.save(update_fields=['status', 'updated_at'])
+                    continue
+
                 dt_naive = datetime.combine(sched.scheduled_date, sched.scheduled_time)
                 scheduled_start = timezone.make_aware(dt_naive) if timezone.is_naive(dt_naive) else dt_naive
 

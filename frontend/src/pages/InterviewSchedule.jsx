@@ -485,6 +485,18 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
     const effectiveMeetingLink = statusOverrides[scheduleId]?.meeting_link || iv.meeting_link;
     const effectiveIv = { ...iv, status: effectiveStatus, meeting_link: effectiveMeetingLink };
 
+    const dateVal = effectiveIv.date || effectiveIv.scheduled_date;
+    if (dateVal && (effectiveIv.status === "Scheduled" || effectiveIv.status === "Requested")) {
+      try {
+        const todayStr = new Date().toISOString().split("T")[0];
+        if (todayStr > dateVal) {
+          return { ...effectiveIv, status: "Cancelled" };
+        }
+      } catch (err) {
+        console.warn("Date compare error:", err);
+      }
+    }
+
     if (effectiveIv.status === "Scheduled" && (effectiveIv.date || effectiveIv.scheduled_date) && (effectiveIv.time || effectiveIv.scheduled_time)) {
       try {
         const dateVal = effectiveIv.date || effectiveIv.scheduled_date;
