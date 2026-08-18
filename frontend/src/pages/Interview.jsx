@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { CalendarDays, Video } from "lucide-react";
 import InterviewSchedule from "./InterviewSchedule.jsx";
 import InterviewPage from "./InterviewPage.jsx";
 import api from "../api/axios";
@@ -137,12 +136,6 @@ export default function Interview() {
     <div className="interview-dashboard">
       <div className="dashboard-page-container">
         <main className="dashboard-content-wrapper">
-          <header className="content-header-simple">
-            <h2>Mock Interviews & Preparation</h2>
-            <p className="welcome-text">
-              Track upcoming mock interviews and enter your assigned live room.
-            </p>
-          </header>
 
           <div className="interview-tab-content">
             {activeTab === "schedule" ? (

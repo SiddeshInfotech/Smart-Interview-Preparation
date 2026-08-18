@@ -215,8 +215,8 @@ def get_livekit_token(request):
             if not schedule.meeting_link:
                 return Response({'error': 'The interviewer has not yet accepted this request.'}, status=400)
 
-            if schedule.status == 'Cancelled':
-                return Response({'error': 'This interview has been cancelled.'}, status=400)
+            if schedule.status in ['Cancelled', 'Completed']:
+                return Response({'error': f'This interview has been {schedule.status.lower()} and cannot be joined.'}, status=400)
 
             if request.user.role == 'candidate':
                 if schedule.candidate and schedule.candidate.user != request.user:
@@ -232,7 +232,7 @@ def get_livekit_token(request):
             if now > (scheduled_start + timedelta(minutes=15)) and schedule.status == 'Scheduled':
                 schedule.status = 'Cancelled'
                 schedule.save(update_fields=['status', 'updated_at'])
-                return Response({'error': 'This interview has been cancelled because neither party joined within 15 minutes of the scheduled time.'}, status=400)
+                return Response({'error': 'This interview has been cancelled because 15 minutes have passed after the scheduled timing.'}, status=400)
 
             start_window = scheduled_start - timedelta(minutes=15)
             end_window = scheduled_start + timedelta(minutes=schedule.duration_minutes + 15)
@@ -433,17 +433,39 @@ class UserInterviewListView(generics.ListAPIView):
             'candidate__user', 'interviewer__user'
         ).distinct()
 
-        # Check for 15-minute auto-cancellation for 'Scheduled' status
+        # Check for 15-minute auto-cancellation for 'Scheduled' status & 15-min unaccepted expiration for 'Requested' status
         now = timezone.now()
-        for sched in all_qs.filter(status='Scheduled'):
+        for sched in all_qs.filter(status__in=['Scheduled', 'Requested']):
             try:
                 dt_naive = datetime.combine(sched.scheduled_date, sched.scheduled_time)
                 scheduled_start = timezone.make_aware(dt_naive) if timezone.is_naive(dt_naive) else dt_naive
-                if now > (scheduled_start + timedelta(minutes=15)):
-                    sched.status = 'Cancelled'
-                    sched.save(update_fields=['status', 'updated_at'])
+
+                if sched.status == 'Requested':
+                    # If 15 minutes before scheduled start time has passed and interviewer hasn't accepted:
+                    if now >= (scheduled_start - timedelta(minutes=15)):
+                        cand_user = sched.candidate.user if (sched.candidate and hasattr(sched.candidate, 'user')) else None
+                        sched.candidate = None
+                        sched.status = 'Open'
+                        sched.save(update_fields=['candidate', 'status', 'updated_at'])
+                        if cand_user:
+                            try:
+                                from notifications.utils import create_notification
+                                create_notification(
+                                    user=cand_user,
+                                    notification_type="interview",
+                                    title="Interview Request Declined",
+                                    message="The Interview request is declined."
+                                )
+                            except Exception as notif_err:
+                                logger.error(f"Error sending request decline notification: {notif_err}")
+
+                elif sched.status == 'Scheduled':
+                    # If 15 minutes have passed after scheduled start time without joining:
+                    if now > (scheduled_start + timedelta(minutes=15)):
+                        sched.status = 'Cancelled'
+                        sched.save(update_fields=['status', 'updated_at'])
             except Exception as e:
-                logger.error(f"Error auto-cancelling schedule {sched.schedule_id}: {e}")
+                logger.error(f"Error auto-checking schedule {sched.schedule_id}: {e}")
 
         return all_qs.order_by('-scheduled_date')
 

@@ -19,7 +19,6 @@ import {
   Calendar as CalendarIcon,
   Clock as ClockIcon,
   Hourglass,
-  CalendarPlus,
   Briefcase,
   Sparkles,
   Send,
@@ -257,14 +256,9 @@ function ScheduleForm({ onSchedule, hasPremium = true }) {
 
   return (
     <form className="card form" onSubmit={(e) => e.preventDefault()}>
-      <div className="form-header-badge">
-        <CalendarPlus size={18} color="#2563eb" />
-        <h3>Schedule New Interview Slot (Interviewer Portal)</h3>
-      </div>
-
       <div className="form__grid">
         {/* Domain Field */}
-        <label className="field" style={{ gridColumn: "1 / -1" }}>
+        <label className="field">
           <span className="field__label">
             <Briefcase size={14} className="field__icon" /> Select Domain (Interview Category)
           </span>
@@ -603,7 +597,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
             const isMeetingReady = Boolean(iv.meeting_link);
             const candidateUser = iv.candidate_name || iv.candidate_username || iv.candidate || "Open / Unassigned";
             const interviewerUser = iv.interviewer_name || iv.interviewer_username || iv.interviewer || "Interviewer";
-            const domName = iv.domain_name || iv.domain || "General";
+            const domName = (iv.domain_name || iv.domain || "").trim();
             const scheduleId = iv.id || iv.schedule_id;
             const isAccepting = acceptingId === scheduleId;
             const isDeclining = decliningId === scheduleId;
@@ -611,7 +605,9 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
 
             const handleCardClick = () => {
               if (iv.status === "Completed") {
-                handleViewResult(iv);
+                if (userRole !== "interviewer") {
+                  handleViewResult(iv);
+                }
               } else if (iv.status === "Scheduled") {
                 if (isMeetingReady) {
                   onSelectInterview(iv);
@@ -627,13 +623,15 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                 className="descriptive-interview-card"
                 onClick={handleCardClick}
                 style={{
-                  cursor: iv.status === "Scheduled" && !isMeetingReady ? "default" : "pointer"
+                  cursor: (iv.status === "Completed" && userRole === "interviewer") || (iv.status === "Scheduled" && !isMeetingReady) ? "default" : "pointer"
                 }}
               >
                 <div className="descriptive-card__header">
-                  <span className="domain-tag">
-                    <Briefcase size={12} /> {domName}
-                  </span>
+                  {domName && domName.toLowerCase() !== "general" ? (
+                    <span className="domain-tag">
+                      <Briefcase size={12} /> {domName}
+                    </span>
+                  ) : <div />}
                   <div className="descriptive-card__status-wrap">
                     <StatusBadge status={iv.status} />
                   </div>
@@ -641,21 +639,23 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
 
                 <div className="descriptive-card__body">
                   <div className="descriptive-info-grid">
-                    <div className="descriptive-info-item">
-                      <User size={15} className="info-icon" />
-                      <div>
-                        <span className="info-label">Candidate</span>
-                        <strong className="info-value">{candidateUser}</strong>
+                    {userRole === "interviewer" ? (
+                      <div className="descriptive-info-item">
+                        <User size={15} className="info-icon" />
+                        <div>
+                          <span className="info-label">Candidate</span>
+                          <strong className="info-value">{candidateUser}</strong>
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="descriptive-info-item">
-                      <User size={15} className="info-icon" />
-                      <div>
-                        <span className="info-label">Interviewer</span>
-                        <strong className="info-value">{interviewerUser}</strong>
+                    ) : (
+                      <div className="descriptive-info-item">
+                        <User size={15} className="info-icon" />
+                        <div>
+                          <span className="info-label">Interviewer</span>
+                          <strong className="info-value">{interviewerUser}</strong>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="descriptive-info-item">
                       <Calendar size={15} className="info-icon" />
@@ -677,24 +677,21 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                   </div>
                 </div>
 
-                <div className="descriptive-card__footer">
-                  <div className="meeting-status">
-                    {iv.status === "Completed" ? (
-                      <span className="meeting-badge ready badge--completed">
-                        ✅ Interview Completed
-                      </span>
-                    ) : iv.status === "Cancelled" ? (
-                      <span className="meeting-badge cancelled badge--cancelled">
-                        ❌ Cancelled
-                      </span>
-                    ) : iv.status === "Requested" ? (
-                      <span className="meeting-badge pending">🟡 Proposal Pending Review</span>
-                    ) : isMeetingReady ? (
-                      <span className="meeting-badge ready">🟢 Meeting Link Ready</span>
-                    ) : (
-                      <span className="meeting-badge pending">⚪ Slot Published</span>
-                    )}
-                  </div>
+                {(iv.status !== "Completed" || userRole !== "interviewer") && (
+                  <div className="descriptive-card__footer">
+                    <div className="meeting-status">
+                      {iv.status === "Completed" ? null : iv.status === "Cancelled" ? (
+                        <span className="meeting-badge cancelled badge--cancelled">
+                          ❌ Cancelled
+                        </span>
+                      ) : iv.status === "Requested" ? (
+                        <span className="meeting-badge pending">🟡 Proposal Pending Review</span>
+                      ) : isMeetingReady ? (
+                        <span className="meeting-badge ready">🟢 Meeting Link Ready</span>
+                      ) : (
+                        <span className="meeting-badge pending">⚪ Slot Published</span>
+                      )}
+                    </div>
 
                   {userRole === "interviewer" && isPendingProposal ? (
                     <div style={{ display: "flex", gap: "8px" }} onClick={(e) => e.stopPropagation()}>
@@ -738,28 +735,30 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                       </button>
                     </div>
                   ) : iv.status === "Completed" ? (
-                    <button
-                      className="btn-view-result"
-                      type="button"
-                      disabled={loadingResultId === scheduleId}
-                      style={{
-                        background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-                        color: "#ffffff",
-                        padding: "8px 16px",
-                        borderRadius: "8px",
-                        border: "none",
-                        fontWeight: "600",
-                        fontSize: "13px",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        boxShadow: "0 2px 4px rgba(37,99,235,0.2)",
-                      }}
-                      onClick={(e) => handleViewResult(iv, e)}
-                    >
-                      {loadingResultId === scheduleId ? "Loading..." : "📊 View Result"}
-                    </button>
+                    userRole !== "interviewer" ? (
+                      <button
+                        className="btn-view-result"
+                        type="button"
+                        disabled={loadingResultId === scheduleId}
+                        style={{
+                          background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                          color: "#ffffff",
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          border: "none",
+                          fontWeight: "600",
+                          fontSize: "13px",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          boxShadow: "0 2px 4px rgba(37,99,235,0.2)",
+                        }}
+                        onClick={(e) => handleViewResult(iv, e)}
+                      >
+                        {loadingResultId === scheduleId ? "Loading..." : "📊 View Result"}
+                      </button>
+                    ) : null
                   ) : iv.status === "Scheduled" ? (
                     <button
                       className={`btn-join-session ${!isMeetingReady ? "btn-disabled" : ""}`}
@@ -779,7 +778,7 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                       title={
                         !isMeetingReady
                           ? "Waiting for interviewer acceptance"
-                          : "View and join the live interview lobby"
+                          : "Enter live interview lobby"
                       }
                       onClick={(e) => {
                         e.stopPropagation();
@@ -788,15 +787,12 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
                         }
                       }}
                     >
-                      {isMeetingReady ? "View & Join Lobby →" : "Lobby Disabled (Pending Acceptance)"}
+                      {isMeetingReady ? "Join Interview →" : "Lobby Disabled (Pending Acceptance)"}
                     </button>
-                  ) : (
-                    <button className="btn-join-session" type="button" onClick={() => onSelectInterview(iv)}>
-                      View Details →
-                    </button>
-                  )}
+                  ) : null}
                 </div>
-              </div>
+              )}
+            </div>
             );
           })}
         </div>
@@ -816,7 +812,8 @@ function InterviewList({ interviews, onSelectInterview, userRole }) {
 }
 
 // --- InterviewDetails ---
-function InterviewDetails({ interview, onBack, onUpdateStatus }) {
+function InterviewDetails({ interview, onBack, onUpdateStatus, userRole }) {
+  const domName = (interview.domain_name || interview.domain || "").trim();
   return (
     <div className="card details">
       <button className="back-link" onClick={onBack} type="button">
@@ -825,25 +822,30 @@ function InterviewDetails({ interview, onBack, onUpdateStatus }) {
 
       <div className="details__header">
         <div>
-          <h2>{interview.interviewer || "Interviewer"}</h2>
-          <span className="tag">{interview.domain_name || interview.domain || "Mock Interview"}</span>
+          <h2>{userRole === "interviewer" ? (interview.candidate_name || interview.candidate || "Candidate") : (interview.interviewer_name || interview.interviewer || "Interviewer")}</h2>
+          {domName && domName.toLowerCase() !== "general" && (
+            <span className="tag">{domName}</span>
+          )}
         </div>
         <StatusBadge status={interview.status} />
       </div>
 
       <div className="details__grid">
-        <div className="details__item">
-          <span className="details__label">
-            <User size={14} /> Candidate
-          </span>
-          <span className="details__value">{interview.candidate_name || interview.candidate || "Open Slot"}</span>
-        </div>
-        <div className="details__item">
-          <span className="details__label">
-            <User size={14} /> Interviewer
-          </span>
-          <span className="details__value">{interview.interviewer_name || interview.interviewer || "Interviewer"}</span>
-        </div>
+        {userRole === "interviewer" ? (
+          <div className="details__item">
+            <span className="details__label">
+              <User size={14} /> Candidate
+            </span>
+            <span className="details__value">{interview.candidate_name || interview.candidate || "Open Slot"}</span>
+          </div>
+        ) : (
+          <div className="details__item">
+            <span className="details__label">
+              <User size={14} /> Interviewer
+            </span>
+            <span className="details__value">{interview.interviewer_name || interview.interviewer || "Interviewer"}</span>
+          </div>
+        )}
         <div className="details__item">
           <span className="details__label">
             <Calendar size={14} /> Date
@@ -948,12 +950,7 @@ export default function InterviewSchedule({
 
         <div className="page__header">
           <div>
-            <h1>Interview Scheduling & Management</h1>
-            <p>
-              {isInterviewer
-                ? "Schedule domain interview slots and manage candidate proposals."
-                : "Explore unscheduled domain interviews, apply for slots, and track upcoming sessions."}
-            </p>
+            <h1>Interview Scheduling</h1>
           </div>
         </div>
 
@@ -966,14 +963,14 @@ export default function InterviewSchedule({
                 onClick={() => setTab("schedule")}
                 type="button"
               >
-                Schedule New Slot
+                Schedule New Interview
               </button>
               <button
                 className={`tabs__item ${tab === "my_slots" || tab === "details" ? "tabs__item--active" : ""}`}
                 onClick={() => setTab("my_slots")}
                 type="button"
               >
-                My Slots & Proposals
+                My Scheduled Interviews
               </button>
             </>
           ) : (
@@ -983,7 +980,7 @@ export default function InterviewSchedule({
                 onClick={() => setTab("available")}
                 type="button"
               >
-                Available Unscheduled Interviews
+                Available Interviews
               </button>
               <button
                 className={`tabs__item ${tab === "my_interviews" || tab === "details" ? "tabs__item--active" : ""}`}
@@ -1018,6 +1015,7 @@ export default function InterviewSchedule({
             interview={selected}
             onBack={() => setTab(isInterviewer ? "my_slots" : "my_interviews")}
             onUpdateStatus={handleUpdateStatus}
+            userRole={userRole}
           />
         )}
       </main>

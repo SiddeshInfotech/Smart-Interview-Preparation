@@ -569,15 +569,26 @@ const InterviewPage = ({
     [isInInterview, faceLandmarker, showEyeWarning]
   );
 
-  // ---- Timer ----
+  // ---- Timer & Duration Expiration Check ----
   useEffect(() => {
     if (isInInterview) {
-      timerInterval.current = setInterval(() => setTimer((t) => t + 1), 1000);
+      const maxDurationSeconds = (parseInt(selectedInterview?.duration_minutes || 60, 10)) * 60;
+      timerInterval.current = setInterval(() => {
+        setTimer((prevTimer) => {
+          const nextTimer = prevTimer + 1;
+          if (nextTimer >= maxDurationSeconds && !isEndingRef.current) {
+            console.log("Interview duration expired. Auto-terminating session as Completed.");
+            alert(`⏱️ The scheduled interview duration (${selectedInterview?.duration_minutes || 60} minutes) has ended. The session is now being completed.`);
+            handleEndInterview(true);
+          }
+          return nextTimer;
+        });
+      }, 1000);
     } else {
       clearInterval(timerInterval.current);
     }
     return () => clearInterval(timerInterval.current);
-  }, [isInInterview]);
+  }, [isInInterview, selectedInterview]);
 
   // ---- Tab switch detection ----
   useEffect(() => {
@@ -1094,7 +1105,7 @@ const InterviewPage = ({
           <InterviewerFeedbackModal
             schedule={selectedInterview}
             candidateName={selectedInterview?.candidate_name || selectedInterview?.candidate}
-            onClose={() => setShowInterviewerFeedbackModal(false)}
+            onClose={null}
             onSubmitSuccess={() => {
               setShowInterviewerFeedbackModal(false);
               if (onBack) onBack();
