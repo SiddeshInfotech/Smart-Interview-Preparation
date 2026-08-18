@@ -157,11 +157,11 @@ def get_module_all_pdf_materials(module) -> List[Dict[str, str]]:
     return materials
 
 
-def chunk_material_text(text: str, max_chars: int = 6000) -> str:
+def chunk_material_text(text: str, max_chars: int = 3000) -> str:
     """
     If extracted material is very large, intelligently chunks text to preserve
     headings, sections, paragraphs, code examples, and topic boundaries without cutting mid-sentence.
-    Optimized for fast LLM processing speed (<2s latency).
+    Optimized for fast LLM processing speed (<1.5s latency).
     """
     if len(text) <= max_chars:
         return text
@@ -195,6 +195,7 @@ def chunk_material_text(text: str, max_chars: int = 6000) -> str:
 def build_chapter_material_context(course_title: str, chapter_title: str, materials: List[Dict[str, str]]) -> Tuple[str, int]:
     """
     Formulates a structured source material context for the AI prompt.
+    Capped at 4000 characters to guarantee ultra-fast LLM response (<2s).
     Returns (context_string, total_character_count).
     """
     context_lines = [
@@ -204,8 +205,13 @@ def build_chapter_material_context(course_title: str, chapter_title: str, materi
     ]
 
     total_chars = 0
+    max_total_chars = 4000
+
     for idx, mat in enumerate(materials, start=1):
-        clean_text = chunk_material_text(mat["text"].strip())
+        if total_chars >= max_total_chars:
+            break
+        remaining_budget = max_total_chars - total_chars
+        clean_text = chunk_material_text(mat["text"].strip(), max_chars=min(3000, remaining_budget))
         total_chars += len(clean_text)
         context_lines.append(f"SOURCE MATERIAL {idx}: {mat['filename']} (Title: '{mat['title']}')")
         context_lines.append("CONTENT:")

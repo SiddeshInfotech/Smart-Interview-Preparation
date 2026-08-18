@@ -479,98 +479,103 @@ def generate_chapter_quiz_questions(
     valid_filenames = [m["filename"] for m in materials_list] if (materials_list and isinstance(materials_list, list)) else []
     default_material_name = valid_filenames[0] if valid_filenames else "Chapter Material PDF"
 
-    for selected_model in models:
-        for attempt in range(1, 2):
-            try:
-                raw_text = openrouter_service.chat_with_model(
-                    model=selected_model,
-                    prompt=prompt,
-                    temperature=0.3,
-                    max_tokens=1500,
-                    expect_json=True,
-                )
-                cleaned_text = clean_json_string(raw_text)
-                if not cleaned_text:
+    # Fast primary model attempt to prevent multi-model fallback timeout delays
+    primary_models = models[:1] if models else ["google/gemini-2.0-flash-01"]
+
+    for selected_model in primary_models:
+        try:
+            raw_text = openrouter_service.chat_with_model(
+                model=selected_model,
+                prompt=prompt,
+                temperature=0.3,
+                max_tokens=1000,
+                expect_json=True,
+            )
+            cleaned_text = clean_json_string(raw_text)
+            if not cleaned_text:
+                continue
+
+            parsed_data = parse_json_robust(cleaned_text)
+            raw_questions, _ = extract_questions_list(parsed_data)
+
+            if not raw_questions or not isinstance(raw_questions, list):
+                continue
+
+            validated_questions = []
+            seen_texts = set()
+
+            for item in raw_questions:
+                if not isinstance(item, dict):
                     continue
 
-                parsed_data = parse_json_robust(cleaned_text)
-                raw_questions, _ = extract_questions_list(parsed_data)
+                q_text = item.get("text") or item.get("question") or item.get("question_text")
+                opts = item.get("options") or []
+                exp = item.get("explanation") or "Answer justified directly by chapter study material."
+                src_mat = item.get("source_material") or default_material_name
+                src_top = item.get("source_topic") or f"{chapter_name} Concepts"
 
-                if not raw_questions or not isinstance(raw_questions, list):
+                if not q_text or not isinstance(opts, list) or len(opts) != 4:
                     continue
 
-                validated_questions = []
-                seen_texts = set()
+                clean_q_text = str(q_text).strip()
+                if not clean_q_text or clean_q_text.lower() in seen_texts:
+                    continue
 
-                for item in raw_questions:
-                    if not isinstance(item, dict):
-                        continue
+                if _is_subjective_or_variable_question(clean_q_text):
+                    logger.warning(f"[QUIZ] Rejecting question testing subjective/variable details: '{clean_q_text}'")
+                    continue
 
-                    q_text = item.get("text") or item.get("question") or item.get("question_text")
-                    opts = item.get("options") or []
-                    exp = item.get("explanation") or "Answer justified directly by chapter study material."
-                    src_mat = item.get("source_material") or default_material_name
-                    src_top = item.get("source_topic") or f"{chapter_name} Concepts"
+                clean_opts = [str(o).strip() for o in opts if str(o).strip()]
+                if len(clean_opts) != 4 or len(set(clean_opts)) < 2:
+                    continue
 
-                    if not q_text or not isinstance(opts, list) or len(opts) != 4:
-                        continue
+                correct_idx = item.get("correct")
+                correct_str = item.get("correct_answer")
 
-                    clean_q_text = str(q_text).strip()
-                    if not clean_q_text or clean_q_text.lower() in seen_texts:
-                        continue
+                if correct_idx is not None and isinstance(correct_idx, int) and 0 <= correct_idx <= 3:
+                    final_correct_idx = correct_idx
+                    final_correct_str = clean_opts[correct_idx]
+                elif correct_str and str(correct_str).strip() in clean_opts:
+                    final_correct_str = str(correct_str).strip()
+                    final_correct_idx = clean_opts.index(final_correct_str)
+                else:
+                    final_correct_idx = 0
+                    final_correct_str = clean_opts[0]
 
-                    if _is_subjective_or_variable_question(clean_q_text):
-                        logger.warning(f"[QUIZ] Rejecting question testing subjective/variable details: '{clean_q_text}'")
-                        continue
-
-                    clean_opts = [str(o).strip() for o in opts if str(o).strip()]
-                    if len(clean_opts) != 4 or len(set(clean_opts)) < 2:
-                        continue
-
-                    correct_idx = item.get("correct")
-                    correct_str = item.get("correct_answer")
-
-                    if correct_idx is not None and isinstance(correct_idx, int) and 0 <= correct_idx <= 3:
-                        final_correct_idx = correct_idx
-                        final_correct_str = clean_opts[correct_idx]
-                    elif correct_str and str(correct_str).strip() in clean_opts:
-                        final_correct_str = str(correct_str).strip()
-                        final_correct_idx = clean_opts.index(final_correct_str)
+                matched_mat_name = str(src_mat).strip()
+                if valid_filenames:
+                    for fname in valid_filenames:
+                        if fname.lower() in matched_mat_name.lower() or matched_mat_name.lower() in fname.lower():
+                            matched_mat_name = fname
+                            break
                     else:
-                        final_correct_idx = 0
-                        final_correct_str = clean_opts[0]
+                        matched_mat_name = default_material_name
 
-                    matched_mat_name = str(src_mat).strip()
-                    if valid_filenames:
-                        for fname in valid_filenames:
-                            if fname.lower() in matched_mat_name.lower() or matched_mat_name.lower() in fname.lower():
-                                matched_mat_name = fname
-                                break
-                        else:
-                            matched_mat_name = default_material_name
+                seen_texts.add(clean_q_text.lower())
+                validated_questions.append({
+                    "text": clean_q_text,
+                    "options": clean_opts,
+                    "correct": final_correct_idx,
+                    "correct_answer": final_correct_str,
+                    "explanation": str(exp).strip(),
+                    "source_material": matched_mat_name,
+                    "source_topic": str(src_top).strip(),
+                })
 
-                    seen_texts.add(clean_q_text.lower())
-                    validated_questions.append({
-                        "text": clean_q_text,
-                        "options": clean_opts,
-                        "correct": final_correct_idx,
-                        "correct_answer": final_correct_str,
-                        "explanation": str(exp).strip(),
-                        "source_material": matched_mat_name,
-                        "source_topic": str(src_top).strip(),
-                    })
+            supported_count = len(validated_questions)
+            rejected_count = len(raw_questions) - supported_count
+            logger.info(f"[QUIZ] Model '{selected_model}' generated: {len(raw_questions)} raw questions, {supported_count} supported, {rejected_count} rejected")
 
-                supported_count = len(validated_questions)
-                rejected_count = len(raw_questions) - supported_count
-                logger.info(f"[QUIZ] Model '{selected_model}' generated: {len(raw_questions)} raw questions, {supported_count} supported, {rejected_count} rejected")
+            if supported_count >= min(count, 5):
+                final_res = validated_questions[:count]
+                cache.set(cache_key, final_res, timeout=7200)
+                return final_res
 
-                if supported_count >= min(count, 5):
-                    final_res = validated_questions[:count]
-                    cache.set(cache_key, final_res, timeout=7200)
-                    return final_res
+        except Exception as e:
+            logger.warning(f"[QUIZ_SERVICE] Fast AI chapter quiz attempt on '{selected_model}' failed/timed out: {e}")
 
-            except Exception as e:
-                logger.warning(f"[QUIZ_SERVICE] Chapter quiz generation attempt {attempt} on model '{selected_model}' failed: {e}")
-
-    logger.warning("[QUIZ_SERVICE] AI models unavailable or returned invalid schema. Returning PDF-grounded fallback questions.")
-    return get_fallback_chapter_quiz_questions(chapter_name=chapter_name, pdf_content=pdf_content, count=count, materials_list=materials_list)
+    logger.warning("[QUIZ_SERVICE] AI models unavailable or timed out. Serving fast PDF-grounded concept fallback questions.")
+    fallback_res = get_fallback_chapter_quiz_questions(chapter_name=chapter_name, pdf_content=pdf_content, count=count, materials_list=materials_list)
+    if fallback_res:
+        cache.set(cache_key, fallback_res, timeout=7200)
+    return fallback_res
