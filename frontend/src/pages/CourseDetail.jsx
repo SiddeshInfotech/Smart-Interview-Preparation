@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Sparkles
 } from "lucide-react";
-import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl } from "../api/courseApi";
+import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl, markModuleComplete } from "../api/courseApi";
 import { prefetchPdf } from "../api/pdfCache";
 import "../styles/Courses.css";
 
@@ -105,6 +105,12 @@ export default function CourseDetail() {
     const cleanTitle = cleanModuleTitle(mod.title);
     const mId = mod.module_id || mod.id;
 
+    if (mId) {
+      markModuleComplete(mId).catch((err) =>
+        console.warn("[CourseDetail] Automatic module completion on open failed:", err)
+      );
+    }
+
     if (formattedUrl) {
       navigate(`/courses/${courseId}/pdf-viewer`, {
         state: {
@@ -114,7 +120,7 @@ export default function CourseDetail() {
           courseTitle: cleanCourseTitle(course?.title || "Course"),
           domainId: domainId,
           moduleId: mId,
-          isCompleted: mod.is_completed,
+          isCompleted: true,
         },
       });
     } else {

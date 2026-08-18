@@ -13,7 +13,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
-import { formatPdfUrl } from "../api/courseApi";
+import { formatPdfUrl, markModuleComplete } from "../api/courseApi";
 import { getCachedPdfBuffer, prefetchPdf, fetchPdfArrayBuffer } from "../api/pdfCache";
 import "../styles/Courses.css";
 
@@ -49,6 +49,15 @@ export default function PdfViewerPage() {
       navigate("/courses");
     }
   };
+
+  // Automatically mark module completed upon first opening the PDF notes
+  useEffect(() => {
+    if (moduleId) {
+      markModuleComplete(moduleId).catch((err) =>
+        console.warn("[PdfViewerPage] Auto completion trigger failed:", err)
+      );
+    }
+  }, [moduleId]);
 
   // 1. Fetch PDF Document (Using Native Resilient Buffer Fetch)
   useEffect(() => {
