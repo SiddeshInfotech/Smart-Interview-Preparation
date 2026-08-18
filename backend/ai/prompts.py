@@ -446,29 +446,38 @@ def chapter_quiz_generation_prompt(
     difficulty: str = "Medium",
 ) -> str:
     """
-    Generate strict prompt for chapter PDF quiz generation matching Section 4 specification.
-    Forces questions to be grounded EXCLUSIVELY in the supplied chapter material.
+    Generate strict prompt for chapter PDF quiz generation.
+    Forces questions to test core concepts from the supplied chapter material rather than
+    sentence-by-sentence literal text or subjective/variable student-specific details.
     """
-    return f"""You are an educational quiz generator.
+    return f"""You are an educational quiz generator and subject matter expert.
 
-Your task is to generate a quiz for a specific chapter of a course.
+Your task is to generate a conceptual quiz for a specific chapter of a course based ONLY on the supplied learning material.
+
+CRITICAL CONCEPTUAL GENERATION MANDATES:
+1. CONCEPT-BASED NOT SENTENCE-BY-SENTENCE:
+   - Generate questions that test the core concepts, principles, underlying mechanisms, definitions, workflows, standards, and logic presented in the material.
+   - DO NOT construct questions sentence-by-sentence or pull literal sentence fragments verbatim from the text.
+
+2. FORBID SUBJECTIVE, VARIABLE, OR STUDENT-SPECIFIC DETAILS:
+   - DO NOT create questions whose answers can differ from student to student or developer to developer (e.g., asking for arbitrary file names, local project paths, variable names used in code snippets, or personal preferences).
+   - EXAMPLE TO AVOID: "What is the file name of homepage of web browser?" — A developer can set any file name they want (e.g., index.html, home.html, default.html), so asking for an arbitrary or project-specific file name is INVALID.
+   - INSTEAD, TEST THE UNDERLYING CONCEPT: Ask about the universal technical principles, standards, or mechanisms (e.g., "What is the standard purpose of a web server root document by convention?").
+
+3. UNIVERSALLY DEFINITIVE ANSWERS:
+   - The correct answer MUST be an objective, universally true technical concept grounded in the provided material that applies to all students equally.
+   - Avoid ambiguous choices or questions where multiple options could be valid depending on developer preference.
 
 IMPORTANT SOURCE RULE:
 The supplied course material is the ONLY authoritative source for this quiz.
-Generate questions ONLY from information explicitly contained in the supplied material.
+Generate questions ONLY on concepts explicitly explained in the supplied material.
 
 DO NOT:
 - use outside knowledge
 - rely on the chapter title alone
 - invent facts
 - add information that is not present in the material
-- assume information that is not explained in the material
-- create questions about topics that are not covered
-- use general knowledge to fill missing information
-
-If a fact is not supported by the supplied material, DO NOT create a question about it.
-
-The questions must test whether the candidate understood the provided learning material.
+- create questions about topics that are not covered in the text
 
 COURSE:
 {course_name}
@@ -482,22 +491,20 @@ SOURCE MATERIAL:
 Generate {count} multiple-choice questions at internal difficulty level '{difficulty}'.
 
 Each question must:
-1. Be directly supported by the supplied material.
-2. Test an important concept from the material.
+1. Test an important concept from the material (not verbatim sentences or arbitrary example names).
+2. Have a universally definitive, non-subjective correct answer.
 3. Have exactly four options.
 4. Have exactly one correct answer.
-5. Avoid ambiguous wording.
+5. Avoid ambiguous wording or subjective developer choices.
 6. Avoid duplicate questions.
-7. Avoid questions that depend on information outside the material.
-8. Match the difficulty requested by the application.
-9. Include an explanation based on the supplied material.
-10. Include source_material (filename of the PDF) and source_topic (relevant section/topic from the material).
+7. Include a clear explanation based on the concepts in the material.
+8. Include source_material (filename of the PDF) and source_topic (relevant section/topic from the material).
 
 For every generated question, internally verify:
-"Can this question and its correct answer be justified using only the supplied material?"
+"Does this question test a core concept with a single universally true answer, avoiding arbitrary file/variable names or subjective developer choices?"
 
 If NO:
-discard the question and generate another one.
+discard the question and generate a conceptual one instead.
 
 If the material does not contain enough information to generate {count} valid questions, generate fewer questions rather than inventing information.
 
@@ -507,16 +514,16 @@ JSON FORMAT:
 {{
   "questions": [
     {{
-      "text": "Question text testing a concept from the material",
+      "text": "Clear conceptual question testing core principles from the material",
       "options": [
-        "Option A text",
+        "Option A text (definitive concept)",
         "Option B text",
         "Option C text",
         "Option D text"
       ],
       "correct": 0,
-      "correct_answer": "Option A text",
-      "explanation": "Explanation based only on the supplied material",
+      "correct_answer": "Option A text (definitive concept)",
+      "explanation": "Explanation of the underlying concept based on the supplied material",
       "source_material": "Name of the PDF",
       "source_topic": "Relevant section/topic from the material"
     }}

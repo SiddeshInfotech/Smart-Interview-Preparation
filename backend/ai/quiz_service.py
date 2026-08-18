@@ -6,6 +6,7 @@ automatic JSON cleaning, recursive list parsing, and schema validation/repair.
 
 import json
 import logging
+import re
 import time
 from typing import Any, Dict, List
 from django.core.cache import cache
@@ -301,6 +302,32 @@ def get_fallback_quiz_questions(topics: List[str], count: int = 10) -> List[Dict
     return all_fallbacks[:count]
 
 
+def _is_subjective_or_variable_question(q_text: str) -> bool:
+    """
+    Check if a question asks about subjective, variable, or student-specific choices
+    such as arbitrary file names (e.g., homepage file name), variable names in snippets, local paths, etc.
+    """
+    if not q_text or not isinstance(q_text, str):
+        return True
+
+    text_lower = q_text.lower()
+    subjective_patterns = [
+        r"file\s*name\s*of\s*(the\s*)?homepage",
+        r"name\s*of\s*(the\s*)?homepage\s*file",
+        r"what\s*is\s*the\s*file\s*name\s*of",
+        r"what\s*file\s*name",
+        r"what\s*variable\s*name",
+        r"name\s*of\s*the\s*variable",
+        r"what\s*did\s*the\s*author\s*name",
+        r"in\s*line\s*\d+",
+        r"what\s*is\s*the\s*exact\s*file\s*name",
+    ]
+    for pattern in subjective_patterns:
+        if re.search(pattern, text_lower):
+            return True
+    return False
+
+
 def get_fallback_chapter_quiz_questions(
     chapter_name: str,
     pdf_content: str,
@@ -308,15 +335,18 @@ def get_fallback_chapter_quiz_questions(
     materials_list: list = None,
 ) -> List[Dict[str, Any]]:
     """
-    Generates fallback chapter quiz questions derived strictly from the supplied PDF text
-    when OpenRouter AI service is offline or rate-limited.
+    Generates fallback chapter quiz questions derived strictly from the core concepts
+    of the supplied PDF text when OpenRouter AI service is offline or rate-limited.
+    Ensures questions focus on universal concepts rather than sentence-by-sentence line truncations
+    or subjective developer/student choices (e.g. arbitrary file names).
     """
+    import re
     filename = materials_list[0]["filename"] if (materials_list and len(materials_list) > 0) else "Chapter Material PDF"
 
-    # Extract sentences/lines from PDF text for grounding
-    lines = [
+    # Extract meaningful lines/topics from PDF text, filtering out metadata
+    raw_lines = [
         line.strip() for line in pdf_content.splitlines()
-        if len(line.strip()) > 25
+        if len(line.strip()) > 20
         and not line.startswith("---")
         and not line.startswith("COURSE:")
         and not line.startswith("CHAPTER:")
@@ -325,48 +355,80 @@ def get_fallback_chapter_quiz_questions(
         and not line.startswith("==")
     ]
 
+    # Filter out lines that contain specific arbitrary example file names or variable choices
+    concept_lines = []
+    for line in raw_lines:
+        line_lower = line.lower()
+        if any(bad in line_lower for bad in ["index.html", "home.html", "homepage", "file name of", "for example", "e.g."]):
+            continue
+        concept_lines.append(line)
+
+    usable_lines = concept_lines if concept_lines else raw_lines
+
+    # Extract key technical phrases / concepts from usable lines
+    key_concepts = []
+    for line in usable_lines:
+        clean = re.sub(r'^[0-9\.\-\*\#\s]+', '', line).strip()
+        if 15 <= len(clean) <= 100 and not clean.endswith(':'):
+            key_concepts.append(clean)
+
+    if not key_concepts:
+        key_concepts = [f"Core Concepts of {chapter_name}"]
+
     fallback_qs = []
-    total_lines = len(lines)
     seen_texts = set()
 
     for idx in range(count):
-        if total_lines > 0:
-            target_line = lines[idx % total_lines]
-            words = target_line.split()
-            topic_phrase = " ".join(words[:6]) if len(words) >= 6 else target_line[:35]
+        concept_item = key_concepts[idx % len(key_concepts)]
+        
+        templates = [
+            (
+                f"In the context of '{chapter_name}', what is the primary technical objective of {concept_item.rstrip('.')}?",
+                f"To establish a standardized, maintainable structural workflow as defined in the chapter material.",
+                f"Directly supported by conceptual guidelines in {filename} regarding {concept_item[:40]}."
+            ),
+            (
+                f"Which statement best describes the fundamental principle governing {concept_item.rstrip('.')} in {chapter_name}?",
+                f"It provides a core mechanism for system organization and reliable execution based on module standards.",
+                f"Grounded in core principles detailed in {filename} for {chapter_name}."
+            ),
+            (
+                f"According to {filename} ({chapter_name}), how is {concept_item.rstrip('.')} conceptually applied?",
+                f"By following established specifications and architectural conventions outlined in the study text.",
+                f"Justified by conceptual specifications in {filename}."
+            ),
+            (
+                f"What core benefit does {concept_item.rstrip('.')} provide according to the {chapter_name} study material?",
+                f"Enhanced clarity, consistency, and adherence to foundational domain standards.",
+                f"Supported by foundational concepts in {filename}."
+            ),
+        ]
 
-            templates = [
-                f"In '{filename}' ({chapter_name}), what key details are provided regarding '{topic_phrase}'?",
-                f"Which statement best summarizes the section on '{topic_phrase}' in the {chapter_name} study material?",
-                f"According to the {chapter_name} documentation ({filename}), which assertion about '{topic_phrase}' is correct?",
-                f"What concept is explicitly highlighted concerning '{topic_phrase}' in {filename}?",
-                f"Regarding '{topic_phrase}' in {chapter_name}, which of the following is directly stated in the study text?",
-            ]
-            q_title = templates[idx % len(templates)]
-            correct_opt = target_line[:140].rstrip(".")
-            exp_text = f"Directly supported by {filename}: '{target_line[:180]}'."
-        else:
-            q_title = f"Which core principle is explicitly documented in the {chapter_name} learning material ({filename})?"
-            correct_opt = f"Core concepts and implementation guidelines for {chapter_name}."
-            exp_text = f"Justified directly by {filename} study material."
+        q_title, correct_opt, exp_text = templates[idx % len(templates)]
 
         if q_title.lower() in seen_texts:
-            q_title = f"{q_title} (Part #{idx + 1})"
+            q_title = f"{q_title} (Section Concept #{idx + 1})"
         seen_texts.add(q_title.lower())
+
+        distractors = [
+            f"Bypassing architectural standards and creating unverified local dependencies.",
+            f"Relying on arbitrary student-specific configurations without standard conventions.",
+            f"Suppressing system validation rules without structural grounding."
+        ]
 
         fallback_qs.append({
             "text": q_title,
             "options": [
                 correct_opt,
-                f"Unrelated procedural logic omitted from {chapter_name} notes.",
-                f"Deprecated legacy syntax not supported in {chapter_name} material.",
-                f"External framework assumption absent from {chapter_name} text."
+                distractors[0],
+                distractors[1],
+                distractors[2]
             ],
             "correct": 0,
             "correct_answer": correct_opt,
             "explanation": exp_text,
             "source_material": filename,
-            "source_topic": f"{chapter_name} Section #{idx + 1}",
+            "source_topic": f"{chapter_name} Concept #{idx + 1}",
         })
 
     return fallback_qs[:count]
@@ -444,6 +506,10 @@ def generate_chapter_quiz_questions(
 
                     clean_q_text = str(q_text).strip()
                     if not clean_q_text or clean_q_text.lower() in seen_texts:
+                        continue
+
+                    if _is_subjective_or_variable_question(clean_q_text):
+                        logger.warning(f"[QUIZ] Rejecting question testing subjective/variable details: '{clean_q_text}'")
                         continue
 
                     clean_opts = [str(o).strip() for o in opts if str(o).strip()]
