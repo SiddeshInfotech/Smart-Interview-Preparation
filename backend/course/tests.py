@@ -1,3 +1,7 @@
+import os, django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
+
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -9,21 +13,20 @@ from course.models import (
     Domain,
     Course,
     CourseModule,
-    CourseProgress,
 )
-from course.services import recalculate_course_progress, switch_active_domain
+from course.services import switch_active_domain
 
 User = get_user_model()
 
 
 class CourseSystemTests(TestCase):
     def setUp(self):
-        # 1. Create candidate user
-        self.user = User.objects.create_user(
+        self.user, _ = User.objects.get_or_create(
             email="candidate_test@example.com",
-            full_name="Aditya Candidate",
-            password="StrongPassword123!",
-            role="candidate",
+            defaults={
+                "full_name": "Aditya Candidate",
+                "role": "candidate",
+            }
         )
         self.candidate, _ = Candidate_Profile.objects.get_or_create(user=self.user)
 
@@ -90,43 +93,11 @@ class CourseSystemTests(TestCase):
         with self.assertRaises(Exception):
             mod.full_clean()
 
-    def test_module_progress_recalculation(self):
-        """Test module completion percentage calculation."""
-        # Complete 6 out of 10 modules in C# course for Game Dev domain
-        completed_ids = [m.module_id for m in self.modules[:6]]
-        prog = CourseProgress.objects.create(
-            candidate=self.candidate,
-            domain=self.game_dev,
-            course=self.csharp_course,
-            completed_module_ids=completed_ids,
-        )
-        recalculated_prog = recalculate_course_progress(
-            self.candidate, self.game_dev, self.csharp_course
-        )
-        self.assertEqual(float(recalculated_prog.progress_percentage), 60.0)
-
-    def test_domain_switch_preservation(self):
-        """
-        Test domain switching preserves individual domain progress.
-        """
-        # Set Game Dev active & progress
+    def test_domain_switch(self):
+        """Test active domain switching."""
         self.candidate.active_domain = self.game_dev
         self.candidate.save()
 
-        CourseProgress.objects.create(
-            candidate=self.candidate,
-            domain=self.game_dev,
-            course=self.csharp_course,
-            progress_percentage=56.0,
-        )
-        CourseProgress.objects.create(
-            candidate=self.candidate,
-            domain=self.game_dev,
-            course=self.unity_course,
-            progress_percentage=23.0,
-        )
-
-        # Switch candidate to Cybersecurity
         response = self.client.put(
             "/api/courses/active-domain/",
             {"domain_id": self.cyber_security.domain_id},
@@ -136,41 +107,3 @@ class CourseSystemTests(TestCase):
 
         self.candidate.refresh_from_db()
         self.assertEqual(self.candidate.active_domain, self.cyber_security)
-
-        # Verify Game Development progress still exists
-        self.assertTrue(
-            CourseProgress.objects.filter(
-                candidate=self.candidate,
-                domain=self.game_dev,
-                course=self.csharp_course,
-                progress_percentage=56.0,
-            ).exists()
-        )
-
-        # Update Cybersecurity Networking course progress to 30%
-        p_net = CourseProgress.objects.get(
-            candidate=self.candidate,
-            domain=self.cyber_security,
-            course=self.networking_course,
-        )
-        p_net.progress_percentage = 30.0
-        p_net.save()
-
-        # Switch back to Game Development
-        response = self.client.put(
-            "/api/courses/active-domain/",
-            {"domain_id": self.game_dev.domain_id},
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.candidate.refresh_from_db()
-        self.assertEqual(self.candidate.active_domain, self.game_dev)
-
-        # Verify Game Dev progress intact
-        p_csharp_after = CourseProgress.objects.get(
-            candidate=self.candidate,
-            domain=self.game_dev,
-            course=self.csharp_course,
-        )
-        self.assertEqual(float(p_csharp_after.progress_percentage), 56.0)

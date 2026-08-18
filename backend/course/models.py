@@ -132,36 +132,3 @@ class CourseMaterial(models.Model):
                 pass
         super().save(*args, **kwargs)
 
-
-class CourseProgress(models.Model):
-    progress_id = models.AutoField(primary_key=True)
-    candidate = models.ForeignKey(
-        "candidate.Candidate_Profile",
-        on_delete=models.CASCADE,
-        related_name="course_progresses",
-    )
-    domain = models.ForeignKey(
-        Domain, on_delete=models.CASCADE, related_name="course_progresses"
-    )
-    course = models.ForeignKey(
-        Course, on_delete=models.CASCADE, related_name="course_progresses"
-    )
-    progress_percentage = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0.0
-    )
-    completed_module_ids = models.JSONField(
-        default=list, blank=True, help_text="List of completed module IDs for this course"
-    )
-    completed = models.BooleanField(default=False)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    started_at = models.DateTimeField(auto_now_add=True)
-    last_accessed_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "Course_Progress"
-        unique_together = ("candidate", "domain", "course")
-        ordering = ["-last_accessed_at"]
-
-    def __str__(self):
-        return f"{self.candidate.user.email} | {self.domain.name} | {self.course.title} | {self.progress_percentage}%"
-

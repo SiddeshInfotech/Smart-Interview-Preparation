@@ -1,51 +1,8 @@
-from django.utils import timezone
 from .models import (
     Domain,
     Course,
     CourseModule,
-    CourseProgress,
 )
-
-
-def recalculate_course_progress(candidate, domain, course):
-    """
-    Recalculate course progress percentage based on completed_module_ids JSON array.
-    """
-    active_module_ids = list(
-        CourseModule.objects.filter(
-            course=course,
-            is_active=True,
-        ).values_list("module_id", flat=True)
-    )
-
-    total_modules = len(active_module_ids)
-
-    progress, created = CourseProgress.objects.get_or_create(
-        candidate=candidate,
-        domain=domain,
-        course=course,
-        defaults={"progress_percentage": 0.0, "completed_module_ids": []},
-    )
-
-    completed_ids = [m_id for m_id in (progress.completed_module_ids or []) if m_id in active_module_ids]
-
-    if total_modules == 0:
-        pct = 0.0
-    else:
-        pct = round((len(completed_ids) / float(total_modules)) * 100.0, 2)
-
-    progress.completed_module_ids = completed_ids
-    progress.progress_percentage = pct
-    if pct >= 100.0 and not progress.completed:
-        progress.completed = True
-        progress.completed_at = timezone.now()
-    elif pct < 100.0 and progress.completed:
-        progress.completed = False
-        progress.completed_at = None
-
-    progress.save()
-    return progress
-
 
 
 def resolve_domain_by_name(target_name):
@@ -105,14 +62,11 @@ def resolve_domain_by_name(target_name):
 
 def switch_active_domain(candidate, target_domain):
     """
-    Switch candidate active domain and initialize missing CourseProgress records at 0%.
-    Preserves all existing progress records across all domains.
-    Optimized with single bulk operations.
+    Switch candidate active domain.
     """
     if not target_domain:
         return []
 
-    # If domain hasn't changed, skip extra DB updates
     if candidate.active_domain_id == target_domain.domain_id:
         return Course.objects.filter(domain=target_domain, is_active=True).order_by("sequence", "course_id")
 
@@ -125,35 +79,7 @@ def switch_active_domain(candidate, target_domain):
     except Exception:
         pass
 
-    domain_courses = list(Course.objects.filter(
+    return list(Course.objects.filter(
         domain=target_domain,
         is_active=True,
     ).order_by("sequence", "course_id"))
-
-    if not domain_courses:
-        return []
-
-    # Efficiently bulk-create missing progress records in 1 query
-    existing_course_ids = set(
-        CourseProgress.objects.filter(
-            candidate=candidate,
-            domain=target_domain
-        ).values_list("course_id", flat=True)
-    )
-
-    new_progress_objs = [
-        CourseProgress(
-            candidate=candidate,
-            domain=target_domain,
-            course=course,
-            progress_percentage=0.0,
-            completed_module_ids=[]
-        )
-        for course in domain_courses
-        if course.course_id not in existing_course_ids
-    ]
-
-    if new_progress_objs:
-        CourseProgress.objects.bulk_create(new_progress_objs, ignore_conflicts=True)
-
-    return domain_courses

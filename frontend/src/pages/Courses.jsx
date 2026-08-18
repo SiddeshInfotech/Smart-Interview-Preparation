@@ -117,16 +117,6 @@ export default function Courses() {
     );
   }
 
-  const totalCourses = domainCourses.length;
-  const overallDomainProgress = totalCourses > 0
-    ? Math.round(
-      domainCourses.reduce(
-        (acc, c) => acc + (parseFloat(c.progress_percentage) || 0),
-        0
-      ) / totalCourses
-    )
-    : 0;
-
   return (
     <div className="courses-container">
       {/* Page Header */}
@@ -150,33 +140,14 @@ export default function Courses() {
             </div>
           </div>
         </div>
-
-        <div className="domain-banner-right">
-          {activeDomain && (
-            <div className="domain-overall-progress">
-              <div className="progress-info">
-                <span>Overall Domain Progress</span>
-                <strong>: {overallDomainProgress}%</strong>
-              </div>
-              <div className="domain-progress-bar">
-                <div
-                  className="domain-progress-fill"
-                  style={{ width: `${overallDomainProgress}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Courses Grid */}
       <div className="courses-grid">
         {domainCourses.length > 0 ? (
           domainCourses.map((course, idx) => {
-            const progressPct = Math.round(parseFloat(course.progress_percentage) || 0);
             const gradient = GRADIENTS[idx % GRADIENTS.length];
             const icon = ICONS[idx % ICONS.length];
-            const isCompleted = progressPct >= 100;
 
             return (
               <div key={course.course_id} className="course-card">
@@ -203,32 +174,6 @@ export default function Courses() {
                     <Layers size={14} />
                     {course.total_modules || 0} Modules
                   </span>
-                </div>
-
-                {/* Progress Section */}
-                <div className="course-progress-section">
-                  <div className="course-progress-header">
-                    <span>Course Progress</span>
-                    <span className="progress-percent">
-                      {isCompleted ? (
-                        <span className="completed-tag">
-                          <CheckCircle2 size={13} /> Completed
-                        </span>
-                      ) : (
-                        `${progressPct}%`
-                      )}
-                    </span>
-                  </div>
-
-                  <div className="course-progress-track">
-                    <div
-                      className="course-progress-fill"
-                      style={{
-                        width: `${progressPct}%`,
-                        background: isCompleted ? "#10b981" : undefined,
-                      }}
-                    />
-                  </div>
                 </div>
 
                 {/* CTA Button */}

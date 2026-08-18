@@ -3,7 +3,6 @@ from .models import (
     Domain,
     Course,
     CourseModule,
-    CourseProgress,
 )
 
 
@@ -32,19 +31,4 @@ class CourseModuleAdmin(admin.ModelAdmin):
     list_display = ["module_id", "title", "course", "sequence", "pdf_file", "file_size", "is_active"]
     list_filter = ["course__domain", "course", "is_active"]
     search_fields = ["title", "description", "course__title"]
-
-
-@admin.register(CourseProgress)
-class CourseProgressAdmin(admin.ModelAdmin):
-    list_display = [
-        "progress_id",
-        "candidate",
-        "domain",
-        "course",
-        "progress_percentage",
-        "completed",
-        "last_accessed_at",
-    ]
-    list_filter = ["domain", "completed"]
-    search_fields = ["candidate__user__email", "course__title", "domain__name"]
 

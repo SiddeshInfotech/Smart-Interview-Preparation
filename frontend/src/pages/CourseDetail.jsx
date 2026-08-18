@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Sparkles
 } from "lucide-react";
-import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl, markModuleComplete } from "../api/courseApi";
+import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl } from "../api/courseApi";
 import { prefetchPdf } from "../api/pdfCache";
 import "../styles/Courses.css";
 
@@ -105,12 +105,6 @@ export default function CourseDetail() {
     const cleanTitle = cleanModuleTitle(mod.title);
     const mId = mod.module_id || mod.id;
 
-    if (mId) {
-      markModuleComplete(mId).catch((err) =>
-        console.warn("[CourseDetail] Automatic module completion on open failed:", err)
-      );
-    }
-
     if (formattedUrl) {
       navigate(`/courses/${courseId}/pdf-viewer`, {
         state: {
@@ -120,7 +114,6 @@ export default function CourseDetail() {
           courseTitle: cleanCourseTitle(course?.title || "Course"),
           domainId: domainId,
           moduleId: mId,
-          isCompleted: true,
         },
       });
     } else {
@@ -219,8 +212,8 @@ export default function CourseDetail() {
                   style={{
                     marginBottom: "16px",
                     borderRadius: "14px",
-                    border: mod.is_completed ? "1px solid #a7f3d0" : "1px solid #e2e8f0",
-                    background: mod.is_completed ? "#f0fdf4" : "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    background: "#ffffff",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
                     padding: "18px 20px"
                   }}
@@ -232,8 +225,6 @@ export default function CourseDetail() {
                         style={{
                           fontSize: "0.9rem",
                           fontWeight: "700",
-                          background: mod.is_completed ? "#10b981" : undefined,
-                          color: mod.is_completed ? "#ffffff" : undefined
                         }}
                       >
                         {index + 1}
@@ -244,26 +235,6 @@ export default function CourseDetail() {
                           <h5 className="topic-title" style={{ fontSize: "1.05rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
                             {displayTitle}
                           </h5>
-
-                          {/* Completed Sign in front of PDF */}
-                          {mod.is_completed && (
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                backgroundColor: "#dcfce7",
-                                color: "#15803d",
-                                fontSize: "0.75rem",
-                                fontWeight: "700",
-                                padding: "3px 10px",
-                                borderRadius: "20px",
-                                border: "1px solid #86efac"
-                              }}
-                            >
-                              <CheckCircle2 size={13} color="#16a34a" /> Completed
-                            </span>
-                          )}
                         </div>
 
                         {mod.file_size > 0 && (

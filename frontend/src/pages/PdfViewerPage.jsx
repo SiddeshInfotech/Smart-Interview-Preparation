@@ -13,7 +13,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
-import { formatPdfUrl, markModuleComplete } from "../api/courseApi";
+import { formatPdfUrl } from "../api/courseApi";
 import { getCachedPdfBuffer, prefetchPdf, fetchPdfArrayBuffer } from "../api/pdfCache";
 import "../styles/Courses.css";
 
@@ -30,7 +30,6 @@ export default function PdfViewerPage() {
   const moduleTitle = location.state?.moduleTitle || "Course Unit";
   const domainId = location.state?.domainId || null;
   const moduleId = location.state?.moduleId || null;
-  const isCompleted = location.state?.isCompleted || false;
   const courseTitle = location.state?.courseTitle || "";
 
   const [pdfDoc, setPdfDoc] = useState(null);
@@ -49,15 +48,6 @@ export default function PdfViewerPage() {
       navigate("/courses");
     }
   };
-
-  // Automatically mark module completed upon first opening the PDF notes
-  useEffect(() => {
-    if (moduleId) {
-      markModuleComplete(moduleId).catch((err) =>
-        console.warn("[PdfViewerPage] Auto completion trigger failed:", err)
-      );
-    }
-  }, [moduleId]);
 
   // 1. Fetch PDF Document (Using Native Resilient Buffer Fetch)
   useEffect(() => {
@@ -335,24 +325,6 @@ export default function PdfViewerPage() {
             <FileText size={18} color="#818cf8" />
             {moduleTitle}
           </h2>
-          {isCompleted && (
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "4px",
-                backgroundColor: "#dcfce7",
-                color: "#15803d",
-                fontSize: "0.72rem",
-                fontWeight: "700",
-                padding: "3px 10px",
-                borderRadius: "12px",
-                border: "1px solid #86efac"
-              }}
-            >
-              <CheckCircle2 size={12} color="#16a34a" /> Completed
-            </span>
-          )}
         </div>
 
         {/* Right: Controls (Quiz, Zoom & Page Count) */}

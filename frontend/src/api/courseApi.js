@@ -284,20 +284,3 @@ export const getClientFallbackQuizQuestions = (unitTitle = "Unit Material", cour
   ];
 };
 
-export const markModuleComplete = async (moduleId) => {
-  try {
-    const res = await api.post(`/modules/${moduleId}/mark-complete/`);
-    clearCourseCache();
-    return res;
-  } catch (err) {
-    console.warn("[markModuleComplete] Failed to sync progress to backend, using local session state.", err);
-    clearCourseCache();
-    return { data: { module_id: moduleId, module_completed: true } };
-  }
-};
-
-export const toggleModuleCompletion = (moduleId, domainId) =>
-  api.post(`/modules/${moduleId}/toggle-complete/`, { domain_id: domainId });
-export const toggleTopicCompletion = toggleModuleCompletion;
-export const fetchCourseProgress = () => api.get("/course-progress/");
-
