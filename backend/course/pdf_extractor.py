@@ -25,9 +25,9 @@ def extract_clean_text_from_file_obj(file_obj, pdf_name: str = "document.pdf") -
 
         for idx, page in enumerate(reader.pages):
             page_raw = page.extract_text() or ""
-            page_clean = page_raw.strip()
+            page_clean = page_raw.replace("\t", " ").strip()
             if page_clean:
-                lines = [line.rstrip() for line in page_clean.splitlines()]
+                lines = [re.sub(r"\s+", " ", line).rstrip() for line in page_clean.splitlines()]
                 filtered_lines = []
                 prev_empty = False
 
@@ -49,7 +49,8 @@ def extract_clean_text_from_file_obj(file_obj, pdf_name: str = "document.pdf") -
         logger.error(f"[PDF_EXTRACT] Failed to extract text from '{pdf_name}': {e}", exc_info=True)
         return ""
 
-    # Remove non-printable control characters except standard newlines/tabs
+    # Remove non-printable control characters and normalize tabs to spaces
+    extracted_text = extracted_text.replace("\t", " ")
     extracted_text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", extracted_text)
     return extracted_text
 

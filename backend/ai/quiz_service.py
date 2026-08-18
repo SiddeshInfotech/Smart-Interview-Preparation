@@ -302,6 +302,35 @@ def get_fallback_quiz_questions(topics: List[str], count: int = 10) -> List[Dict
     return all_fallbacks[:count]
 
 
+def _sanitize_question_text(text: str, valid_filenames: list = None) -> str:
+    """
+    Sanitize question text, options, and explanations:
+    1. Replace all tabs (\t) and multiple consecutive spaces with a single space.
+    2. Remove any references to PDF filenames (e.g. '01_Intro.pdf', 'chapter1.pdf', etc.).
+    """
+    if not text or not isinstance(text, str):
+        return ""
+
+    # Replace tabs and normalize whitespace
+    s = text.replace("\t", " ")
+
+    # Remove specific filenames if provided
+    if valid_filenames:
+        for fname in valid_filenames:
+            if fname and fname.strip():
+                s = re.sub(re.escape(fname.strip()), "", s, flags=re.IGNORECASE)
+
+    # Remove generic .pdf filenames e.g. "01_Intro.pdf" or "document.pdf"
+    s = re.sub(r"\b[\w\-\_\.]+\.pdf\b", "", s, flags=re.IGNORECASE)
+
+    # Clean up residual empty quotes, parens, or excess spaces
+    s = re.sub(r"['\"]{2,}", "", s)
+    s = re.sub(r"\(\s*\)", "", s)
+    s = re.sub(r"\s+", " ", s).strip()
+
+    return s
+
+
 def _is_subjective_or_variable_question(q_text: str) -> bool:
     """
     Check if a question asks about subjective, variable, or student-specific choices
@@ -344,103 +373,208 @@ def get_fallback_chapter_quiz_questions(
     materials_list: list = None,
 ) -> List[Dict[str, Any]]:
     """
-    Generates fallback chapter quiz questions derived strictly from the core concepts
-    of the supplied PDF text when OpenRouter AI service is offline or rate-limited.
-    Ensures questions focus on universal concepts rather than sentence-by-sentence line truncations
-    or subjective developer/student choices (e.g. arbitrary file names).
+    Generates fallback chapter quiz questions derived strictly from core concepts
+    explained in the PDF content without mentioning PDF file names, without tab characters (\t),
+    and without sentence-splicing fragments. Ensures fixed, objective correct answers.
     """
-    import re
-    filename = materials_list[0]["filename"] if (materials_list and len(materials_list) > 0) else "Chapter Material PDF"
+    # Clean PDF content: replace tabs and normalize whitespace
+    clean_pdf_text = pdf_content.replace("\t", " ")
+    clean_pdf_text = re.sub(r"\s+", " ", clean_pdf_text).strip()
+    text_lower = clean_pdf_text.lower()
 
-    # Extract meaningful lines/topics from PDF text, filtering out metadata
-    raw_lines = [
-        line.strip() for line in pdf_content.splitlines()
-        if len(line.strip()) > 20
-        and not line.startswith("---")
-        and not line.startswith("COURSE:")
-        and not line.startswith("CHAPTER:")
-        and not line.startswith("SOURCE MATERIAL")
-        and not line.startswith("CONTENT:")
-        and not line.startswith("==")
-    ]
+    valid_filenames = [m["filename"] for m in materials_list] if (materials_list and isinstance(materials_list, list)) else []
 
-    # Filter out lines that contain specific arbitrary example file names or variable choices
-    concept_lines = []
-    for line in raw_lines:
-        line_lower = line.lower()
-        if any(bad in line_lower for bad in ["index.html", "home.html", "homepage", "file name of", "loaded by default", "for example", "e.g."]):
+    concept_questions = []
+
+    # Check for HTML core concepts in PDF text
+    if "html" in text_lower or "hypertext" in text_lower:
+        concept_questions.append({
+            "text": "What does the acronym HTML stand for in web development?",
+            "options": [
+                "HyperText Markup Language",
+                "High Technical Markup Logic",
+                "Hyperlink Transfer Protocol Language",
+                "Home Tool Management Language"
+            ],
+            "correct": 0,
+            "correct_answer": "HyperText Markup Language",
+            "explanation": "HTML stands for HyperText Markup Language, the standard markup language used to structure web pages.",
+            "source_material": chapter_name,
+            "source_topic": "HTML Fundamentals"
+        })
+
+        concept_questions.append({
+            "text": "What is the primary function of HTML markup tags in a web document?",
+            "options": [
+                "To instruct the web browser how to structure and display content",
+                "To execute database queries directly on the web server",
+                "To encrypt network traffic between client and server",
+                "To compile binary machine code for operating system execution"
+            ],
+            "correct": 0,
+            "correct_answer": "To instruct the web browser how to structure and display content",
+            "explanation": "HTML tags provide structural instructions that tell web browsers how to format and render elements such as headers, paragraphs, and links.",
+            "source_material": chapter_name,
+            "source_topic": "HTML Structure & Tags"
+        })
+
+        if ".html" in text_lower or "extension" in text_lower:
+            concept_questions.append({
+                "text": "Which standard file extension designates a plain text document containing HTML markup?",
+                "options": [
+                    ".html",
+                    ".doc",
+                    ".rtf",
+                    ".exe"
+                ],
+                "correct": 0,
+                "correct_answer": ".html",
+                "explanation": "The .html file extension informs the operating system and web browsers that the file contains HTML markup code.",
+                "source_material": chapter_name,
+                "source_topic": "HTML File Conventions"
+            })
+
+        if "text" in text_lower or "editor" in text_lower or "kompozer" in text_lower:
+            concept_questions.append({
+                "text": "Why can HTML documents be created and edited using plain text editors?",
+                "options": [
+                    "Because HTML files are fundamentally plain text files containing markup instructions",
+                    "Because text editors compile HTML directly into executable binary code",
+                    "Because HTML requires proprietary word processing file formats to run",
+                    "Because browsers cannot read files saved with markup code"
+                ],
+                "correct": 0,
+                "correct_answer": "Because HTML files are fundamentally plain text files containing markup instructions",
+                "explanation": "HTML files consist of plain text code instructions, allowing them to be created and modified using any standard text editor.",
+                "source_material": chapter_name,
+                "source_topic": "HTML Document Editing"
+            })
+
+    # Check for CSS concepts
+    if "css" in text_lower or "style" in text_lower:
+        concept_questions.append({
+            "text": "What is the main role of Cascading Style Sheets (CSS) in web design?",
+            "options": [
+                "To control the visual presentation, styling, and layout of HTML elements",
+                "To manage backend database connections and SQL transactions",
+                "To handle server-side authentication tokens",
+                "To create low-level operating system drivers"
+            ],
+            "correct": 0,
+            "correct_answer": "To control the visual presentation, styling, and layout of HTML elements",
+            "explanation": "CSS defines styling rules (such as colors, fonts, margins, and flexbox/grid layouts) for visual presentation.",
+            "source_material": chapter_name,
+            "source_topic": "CSS Presentation & Layout"
+        })
+
+    # Check for JavaScript concepts
+    if "javascript" in text_lower or "js" in text_lower or "script" in text_lower:
+        concept_questions.append({
+            "text": "What core functionality does JavaScript add to web pages?",
+            "options": [
+                "Dynamic client-side interactivity, logic, and event handling",
+                "Static text formatting without browser execution",
+                "Database indexing and physical table partitioning",
+                "DNS IP address resolution"
+            ],
+            "correct": 0,
+            "correct_answer": "Dynamic client-side interactivity, logic, and event handling",
+            "explanation": "JavaScript enables interactive user behavior, DOM updates, API fetches, and dynamic logic.",
+            "source_material": chapter_name,
+            "source_topic": "JavaScript Interactivity"
+        })
+
+    # Extract additional conceptual statements from clean PDF text if more questions are needed
+    lines = [l.strip() for l in clean_pdf_text.split(".") if len(l.strip()) > 25]
+    definition_sentences = []
+
+    for line in lines:
+        l_lower = line.lower()
+        if any(keyword in l_lower for keyword in [" is ", " means ", " refers to ", " allows ", " provides ", " defines ", " used for "]):
+            if not any(bad in l_lower for bad in ["index.html", "home.html", "homepage", "for example", "e.g.", ".pdf"]):
+                definition_sentences.append(line.strip())
+
+    idx = 0
+    while len(concept_questions) < count and idx < len(definition_sentences):
+        def_line = definition_sentences[idx]
+        idx += 1
+
+        clean_line = _sanitize_question_text(def_line, valid_filenames)
+        if len(clean_line) < 20:
             continue
-        concept_lines.append(line)
 
-    usable_lines = concept_lines if concept_lines else raw_lines
+        q_title = f"According to the {chapter_name} study material, which assertion regarding core concepts is correct?"
+        correct_opt = clean_line[:120].rstrip(".") + "."
 
-    # Extract key technical phrases / concepts from usable lines
-    key_concepts = []
-    for line in usable_lines:
-        clean = re.sub(r'^[0-9\.\-\*\#\s]+', '', line).strip()
-        if 15 <= len(clean) <= 100 and not clean.endswith(':'):
-            key_concepts.append(clean)
-
-    if not key_concepts:
-        key_concepts = [f"Core Concepts of {chapter_name}"]
-
-    fallback_qs = []
-    seen_texts = set()
-
-    for idx in range(count):
-        concept_item = key_concepts[idx % len(key_concepts)]
-        
-        templates = [
-            (
-                f"In the context of '{chapter_name}', what is the primary technical objective of {concept_item.rstrip('.')}?",
-                f"To establish a standardized, maintainable structural workflow as defined in the chapter material.",
-                f"Directly supported by conceptual guidelines in {filename} regarding {concept_item[:40]}."
-            ),
-            (
-                f"Which statement best describes the fundamental principle governing {concept_item.rstrip('.')} in {chapter_name}?",
-                f"It provides a core mechanism for system organization and reliable execution based on module standards.",
-                f"Grounded in core principles detailed in {filename} for {chapter_name}."
-            ),
-            (
-                f"According to {filename} ({chapter_name}), how is {concept_item.rstrip('.')} conceptually applied?",
-                f"By following established specifications and architectural conventions outlined in the study text.",
-                f"Justified by conceptual specifications in {filename}."
-            ),
-            (
-                f"What core benefit does {concept_item.rstrip('.')} provide according to the {chapter_name} study material?",
-                f"Enhanced clarity, consistency, and adherence to foundational domain standards.",
-                f"Supported by foundational concepts in {filename}."
-            ),
-        ]
-
-        q_title, correct_opt, exp_text = templates[idx % len(templates)]
-
-        if q_title.lower() in seen_texts:
-            q_title = f"{q_title} (Section Concept #{idx + 1})"
-        seen_texts.add(q_title.lower())
-
-        distractors = [
-            f"Bypassing architectural standards and creating unverified local dependencies.",
-            f"Relying on arbitrary student-specific configurations without standard conventions.",
-            f"Suppressing system validation rules without structural grounding."
-        ]
-
-        fallback_qs.append({
+        concept_questions.append({
             "text": q_title,
             "options": [
                 correct_opt,
-                distractors[0],
-                distractors[1],
-                distractors[2]
+                f"Bypassing standardized execution rules omitted from {chapter_name}.",
+                f"Deprecated legacy syntax not supported in {chapter_name}.",
+                f"External framework assumptions absent from {chapter_name}."
             ],
             "correct": 0,
             "correct_answer": correct_opt,
-            "explanation": exp_text,
-            "source_material": filename,
-            "source_topic": f"{chapter_name} Concept #{idx + 1}",
+            "explanation": f"Grounded in conceptual principles of {chapter_name}.",
+            "source_material": chapter_name,
+            "source_topic": f"{chapter_name} Core Concept #{len(concept_questions) + 1}"
         })
 
-    return fallback_qs[:count]
+    # Fill remaining count with domain-tailored concept questions if needed
+    generic_templates = [
+        (
+            f"What is a fundamental requirement for maintaining clean code structure in {chapter_name}?",
+            f"Following consistent syntax rules, clear organization, and modular component separation.",
+            "Enforces readable, maintainable application architecture."
+        ),
+        (
+            f"Which practice ensures reliability and maintainability when working with {chapter_name}?",
+            f"Adhering to standard technical specifications and validating code against conventions.",
+            "Validating code against domain specifications prevents runtime errors."
+        ),
+        (
+            f"What is the primary benefit of using standardized frameworks and tools in {chapter_name}?",
+            f"They offer proven architectural patterns, improve efficiency, and maintain consistency.",
+            "Standard utilities reduce boilerplate code and ensure industry alignment."
+        ),
+        (
+            f"Why is proper error handling and validation important in {chapter_name}?",
+            f"It prevents unexpected failures and ensures system resilience under edge cases.",
+            "Robust validation catches invalid inputs and protects application integrity."
+        ),
+    ]
+
+    tmpl_idx = 0
+    while len(concept_questions) < count:
+        q_text, c_opt, exp = generic_templates[tmpl_idx % len(generic_templates)]
+        tmpl_idx += 1
+        concept_questions.append({
+            "text": q_text,
+            "options": [
+                c_opt,
+                "Ignoring exception handling and omitting error boundaries.",
+                "Hardcoding arbitrary local paths without standard conventions.",
+                "Disabling compiler and validation checks during execution."
+            ],
+            "correct": 0,
+            "correct_answer": c_opt,
+            "explanation": exp,
+            "source_material": chapter_name,
+            "source_topic": f"{chapter_name} Best Practices #{len(concept_questions)}"
+        })
+
+    # Final sanitization pass over all questions to guarantee no tabs or PDF filenames exist
+    final_questions = []
+    for q in concept_questions[:count]:
+        q["text"] = _sanitize_question_text(q["text"], valid_filenames)
+        q["options"] = [_sanitize_question_text(opt, valid_filenames) for opt in q["options"]]
+        q["correct_answer"] = _sanitize_question_text(q["correct_answer"], valid_filenames)
+        q["explanation"] = _sanitize_question_text(q["explanation"], valid_filenames)
+        q["source_material"] = chapter_name
+        final_questions.append(q)
+
+    return final_questions
 
 
 def generate_chapter_quiz_questions(
@@ -457,10 +591,14 @@ def generate_chapter_quiz_questions(
     """
     import hashlib
     content_hash = hashlib.md5(f"{course_name}_{chapter_name}_{pdf_content[:2000]}_{count}".encode("utf-8")).hexdigest()
-    cache_key = f"chap_quiz_cache_v3_{content_hash}"
+    cache_key = f"chap_quiz_cache_v4_{content_hash}"
     cached = cache.get(cache_key)
     if cached and isinstance(cached, list) and len(cached) >= min(count, 5):
-        valid_cached = [q for q in cached if not _is_subjective_or_variable_question(q.get("text", ""))]
+        valid_cached = []
+        for q in cached:
+            text = _sanitize_question_text(q.get("text", ""))
+            if not _is_subjective_or_variable_question(text):
+                valid_cached.append(q)
         if len(valid_cached) >= min(count, 5):
             logger.info(f"[QUIZ_SERVICE] CACHE HIT for chapter: {chapter_name}")
             return valid_cached[:count]
@@ -477,7 +615,6 @@ def generate_chapter_quiz_questions(
 
     models = openrouter_service.get_models_for_feature("quiz")
     valid_filenames = [m["filename"] for m in materials_list] if (materials_list and isinstance(materials_list, list)) else []
-    default_material_name = valid_filenames[0] if valid_filenames else "Chapter Material PDF"
 
     # Fast primary model attempt to prevent multi-model fallback timeout delays
     primary_models = models[:1] if models else ["google/gemini-2.0-flash-01"]
@@ -511,13 +648,12 @@ def generate_chapter_quiz_questions(
                 q_text = item.get("text") or item.get("question") or item.get("question_text")
                 opts = item.get("options") or []
                 exp = item.get("explanation") or "Answer justified directly by chapter study material."
-                src_mat = item.get("source_material") or default_material_name
                 src_top = item.get("source_topic") or f"{chapter_name} Concepts"
 
                 if not q_text or not isinstance(opts, list) or len(opts) != 4:
                     continue
 
-                clean_q_text = str(q_text).strip()
+                clean_q_text = _sanitize_question_text(str(q_text), valid_filenames)
                 if not clean_q_text or clean_q_text.lower() in seen_texts:
                     continue
 
@@ -525,7 +661,7 @@ def generate_chapter_quiz_questions(
                     logger.warning(f"[QUIZ] Rejecting question testing subjective/variable details: '{clean_q_text}'")
                     continue
 
-                clean_opts = [str(o).strip() for o in opts if str(o).strip()]
+                clean_opts = [_sanitize_question_text(str(o), valid_filenames) for o in opts if str(o).strip()]
                 if len(clean_opts) != 4 or len(set(clean_opts)) < 2:
                     continue
 
@@ -542,23 +678,14 @@ def generate_chapter_quiz_questions(
                     final_correct_idx = 0
                     final_correct_str = clean_opts[0]
 
-                matched_mat_name = str(src_mat).strip()
-                if valid_filenames:
-                    for fname in valid_filenames:
-                        if fname.lower() in matched_mat_name.lower() or matched_mat_name.lower() in fname.lower():
-                            matched_mat_name = fname
-                            break
-                    else:
-                        matched_mat_name = default_material_name
-
                 seen_texts.add(clean_q_text.lower())
                 validated_questions.append({
                     "text": clean_q_text,
                     "options": clean_opts,
                     "correct": final_correct_idx,
                     "correct_answer": final_correct_str,
-                    "explanation": str(exp).strip(),
-                    "source_material": matched_mat_name,
+                    "explanation": _sanitize_question_text(str(exp), valid_filenames),
+                    "source_material": chapter_name,
                     "source_topic": str(src_top).strip(),
                 })
 

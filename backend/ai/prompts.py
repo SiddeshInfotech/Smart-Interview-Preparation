@@ -468,8 +468,9 @@ CRITICAL CONCEPTUAL GENERATION MANDATES:
      * A developer can set any file name or web server default route they want (e.g., index.html, home.html, default.html, app.py), so asking for arbitrary or configurable default file names is INVALID.
    - INSTEAD, TEST THE UNDERLYING CONCEPT: Ask about universal technical principles, standards, or mechanisms (e.g., "What is the standard purpose of a web server root index document by convention?").
 
-3. UNIVERSALLY DEFINITIVE ANSWERS:
+3. UNIVERSALLY DEFINITIVE ANSWERS & NO PDF FILENAME MENTIONS:
    - The correct answer MUST be an objective, universally true technical concept grounded in the provided material that applies to all students equally.
+   - DO NOT include raw PDF filenames (e.g. '01_Intro.pdf', 'document.pdf') in the question text, options, or explanations. Refer to the chapter topic ('{chapter_name}') or course name ('{course_name}') instead.
    - Avoid ambiguous choices or questions where multiple options could be valid depending on developer preference.
 
 IMPORTANT SOURCE RULE:
@@ -477,6 +478,7 @@ The supplied course material is the ONLY authoritative source for this quiz.
 Generate questions ONLY on concepts explicitly explained in the supplied material.
 
 DO NOT:
+- mention raw PDF file names in question text, options, or explanations
 - use outside knowledge
 - rely on the chapter title alone
 - invent facts
