@@ -233,7 +233,6 @@ const Quiz = () => {
                 <h1>
                   <span className="quiz-gradient-title">Personalized Preparation Arena</span>
                 </h1>
-                <p>AI-driven interview assessment dynamically tailored to your profile context.</p>
                 <div className="quiz-header-line" />
               </div>
 
