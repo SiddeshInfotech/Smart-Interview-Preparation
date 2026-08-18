@@ -389,9 +389,9 @@ def get_fallback_chapter_quiz_questions(
     valid_filenames = [m.get("filename", "") for m in materials_list] if (materials_list and isinstance(materials_list, list)) else []
 
     all_candidate_questions = [
-        # HTML & Web Structure Concepts
+        # 1. HTML Purpose
         {
-            "tags": ["html", "hypertext", "markup", "intro", "web"],
+            "tags": ["html", "hypertext", "markup", "intro", "web", "css"],
             "text": "What is the primary technical purpose of HyperText Markup Language (HTML)?",
             "options": [
                 "To define the fundamental structure, semantic elements, and content layout of web documents",
@@ -404,8 +404,9 @@ def get_fallback_chapter_quiz_questions(
             "explanation": "HTML provides the core markup structure that structures headers, paragraphs, lists, links, and media on web pages.",
             "source_topic": "HTML Structure & Semantics"
         },
+        # 2. DOM & Browser Parsing
         {
-            "tags": ["html", "browser", "intro", "display", "web"],
+            "tags": ["html", "browser", "intro", "display", "web", "dom", "css"],
             "text": "How do web browsers interpret HTML markup tags in a document?",
             "options": [
                 "Browsers parse HTML tags to construct a DOM tree and render structural page elements accordingly",
@@ -418,8 +419,9 @@ def get_fallback_chapter_quiz_questions(
             "explanation": "Browsers process HTML tags into a Document Object Model (DOM) tree to render formatted text, headers, and visual components.",
             "source_topic": "Browser Rendering & DOM Construction"
         },
+        # 3. HTML File Extension
         {
-            "tags": ["html", "extension", "file", "text", "intro"],
+            "tags": ["html", "extension", "file", "text", "intro", "css"],
             "text": "Which standard file extension signifies a plain text document containing HTML markup code?",
             "options": [
                 ".html",
@@ -432,8 +434,9 @@ def get_fallback_chapter_quiz_questions(
             "explanation": "The .html file extension identifies plain text files formatted with HTML tags so web browsers and servers recognize them.",
             "source_topic": "HTML Document Format"
         },
+        # 4. Plain Text Compatibility
         {
-            "tags": ["html", "editor", "text", "intro", "web"],
+            "tags": ["html", "editor", "text", "intro", "web", "css"],
             "text": "Why are HTML documents created as plain text files rather than proprietary binary document formats?",
             "options": [
                 "Plain text allows universal cross-platform compatibility, easy editing, and open parsing by all web browsers",
@@ -446,8 +449,9 @@ def get_fallback_chapter_quiz_questions(
             "explanation": "HTML is human-readable plain text, enabling developers on any operating system using any text editor to build compatible web pages.",
             "source_topic": "Cross-Platform Standards"
         },
+        # 5. Semantic HTML
         {
-            "tags": ["html", "element", "tag", "header", "intro"],
+            "tags": ["html", "element", "tag", "header", "intro", "semantic", "css"],
             "text": "In web document architecture, what distinguishes semantic HTML tags from non-semantic tags?",
             "options": [
                 "Semantic tags clearly describe their structural meaning and content role to browsers and search engines",
@@ -460,24 +464,54 @@ def get_fallback_chapter_quiz_questions(
             "explanation": "Semantic HTML tags (like <header>, <article>, <nav>) explicitly convey content meaning to accessibility tools, browsers, and crawlers.",
             "source_topic": "Semantic HTML"
         },
-
-        # CSS & Styling Concepts
+        # 6. HTML Hyperlinks (Anchor Tag)
         {
-            "tags": ["css", "style", "presentation", "layout"],
+            "tags": ["html", "link", "anchor", "href", "intro", "web", "css"],
+            "text": "What is the primary function of the HTML anchor (<a>) tag in web navigation?",
+            "options": [
+                "To create hyperlinks connecting web documents, page sections, or external resources via the href attribute",
+                "To embed executable database scripts directly inside paragraph text",
+                "To configure server-side routing tables on web hosting hardware",
+                "To apply background color gradients to page containers"
+            ],
+            "correct": 0,
+            "correct_answer": "To create hyperlinks connecting web documents, page sections, or external resources via the href attribute",
+            "explanation": "The <a> tag with its href attribute is the core HTML element for linking documents and enabling web navigation.",
+            "source_topic": "HTML Navigation & Hyperlinks"
+        },
+        # 7. HTML Forms & User Input
+        {
+            "tags": ["html", "form", "input", "submit", "intro", "web", "css"],
+            "text": "What role do HTML <form> elements and <input> controls perform in web development?",
+            "options": [
+                "They collect user inputs and structure data for submission to web servers",
+                "They manage physical memory allocation on the user's graphics card",
+                "They automatically encrypt local hard drive files",
+                "They compile HTML markup into binary executables"
+            ],
+            "correct": 0,
+            "correct_answer": "They collect user inputs and structure data for submission to web servers",
+            "explanation": "HTML form elements provide interactive controls (text fields, checkboxes, buttons) for gathering user input.",
+            "source_topic": "HTML Form Controls"
+        },
+        # 8. CSS Role & Presentation
+        {
+            "tags": ["css", "style", "presentation", "layout", "html", "intro", "web"],
             "text": "What is the primary role of Cascading Style Sheets (CSS) in web design?",
             "options": [
-                "To control visual styling, typography, color palettes, and responsive page layouts",
+                "To control visual styling, typography, color palettes, spacing, and responsive page layouts",
                 "To execute database transactions and manage table relationships",
                 "To resolve domain name system (DNS) IP lookups",
                 "To handle user session state on the backend web server"
             ],
             "correct": 0,
-            "correct_answer": "To control visual styling, typography, color palettes, and responsive page layouts",
+            "correct_answer": "To control visual styling, typography, color palettes, spacing, and responsive page layouts",
             "explanation": "CSS separates visual styling rules from structural HTML content, giving developers full control over page presentation.",
             "source_topic": "CSS Presentation Layer"
         },
+        # 9. CSS Box Model
         {
-            "tags": ["css", "box", "model", "margin", "padding"],
+            "tags": ["css", "box", "model", "margin", "padding", "border", "html", "intro", "web"],
             "text": "In CSS layout principles, what components constitute the CSS Box Model?",
             "options": [
                 "Content, Padding, Border, and Margin",
@@ -490,8 +524,23 @@ def get_fallback_chapter_quiz_questions(
             "explanation": "Every element on a web page is wrapped in a box model consisting of the inner content, padding around content, border, and outer margin.",
             "source_topic": "CSS Box Model"
         },
+        # 10. CSS Selectors & Rules
+        {
+            "tags": ["css", "selector", "class", "id", "style", "html", "intro", "web"],
+            "text": "How do CSS selectors target specific HTML elements to apply visual styling rules?",
+            "options": [
+                "Selectors match HTML elements by element name, class name (.class), or ID (#id)",
+                "Selectors query backend relational database tables to retrieve inline styles",
+                "Selectors modify browser binary files on the operating system file system",
+                "Selectors compile HTML tags into C++ header files"
+            ],
+            "correct": 0,
+            "correct_answer": "Selectors match HTML elements by element name, class name (.class), or ID (#id)",
+            "explanation": "CSS selectors allow developers to target specific HTML elements by tag, class, or ID to apply CSS styling properties.",
+            "source_topic": "CSS Selectors & Rules"
+        },
 
-        # JavaScript & Logic Concepts
+        # JavaScript & Client Logic Concepts
         {
             "tags": ["javascript", "js", "script", "interactivity", "logic"],
             "text": "What fundamental functionality does JavaScript introduce to client-side web development?",
@@ -521,50 +570,6 @@ def get_fallback_chapter_quiz_questions(
             "correct_answer": "It acts as a client that sends HTTP requests to servers and renders received markup for the user",
             "explanation": "Web browsers send requests (e.g. GET) to web servers, process returned HTML/CSS/JS resources, and display the rendered page to the user.",
             "source_topic": "Client-Server Web Model"
-        },
-        {
-            "tags": ["web", "architecture", "convention", "standard"],
-            "text": "Why are standardized protocols and web specifications essential in modern software engineering?",
-            "options": [
-                "They ensure interoperability across different browsers, operating systems, and device platforms",
-                "They prevent developers from choosing custom color palettes",
-                "They mandate that all web applications run on identical physical hardware",
-                "They eliminate the need for frontend user interface design"
-            ],
-            "correct": 0,
-            "correct_answer": "They ensure interoperability across different browsers, operating systems, and device platforms",
-            "explanation": "Standards established by organizations like W3C ensure web content behaves predictably across diverse client software and hardware.",
-            "source_topic": "Web Standards & Interoperability"
-        },
-
-        # Modular Software & Best Practices
-        {
-            "tags": ["code", "structure", "module", "clean", "architecture"],
-            "text": "What is the primary technical objective of applying modular separation of concerns in software architecture?",
-            "options": [
-                "To decouple independent responsibilities, improving code maintainability, reusability, and testing",
-                "To increase source code file size and maximize memory footprint",
-                "To restrict access to public web pages",
-                "To enforce synchronous single-threaded execution across all components"
-            ],
-            "correct": 0,
-            "correct_answer": "To decouple independent responsibilities, improving code maintainability, reusability, and testing",
-            "explanation": "Separation of concerns divides a program into distinct sections addressing specific responsibilities, making systems easier to maintain.",
-            "source_topic": "Software Architecture Principles"
-        },
-        {
-            "tags": ["validation", "error", "testing", "quality"],
-            "text": "Why is rigorous input validation and error handling critical in application development?",
-            "options": [
-                "It prevents system crashes, guards against security vulnerabilities, and maintains state integrity",
-                "It speeds up physical CPU clock frequency",
-                "It automatically converts plain text files into database tables",
-                "It bypasses operating system security permissions"
-            ],
-            "correct": 0,
-            "correct_answer": "It prevents system crashes, guards against security vulnerabilities, and maintains state integrity",
-            "explanation": "Proper validation ensures applications fail gracefully and securely when encountering unexpected or malformed inputs.",
-            "source_topic": "System Reliability & Security"
         }
     ]
 
@@ -616,7 +621,7 @@ def generate_chapter_quiz_questions(
     """
     import hashlib
     content_hash = hashlib.md5(f"{course_name}_{chapter_name}_{pdf_content[:2000]}_{count}".encode("utf-8")).hexdigest()
-    cache_key = f"chap_quiz_cache_v5_{content_hash}"
+    cache_key = f"chap_quiz_cache_v6_{content_hash}"
     cached = cache.get(cache_key)
     if cached and isinstance(cached, list) and len(cached) >= min(count, 5):
         valid_cached = []
