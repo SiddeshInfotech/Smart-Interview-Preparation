@@ -1440,10 +1440,6 @@ body.dark-theme .meeting-badge.pending {
   box-shadow: 0 8px 20px -4px rgba(59, 130, 246, 0.15);
 }
 
-.unscheduled-card--matching {
-  border-color: #10b981;
-  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
-}
 
 .unscheduled-card__header {
   display: flex;
@@ -1554,5 +1550,104 @@ body.dark-theme .meeting-badge.pending {
   font-size: 16px;
   font-weight: 700;
   color: #1e293b;
+}
+
+.unscheduled-empty-state {
+  padding: 28px 16px;
+  text-align: center;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+  margin-top: 8px;
+}
+
+.unscheduled-empty-state p {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   UNSCHEDULED INTERVIEWS & EMPTY STATE DARK MODE OVERRIDES
+   ========================================================================== */
+[data-theme="dark"] .unscheduled-empty-state,
+body.dark-theme .unscheduled-empty-state {
+  background: #1e293b !important;
+  border: 1px dashed #475569 !important;
+}
+
+[data-theme="dark"] .unscheduled-empty-state p,
+body.dark-theme .unscheduled-empty-state p {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .unscheduled-header h3,
+body.dark-theme .unscheduled-header h3 {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .unscheduled-header .subtitle,
+body.dark-theme .unscheduled-header .subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .unscheduled-card,
+body.dark-theme .unscheduled-card {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .interviewer-name,
+body.dark-theme .interviewer-name {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .interviewer-designation,
+body.dark-theme .interviewer-designation {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .slot-timing-details,
+body.dark-theme .slot-timing-details {
+  background: #0f172a !important;
+}
+
+[data-theme="dark"] .timing-item,
+body.dark-theme .timing-item {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .badge--open,
+body.dark-theme .badge--open {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
+  border-color: #475569 !important;
+}
+
+[data-theme="dark"] .badge--requested,
+body.dark-theme .badge--requested {
+  background: #78350f !important;
+  color: #fde68a !important;
+  border-color: #d97706 !important;
+}
+
+[data-theme="dark"] .domain-tag,
+body.dark-theme .domain-tag {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+  border-color: #2563eb !important;
+}
+
+[data-theme="dark"] .matching-badge,
+body.dark-theme .matching-badge {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+  border-color: #047857 !important;
+}
+
+[data-theme="dark"] .form-header-badge h3,
+body.dark-theme .form-header-badge h3 {
+  color: #f8fafc !important;
 }
 

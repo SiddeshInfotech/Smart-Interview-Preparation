@@ -406,52 +406,23 @@ function UnscheduledInterviewsList({ onApplySuccess }) {
 
   return (
     <div className="card unscheduled-section">
-      <div className="unscheduled-header">
-        <div>
-          <h3>Available Open Interviews</h3>
-          <p className="subtitle">
-            Browse unscheduled interview slots published by interviewers and submit your proposal.
-          </p>
-        </div>
-        {candidateDomain && (
-          <span className="active-domain-pill">
-            <Sparkles size={14} /> Active Domain: <strong>{candidateDomain}</strong>
-          </span>
-        )}
-      </div>
-
       {loading ? (
         <div className="empty">Loading available interview slots...</div>
       ) : slots.length === 0 ? (
-        <div className="empty">
-          <CalendarClock size={28} style={{ color: "#9ca3af", marginBottom: "8px" }} />
-          <p>No unscheduled interview slots are currently open for application.</p>
-          <span style={{ fontSize: "12px", color: "#6b7280" }}>
-            Interviewers publish new slots regularly. Please check back soon!
-          </span>
+        <div className="unscheduled-empty-state">
+          <p>No available interviews at the moment.</p>
         </div>
       ) : (
         <div className="unscheduled-grid">
           {slots.map((slot) => {
             const schedId = slot.schedule_id || slot.id;
             const isApplying = applyingId === schedId;
-            const domName = slot.domain_name || slot.domain || "General";
-            const isMatchingDomain = candidateDomain && domName.toLowerCase() === candidateDomain.toLowerCase();
 
             return (
               <div
                 key={schedId}
-                className={`unscheduled-card ${isMatchingDomain ? "unscheduled-card--matching" : ""}`}
+                className="unscheduled-card"
               >
-                <div className="unscheduled-card__header">
-                  <span className="domain-tag">
-                    <Briefcase size={12} /> {domName}
-                  </span>
-                  {isMatchingDomain && (
-                    <span className="matching-badge">🎯 Matches Your Domain</span>
-                  )}
-                </div>
-
                 <div className="unscheduled-card__body">
                   <div className="interviewer-profile-box">
                     <div className="interviewer-avatar">
