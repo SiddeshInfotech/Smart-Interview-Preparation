@@ -306,7 +306,7 @@ def _sanitize_question_text(text: str, valid_filenames: list = None) -> str:
     """
     Sanitize question text, options, and explanations:
     1. Replace all tabs (\t) and multiple consecutive spaces with a single space.
-    2. Remove any references to PDF filenames (e.g. '01_Intro.pdf', 'chapter1.pdf', etc.).
+    2. Completely remove any references to PDF filenames, '.pdf', 'in pdf', etc.
     """
     if not text or not isinstance(text, str):
         return ""
@@ -314,14 +314,20 @@ def _sanitize_question_text(text: str, valid_filenames: list = None) -> str:
     # Replace tabs and normalize whitespace
     s = text.replace("\t", " ")
 
-    # Remove specific filenames if provided
+    # Remove specific filenames if provided (e.g. '01_Intro.pdf', '01_Intro')
     if valid_filenames:
         for fname in valid_filenames:
             if fname and fname.strip():
-                s = re.sub(re.escape(fname.strip()), "", s, flags=re.IGNORECASE)
+                clean_fname = fname.strip()
+                s = re.sub(re.escape(clean_fname), "", s, flags=re.IGNORECASE)
+                # Remove filename without extension
+                base_name = clean_fname.rsplit(".", 1)[0]
+                if base_name and len(base_name) >= 3:
+                    s = re.sub(re.escape(base_name), "", s, flags=re.IGNORECASE)
 
-    # Remove generic .pdf filenames e.g. "01_Intro.pdf" or "document.pdf"
+    # Remove generic .pdf filenames e.g. "01_Intro.pdf", "document.pdf", "file.pdf"
     s = re.sub(r"\b[\w\-\_\.]+\.pdf\b", "", s, flags=re.IGNORECASE)
+    s = re.sub(r"\bpdf\b", "", s, flags=re.IGNORECASE)
 
     # Clean up residual empty quotes, parens, or excess spaces
     s = re.sub(r"['\"]{2,}", "", s)
@@ -373,208 +379,227 @@ def get_fallback_chapter_quiz_questions(
     materials_list: list = None,
 ) -> List[Dict[str, Any]]:
     """
-    Generates fallback chapter quiz questions derived strictly from core concepts
-    explained in the PDF content without mentioning PDF file names, without tab characters (\t),
-    and without sentence-splicing fragments. Ensures fixed, objective correct answers.
+    Generates fallback chapter quiz questions testing fundamental core technical concepts
+    derived from the study domain without verbatim sentence cuts, without tab characters (\t),
+    without raw PDF filenames, and without repeating questions.
     """
-    # Clean PDF content: replace tabs and normalize whitespace
     clean_pdf_text = pdf_content.replace("\t", " ")
     clean_pdf_text = re.sub(r"\s+", " ", clean_pdf_text).strip()
     text_lower = clean_pdf_text.lower()
+    valid_filenames = [m.get("filename", "") for m in materials_list] if (materials_list and isinstance(materials_list, list)) else []
 
-    valid_filenames = [m["filename"] for m in materials_list] if (materials_list and isinstance(materials_list, list)) else []
-
-    concept_questions = []
-
-    # Check for HTML core concepts in PDF text
-    if "html" in text_lower or "hypertext" in text_lower:
-        concept_questions.append({
-            "text": "What does the acronym HTML stand for in web development?",
+    all_candidate_questions = [
+        # HTML & Web Structure Concepts
+        {
+            "tags": ["html", "hypertext", "markup", "intro", "web"],
+            "text": "What is the primary technical purpose of HyperText Markup Language (HTML)?",
             "options": [
-                "HyperText Markup Language",
-                "High Technical Markup Logic",
-                "Hyperlink Transfer Protocol Language",
-                "Home Tool Management Language"
+                "To define the fundamental structure, semantic elements, and content layout of web documents",
+                "To manage server-side relational database connections and transactions",
+                "To compile binary code directly for operating system execution",
+                "To encrypt network socket packets between client and server"
             ],
             "correct": 0,
-            "correct_answer": "HyperText Markup Language",
-            "explanation": "HTML stands for HyperText Markup Language, the standard markup language used to structure web pages.",
-            "source_material": chapter_name,
-            "source_topic": "HTML Fundamentals"
-        })
-
-        concept_questions.append({
-            "text": "What is the primary function of HTML markup tags in a web document?",
+            "correct_answer": "To define the fundamental structure, semantic elements, and content layout of web documents",
+            "explanation": "HTML provides the core markup structure that structures headers, paragraphs, lists, links, and media on web pages.",
+            "source_topic": "HTML Structure & Semantics"
+        },
+        {
+            "tags": ["html", "browser", "intro", "display", "web"],
+            "text": "How do web browsers interpret HTML markup tags in a document?",
             "options": [
-                "To instruct the web browser how to structure and display content",
-                "To execute database queries directly on the web server",
-                "To encrypt network traffic between client and server",
-                "To compile binary machine code for operating system execution"
+                "Browsers parse HTML tags to construct a DOM tree and render structural page elements accordingly",
+                "Browsers convert HTML tags directly into SQL queries executed against a remote database",
+                "Browsers bypass HTML tags and rely exclusively on operating system font defaults",
+                "Browsers execute HTML tags as compiled assembly instructions"
             ],
             "correct": 0,
-            "correct_answer": "To instruct the web browser how to structure and display content",
-            "explanation": "HTML tags provide structural instructions that tell web browsers how to format and render elements such as headers, paragraphs, and links.",
-            "source_material": chapter_name,
-            "source_topic": "HTML Structure & Tags"
-        })
-
-        if ".html" in text_lower or "extension" in text_lower:
-            concept_questions.append({
-                "text": "Which standard file extension designates a plain text document containing HTML markup?",
-                "options": [
-                    ".html",
-                    ".doc",
-                    ".rtf",
-                    ".exe"
-                ],
-                "correct": 0,
-                "correct_answer": ".html",
-                "explanation": "The .html file extension informs the operating system and web browsers that the file contains HTML markup code.",
-                "source_material": chapter_name,
-                "source_topic": "HTML File Conventions"
-            })
-
-        if "text" in text_lower or "editor" in text_lower or "kompozer" in text_lower:
-            concept_questions.append({
-                "text": "Why can HTML documents be created and edited using plain text editors?",
-                "options": [
-                    "Because HTML files are fundamentally plain text files containing markup instructions",
-                    "Because text editors compile HTML directly into executable binary code",
-                    "Because HTML requires proprietary word processing file formats to run",
-                    "Because browsers cannot read files saved with markup code"
-                ],
-                "correct": 0,
-                "correct_answer": "Because HTML files are fundamentally plain text files containing markup instructions",
-                "explanation": "HTML files consist of plain text code instructions, allowing them to be created and modified using any standard text editor.",
-                "source_material": chapter_name,
-                "source_topic": "HTML Document Editing"
-            })
-
-    # Check for CSS concepts
-    if "css" in text_lower or "style" in text_lower:
-        concept_questions.append({
-            "text": "What is the main role of Cascading Style Sheets (CSS) in web design?",
+            "correct_answer": "Browsers parse HTML tags to construct a DOM tree and render structural page elements accordingly",
+            "explanation": "Browsers process HTML tags into a Document Object Model (DOM) tree to render formatted text, headers, and visual components.",
+            "source_topic": "Browser Rendering & DOM Construction"
+        },
+        {
+            "tags": ["html", "extension", "file", "text", "intro"],
+            "text": "Which standard file extension signifies a plain text document containing HTML markup code?",
             "options": [
-                "To control the visual presentation, styling, and layout of HTML elements",
-                "To manage backend database connections and SQL transactions",
-                "To handle server-side authentication tokens",
-                "To create low-level operating system drivers"
+                ".html",
+                ".doc",
+                ".rtf",
+                ".exe"
             ],
             "correct": 0,
-            "correct_answer": "To control the visual presentation, styling, and layout of HTML elements",
-            "explanation": "CSS defines styling rules (such as colors, fonts, margins, and flexbox/grid layouts) for visual presentation.",
-            "source_material": chapter_name,
-            "source_topic": "CSS Presentation & Layout"
-        })
-
-    # Check for JavaScript concepts
-    if "javascript" in text_lower or "js" in text_lower or "script" in text_lower:
-        concept_questions.append({
-            "text": "What core functionality does JavaScript add to web pages?",
+            "correct_answer": ".html",
+            "explanation": "The .html file extension identifies plain text files formatted with HTML tags so web browsers and servers recognize them.",
+            "source_topic": "HTML Document Format"
+        },
+        {
+            "tags": ["html", "editor", "text", "intro", "web"],
+            "text": "Why are HTML documents created as plain text files rather than proprietary binary document formats?",
             "options": [
-                "Dynamic client-side interactivity, logic, and event handling",
-                "Static text formatting without browser execution",
-                "Database indexing and physical table partitioning",
-                "DNS IP address resolution"
+                "Plain text allows universal cross-platform compatibility, easy editing, and open parsing by all web browsers",
+                "Plain text prevents web browsers from inspecting source code",
+                "Binary document formats are mandatory for rendering basic text headers",
+                "Text editors automatically compile plain text into server-side machine code"
             ],
             "correct": 0,
-            "correct_answer": "Dynamic client-side interactivity, logic, and event handling",
-            "explanation": "JavaScript enables interactive user behavior, DOM updates, API fetches, and dynamic logic.",
-            "source_material": chapter_name,
-            "source_topic": "JavaScript Interactivity"
-        })
-
-    # Extract additional conceptual statements from clean PDF text if more questions are needed
-    lines = [l.strip() for l in clean_pdf_text.split(".") if len(l.strip()) > 25]
-    definition_sentences = []
-
-    for line in lines:
-        l_lower = line.lower()
-        if any(keyword in l_lower for keyword in [" is ", " means ", " refers to ", " allows ", " provides ", " defines ", " used for "]):
-            if not any(bad in l_lower for bad in ["index.html", "home.html", "homepage", "for example", "e.g.", ".pdf"]):
-                definition_sentences.append(line.strip())
-
-    idx = 0
-    while len(concept_questions) < count and idx < len(definition_sentences):
-        def_line = definition_sentences[idx]
-        idx += 1
-
-        clean_line = _sanitize_question_text(def_line, valid_filenames)
-        if len(clean_line) < 20:
-            continue
-
-        q_title = f"According to the {chapter_name} study material, which assertion regarding core concepts is correct?"
-        correct_opt = clean_line[:120].rstrip(".") + "."
-
-        concept_questions.append({
-            "text": q_title,
+            "correct_answer": "Plain text allows universal cross-platform compatibility, easy editing, and open parsing by all web browsers",
+            "explanation": "HTML is human-readable plain text, enabling developers on any operating system using any text editor to build compatible web pages.",
+            "source_topic": "Cross-Platform Standards"
+        },
+        {
+            "tags": ["html", "element", "tag", "header", "intro"],
+            "text": "In web document architecture, what distinguishes semantic HTML tags from non-semantic tags?",
             "options": [
-                correct_opt,
-                f"Bypassing standardized execution rules omitted from {chapter_name}.",
-                f"Deprecated legacy syntax not supported in {chapter_name}.",
-                f"External framework assumptions absent from {chapter_name}."
+                "Semantic tags clearly describe their structural meaning and content role to browsers and search engines",
+                "Semantic tags execute backend server scripts while non-semantic tags perform styling",
+                "Semantic tags can only be processed by proprietary word processors",
+                "Semantic tags bypass the Document Object Model completely"
             ],
             "correct": 0,
-            "correct_answer": correct_opt,
-            "explanation": f"Grounded in conceptual principles of {chapter_name}.",
-            "source_material": chapter_name,
-            "source_topic": f"{chapter_name} Core Concept #{len(concept_questions) + 1}"
-        })
+            "correct_answer": "Semantic tags clearly describe their structural meaning and content role to browsers and search engines",
+            "explanation": "Semantic HTML tags (like <header>, <article>, <nav>) explicitly convey content meaning to accessibility tools, browsers, and crawlers.",
+            "source_topic": "Semantic HTML"
+        },
 
-    # Fill remaining count with domain-tailored concept questions if needed
-    generic_templates = [
-        (
-            f"What is a fundamental requirement for maintaining clean code structure in {chapter_name}?",
-            f"Following consistent syntax rules, clear organization, and modular component separation.",
-            "Enforces readable, maintainable application architecture."
-        ),
-        (
-            f"Which practice ensures reliability and maintainability when working with {chapter_name}?",
-            f"Adhering to standard technical specifications and validating code against conventions.",
-            "Validating code against domain specifications prevents runtime errors."
-        ),
-        (
-            f"What is the primary benefit of using standardized frameworks and tools in {chapter_name}?",
-            f"They offer proven architectural patterns, improve efficiency, and maintain consistency.",
-            "Standard utilities reduce boilerplate code and ensure industry alignment."
-        ),
-        (
-            f"Why is proper error handling and validation important in {chapter_name}?",
-            f"It prevents unexpected failures and ensures system resilience under edge cases.",
-            "Robust validation catches invalid inputs and protects application integrity."
-        ),
+        # CSS & Styling Concepts
+        {
+            "tags": ["css", "style", "presentation", "layout"],
+            "text": "What is the primary role of Cascading Style Sheets (CSS) in web design?",
+            "options": [
+                "To control visual styling, typography, color palettes, and responsive page layouts",
+                "To execute database transactions and manage table relationships",
+                "To resolve domain name system (DNS) IP lookups",
+                "To handle user session state on the backend web server"
+            ],
+            "correct": 0,
+            "correct_answer": "To control visual styling, typography, color palettes, and responsive page layouts",
+            "explanation": "CSS separates visual styling rules from structural HTML content, giving developers full control over page presentation.",
+            "source_topic": "CSS Presentation Layer"
+        },
+        {
+            "tags": ["css", "box", "model", "margin", "padding"],
+            "text": "In CSS layout principles, what components constitute the CSS Box Model?",
+            "options": [
+                "Content, Padding, Border, and Margin",
+                "Header, Nav, Section, and Footer",
+                "HTML, CSS, JavaScript, and HTTP",
+                "GET, POST, PUT, and DELETE"
+            ],
+            "correct": 0,
+            "correct_answer": "Content, Padding, Border, and Margin",
+            "explanation": "Every element on a web page is wrapped in a box model consisting of the inner content, padding around content, border, and outer margin.",
+            "source_topic": "CSS Box Model"
+        },
+
+        # JavaScript & Logic Concepts
+        {
+            "tags": ["javascript", "js", "script", "interactivity", "logic"],
+            "text": "What fundamental functionality does JavaScript introduce to client-side web development?",
+            "options": [
+                "Dynamic DOM manipulation, user event handling, and client-side application logic",
+                "Static text formatting without browser runtime execution",
+                "Low-level memory management for hardware graphics cards",
+                "Server-side operating system kernel configuration"
+            ],
+            "correct": 0,
+            "correct_answer": "Dynamic DOM manipulation, user event handling, and client-side application logic",
+            "explanation": "JavaScript adds interactive behavior, enabling web pages to respond dynamically to user input, update DOM elements, and communicate with APIs.",
+            "source_topic": "JavaScript Client Logic"
+        },
+
+        # Web Architecture & HTTP Concepts
+        {
+            "tags": ["http", "web", "browser", "server", "request"],
+            "text": "In the standard client-server model of the Web, what role does a web browser perform?",
+            "options": [
+                "It acts as a client that sends HTTP requests to servers and renders received markup for the user",
+                "It acts as a backend database engine storing user records",
+                "It acts as a network router routing packets across physical internet backbones",
+                "It acts as a compiler translating source code into physical silicon instructions"
+            ],
+            "correct": 0,
+            "correct_answer": "It acts as a client that sends HTTP requests to servers and renders received markup for the user",
+            "explanation": "Web browsers send requests (e.g. GET) to web servers, process returned HTML/CSS/JS resources, and display the rendered page to the user.",
+            "source_topic": "Client-Server Web Model"
+        },
+        {
+            "tags": ["web", "architecture", "convention", "standard"],
+            "text": "Why are standardized protocols and web specifications essential in modern software engineering?",
+            "options": [
+                "They ensure interoperability across different browsers, operating systems, and device platforms",
+                "They prevent developers from choosing custom color palettes",
+                "They mandate that all web applications run on identical physical hardware",
+                "They eliminate the need for frontend user interface design"
+            ],
+            "correct": 0,
+            "correct_answer": "They ensure interoperability across different browsers, operating systems, and device platforms",
+            "explanation": "Standards established by organizations like W3C ensure web content behaves predictably across diverse client software and hardware.",
+            "source_topic": "Web Standards & Interoperability"
+        },
+
+        # Modular Software & Best Practices
+        {
+            "tags": ["code", "structure", "module", "clean", "architecture"],
+            "text": "What is the primary technical objective of applying modular separation of concerns in software architecture?",
+            "options": [
+                "To decouple independent responsibilities, improving code maintainability, reusability, and testing",
+                "To increase source code file size and maximize memory footprint",
+                "To restrict access to public web pages",
+                "To enforce synchronous single-threaded execution across all components"
+            ],
+            "correct": 0,
+            "correct_answer": "To decouple independent responsibilities, improving code maintainability, reusability, and testing",
+            "explanation": "Separation of concerns divides a program into distinct sections addressing specific responsibilities, making systems easier to maintain.",
+            "source_topic": "Software Architecture Principles"
+        },
+        {
+            "tags": ["validation", "error", "testing", "quality"],
+            "text": "Why is rigorous input validation and error handling critical in application development?",
+            "options": [
+                "It prevents system crashes, guards against security vulnerabilities, and maintains state integrity",
+                "It speeds up physical CPU clock frequency",
+                "It automatically converts plain text files into database tables",
+                "It bypasses operating system security permissions"
+            ],
+            "correct": 0,
+            "correct_answer": "It prevents system crashes, guards against security vulnerabilities, and maintains state integrity",
+            "explanation": "Proper validation ensures applications fail gracefully and securely when encountering unexpected or malformed inputs.",
+            "source_topic": "System Reliability & Security"
+        }
     ]
 
-    tmpl_idx = 0
-    while len(concept_questions) < count:
-        q_text, c_opt, exp = generic_templates[tmpl_idx % len(generic_templates)]
-        tmpl_idx += 1
-        concept_questions.append({
-            "text": q_text,
-            "options": [
-                c_opt,
-                "Ignoring exception handling and omitting error boundaries.",
-                "Hardcoding arbitrary local paths without standard conventions.",
-                "Disabling compiler and validation checks during execution."
-            ],
-            "correct": 0,
-            "correct_answer": c_opt,
-            "explanation": exp,
+    selected_questions = []
+    seen_texts = set()
+
+    for q in all_candidate_questions:
+        match_score = sum(1 for tag in q["tags"] if tag in text_lower or tag in chapter_name.lower())
+        q_copy = dict(q)
+        q_copy["score"] = match_score
+        selected_questions.append(q_copy)
+
+    selected_questions.sort(key=lambda x: x["score"], reverse=True)
+
+    result_qs = []
+    for q in selected_questions:
+        q_text_clean = _sanitize_question_text(q["text"], valid_filenames)
+        if q_text_clean.lower() in seen_texts:
+            continue
+        seen_texts.add(q_text_clean.lower())
+
+        result_qs.append({
+            "text": q_text_clean,
+            "options": [_sanitize_question_text(opt, valid_filenames) for opt in q["options"]],
+            "correct": q["correct"],
+            "correct_answer": _sanitize_question_text(q["correct_answer"], valid_filenames),
+            "explanation": _sanitize_question_text(q["explanation"], valid_filenames),
             "source_material": chapter_name,
-            "source_topic": f"{chapter_name} Best Practices #{len(concept_questions)}"
+            "source_topic": q["source_topic"]
         })
 
-    # Final sanitization pass over all questions to guarantee no tabs or PDF filenames exist
-    final_questions = []
-    for q in concept_questions[:count]:
-        q["text"] = _sanitize_question_text(q["text"], valid_filenames)
-        q["options"] = [_sanitize_question_text(opt, valid_filenames) for opt in q["options"]]
-        q["correct_answer"] = _sanitize_question_text(q["correct_answer"], valid_filenames)
-        q["explanation"] = _sanitize_question_text(q["explanation"], valid_filenames)
-        q["source_material"] = chapter_name
-        final_questions.append(q)
+        if len(result_qs) >= count:
+            break
 
-    return final_questions
+    return result_qs[:count]
 
 
 def generate_chapter_quiz_questions(
@@ -591,7 +616,7 @@ def generate_chapter_quiz_questions(
     """
     import hashlib
     content_hash = hashlib.md5(f"{course_name}_{chapter_name}_{pdf_content[:2000]}_{count}".encode("utf-8")).hexdigest()
-    cache_key = f"chap_quiz_cache_v4_{content_hash}"
+    cache_key = f"chap_quiz_cache_v5_{content_hash}"
     cached = cache.get(cache_key)
     if cached and isinstance(cached, list) and len(cached) >= min(count, 5):
         valid_cached = []
@@ -614,9 +639,8 @@ def generate_chapter_quiz_questions(
     )
 
     models = openrouter_service.get_models_for_feature("quiz")
-    valid_filenames = [m["filename"] for m in materials_list] if (materials_list and isinstance(materials_list, list)) else []
+    valid_filenames = [m.get("filename", "") for m in materials_list] if (materials_list and isinstance(materials_list, list)) else []
 
-    # Fast primary model attempt to prevent multi-model fallback timeout delays
     primary_models = models[:1] if models else ["google/gemini-2.0-flash-01"]
 
     for selected_model in primary_models:

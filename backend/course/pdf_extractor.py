@@ -214,7 +214,7 @@ def build_chapter_material_context(course_title: str, chapter_title: str, materi
         remaining_budget = max_total_chars - total_chars
         clean_text = chunk_material_text(mat["text"].strip(), max_chars=min(3000, remaining_budget))
         total_chars += len(clean_text)
-        context_lines.append(f"SOURCE MATERIAL {idx}: {mat['filename']} (Title: '{mat['title']}')")
+        context_lines.append(f"SOURCE MATERIAL {idx}: (Title: '{mat['title']}')")
         context_lines.append("CONTENT:")
         context_lines.append("=========================================")
         context_lines.append(clean_text)
