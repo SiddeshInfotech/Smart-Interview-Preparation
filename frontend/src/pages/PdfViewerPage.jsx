@@ -13,7 +13,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
-import { formatPdfUrl, generateModuleQuiz } from "../api/courseApi";
+import { formatPdfUrl } from "../api/courseApi";
 import { getCachedPdfBuffer, prefetchPdf, fetchPdfArrayBuffer } from "../api/pdfCache";
 import "../styles/Courses.css";
 
@@ -38,7 +38,6 @@ export default function PdfViewerPage() {
   const [scale, setScale] = useState(1.25);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [generatingQuiz, setGeneratingQuiz] = useState(false);
 
   const containerRef = useRef(null);
   const formattedRawUrl = formatPdfUrl(statePdfUrl);
@@ -48,41 +47,6 @@ export default function PdfViewerPage() {
       navigate(`/courses/${courseId}`, { state: { domainId } });
     } else {
       navigate("/courses");
-    }
-  };
-
-  const handleTakeQuiz = async () => {
-    if (!moduleId) {
-      alert("Module ID not found.");
-      return;
-    }
-    setGeneratingQuiz(true);
-    try {
-      const res = await generateModuleQuiz(moduleId, moduleTitle, courseTitle);
-      const questions = res.data?.questions || [];
-      if (questions.length === 0) {
-        alert("Failed to generate quiz questions for this unit.");
-        return;
-      }
-      navigate("/quiz-page", {
-        state: {
-          questions,
-          isUnitQuiz: true,
-          moduleId: moduleId,
-          courseId: courseId,
-          domainId: domainId,
-          unitTitle: moduleTitle,
-          courseTitle: courseTitle,
-          pdfUrl: formattedRawUrl,
-          pdfTitle: pdfTitle,
-        },
-      });
-    } catch (err) {
-      console.error("Failed to generate unit quiz:", err);
-      const msg = err.response?.data?.error || err.message || "Failed to generate AI quiz for this unit.";
-      alert(msg);
-    } finally {
-      setGeneratingQuiz(false);
     }
   };
 
@@ -384,38 +348,6 @@ export default function PdfViewerPage() {
 
         {/* Right: Controls (Quiz, Zoom & Page Count) */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {moduleId && (
-            <button
-              type="button"
-              onClick={handleTakeQuiz}
-              disabled={generatingQuiz}
-              className={`pdf-header-quiz-btn ${isCompleted ? "completed" : ""}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "6px 14px",
-                borderRadius: "8px",
-                fontSize: "0.85rem",
-                fontWeight: "600",
-                cursor: generatingQuiz ? "wait" : "pointer",
-              }}
-              title="Take 10-question AI Quiz for this unit"
-            >
-              {generatingQuiz ? (
-                <>
-                  <Loader2 size={15} className="spin" />
-                  <span>Generating Quiz...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={15} />
-                  <span>{isCompleted ? "Regenerate Quiz" : "Generate Quiz"}</span>
-                </>
-              )}
-            </button>
-          )}
-
           {numPages > 0 && (
             <span
               style={{

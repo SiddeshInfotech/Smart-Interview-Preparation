@@ -19,8 +19,6 @@ urlpatterns = [
     path("courses/bootstrap/", CourseBootstrapView.as_view(), name="course-bootstrap"),
     path("profile/active-domain/", ActiveDomainView.as_view(), name="profile-active-domain"),
     path("candidate/active-domain/", ActiveDomainView.as_view(), name="candidate-active-domain"),
-    path("modules/<int:pk>/generate-quiz", CourseModuleViewSet.as_view({"post": "generate_quiz"})),
-    path("modules/<int:pk>/generate-quiz/", CourseModuleViewSet.as_view({"post": "generate_quiz"})),
     path("modules/<int:pk>/mark-complete", CourseModuleViewSet.as_view({"post": "mark_complete"})),
     path("modules/<int:pk>/mark-complete/", CourseModuleViewSet.as_view({"post": "mark_complete"})),
     path("", include(router.urls)),

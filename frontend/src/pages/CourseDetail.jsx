@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Sparkles
 } from "lucide-react";
-import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl, generateModuleQuiz } from "../api/courseApi";
+import { fetchCourseDetails, getCachedCourseDetail, formatPdfUrl } from "../api/courseApi";
 import { prefetchPdf } from "../api/pdfCache";
 import "../styles/Courses.css";
 
@@ -46,7 +46,6 @@ export default function CourseDetail() {
   const [course, setCourse] = useState(initialCache || null);
   const [loading, setLoading] = useState(!initialCache);
   const [error, setError] = useState(null);
-  const [generatingQuizModuleId, setGeneratingQuizModuleId] = useState(null);
 
   const loadCourseData = async (retries = 3) => {
     const cached = getCachedCourseDetail(courseId);
@@ -120,43 +119,6 @@ export default function CourseDetail() {
       });
     } else {
       alert("No PDF document is attached to this module.");
-    }
-  };
-
-  const handleTakeUnitQuiz = async (mod) => {
-    const mId = mod.module_id || mod.id;
-    if (!mId) {
-      alert("Module ID not found.");
-      return;
-    }
-    setGeneratingQuizModuleId(mId);
-    const cleanTitle = cleanModuleTitle(mod.title);
-    try {
-      const res = await generateModuleQuiz(mId, cleanTitle, cleanCourseTitle(course?.title || "Course"), course?.domain_name || "");
-      const questions = res.data?.questions || [];
-      if (questions.length === 0) {
-        alert("Failed to generate quiz questions for this unit.");
-        return;
-      }
-      navigate("/quiz-page", {
-        state: {
-          questions,
-          isUnitQuiz: true,
-          moduleId: mId,
-          courseId: courseId,
-          domainId: domainId,
-          unitTitle: cleanTitle,
-          courseTitle: cleanCourseTitle(course?.title || "Course"),
-          pdfUrl: formatPdfUrl(mod.pdf_url || mod.pdf_file),
-          pdfTitle: cleanModuleTitle(mod.pdf_title) || `${cleanTitle} Notes`,
-        },
-      });
-    } catch (err) {
-      console.error("Failed to generate unit quiz:", err);
-      const msg = err.response?.data?.error || err.message || "Failed to generate AI quiz for this unit.";
-      alert(msg);
-    } finally {
-      setGeneratingQuizModuleId(null);
     }
   };
 
@@ -334,27 +296,6 @@ export default function CourseDetail() {
                       >
                         <Eye size={17} />
                         <span>View Notes</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className={`module-quiz-btn ${mod.is_completed ? "completed" : ""}`}
-                        style={{ whiteSpace: "nowrap" }}
-                        onClick={() => handleTakeUnitQuiz(mod)}
-                        disabled={generatingQuizModuleId === (mod.module_id || mod.id)}
-                        title="Take 10-question AI Quiz for this unit"
-                      >
-                        {generatingQuizModuleId === (mod.module_id || mod.id) ? (
-                          <>
-                            <Loader2 size={17} className="spin" />
-                            <span>Generating Quiz...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles size={17} />
-                            <span>{mod.is_completed ? "Regenerate Quiz" : "Generate Quiz"}</span>
-                          </>
-                        )}
                       </button>
                     </div>
                   </div>
