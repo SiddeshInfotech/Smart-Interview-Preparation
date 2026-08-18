@@ -8,6 +8,8 @@ class ChapterQuizGenerationTests(TestCase):
         """Test that subjective or student/developer-variable questions are identified and rejected."""
         subjective_questions = [
             "What is the file name of homepage of web browser?",
+            "Which file is typically loaded by default when a user visits a website?",
+            "Which file is loaded by default?",
             "What is the file name of the homepage?",
             "What file name did the author choose for main page?",
             "What variable name is declared in line 5?",

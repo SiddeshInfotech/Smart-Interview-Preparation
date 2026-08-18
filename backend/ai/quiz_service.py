@@ -305,22 +305,31 @@ def get_fallback_quiz_questions(topics: List[str], count: int = 10) -> List[Dict
 def _is_subjective_or_variable_question(q_text: str) -> bool:
     """
     Check if a question asks about subjective, variable, or student-specific choices
-    such as arbitrary file names (e.g., homepage file name), variable names in snippets, local paths, etc.
+    such as arbitrary file names (e.g., homepage file name, default loaded file), variable names in snippets, local paths, etc.
     """
     if not q_text or not isinstance(q_text, str):
         return True
 
     text_lower = q_text.lower()
     subjective_patterns = [
-        r"file\s*name\s*of\s*(the\s*)?homepage",
-        r"name\s*of\s*(the\s*)?homepage\s*file",
-        r"what\s*is\s*the\s*file\s*name\s*of",
-        r"what\s*file\s*name",
-        r"what\s*variable\s*name",
-        r"name\s*of\s*the\s*variable",
+        r"file\s*name",
+        r"filename",
+        r"which\s*file\s*is",
+        r"what\s*file\s*is",
+        r"what\s*is\s*the\s*(exact\s*)?file",
+        r"loaded\s*by\s*default",
+        r"default\s*file",
+        r"default\s*page",
+        r"default\s*document",
+        r"homepage",
+        r"home\s*page",
+        r"variable\s*name",
+        r"name\s*of\s*(the\s*)?variable",
         r"what\s*did\s*the\s*author\s*name",
         r"in\s*line\s*\d+",
-        r"what\s*is\s*the\s*exact\s*file\s*name",
+        r"name\s*of\s*(the\s*)?function\s*in\s*example",
+        r"what\s*folder\s*name",
+        r"directory\s*name",
     ]
     for pattern in subjective_patterns:
         if re.search(pattern, text_lower):
@@ -359,7 +368,7 @@ def get_fallback_chapter_quiz_questions(
     concept_lines = []
     for line in raw_lines:
         line_lower = line.lower()
-        if any(bad in line_lower for bad in ["index.html", "home.html", "homepage", "file name of", "for example", "e.g."]):
+        if any(bad in line_lower for bad in ["index.html", "home.html", "homepage", "file name of", "loaded by default", "for example", "e.g."]):
             continue
         concept_lines.append(line)
 
@@ -448,11 +457,13 @@ def generate_chapter_quiz_questions(
     """
     import hashlib
     content_hash = hashlib.md5(f"{course_name}_{chapter_name}_{pdf_content[:2000]}_{count}".encode("utf-8")).hexdigest()
-    cache_key = f"chap_quiz_cache_{content_hash}"
+    cache_key = f"chap_quiz_cache_v3_{content_hash}"
     cached = cache.get(cache_key)
     if cached and isinstance(cached, list) and len(cached) >= min(count, 5):
-        logger.info(f"[QUIZ_SERVICE] CACHE HIT for chapter: {chapter_name}")
-        return cached[:count]
+        valid_cached = [q for q in cached if not _is_subjective_or_variable_question(q.get("text", ""))]
+        if len(valid_cached) >= min(count, 5):
+            logger.info(f"[QUIZ_SERVICE] CACHE HIT for chapter: {chapter_name}")
+            return valid_cached[:count]
 
     from .prompts import chapter_quiz_generation_prompt
 

@@ -460,9 +460,13 @@ CRITICAL CONCEPTUAL GENERATION MANDATES:
    - DO NOT construct questions sentence-by-sentence or pull literal sentence fragments verbatim from the text.
 
 2. FORBID SUBJECTIVE, VARIABLE, OR STUDENT-SPECIFIC DETAILS:
-   - DO NOT create questions whose answers can differ from student to student or developer to developer (e.g., asking for arbitrary file names, local project paths, variable names used in code snippets, or personal preferences).
-   - EXAMPLE TO AVOID: "What is the file name of homepage of web browser?" — A developer can set any file name they want (e.g., index.html, home.html, default.html), so asking for an arbitrary or project-specific file name is INVALID.
-   - INSTEAD, TEST THE UNDERLYING CONCEPT: Ask about the universal technical principles, standards, or mechanisms (e.g., "What is the standard purpose of a web server root document by convention?").
+   - DO NOT create questions whose answers can differ from student to student or developer to developer (e.g., asking for arbitrary file names, default loaded files, local project paths, variable names used in code snippets, or personal preferences).
+   - EXAMPLES TO ABSOLUTELY FORBID:
+     * "What is the file name of homepage of web browser?"
+     * "Which file is typically loaded by default when a user visits a website?"
+     * "Which file is loaded by default?"
+     * A developer can set any file name or web server default route they want (e.g., index.html, home.html, default.html, app.py), so asking for arbitrary or configurable default file names is INVALID.
+   - INSTEAD, TEST THE UNDERLYING CONCEPT: Ask about universal technical principles, standards, or mechanisms (e.g., "What is the standard purpose of a web server root index document by convention?").
 
 3. UNIVERSALLY DEFINITIVE ANSWERS:
    - The correct answer MUST be an objective, universally true technical concept grounded in the provided material that applies to all students equally.
