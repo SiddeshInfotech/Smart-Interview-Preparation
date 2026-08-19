@@ -10,7 +10,6 @@ import {
   Send
 } from "lucide-react";
 import api from "../api/axios";
-import { markModuleComplete } from "../api/courseApi";
 import "../styles/QuizPage.css";
 
 const QuizPage = () => {
