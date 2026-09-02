@@ -244,13 +244,5 @@ AI_MODELS = {
         "google/gemini-2.0-flash-01",
         "qwen/qwen-2.5-coder-32b-instruct",
         "deepseek/deepseek-chat"
-    ],
-    "feedback": [
-        "google/gemini-2.0-flash-01",
-        "deepseek/deepseek-chat"
-    ],
-    "hr_interview": [
-        "google/gemini-2.0-flash-01",
-        "deepseek/deepseek-chat"
     ]
 }

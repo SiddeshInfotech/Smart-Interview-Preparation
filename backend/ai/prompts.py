@@ -118,13 +118,13 @@ def quiz_generation_prompt(
 
     context_str = "\n".join(context_details) if context_details else "- Context: Standard candidate preparation"
 
-    if mode == "MCQ":
-        mode_rules = (
-            '- Each question MUST have "options" containing EXACTLY 4 non-empty string choices: '
-            '["Option A", "Option B", "Option C", "Option D"].\n'
-            '- "correct" MUST be an integer between 0 and 3 representing the 0-based index of the correct option.'
-        )
-        schema_example = """[
+    # Standard MCQ assessment mode
+    mode_rules = (
+        '- Each question MUST have "options" containing EXACTLY 4 non-empty string choices: '
+        '["Option A", "Option B", "Option C", "Option D"].\n'
+        '- "correct" MUST be an integer between 0 and 3 representing the 0-based index of the correct option.'
+    )
+    schema_example = """[
   {
     "text": "Clear and accurate question statement",
     "options": [
@@ -136,40 +136,6 @@ def quiz_generation_prompt(
     "correct": 0,
     "hint": "Helpful hint guiding candidate without revealing the answer",
     "explanation": "Clear explanation of why option index 0 is correct"
-  }
-]"""
-    elif mode == "Coding Challenge":
-        mode_rules = (
-            '- "options" MUST be an empty array [].\n'
-            '- "correct" MUST be 0.\n'
-            '- "text" MUST present a comprehensive coding problem statement with input/output requirements.\n'
-            '- "hint" MUST provide an algorithmic or data structure suggestion.\n'
-            '- "explanation" MUST outline the expected solution strategy.'
-        )
-        schema_example = """[
-  {
-    "text": "Coding problem statement with requirements and sample I/O",
-    "options": [],
-    "correct": 0,
-    "hint": "Nudge regarding data structures or algorithmic technique",
-    "explanation": "Step-by-step optimal approach and solution breakdown"
-  }
-]"""
-    else:  # Mock Interview or default
-        mode_rules = (
-            '- "options" MUST be an empty array [].\n'
-            '- "correct" MUST be 0.\n'
-            '- "text" MUST present a scenario or open-ended technical/architectural interview question.\n'
-            '- "hint" MUST suggest key aspects or concepts to address in response.\n'
-            '- "explanation" MUST detail what the interviewer is evaluating.'
-        )
-        schema_example = """[
-  {
-    "text": "Technical or architectural interview question",
-    "options": [],
-    "correct": 0,
-    "hint": "Key architectural or technical considerations to cover",
-    "explanation": "Interviewer evaluation criteria and ideal response structure"
   }
 ]"""
 

@@ -1,6 +1,11 @@
 from django.db import migrations
 
 
+def alter_column_if_mysql(apps, schema_editor):
+    if schema_editor.connection.vendor == 'mysql':
+        schema_editor.execute("ALTER TABLE `Interview_Schedule` MODIFY status VARCHAR(20);")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -8,13 +13,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Alter the status column so it can hold 'Pending' (7 chars) and
-        # remove any CHECK constraint that limited the allowed values.
-        # We use raw SQL because the table is managed=False (external schema).
-        migrations.RunSQL(
-            sql=[
-                "ALTER TABLE `Interview_Schedule` MODIFY status VARCHAR(20);",
-            ],
-            reverse_sql=migrations.RunSQL.noop,
-        ),
+        migrations.RunPython(alter_column_if_mysql, reverse_code=migrations.RunPython.noop),
     ]

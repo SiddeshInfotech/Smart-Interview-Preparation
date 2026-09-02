@@ -191,7 +191,6 @@ def validate_and_repair_question(
     Rules:
     - Every question MUST contain: text, options, correct, hint, explanation
     - MCQ: exactly 4 options (strings), correct is integer between 0 and 3.
-    - Coding Challenge / Mock Interview: options=[], correct=0.
 
     Returns:
         Tuple[Dict[str, Any], bool]: (normalized_question, repair_was_performed)
@@ -296,7 +295,7 @@ def validate_and_repair_question(
             repair_performed = True
 
     else:
-        # Coding Challenge or Mock Interview
+        # Open/Non-MCQ questions
         raw_options = question.get("options")
         if raw_options != []:
             repair_performed = True

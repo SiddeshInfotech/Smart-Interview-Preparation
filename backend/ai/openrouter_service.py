@@ -86,15 +86,6 @@ class OpenRouterService:
             "max_tokens": 2500,
             "expect_json": True,
         },
-        "feedback": {
-            "models": [
-                "google/gemini-2.0-flash-01",
-                "deepseek/deepseek-chat",
-            ],
-            "temperature": 0.5,
-            "max_tokens": 1500,
-            "expect_json": True,
-        },
     }
 
     def __init__(self):

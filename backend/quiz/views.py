@@ -107,6 +107,7 @@ def save_quiz_result(request):
         candidate = Candidate_Profile.objects.filter(user=request.user).first()
         active_domain = candidate.active_domain if candidate else None
 
+        data = request.data
         result = QuizPerformance.objects.create(
             user=request.user,
             domain=active_domain,
