@@ -8,8 +8,8 @@ import { formatMediaUrl } from "../api/courseApi";
 
 import {
   ResponsiveContainer,
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -22,6 +22,13 @@ const CustomTooltip = React.memo(({ active, payload, label }) => {
     const rawPayload = payload[0]?.payload || {};
     const dateLabel = rawPayload.date ? `${label} (${rawPayload.date})` : label;
 
+    const getMetricColor = (name, fallbackColor) => {
+      if (name === "Quiz") return "#2563EB";
+      if (name === "Coding") return "#10B981";
+      if (name === "Interview") return "#7C3AED";
+      return fallbackColor && !fallbackColor.startsWith("url") ? fallbackColor : "#2563EB";
+    };
+
     return (
       <div className="custom-chart-tooltip">
         <div className="tooltip-header">
@@ -31,6 +38,7 @@ const CustomTooltip = React.memo(({ active, payload, label }) => {
         <div className="tooltip-list">
           {payload.map((item, idx) => {
             const val = item.value;
+            const dotColor = getMetricColor(item.name, item.color || item.fill);
             let statusText = "Good";
             let statusClass = "status-good";
             if (val === 0) {
@@ -49,7 +57,7 @@ const CustomTooltip = React.memo(({ active, payload, label }) => {
                 <div className="tooltip-item-left">
                   <span
                     className="tooltip-dot"
-                    style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}` }}
+                    style={{ backgroundColor: dotColor, boxShadow: `0 0 8px ${dotColor}` }}
                   />
                   <span className="tooltip-name">{item.name}</span>
                 </div>
@@ -271,19 +279,24 @@ const Dashboard = () => {
           </div>
 
           <ResponsiveContainer width="100%" height={360}>
-            <AreaChart data={performanceData} margin={{ top: 15, right: 25, left: 35, bottom: 35 }}>
+            <BarChart
+              data={performanceData}
+              margin={{ top: 15, right: 25, left: 35, bottom: 35 }}
+              barGap={6}
+              barCategoryGap="20%"
+            >
               <defs>
-                <linearGradient id="quizGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2563EB" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#2563EB" stopOpacity={0.02} />
+                <linearGradient id="quizBarGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="100%" stopColor="#1d4ed8" />
                 </linearGradient>
-                <linearGradient id="codingGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#10B981" stopOpacity={0.02} />
+                <linearGradient id="codingBarGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#059669" />
                 </linearGradient>
-                <linearGradient id="interviewGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#7C3AED" stopOpacity={0.02} />
+                <linearGradient id="interviewBarGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#6d28d9" />
                 </linearGradient>
               </defs>
 
@@ -318,47 +331,41 @@ const Dashboard = () => {
                   style={{ textAnchor: 'middle', fill: 'var(--chart-label-color, #0f172a)', fontSize: 13, fontWeight: 700 }}
                 />
               </YAxis>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: 'rgba(148, 163, 184, 0.12)', radius: 6 }}
+              />
 
               {showQuiz && (
-                <Area
-                  type="monotone"
+                <Bar
                   dataKey="quiz"
-                  stroke="#2563EB"
-                  strokeWidth={3.5}
-                  fill="url(#quizGrad)"
-                  dot={{ r: 5, strokeWidth: 2, fill: "#ffffff", stroke: "#2563EB" }}
-                  activeDot={{ r: 8, strokeWidth: 2.5, fill: "#2563EB", stroke: "#ffffff" }}
                   name="Quiz"
+                  fill="url(#quizBarGrad)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={38}
                 />
               )}
 
               {showCoding && (
-                <Area
-                  type="monotone"
+                <Bar
                   dataKey="coding"
-                  stroke="#10B981"
-                  strokeWidth={3.5}
-                  fill="url(#codingGrad)"
-                  dot={{ r: 5, strokeWidth: 2, fill: "#ffffff", stroke: "#10B981" }}
-                  activeDot={{ r: 8, strokeWidth: 2.5, fill: "#10B981", stroke: "#ffffff" }}
                   name="Coding"
+                  fill="url(#codingBarGrad)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={38}
                 />
               )}
 
               {showInterview && (
-                <Area
-                  type="monotone"
+                <Bar
                   dataKey="interview"
-                  stroke="#7C3AED"
-                  strokeWidth={3.5}
-                  fill="url(#interviewGrad)"
-                  dot={{ r: 5, strokeWidth: 2, fill: "#ffffff", stroke: "#7C3AED" }}
-                  activeDot={{ r: 8, strokeWidth: 2.5, fill: "#7C3AED", stroke: "#ffffff" }}
                   name="Interview"
+                  fill="url(#interviewBarGrad)"
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={38}
                 />
               )}
-            </AreaChart>
+            </BarChart>
           </ResponsiveContainer>
         </div>
 
