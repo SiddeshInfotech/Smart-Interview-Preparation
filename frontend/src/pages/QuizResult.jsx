@@ -64,7 +64,7 @@ const QuizResult = () => {
         {/* Quiz Header */}
         <div className="quiz-header">
           <div className={`quiz-badge ${passed ? 'passed' : 'needs-practice'}`}>
-            {passed ? 'UNIT COMPLETED' : 'NEEDS PRACTICE'}
+            {passed ? 'QUIZ COMPLETED' : 'NEEDS PRACTICE'}
           </div>
           <h1 className="quiz-title">
             {isUnitQuiz ? `Unit Quiz: ${unitTitle || 'Study Material'}` : 'Quiz Results'}
