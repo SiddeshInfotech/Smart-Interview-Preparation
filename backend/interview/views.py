@@ -255,30 +255,32 @@ def get_livekit_token(request):
                 if schedule.candidate and schedule.candidate.user != request.user:
                     return Response({'error': 'You are not authorized for this interview.'}, status=403)
             elif request.user.role == 'interviewer':
-                if schedule.interviewer.user != request.user:
+                if schedule.interviewer and schedule.interviewer.user != request.user:
                     return Response({'error': 'You are not authorized for this interview.'}, status=403)
 
             dt_naive = datetime.combine(schedule.scheduled_date, schedule.scheduled_time)
             scheduled_start = timezone.make_aware(dt_naive) if timezone.is_naive(dt_naive) else dt_naive
-            now = timezone.now()
+            now = timezone.localtime()
 
             if now.date() > schedule.scheduled_date:
                 schedule.status = 'Cancelled'
                 schedule.save(update_fields=['status', 'updated_at'])
                 return Response({'error': 'This interview has been cancelled because the scheduled date has passed.'}, status=400)
 
-            if now > (scheduled_start + timedelta(minutes=15)) and schedule.status == 'Scheduled':
-                schedule.status = 'Cancelled'
-                schedule.save(update_fields=['status', 'updated_at'])
-                return Response({'error': 'This interview has been cancelled because 15 minutes have passed after the scheduled timing.'}, status=400)
+            # Restrict join timing for candidate; interviewers (hosts) can join to prepare or conduct
+            if request.user.role != 'interviewer':
+                if now > (scheduled_start + timedelta(minutes=15)) and schedule.status == 'Scheduled':
+                    schedule.status = 'Cancelled'
+                    schedule.save(update_fields=['status', 'updated_at'])
+                    return Response({'error': 'This interview has been cancelled because 15 minutes have passed after the scheduled timing.'}, status=400)
 
-            start_window = scheduled_start - timedelta(minutes=15)
-            end_window = scheduled_start + timedelta(minutes=schedule.duration_minutes + 15)
+                start_window = scheduled_start - timedelta(minutes=15)
+                end_window = scheduled_start + timedelta(minutes=schedule.duration_minutes + 15)
 
-            if not (start_window <= now <= end_window):
-                return Response({
-                    'error': f'Access restricted. You can only join this room on {schedule.scheduled_date} between {start_window.strftime("%H:%M")} and {end_window.strftime("%H:%M")}.'
-                }, status=400)
+                if not (start_window <= now <= end_window):
+                    return Response({
+                        'error': f'Access restricted. You can only join this room on {schedule.scheduled_date} between {start_window.strftime("%H:%M")} and {end_window.strftime("%H:%M")}.'
+                    }, status=400)
     except Exception as ex:
         logger.error(f"Error checking schedule join window: {str(ex)}")
 

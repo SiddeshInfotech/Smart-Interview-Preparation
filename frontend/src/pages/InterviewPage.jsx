@@ -398,6 +398,7 @@ const InterviewPage = ({
   // ---- UI states ----
   const [isJoining, setIsJoining] = useState(false);
   const [isInInterview, setIsInInterview] = useState(false);
+  const [joinError, setJoinError] = useState(null);
   const [isEndingSession, setIsEndingSession] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
@@ -406,6 +407,16 @@ const InterviewPage = ({
   const [showInterviewerFeedbackModal, setShowInterviewerFeedbackModal] = useState(false);
   const [showCandidateWaitingModal, setShowCandidateWaitingModal] = useState(false);
   const isAccepted = Boolean(selectedInterview?.meeting_link);
+
+  const userRoleStr = (
+    role ||
+    selectedInterview?.role ||
+    localStorage.getItem("user_role") ||
+    ""
+  ).toString().toLowerCase();
+  const isInterviewerRole =
+    userRoleStr.includes("interviewer") ||
+    userRoleStr === "interviewer";
 
 
   // ---- Tab/eye tracking ----
@@ -681,30 +692,36 @@ const InterviewPage = ({
   // ---- Join interview ----
   const handleJoinInterview = async () => {
     if (!roomName || !identity) {
-      alert('Missing room or identity information.');
+      setJoinError('Missing room or identity information. Please select a scheduled interview.');
+      setIsJoining(false);
       return;
     }
     setIsJoining(true);
+    setJoinError(null);
     try {
       // 1. Request Browser Fullscreen Mode
       if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch((err) => console.warn('Fullscreen error:', err));
       }
-      // 1. Start local camera
+      // 2. Start local camera
       const stream = await startLocalCamera();
       if (!stream) {
+        setJoinError('Camera or microphone access is required to join the interview.');
         setIsJoining(false);
         return;
       }
 
-      // 2. Initialize MediaPipe
-      const landmarker = await initializeFaceLandmarker();
-      if (!landmarker) {
-        setIsJoining(false);
-        return;
+      // 3. Initialize MediaPipe ONLY for candidates (never block interviewer with candidate proctoring)
+      let landmarker = null;
+      if (!isInterviewerRole) {
+        try {
+          landmarker = await initializeFaceLandmarker();
+        } catch (mpErr) {
+          console.warn('MediaPipe initialization warning (non-fatal):', mpErr);
+        }
       }
 
-      // 3. Fetch LiveKit token
+      // 4. Fetch LiveKit token
       const res = await api.post('/interview/livekit-token/', {
         room_name: roomName,
         identity: identity,
@@ -721,22 +738,28 @@ const InterviewPage = ({
       setTabSwitchCount(0);
       setShowWarning(false);
       isEndingRef.current = false;
-      // Set detection ready after a cooldown (2 seconds) to avoid false triggers
-      isDetectionReady.current = false;
-      setTimeout(() => {
-        isDetectionReady.current = true;
-      }, 3000);
-      alert('✅ You have joined the interview!');
 
-      // 4. Start detection loop after video element is ready
-      setTimeout(() => {
-        if (videoRef.current && landmarker) {
-          detectFaceAndEyes(landmarker);
-        }
-      }, 1500);
+      // 5. Start candidate detection loop if landmarker is ready
+      if (!isInterviewerRole && landmarker) {
+        isDetectionReady.current = false;
+        setTimeout(() => {
+          isDetectionReady.current = true;
+        }, 3000);
+
+        setTimeout(() => {
+          if (videoRef.current && landmarker) {
+            detectFaceAndEyes(landmarker);
+          }
+        }, 1500);
+      }
     } catch (err) {
       console.error('Join error:', err);
-      alert('Could not join the interview. Please try again.');
+      const errorMsg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        'Could not join the interview. Please try again.';
+      setJoinError(errorMsg);
     } finally {
       setIsJoining(false);
     }
@@ -893,7 +916,11 @@ const InterviewPage = ({
   // ---- Auto-join Live Session directly on mount ----
   const autoJoinedRef = useRef(false);
   useEffect(() => {
-    if (!autoJoinedRef.current && roomName && identity) {
+    if (!roomName || !identity) {
+      setJoinError('Missing room or identity information. Please select an interview from the schedule.');
+      return;
+    }
+    if (!autoJoinedRef.current) {
       autoJoinedRef.current = true;
       handleJoinInterview();
     }
@@ -960,23 +987,57 @@ const InterviewPage = ({
 
         {!isInInterview ? (
           // ---- DIRECT JOIN LOADER (No Intermediate Lobby) ----
-          <div style={{ padding: "60px 20px", textAlign: "center", maxWidth: "480px", margin: "60px auto", background: "#ffffff", borderRadius: "12px", boxShadow: "0 10px 25px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
-            <div className="feedback-spinner" style={{ width: "36px", height: "36px", borderWidth: "3px", borderColor: "#2563eb", borderTopColor: "transparent", margin: "0 auto 20px" }}></div>
-            <h3 style={{ fontSize: "19px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
-              {isJoining ? "Connecting to Live Interview..." : "Joining Room Directly..."}
-            </h3>
-            <p style={{ color: "#64748b", fontSize: "14px", lineHeight: "1.5", marginBottom: "20px" }}>
-              Establishing secure media tracks and LiveKit session token for <strong>{roomName}</strong>.
-            </p>
-            {onBack && (
-              <button
-                type="button"
-                className="btn btn--secondary"
-                onClick={onBack}
-                style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "8px 16px", borderRadius: "8px", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
-              >
-                Cancel & Return
-              </button>
+          <div style={{ padding: "50px 24px", textAlign: "center", maxWidth: "480px", margin: "60px auto", background: "#ffffff", borderRadius: "12px", boxShadow: "0 10px 25px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
+            {joinError ? (
+              <>
+                <div style={{ fontSize: "36px", marginBottom: "12px" }}>⚠️</div>
+                <h3 style={{ fontSize: "19px", fontWeight: "700", color: "#b91c1c", marginBottom: "8px" }}>
+                  Unable to Join Interview
+                </h3>
+                <p style={{ color: "#475569", fontSize: "14px", lineHeight: "1.5", marginBottom: "22px" }}>
+                  {joinError}
+                </p>
+                <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={handleJoinInterview}
+                    style={{ background: "#2563eb", color: "#ffffff", border: "none", padding: "8px 18px", borderRadius: "8px", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
+                  >
+                    🔄 Try Again
+                  </button>
+                  {onBack && (
+                    <button
+                      type="button"
+                      className="btn btn--secondary"
+                      onClick={onBack}
+                      style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "8px 18px", borderRadius: "8px", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
+                    >
+                      Return to Schedule
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="feedback-spinner" style={{ width: "36px", height: "36px", borderWidth: "3px", borderColor: "#2563eb", borderTopColor: "transparent", margin: "0 auto 20px" }}></div>
+                <h3 style={{ fontSize: "19px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
+                  {isJoining ? "Connecting to Live Interview..." : "Preparing Live Session..."}
+                </h3>
+                <p style={{ color: "#64748b", fontSize: "14px", lineHeight: "1.5", marginBottom: "20px" }}>
+                  Establishing secure media tracks and LiveKit session token for <strong>{roomName}</strong>.
+                </p>
+                {onBack && (
+                  <button
+                    type="button"
+                    className="btn btn--secondary"
+                    onClick={onBack}
+                    style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "8px 16px", borderRadius: "8px", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
+                  >
+                    Cancel & Return
+                  </button>
+                )}
+              </>
             )}
           </div>
         ) : (
