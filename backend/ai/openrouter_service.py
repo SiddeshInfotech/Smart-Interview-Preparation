@@ -58,7 +58,12 @@ class OpenRouterService:
     DEFAULT_FEATURES: Dict[str, Dict[str, Any]] = {
         "resume": {
             "models": [
-                "google/gemini-2.0-flash-01",
+                "google/gemini-2.0-flash-001",
+                "openrouter/free",
+                "meta-llama/llama-3.3-70b-instruct:free",
+                "mistralai/mistral-small-24b-instruct-2501:free",
+                "qwen/qwen-2.5-coder-32b-instruct:free",
+                "mistralai/mistral-small-24b-instruct-2501",
                 "deepseek/deepseek-chat",
                 "meta-llama/llama-3.3-70b-instruct",
             ],
@@ -68,9 +73,14 @@ class OpenRouterService:
         },
         "quiz": {
             "models": [
-                "google/gemini-2.0-flash-01",
-                "meta-llama/llama-3.3-70b-instruct",
+                "google/gemini-2.0-flash-001",
+                "openrouter/free",
+                "meta-llama/llama-3.3-70b-instruct:free",
+                "mistralai/mistral-small-24b-instruct-2501:free",
+                "qwen/qwen-2.5-coder-32b-instruct:free",
                 "deepseek/deepseek-chat",
+                "meta-llama/llama-3.3-70b-instruct",
+                "mistralai/mistral-small-24b-instruct-2501",
             ],
             "temperature": 0.7,
             "max_tokens": 1200,
@@ -78,12 +88,14 @@ class OpenRouterService:
         },
         "coding": {
             "models": [
-                "google/gemini-2.0-flash-01",
+                "google/gemini-2.0-flash-001",
+                "openrouter/free",
+                "qwen/qwen-2.5-coder-32b-instruct:free",
                 "qwen/qwen-2.5-coder-32b-instruct",
                 "deepseek/deepseek-chat",
             ],
             "temperature": 0.7,
-            "max_tokens": 2500,
+            "max_tokens": 2000,
             "expect_json": True,
         },
     }
@@ -148,7 +160,7 @@ class OpenRouterService:
     def get_models_for_feature(self, feature: str) -> List[str]:
         """Retrieve model fallback hierarchy configured for a feature."""
         feat_config = self.features.get(feature, self.features.get("quiz", {}))
-        return feat_config.get("models", ["google/gemini-2.0-flash-01"])
+        return feat_config.get("models", ["google/gemini-2.0-flash-001"])
 
     def _execute_post(self, headers: dict, payload: dict) -> requests.Response:
         """
@@ -212,7 +224,7 @@ class OpenRouterService:
             except json.JSONDecodeError as exc:
                 raise OpenRouterJSONError(f"Failed to decode HTTP response body as JSON from '{model}': {exc}")
 
-        elif status_code == 404 or "No endpoints found" in resp_text:
+        elif status_code in (400, 402, 404) or "No endpoints found" in resp_text or "not a valid model ID" in resp_text or "requires more credits" in resp_text:
             raise OpenRouterNonRetryableError(
                 f"HTTP {status_code} Non-retryable model error from '{model}': {resp_text[:150]}"
             )
@@ -239,7 +251,7 @@ class OpenRouterService:
         Send chat completion request to OpenRouter with automatic model fallback and retries.
         """
         feat_config = self.features.get(feature, self.features.get("quiz", {}))
-        models = feat_config.get("models", ["google/gemini-2.0-flash-01"])
+        models = feat_config.get("models", ["google/gemini-2.0-flash-001"])
 
         resolved_temp = temperature if temperature is not None else feat_config.get("temperature", 0.7)
         resolved_max_tokens = max_tokens if max_tokens is not None else feat_config.get("max_tokens", 1500)

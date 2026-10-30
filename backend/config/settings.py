@@ -228,21 +228,30 @@ PISTON_RUNTIMES_CACHE_TTL = int(os.environ.get("PISTON_RUNTIMES_CACHE_TTL", "864
 
 AI_MODELS = {
     "resume": [
-        "google/gemini-2.0-flash-01",
+        "google/gemini-2.0-flash-001",
+        "openrouter/free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "mistralai/mistral-small-24b-instruct-2501:free",
+        "qwen/qwen-2.5-coder-32b-instruct:free",
+        "mistralai/mistral-small-24b-instruct-2501",
         "deepseek/deepseek-chat",
         "meta-llama/llama-3.3-70b-instruct",
-        "mistralai/mistral-small-24b-instruct-2501"
     ],
     "quiz": [
-        "google/gemini-2.0-flash-01",
+        "google/gemini-2.0-flash-001",
+        "openrouter/free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "mistralai/mistral-small-24b-instruct-2501:free",
+        "qwen/qwen-2.5-coder-32b-instruct:free",
         "deepseek/deepseek-chat",
         "meta-llama/llama-3.3-70b-instruct",
-        "qwen/qwen-2.5-coder-32b-instruct",
-        "mistralai/mistral-small-24b-instruct-2501"
+        "mistralai/mistral-small-24b-instruct-2501",
     ],
     "coding": [
-        "google/gemini-2.0-flash-01",
+        "google/gemini-2.0-flash-001",
+        "openrouter/free",
+        "qwen/qwen-2.5-coder-32b-instruct:free",
         "qwen/qwen-2.5-coder-32b-instruct",
-        "deepseek/deepseek-chat"
-    ]
+        "deepseek/deepseek-chat",
+    ],
 }

@@ -59,7 +59,7 @@ def generate_quiz_questions(
 
     models = openrouter_service.get_models_for_feature("quiz")
     max_retries = openrouter_service.max_retries
-    primary_model = models[0] if models else "google/gemini-2.0-flash-01"
+    primary_model = models[0] if models else "google/gemini-2.0-flash-001"
 
     overall_failures: List[str] = []
 
@@ -742,7 +742,7 @@ def generate_chapter_quiz_questions(
     models = openrouter_service.get_models_for_feature("quiz")
     valid_filenames = [m.get("filename", "") for m in materials_list] if (materials_list and isinstance(materials_list, list)) else []
 
-    primary_models = models[:1] if models else ["google/gemini-2.0-flash-01"]
+    primary_models = models[:1] if models else ["google/gemini-2.0-flash-001"]
 
     for selected_model in primary_models:
         try:
