@@ -1,17 +1,34 @@
 import os
+import sys
 import time
+import shutil
+import tempfile
+import subprocess
 import requests
 from django.conf import settings
+
+
+def _normalize_piston_url(raw_url: str) -> str:
+    """Ensure Piston API URL includes the /api/v2 prefix and strips trailing slashes."""
+    url = (raw_url or "").strip().rstrip("/")
+    if not url:
+        return "http://localhost:2000/api/v2"
+    if not url.endswith("/api/v2") and not url.endswith("/api/v2/piston"):
+        url = f"{url}/api/v2"
+    return url
+
 
 # Default Piston API URL fallback order:
 # 1. Django settings.PISTON_API_URL
 # 2. Environment variable PISTON_API_URL
 # 3. Local Piston server (http://localhost:2000/api/v2)
-DEFAULT_PISTON_URL = getattr(
-    settings,
-    "PISTON_API_URL",
-    os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
-).rstrip("/")
+DEFAULT_PISTON_URL = _normalize_piston_url(
+    getattr(
+        settings,
+        "PISTON_API_URL",
+        os.environ.get("PISTON_API_URL", "http://localhost:2000/api/v2")
+    )
+)
 
 # Language map: canonical key -> Piston runtime language name and default versions
 LANGUAGE_MAP = {
@@ -116,7 +133,7 @@ class PistonExecutionService(AbstractExecutionProvider):
     """Piston API Execution Service Provider"""
 
     def __init__(self, api_url: str = None):
-        self.api_url = (api_url or DEFAULT_PISTON_URL).rstrip("/")
+        self.api_url = _normalize_piston_url(api_url or DEFAULT_PISTON_URL)
         # In‑memory cache for /runtimes endpoint
         self._runtimes_cache = {"data": None, "timestamp": 0}
         self._cache_ttl = getattr(settings, "PISTON_RUNTIMES_CACHE_TTL", 300)
@@ -185,6 +202,272 @@ class PistonExecutionService(AbstractExecutionProvider):
             version_val = DEFAULT_FALLBACK_VERSIONS.get(config["piston_name"], "18.15.0")
         config["version"] = version_val
         return config
+
+    def execute_python_locally(self, code: str, stdin: str = "") -> dict:
+        """
+        Executes Python code locally using sys.executable subprocess sandbox.
+        Acts as reliable fallback when Piston server is unavailable or returns 404/error.
+        """
+        start_t = time.time()
+        temp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False, encoding="utf-8") as temp_file:
+                temp_file.write(code)
+                temp_path = temp_file.name
+
+            process = subprocess.run(
+                [sys.executable, temp_path],
+                input=stdin or "",
+                text=True,
+                capture_output=True,
+                timeout=10
+            )
+
+            stdout = process.stdout or ""
+            stderr = process.stderr or ""
+            exit_code = process.returncode
+            elapsed = round(time.time() - start_t, 3)
+
+            if exit_code == 0:
+                return {
+                    "status": "success",
+                    "output": stdout if stdout.strip() else "Program executed successfully with clean output.",
+                    "error": stderr,
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "exit_code": 0,
+                    "execution_time": elapsed,
+                    "memory_used": None,
+                    "solution": "Program executed successfully."
+                }
+            else:
+                return {
+                    "status": "runtime_error",
+                    "output": stdout,
+                    "error": stderr or f"Process exited with code {exit_code}",
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "exit_code": exit_code,
+                    "execution_time": elapsed,
+                    "memory_used": None,
+                    "solution": generate_solution_hint("python", stderr or stdout)
+                }
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "timeout",
+                "output": "",
+                "error": "Execution timed out (limit: 10s). Check for infinite loops or blocking input calls.",
+                "stdout": "",
+                "stderr": "Time Limit Exceeded",
+                "exit_code": -1,
+                "execution_time": 10.0,
+                "memory_used": None,
+                "solution": "Verify termination conditions in your loops and ensure input handling does not block."
+            }
+        except Exception as e:
+            return {
+                "status": "runtime_error",
+                "output": "",
+                "error": f"Local Python execution error: {str(e)}",
+                "stdout": "",
+                "stderr": str(e),
+                "exit_code": 1,
+                "execution_time": round(time.time() - start_t, 3),
+                "memory_used": None,
+                "solution": "Check your code syntax and logic."
+            }
+        finally:
+            if temp_path:
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+
+    def execute_cpp_locally(self, code: str, stdin: str = "", is_c: bool = False) -> dict | None:
+        """Executes C/C++ code locally using gcc/g++ if available on the system."""
+        compiler = "gcc" if is_c else "g++"
+        compiler_path = shutil.which(compiler)
+        if not compiler_path:
+            return None
+
+        start_t = time.time()
+        ext = ".c" if is_c else ".cpp"
+        src_path = None
+        exe_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix=ext, mode="w", delete=False, encoding="utf-8") as temp_file:
+                temp_file.write(code)
+                src_path = temp_file.name
+
+            exe_fd, exe_path = tempfile.mkstemp(suffix=".exe" if os.name == "nt" else "")
+            os.close(exe_fd)
+
+            compile_res = subprocess.run(
+                [compiler_path, src_path, "-o", exe_path],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            if compile_res.returncode != 0:
+                err = compile_res.stderr or "Compilation failed."
+                return {
+                    "status": "compile_error",
+                    "output": "",
+                    "error": err,
+                    "stdout": "",
+                    "stderr": err,
+                    "exit_code": compile_res.returncode,
+                    "execution_time": round(time.time() - start_t, 3),
+                    "memory_used": None,
+                    "solution": generate_solution_hint("c" if is_c else "cpp", err)
+                }
+
+            run_res = subprocess.run(
+                [exe_path],
+                input=stdin or "",
+                text=True,
+                capture_output=True,
+                timeout=5
+            )
+
+            stdout = run_res.stdout or ""
+            stderr = run_res.stderr or ""
+            elapsed = round(time.time() - start_t, 3)
+
+            return {
+                "status": "success" if run_res.returncode == 0 else "runtime_error",
+                "output": stdout if stdout.strip() else ("Program executed successfully with clean output." if run_res.returncode == 0 else ""),
+                "error": stderr if run_res.returncode != 0 else "",
+                "stdout": stdout,
+                "stderr": stderr,
+                "exit_code": run_res.returncode,
+                "execution_time": elapsed,
+                "memory_used": None,
+                "solution": "Program executed successfully." if run_res.returncode == 0 else generate_solution_hint("c" if is_c else "cpp", stderr)
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "timeout",
+                "output": "",
+                "error": "Execution timed out (5s limit).",
+                "stdout": "",
+                "stderr": "Time Limit Exceeded",
+                "exit_code": -1,
+                "execution_time": 5.0,
+                "memory_used": None,
+                "solution": "Check for infinite loops."
+            }
+        except Exception:
+            return None
+        finally:
+            for p in (src_path, exe_path):
+                if p:
+                    try:
+                        os.remove(p)
+                    except Exception:
+                        pass
+
+    def execute_java_locally(self, code: str, stdin: str = "") -> dict | None:
+        """Executes Java code locally using javac/java if available on the system."""
+        javac = shutil.which("javac")
+        java = shutil.which("java")
+        if not javac or not java:
+            return None
+
+        start_t = time.time()
+        temp_dir = tempfile.mkdtemp()
+        src_path = os.path.join(temp_dir, "Main.java")
+        try:
+            with open(src_path, "w", encoding="utf-8") as f:
+                f.write(code)
+
+            compile_res = subprocess.run(
+                [javac, src_path],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            if compile_res.returncode != 0:
+                err = compile_res.stderr or "Compilation failed."
+                return {
+                    "status": "compile_error",
+                    "output": "",
+                    "error": err,
+                    "stdout": "",
+                    "stderr": err,
+                    "exit_code": compile_res.returncode,
+                    "execution_time": round(time.time() - start_t, 3),
+                    "memory_used": None,
+                    "solution": generate_solution_hint("java", err)
+                }
+
+            run_res = subprocess.run(
+                [java, "-cp", temp_dir, "Main"],
+                input=stdin or "",
+                text=True,
+                capture_output=True,
+                timeout=5
+            )
+
+            stdout = run_res.stdout or ""
+            stderr = run_res.stderr or ""
+            elapsed = round(time.time() - start_t, 3)
+
+            return {
+                "status": "success" if run_res.returncode == 0 else "runtime_error",
+                "output": stdout,
+                "error": stderr if run_res.returncode != 0 else "",
+                "stdout": stdout,
+                "stderr": stderr,
+                "exit_code": run_res.returncode,
+                "execution_time": elapsed,
+                "memory_used": None,
+                "solution": "Program executed successfully." if run_res.returncode == 0 else generate_solution_hint("java", stderr)
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "timeout",
+                "output": "",
+                "error": "Execution timed out (5s limit).",
+                "stdout": "",
+                "stderr": "Time Limit Exceeded",
+                "exit_code": -1,
+                "execution_time": 5.0,
+                "memory_used": None,
+                "solution": "Check for infinite loops."
+            }
+        except Exception:
+            return None
+        finally:
+            try:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+            except Exception:
+                pass
+
+    def _dispatch_local_fallback(self, lang_norm: str, config: dict, code: str, stdin: str) -> dict | None:
+        """Dispatches execution to local runners if available for the given language."""
+        if lang_norm in ["python", "py", "python3", "py3", "python + django", "python & django", "django", "software testing", "pytest"] or config.get("piston_name") == "python":
+            return self.execute_python_locally(code, stdin)
+
+        if lang_norm in ["javascript", "js", "html css", "html/css", "react js", "react", "node"] or config.get("piston_name") == "javascript":
+            return self.execute_javascript_locally(code, stdin)
+
+        if lang_norm in ["sql", "sqlite", "sqlite3"]:
+            return self.execute_sqlite_locally(code, stdin)
+
+        if lang_norm in ["c", "gcc"]:
+            return self.execute_cpp_locally(code, stdin, is_c=True)
+
+        if lang_norm in ["cpp", "c++"]:
+            return self.execute_cpp_locally(code, stdin, is_c=False)
+
+        if lang_norm == "java":
+            return self.execute_java_locally(code, stdin)
+
+        return None
+
     def execute_javascript_locally(self, code: str, stdin: str = "") -> dict:
         import subprocess
         import tempfile
@@ -345,8 +628,11 @@ class PistonExecutionService(AbstractExecutionProvider):
             if local_res.get("status") in ["success", "runtime_error"]:
                 return local_res
 
-        # If we could not resolve a version for the requested language, return a clear error.
+        # If we could not resolve a version for the requested language, try local fallback first
         if not config.get("version"):
+            local_res = self._dispatch_local_fallback(lang_norm, config, code, stdin)
+            if local_res is not None:
+                return local_res
             return {
                 "status": "error",
                 "output": "",
@@ -379,8 +665,9 @@ class PistonExecutionService(AbstractExecutionProvider):
             elapsed_sec = round(time.time() - start_time, 3)
 
             if response.status_code != 200:
-                if lang_norm in ["javascript", "js", "html css", "html/css", "react js", "react", "node"] or config["piston_name"] == "javascript":
-                    return self.execute_javascript_locally(code, stdin)
+                local_res = self._dispatch_local_fallback(lang_norm, config, code, stdin)
+                if local_res is not None:
+                    return local_res
 
                 err_msg = f"Piston API returned HTTP {response.status_code}: {response.text}"
                 return {
@@ -468,6 +755,9 @@ class PistonExecutionService(AbstractExecutionProvider):
                 }
 
         except requests.exceptions.Timeout:
+            local_res = self._dispatch_local_fallback(lang_norm, config, code, stdin)
+            if local_res is not None:
+                return local_res
             return {
                 "status": "timeout",
                 "output": "",
@@ -481,6 +771,9 @@ class PistonExecutionService(AbstractExecutionProvider):
             }
 
         except requests.exceptions.RequestException as e:
+            local_res = self._dispatch_local_fallback(lang_norm, config, code, stdin)
+            if local_res is not None:
+                return local_res
             return {
                 "status": "error",
                 "output": "",
